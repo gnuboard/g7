@@ -1,0 +1,732 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Admin Board Post Detail - Single Comment Component (Enhanced Design)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "id": "comment_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-start justify-between gap-1"
+      },
+      "children": [
+        {
+          "id": "comment_left_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-2 flex-1 min-w-0"
+          },
+          "children": [
+            {
+              "id": "depth_indicator",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm"
+              },
+              "text": "↳",
+              "if": "{{comment.depth > 0}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-col gap-1 flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "id": "author_name_menu",
+                      "type": "composite",
+                      "name": "ActionMenu",
+                      "if": "{{!comment?.author?.is_guest}}",
+                      "props": {
+                        "triggerLabel": "{{comment?.author?.name}}",
+                        "triggerIconName": "",
+                        "triggerClassName": "font-semibold text-gray-900 dark:text-white",
+                        "position": "right",
+                        "items": [
+                          {
+                            "id": "view_user_info",
+                            "label": "$t:sirsoft-board.admin.posts.detail.user_info",
+                            "iconName": "user"
+                          }
+                        ]
+                      },
+                      "actions": [
+                        {
+                          "event": "onItemClick",
+                          "type": "click",
+                          "handler": "switch",
+                          "value": "{{$args[0]}}",
+                          "cases": {
+                            "view_user_info": {
+                              "handler": "navigate",
+                              "params": {
+                                "path": "/admin/users/{{comment?.author?.uuid}}"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{comment?.author?.is_guest}}",
+                      "props": {
+                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": "{{comment?.author?.name}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "({{comment?.author?.email}})",
+                      "if": "{{comment?.author?.email}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-board.admin.posts.guest",
+                      "if": "{{comment?.author.is_guest}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.posts.detail.admin_badge",
+                      "if": "{{comment?.author.is_admin}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "· {{comment?.created_at}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "if": "{{comment?.ip_address}}",
+                      "text": "· IP: {{comment?.ip_address}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "comment_right_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center flex-shrink-0"
+          },
+          "children": [
+            {
+              "id": "reply_button",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{post?.data?.board?.use_reply && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
+              "props": {
+                "className": "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "replyingTo": "{{_local.replyingTo === comment?.id ? null : comment?.id}}",
+                    "editingComment": null,
+                    "replySubmitting": false,
+                    "reply_comment_content": ""
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "comment",
+                    "className": "w-3.5 h-3.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.reply"
+                }
+              ]
+            },
+            {
+              "comment": "신고 버튼 — 미신고 상태 (모달 오픈)",
+              "id": "report_button",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && !comment?.is_already_reported}}",
+              "props": {
+                "className": "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "modal_data": {
+                          "id": "{{comment?.id}}",
+                          "type": "comment",
+                          "author": "{{comment?.author?.name}}"
+                        }
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "report_modal"
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "flag",
+                    "className": "w-3.5 h-3.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.report"
+                }
+              ]
+            },
+            {
+              "comment": "신고 버튼 — 이미 신고한 상태 (클릭 불가)",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && comment?.is_already_reported}}",
+              "props": {
+                "disabled": true,
+                "className": "inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 dark:text-gray-500 rounded cursor-not-allowed opacity-60"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "flag",
+                    "className": "w-3.5 h-3.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.reported"
+                }
+              ]
+            },
+            {
+              "id": "comment_action_menu",
+              "type": "composite",
+              "name": "ActionMenu",
+              "props": {
+                "triggerLabel": "",
+                "triggerIconName": "ellipsis-vertical",
+                "position": "right",
+                "items": "{{comment?.deleted_at ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : [{id: 'edit', label: '$t:sirsoft-board.admin.posts.detail.edit', iconName: 'pencil', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}, ...((comment?.status === 'published') ? [{id: 'blind', label: '$t:sirsoft-board.admin.posts.actions.blind', iconName: 'eye-slash', variant: 'warning', disabled: comment?.abilities?.can_manage !== true}] : []), ...((comment?.status === 'blinded') ? [{id: 'restore', label: '$t:sirsoft-board.admin.posts.actions.restore', iconName: 'arrows-rotate', variant: 'success', disabled: comment?.abilities?.can_manage !== true}] : []), {id: 'delete', label: '$t:common.delete', iconName: 'trash', variant: 'danger', disabled: !((comment?.is_author && comment?.abilities?.can_write_comments) || comment?.abilities?.can_manage)}]}}"
+              },
+              "actions": [
+                {
+                  "event": "onItemClick",
+                  "type": "click",
+                  "handler": "switch",
+                  "value": "{{$args[0]}}",
+                  "cases": {
+                    "edit": {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "editingComment": "{{comment?.id}}",
+                        "editingCommentPostId": "{{comment?.post_id}}",
+                        "edit_comment_content": "{{comment?.content}}",
+                        "replyingTo": null,
+                        "editSubmitting": false
+                      }
+                    },
+                    "blind": {
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "blind_modal_data": {
+                              "id": "{{comment?.id}}",
+                              "slug": "{{route.slug}}",
+                              "type": "comment"
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "blind_modal"
+                        }
+                      ]
+                    },
+                    "restore": {
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "restore_modal_data": {
+                              "id": "{{comment?.id}}",
+                              "slug": "{{route.slug}}",
+                              "type": "comment"
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "restore_modal"
+                        }
+                      ]
+                    },
+                    "delete": {
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "modal_data": {
+                              "id": "{{comment?.id}}",
+                              "type": "comment"
+                            }
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "delete_modal"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comment_content_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.editingComment !== comment.id}}",
+      "children": [
+        {
+          "id": "deleted_comment_content",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{comment?.deleted_at}}",
+          "props": {
+            "className": "mt-1.5 px-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "trash",
+                        "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.posts.detail.deleted_comment_notice"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{comment?.abilities?.can_manage !== true}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "showDeletedCommentId": "{{_local.showDeletedCommentId === comment?.id ? null : comment?.id}}"
+                      }
+                    }
+                  ],
+                  "text": "{{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showDeletedCommentId === comment?.id}}",
+              "props": {
+                "className": "mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed"
+              },
+              "text": "{{comment.content}}"
+            }
+          ]
+        },
+        {
+          "id": "blinded_comment_content",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{comment?.status === 'blinded' && !comment?.deleted_at}}",
+          "props": {
+            "className": "mt-1.5 px-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center flex-wrap gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "eye-slash",
+                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.posts.detail.blinded_comment_notice"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{comment?.abilities?.can_manage && (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}",
+                      "props": {
+                        "className": "text-amber-600 dark:text-amber-400"
+                      },
+                      "text": "($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{comment?.abilities?.can_manage !== true}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "showBlindedCommentId": "{{_local.showBlindedCommentId === comment?.id ? null : comment?.id}}"
+                      }
+                    }
+                  ],
+                  "text": "{{_local.showBlindedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showBlindedCommentId === comment?.id}}",
+              "props": {
+                "className": "mt-2 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed"
+              },
+              "text": "{{comment.content}}"
+            }
+          ]
+        },
+        {
+          "id": "normal_comment_content",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{comment?.status !== 'blinded' && !comment?.deleted_at}}",
+          "props": {
+            "className": "mt-1.5 px-4 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed"
+          },
+          "text": "{{comment.content}}"
+        }
+      ]
+    },
+    {
+      "id": "comment_edit_form",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-3 pl-10"
+      },
+      "if": "{{_local.editingComment === comment.id}}",
+      "children": [
+        {
+          "type": "composite",
+          "name": "Textarea",
+          "props": {
+            "value": "{{_local.edit_comment_content ?? comment.content}}",
+            "rows": 3,
+            "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-2"
+          },
+          "actions": [
+            {
+              "type": "input",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "edit_comment_content": "{{$event.target.value}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "editingComment": null,
+                    "edit_comment_content": ""
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.cancel"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_local.editSubmitting === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "if": "{{_local.editSubmitting !== true}}",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "editSubmitting": true
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments/{{comment?.id}}",
+                      "params": {
+                        "method": "PUT",
+                        "body": {
+                          "content": "{{_local.edit_comment_content}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "post"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "editingComment": null,
+                            "edit_comment_content": "",
+                            "editSubmitting": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:sirsoft-board.admin.posts.detail.comment_edit_success"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "editSubmitting": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "spinner",
+                        "className": "w-4 h-4 animate-spin"
+                      },
+                      "if": "{{_local.editSubmitting}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.posts.detail.edit"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "replies_toggle_button",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{comment.depth === 0 && comment.replies_count > 0}}",
+      "props": {
+        "className": "mt-2 px-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "collapsedReplies": "{{Object.assign({}, _local.collapsedReplies || {}, {[comment.id]: !(_local.collapsedReplies?.[comment.id] ?? true)})}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? 'chevron-down' : 'chevron-up'}}",
+                "className": "w-3.5 h-3.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{(_local.collapsedReplies?.[comment.id] ?? true) ? '$t:sirsoft-board.admin.posts.detail.show_replies|count=' + comment.replies_count : '$t:sirsoft-board.admin.posts.detail.hide_replies'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

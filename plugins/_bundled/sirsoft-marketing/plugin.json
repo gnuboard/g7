@@ -1,0 +1,23 @@
+{
+    "identifier": "sirsoft-marketing",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "마케팅 동의",
+        "en": "Marketing Consent"
+    },
+    "version": "1.0.0-beta.1",
+    "description": {
+        "ko": "이메일 구독, 마케팅 동의, 제3자 제공 동의 등을 관리하는 플러그인",
+        "en": "Plugin for managing email subscriptions, marketing consent, and third-party data sharing consent"
+    },
+    "license": "MIT",
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {
+            "sirsoft-page": ">=0.1.0"
+        },
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-marketing",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-marketing/blob/main/CHANGELOG.md"
+}

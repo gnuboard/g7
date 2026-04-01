@@ -1,0 +1,51 @@
+{
+  "create": "생성",
+  "edit": "편집",
+  "delete": "삭제",
+  "copy": "복사",
+  "cancel": "취소",
+  "confirm": "확인",
+  "save": "저장",
+  "saving": "저장중",
+  "close": "닫기",
+  "refresh": "새로고침",
+  "created_at": "생성일",
+  "updated_at": "수정일",
+  "active": "활성",
+  "inactive": "비활성",
+  "list": "목록",
+  "use": "사용",
+  "not_use": "미사용",
+  "korean": "한국어",
+  "english": "영어",
+  "all": "전체",
+  "min": "최소",
+  "max": "최대",
+  "processing": "처리 중...",
+  "deleting": "삭제 중...",
+  "validation_error": "입력 내용을 확인해 주세요",
+  "locale": {
+    "ko": "한국어",
+    "en": "영어"
+  },
+  "date": {
+    "today": "오늘",
+    "week": "1주일",
+    "3months": "3개월",
+    "6months": "6개월",
+    "1year": "1년"
+  },
+  "error": {
+    "general": "오류가 발생했습니다."
+  },
+  "currency": {
+    "won": "원"
+  },
+  "column_selector": "컬럼 선택",
+  "column_selector_title": "표시할 컬럼 선택",
+  "column_selector_description": "표시하거나 숨길 컬럼을 선택하세요",
+  "loading": "로딩중...",
+  "select_placeholder": "선택하세요",
+  "selected_count": "{{count}}개 선택됨",
+  "read_only_notice": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요."
+}

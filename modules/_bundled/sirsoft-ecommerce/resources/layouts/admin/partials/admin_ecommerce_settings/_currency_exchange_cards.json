@@ -1,0 +1,886 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환율 설정 - Mobile 카드 뷰"
+  },
+  "id": "exchange_cards_container",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-4"
+  },
+  "children": [
+    {
+      "id": "currency_card",
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => ({...c, _idx: i})).sort((a, b) => { const defaultCurrency = _local.form?.language_currency?.default_currency ?? 'KRW'; if (a.code === defaultCurrency) return -1; if (b.code === defaultCurrency) return 1; return 0; })",
+        "item_var": "currency",
+        "index_var": "currencyIndex"
+      },
+      "props": {
+        "className": "excel-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.editingCurrencyIdx !== currency._idx}}",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{'fi fi-' + (_defines?.currencyToFlag?.[currency.code] ?? 'xx') + ' fis rounded text-xl'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card-title"
+                      },
+                      "text": "{{currency.code}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-tertiary"
+                      },
+                      "text": "{{(typeof currency.name === 'object' ? $localized(currency.name) : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW') ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.editingCurrencyIdx === currency._idx}}",
+              "props": {
+                "className": "flex flex-col gap-2 flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "pencil",
+                        "className": "w-5 h-5 text-blue-500 dark:text-blue-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-blue-700 dark:text-blue-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.edit_currency.title"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "editingCurrency.code",
+                    "value": "{{_local.editingCurrency?.code ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder",
+                    "className": "{{_local.editingCurrency?.hasError ? 'input uppercase border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500' : 'input uppercase'}}",
+                    "maxLength": "3",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "editingCurrency.hasError": false
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "name": "editingCurrency.name",
+                    "value": "{{_local.editingCurrency?.name ?? {}}}",
+                    "layout": "inline",
+                    "inputType": "text",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder",
+                    "availableLocales": [
+                      {
+                        "code": "ko",
+                        "name": "한국어",
+                        "nativeName": "한국어"
+                      },
+                      {
+                        "code": "en",
+                        "name": "English",
+                        "nativeName": "English"
+                      }
+                    ],
+                    "defaultLocale": "ko",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.editingCurrencyIdx !== currency._idx}}",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "editingCurrencyIdx": "{{currency._idx}}",
+                        "editingCurrency": {
+                          "code": "{{currency.code}}",
+                          "name": "{{currency.name}}",
+                          "originalCode": "{{currency.code}}"
+                        }
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "pencil",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "{{currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW') ? 'btn-icon text-gray-300 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency ?? 'KRW')}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.language_currency.currencies": "{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).filter((c, i) => i !== currency._idx)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "trash",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.editingCurrencyIdx === currency._idx}}",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "toast",
+                          "if": "{{_local.editingCurrency?.code?.trim() && (_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode) && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim())}}",
+                          "params": {
+                            "type": "error",
+                            "message": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.duplicate_currency_error"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "if": "{{_local.editingCurrency?.code?.trim() && (_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode) && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim())}}",
+                          "params": {
+                            "target": "local",
+                            "editingCurrency.hasError": true
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "if": "{{_local.editingCurrency?.code?.trim() && !(_local.editingCurrency?.code?.toUpperCase().trim() !== _local.editingCurrency?.originalCode && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.editingCurrency?.code || '').toUpperCase().trim()))}}",
+                          "params": {
+                            "target": "local",
+                            "form.language_currency.currencies": "{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map((c, i) => i === _local.editingCurrencyIdx ? { ...c, code: (_local.editingCurrency?.code || '').toUpperCase().trim(), name: _local.form?.editingCurrency?.name ?? _local.editingCurrency?.name ?? c.name } : c)}}",
+                            "editingCurrencyIdx": null,
+                            "editingCurrency": null,
+                            "form.editingCurrency": null,
+                            "hasChanges": true
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "check",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "editingCurrencyIdx": null,
+                        "editingCurrency": null
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "xmark",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-body"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{currency.code !== (_local.form?.language_currency?.default_currency ?? 'KRW')}}",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label-subtle whitespace-nowrap"
+                      },
+                      "text": "{{(_local.form?.language_currency?.default_currency ?? 'KRW') + ' 1,000 ='}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}",
+                        "value": "{{currency.exchange_rate}}",
+                        "className": "input flex-1 text-center",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label-subtle"
+                      },
+                      "text": "{{currency.code}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}",
+                    "value": "{{currency.rounding_unit}}",
+                    "options": "{{currency.code === 'KRW' || currency.code === 'JPY' ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]}}",
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}",
+                    "value": "{{currency.rounding_method}}",
+                    "options": [
+                      {
+                        "value": "floor",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor"
+                      },
+                      {
+                        "value": "round",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round"
+                      },
+                      {
+                        "value": "ceil",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.ceil"
+                      }
+                    ],
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places"
+                },
+                {
+                  "type": "composite",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "{{'language_currency.currencies.' + currency._idx + '.decimal_places'}}",
+                    "value": "{{currency.decimal_places ?? 0}}",
+                    "min": 0,
+                    "max": 8,
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "new_currency_card",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.isAddingCurrency === true}}",
+      "props": {
+        "className": "excel-card border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus-circle",
+                    "className": "w-6 h-6 text-blue-500 dark:text-blue-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "font-medium text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.title"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "toast",
+                          "if": "{{_local.form?.newCurrency?.code?.trim() && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())}}",
+                          "params": {
+                            "type": "error",
+                            "message": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.duplicate_currency_error"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "if": "{{_local.form?.newCurrency?.code?.trim() && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())}}",
+                          "params": {
+                            "target": "local",
+                            "form.newCurrency.hasError": true
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "if": "{{!(_local.form?.newCurrency?.code?.trim() && (Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).some(c => (c.code || '').toUpperCase() === (_local.form?.newCurrency?.code || '').toUpperCase().trim())) && _local.form?.newCurrency?.code?.trim()}}",
+                          "params": {
+                            "target": "local",
+                            "form.language_currency.currencies": "{{[...(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []), { code: (_local.form?.newCurrency?.code || '').toUpperCase().trim(), name: _local.form?.newCurrency?.name ?? {}, exchange_rate: _local.form?.newCurrency?.exchange_rate ?? 1, rounding_unit: _local.form?.newCurrency?.rounding_unit ?? '0.01', rounding_method: _local.form?.newCurrency?.rounding_method ?? 'round', is_default: false }]}}",
+                            "form.newCurrency": null,
+                            "isAddingCurrency": false,
+                            "hasChanges": true
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "check",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isAddingCurrency": false,
+                        "form.newCurrency": null
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "xmark",
+                        "className": "w-5 h-5"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-body"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_code"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "newCurrency.code",
+                    "value": "{{_local.form?.newCurrency?.code ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder",
+                    "className": "{{_local.form?.newCurrency?.hasError ? 'input w-full uppercase border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500' : 'input w-full uppercase'}}",
+                    "maxLength": "3",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.newCurrency.hasError": false
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_name"
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "name": "newCurrency.name",
+                    "value": "{{_local.form?.newCurrency?.name ?? {}}}",
+                    "layout": "inline",
+                    "inputType": "text",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder",
+                    "availableLocales": [
+                      {
+                        "code": "ko",
+                        "name": "한국어",
+                        "nativeName": "한국어"
+                      },
+                      {
+                        "code": "en",
+                        "name": "English",
+                        "nativeName": "English"
+                      }
+                    ],
+                    "defaultLocale": "ko",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label-subtle whitespace-nowrap"
+                      },
+                      "text": "{{(_local.form?.language_currency?.default_currency ?? 'KRW') + ' 1,000 ='}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "newCurrency.exchange_rate",
+                        "value": "{{_local.form?.newCurrency?.exchange_rate ?? 1}}",
+                        "className": "input flex-1 text-center",
+                        "placeholder": "1.00",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label-subtle"
+                      },
+                      "text": "{{_local.form?.newCurrency?.code || '???'}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "newCurrency.rounding_unit",
+                    "value": "{{_local.form?.newCurrency?.rounding_unit ?? '0.01'}}",
+                    "options": [
+                      {
+                        "value": "0.01",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01"
+                      },
+                      {
+                        "value": "0.1",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1"
+                      },
+                      {
+                        "value": "1",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1"
+                      }
+                    ],
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "newCurrency.rounding_method",
+                    "value": "{{_local.form?.newCurrency?.rounding_method ?? 'round'}}",
+                    "options": [
+                      {
+                        "value": "floor",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor"
+                      },
+                      {
+                        "value": "round",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round"
+                      },
+                      {
+                        "value": "ceil",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.ceil"
+                      }
+                    ],
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places"
+                },
+                {
+                  "type": "composite",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "newCurrency.decimal_places",
+                    "value": "{{_local.form?.newCurrency?.decimal_places ?? 2}}",
+                    "min": 0,
+                    "max": 8,
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

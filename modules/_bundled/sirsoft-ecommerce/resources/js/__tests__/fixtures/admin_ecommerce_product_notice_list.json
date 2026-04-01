@@ -1,0 +1,179 @@
+{
+  "version": "1.0",
+  "layout_name": "admin_ecommerce_product_notice_list",
+  "meta": {
+    "title": "Product Notice Template List Panel Test Fixture",
+    "description": "상품정보제공고시 목록 패널 테스트용 (무한스크롤 포함)"
+  },
+  "initGlobal": {
+    "selectedTemplateId": null,
+    "selectedTemplate": null,
+    "panelMode": null,
+    "infiniteScroll": {
+      "currentPage": 1,
+      "hasMore": true,
+      "isLoadingMore": false
+    }
+  },
+  "data_sources": [
+    {
+      "id": "templates",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "params": {
+        "per_page": 20,
+        "page": "{{_global.infiniteScroll?.currentPage ?? 1}}"
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "id": "template_list_panel",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "col-span-1-lg bg-white rounded-lg border flex flex-col"
+        },
+        "children": [
+          {
+            "id": "template_list_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "px-4 py-3 border-b flex items-center justify-between"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H3",
+                "props": {
+                  "className": "text-sm font-medium"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "px-2 py-0.5 text-xs rounded-full"
+                },
+                "text": "{{templates?.data?.length ?? 0}}"
+              }
+            ]
+          },
+          {
+            "id": "template_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(templates?.data?.length ?? 0) > 0}}",
+            "props": {
+              "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
+            },
+            "children": [
+              {
+                "id": "template_list_items",
+                "type": "basic",
+                "name": "Div",
+                "iteration": {
+                  "source": "{{templates?.data ?? []}}",
+                  "item_var": "template"
+                },
+                "children": [
+                  {
+                    "id": "template_item_{{template.id}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "{{_global.selectedTemplateId === template.id ? 'py-1.5 px-3 mb-0.5 rounded-lg border cursor-pointer bg-blue-50' : 'py-1.5 px-3 mb-0.5 rounded-lg border cursor-pointer bg-white'}}"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "selectedTemplateId": "{{template.id}}",
+                          "selectedTemplate": "{{template}}",
+                          "panelMode": "view"
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "flex items-center justify-between"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                              "className": "text-sm font-medium"
+                            },
+                            "text": "{{$localized(template.name)}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                              "className": "px-2 py-0.5 text-xs rounded-full"
+                            },
+                            "text": "{{template.fields_count ?? 0}}"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "loading_indicator",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{_global.infiniteScroll.isLoadingMore}}",
+                "props": {
+                  "className": "flex items-center justify-center py-3"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-sm text-gray-500"
+                    },
+                    "text": "$t:sirsoft-ecommerce.common.loading"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "empty_template_state",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(templates?.data?.length ?? 0) === 0}}",
+            "props": {
+              "className": "flex-1 flex items-center justify-center gap-3 px-4 py-8"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "text-sm text-gray-500"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

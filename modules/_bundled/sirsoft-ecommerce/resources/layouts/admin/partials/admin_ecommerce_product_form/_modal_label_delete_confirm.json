@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Label Delete Confirmation Modal"
+  },
+  "id": "modal_label_delete_confirm",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.labels.delete_modal.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "id": "delete_confirm_content",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "trash",
+                    "className": "w-5 h-5 text-red-600 dark:text-red-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-gray-900 dark:text-white font-medium"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "px-2 py-0.5 rounded text-xs font-medium mr-1",
+                        "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280'}}"
+                      },
+                      "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.name) ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.product.labels.delete_modal.message"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.labels.delete_modal.description"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "delete_modal_footer",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline",
+                "disabled": "{{_global.isDeletingLabel}}"
+              },
+              "text": "$t:sirsoft-ecommerce.common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-danger",
+                "disabled": "{{_global.isDeletingLabel}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.deleteLabel"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.isDeletingLabel}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "w-4 h-4 mr-2 animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_global.isDeletingLabel ? '$t:sirsoft-ecommerce.admin.product.labels.delete_modal.deleting' : '$t:sirsoft-ecommerce.admin.product.labels.remove'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,725 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Board Form - Permissions Tab Content"
+  },
+  "id": "tab_content_permissions",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "id": "tab_content_permissions"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_permissions_card",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "background": "white",
+        "border": true,
+        "shadow": "md",
+        "rounded": true,
+        "padding": "xl",
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "id": "section_permissions_header",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.form.tabs.permissions"
+        },
+        {
+          "id": "permissions_section_managers",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-8"
+          },
+          "children": [
+            {
+              "id": "permissions_managers_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.permissions.managers_title"
+                }
+              ]
+            },
+            {
+              "id": "permissions_managers_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+              },
+              "text": "$t:sirsoft-board.admin.form.permissions.managers_description"
+            },
+            {
+              "id": "permissions_managers_taginput",
+              "type": "composite",
+              "name": "TagInput",
+              "props": {
+                "value": "{{_local.form?.board_manager_ids ?? []}}",
+                "options": "{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}",
+                "placeholder": "$t:sirsoft-board.admin.form.permissions.search_placeholder",
+                "noOptionsMessage": "$t:sirsoft-board.admin.form.permissions.no_search_results",
+                "className": "w-full",
+                "defaultVariant": "blue",
+                "isSearchable": true,
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "event": "onInputChange",
+                  "handler": "apiCall",
+                  "debounce": 300,
+                  "auth_required": true,
+                  "target": "/api/admin/users",
+                  "params": {
+                    "method": "GET",
+                    "body": {
+                      "filters[0][field]": "all",
+                      "filters[0][value]": "{{$event.target.value}}",
+                      "filters[0][operator]": "like",
+                      "per_page": 20
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "managerSearchResults": "{{result.data?.data ?? []}}"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "managerSearchResults": []
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "hasChanges": true,
+                    "managerSearchResults": [],
+                    "form": {
+                      "board_manager_ids": "{{$event.target.value ?? []}}",
+                      "board_managers": "{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{ !!_local.errors?.board_manager_ids }}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+              },
+              "text": "{{ _local.errors?.board_manager_ids?.[0] }}"
+            }
+          ]
+        },
+        {
+          "id": "permissions_section_steps",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-8"
+          },
+          "children": [
+            {
+              "id": "permissions_steps_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.permissions.steps_title"
+                }
+              ]
+            },
+            {
+              "id": "permissions_steps_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+              },
+              "text": "$t:sirsoft-board.admin.form.permissions.steps_description"
+            },
+            {
+              "id": "permissions_steps_taginput",
+              "type": "composite",
+              "name": "TagInput",
+              "props": {
+                "value": "{{_local.form?.board_step_ids ?? []}}",
+                "options": "{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}",
+                "placeholder": "$t:sirsoft-board.admin.form.permissions.search_placeholder",
+                "noOptionsMessage": "$t:sirsoft-board.admin.form.permissions.no_search_results",
+                "className": "w-full",
+                "defaultVariant": "green",
+                "isSearchable": true,
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "event": "onInputChange",
+                  "handler": "apiCall",
+                  "debounce": 300,
+                  "auth_required": true,
+                  "target": "/api/admin/users",
+                  "params": {
+                    "method": "GET",
+                    "body": {
+                      "filters[0][field]": "all",
+                      "filters[0][value]": "{{$event.target.value}}",
+                      "filters[0][operator]": "like",
+                      "per_page": 20
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "stepSearchResults": "{{result.data?.data ?? []}}"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "stepSearchResults": []
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "hasChanges": true,
+                    "stepSearchResults": [],
+                    "form": {
+                      "board_step_ids": "{{$event.target.value ?? []}}",
+                      "board_steps": "{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter(u => ($event.target.value ?? []).includes(u.uuid)).filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i) }}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{ !!_local.errors?.board_step_ids }}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+              },
+              "text": "{{ _local.errors?.board_step_ids?.[0] }}"
+            }
+          ]
+        },
+        {
+          "id": "permissions_role_access_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "pt-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mb-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.permissions.settings_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.permissions.settings_description"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{ !!route?.id }}",
+                  "props": {
+                    "className": "text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "info-circle",
+                        "size": "sm",
+                        "className": "text-blue-500 dark:text-blue-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.form.permissions.auto_role_notice"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "permissions_create_mode_notice",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{ !route?.id }}",
+              "props": {
+                "className": "mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "info-circle",
+                    "size": "lg",
+                    "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice"
+                }
+              ]
+            },
+            {
+              "id": "permissions_error_alert",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{ !!route?.id && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
+              "props": {
+                "className": "mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "exclamation-circle",
+                        "size": "lg",
+                        "className": "text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.permissions.error_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm text-red-700 dark:text-red-300 mt-1"
+                          },
+                          "text": "{{ _local.errors?.permissions?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_description' }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "permissions_section_admin",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{ !!route?.id }}",
+              "props": {
+                "className": "mb-4"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Accordion",
+                  "props": {
+                    "defaultOpen": true,
+                    "className": "border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "slot": "trigger",
+                        "className": "flex items-center gap-2 w-full px-2 py-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "shield",
+                            "size": "lg",
+                            "className": "text-purple-500 dark:text-purple-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H4",
+                          "props": {
+                            "className": "font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "chevron-down",
+                            "size": "sm",
+                            "className": "text-gray-400 dark:text-gray-500 ml-auto"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "slot": "content",
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.form?.permissions !== undefined}}",
+                          "props": {
+                            "className": "space-y-2 grid grid-cols-1 md:grid-cols-2 md:gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "iteration": {
+                                "source": "Object.entries(_local.form?.permissions ?? {}).filter(([key]) => key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))",
+                                "item_var": "perm"
+                              },
+                              "children": [
+                                {
+                                  "id": "admin_perm_row",
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "key": "{{perm?._key}}",
+                                  "props": {
+                                    "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "mb-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                          },
+                                          "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "P",
+                                          "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                          },
+                                          "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "composite",
+                                      "name": "TagInput",
+                                      "props": {
+                                        "name": "permissions.{{perm?._key}}.roles",
+                                        "value": "{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}",
+                                        "options": "{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}",
+                                        "placeholder": "$t:sirsoft-board.admin.form.permissions.select_roles",
+                                        "className": "w-full",
+                                        "defaultVariant": "purple",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                      },
+                                      "actions": [
+                                        {
+                                          "type": "change",
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "hasChanges": "{{ route?.id ? true : _local.hasChanges }}",
+                                            "form": {
+                                              "permissions": "{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
+                                      "props": {
+                                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                      },
+                                      "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "permissions_section_user",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{ !!route?.id }}",
+              "props": {
+                "className": "mt-4"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Accordion",
+                  "props": {
+                    "defaultOpen": true,
+                    "className": "border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "slot": "trigger",
+                        "className": "flex items-center gap-2 w-full px-2 py-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "users",
+                            "size": "lg",
+                            "className": "text-blue-500 dark:text-blue-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H4",
+                          "props": {
+                            "className": "font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "chevron-down",
+                            "size": "sm",
+                            "className": "text-gray-400 dark:text-gray-500 ml-auto"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "slot": "content",
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.form?.permissions !== undefined}}",
+                          "props": {
+                            "className": "space-y-2 grid grid-cols-1 md:grid-cols-2 md:gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "iteration": {
+                                "source": "Object.entries(_local.form?.permissions ?? {}).filter(([key]) => !key.startsWith('admin')).map(([key, val]) => ({ ...val, _key: key }))",
+                                "item_var": "perm"
+                              },
+                              "children": [
+                                {
+                                  "id": "user_perm_row",
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "key": "{{perm?._key}}",
+                                  "props": {
+                                    "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "mb-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                          },
+                                          "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "P",
+                                          "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                          },
+                                          "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "composite",
+                                      "name": "TagInput",
+                                      "props": {
+                                        "name": "permissions.{{perm?._key}}.roles",
+                                        "value": "{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}",
+                                        "options": "{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}",
+                                        "placeholder": "$t:sirsoft-board.admin.form.permissions.select_roles",
+                                        "className": "w-full",
+                                        "defaultVariant": "blue",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                      },
+                                      "actions": [
+                                        {
+                                          "type": "change",
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "hasChanges": "{{ route?.id ? true : _local.hasChanges }}",
+                                            "form": {
+                                              "permissions": "{{ Object.assign({}, _local.form?.permissions ?? {}, { [perm?._key]: { ..._local.form?.permissions?.[perm?._key], roles: $event.target.value } }) }}"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
+                                      "props": {
+                                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                      },
+                                      "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "search_address": "Search Address",
+  "postcode": {
+    "search": "Search Address",
+    "search_button": "Find Address",
+    "placeholder": "Search for an address",
+    "zonecode": "Postal Code",
+    "address": "Address",
+    "road_address": "Road Address",
+    "jibun_address": "Jibun Address",
+    "detail_address": "Detail Address",
+    "detail_placeholder": "Enter detail address",
+    "building_name": "Building Name",
+    "selected": "Address has been selected.",
+    "error": {
+      "load_failed": "Failed to load postcode service.",
+      "search_failed": "Address search failed."
+    }
+  },
+  "settings": {
+    "title": "Daum Postcode Settings",
+    "description": "Configure the display mode and style of Daum Postcode service.",
+    "notice": "Daum Postcode service is free to use without API key.",
+    "guide": {
+      "title": "Usage Guide",
+      "step1": "Select display mode. Popup opens in a new window, Layer displays as an overlay on the current page.",
+      "step2": "If popup mode is selected, set the popup window size.",
+      "step3": "Customize the postcode search window style by setting the theme color."
+    },
+    "fields": {
+      "display_mode": {
+        "label": "Display Mode",
+        "hint": "Select how to display the address search window.",
+        "popup": "Popup",
+        "layer": "Layer"
+      },
+      "popup_width": {
+        "label": "Popup Width (px)",
+        "hint": "Window width used in popup mode."
+      },
+      "popup_height": {
+        "label": "Popup Height (px)",
+        "hint": "Window height used in popup mode."
+      },
+      "theme_color": {
+        "label": "Theme Color",
+        "hint": "Theme color for the postcode search window. (e.g., #1D4ED8)"
+      }
+    }
+  }
+}

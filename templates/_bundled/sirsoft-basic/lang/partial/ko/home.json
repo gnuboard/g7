@@ -1,0 +1,38 @@
+{
+  "welcome": {
+    "title": "환영합니다!",
+    "description": "그누보드7 커뮤니티에 오신 것을 환영합니다.",
+    "login_prompt": "로그인하고 커뮤니티에 참여하세요.",
+    "greeting": "안녕하세요, {{name}}님!"
+  },
+  "welcome_suffix": "에 오신 것을 환영합니다",
+  "welcome_description": "함께 성장하는 커뮤니티에서 다양한 이야기를 나눠보세요.",
+  "get_started": "시작하기",
+  "go_to_mypage": "마이페이지",
+  "learn_more": "더 알아보기",
+  "stats": {
+    "total_members": "전체 회원",
+    "total_posts": "전체 게시글",
+    "today_posts": "오늘 게시글",
+    "online_users": "접속 중",
+    "members": "회원",
+    "posts": "게시글",
+    "comments": "댓글",
+    "boards": "게시판"
+  },
+  "recent_posts": "최근 게시글",
+  "no_posts": "아직 게시글이 없습니다.",
+  "popular_boards": "인기 게시판",
+  "no_boards": "아직 인기 게시판이 없습니다.",
+  "shop": "쇼핑몰",
+  "shop_description": "신선한 상품 구경하기",
+  "community_guide": "커뮤니티 가이드",
+  "guide_rule_1": "서로 존중하는 대화",
+  "guide_rule_2": "욕설, 비방 금지",
+  "guide_rule_3": "광고/스팸 금지",
+  "shop_promo": {
+    "title": "쇼핑몰",
+    "description": "다양한 상품을 만나보세요",
+    "go_to_shop": "쇼핑하러 가기"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "is_partial": true
+  },
+  "comment": "로그인 상태일 때 홈으로 리다이렉트",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_global?.currentUser?.uuid && !_local.isLoginAction}}",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "lifecycle": {
+        "onMount": [
+          {
+            "handler": "toast",
+            "params": {
+              "message": "$t:auth.already_logged_in",
+              "type": "info"
+            }
+          },
+          {
+            "handler": "navigate",
+            "params": {
+              "path": "/"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

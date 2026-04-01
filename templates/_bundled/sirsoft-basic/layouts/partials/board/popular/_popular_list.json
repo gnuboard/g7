@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "인기 게시글 목록"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "comment": "=== 데이터가 없을 경우 안내 메시지 ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(popularPosts.data ?? []).length === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-16 text-center"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "inbox",
+            "size": "4x", "className": "text-gray-300 dark:text-gray-600 mb-4"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-600 dark:text-gray-400 text-lg font-medium mb-2"
+          },
+          "text": "$t:board.popular.no_posts"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-500"
+          },
+          "text": "$t:board.popular.no_posts_description"
+        }
+      ]
+    },
+    {
+      "comment": "=== 인기 게시글 목록 ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(popularPosts.data ?? []).length > 0}}",
+      "iteration": { "source": "{{popularPosts.data ?? []}}", "item_var": "post", "index_var": "index" },
+      "children": [
+        { "partial": "partials/board/popular/_popular_item.json" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+    "id": "basic_info_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-5"
+            },
+            "children": [
+                {
+                    "comment": "적용대상 RadioGroup",
+                    "id": "field_target_type",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.target_type",
+                        "required": true,
+                        "error": "{{_local.errors?.target_type?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "target_type",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_product_amount",
+                                        "value": "product_amount"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_order_amount",
+                                        "value": "order_amount"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_type_shipping_fee",
+                                        "value": "shipping_fee"
+                                    }
+                                ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "발급방법 RadioGroup",
+                    "id": "field_issue_method",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_method",
+                        "required": true,
+                        "error": "{{_local.errors?.issue_method?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "issue_method",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_direct",
+                                        "value": "direct"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_download",
+                                        "value": "download"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_method_auto",
+                                        "value": "auto"
+                                    }
+                                ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "form.issue_condition": "{{$event.target.value === 'auto' ? 'signup' : 'manual'}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "발급조건 - 자동발급 선택 시: RadioGroup",
+                    "id": "field_issue_condition_auto",
+                    "type": "composite",
+                    "name": "FormField",
+                    "if": "{{_local.form?.issue_method === 'auto'}}",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_condition",
+                        "required": true,
+                        "error": "{{_local.errors?.issue_condition?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "issue_condition",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_signup",
+                                        "value": "signup"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_first_purchase",
+                                        "value": "first_purchase"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_birthday",
+                                        "value": "birthday"
+                                    }
+                                ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "발급조건 - 직접발급/다운로드 시: 수동발급 RadioGroup",
+                    "id": "field_issue_condition_manual",
+                    "type": "composite",
+                    "name": "FormField",
+                    "if": "{{_local.form?.issue_method !== 'auto'}}",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_condition",
+                        "error": "{{_local.errors?.issue_condition?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "issue_condition",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_condition_manual",
+                                        "value": "manual"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "쿠폰명",
+                    "id": "field_coupon_name",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_name",
+                        "required": true,
+                        "error": "{{_local.errors?.name?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "name",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholder.coupon_name",
+                                "layout": "tabs"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "쿠폰설명",
+                    "id": "field_coupon_description",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_description",
+                        "error": "{{_local.errors?.description?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "description",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholder.coupon_description",
+                                "inputType": "textarea",
+                                "rows": 3,
+                                "layout": "tabs"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

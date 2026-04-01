@@ -1,0 +1,429 @@
+{
+  "title": "Shop Settings",
+  "description": "Configure basic shop settings.",
+  "tabs": {
+    "basic_info": "Basic Info",
+    "language_currency": "Language/Currency",
+    "seo": "SEO Settings",
+    "order_settings": "Order Settings",
+    "claim": "Claims",
+    "shipping": "Shipping",
+    "review_settings": "Review Settings",
+    "mail_templates": "Mail Templates"
+  },
+  "save_success": "Settings saved successfully.",
+  "save_error": "Failed to save settings.",
+  "validation_error": "Please check the input fields.",
+  "basic_info": {
+    "shop_info": {
+      "title": "Shop Information",
+      "description": "Configure basic shop information.",
+      "shop_name": "Shop Name",
+      "shop_name_placeholder": "Enter shop name",
+      "route_path": "Route Path",
+      "no_route": "Do not use route path. (For standalone shop operation)"
+    },
+    "business_info": {
+      "title": "Business Information",
+      "description": "Enter business registration information.",
+      "company_name": "Company Name",
+      "company_name_placeholder": "Enter company name",
+      "business_number": "Business Number",
+      "ceo_name": "CEO Name",
+      "ceo_name_placeholder": "Enter CEO name",
+      "business_type": "Business Type",
+      "business_type_placeholder": "e.g., Wholesale, Retail",
+      "business_category": "Business Category",
+      "business_category_placeholder": "e.g., E-commerce",
+      "address": "Business Address",
+      "zipcode": "Zip Code",
+      "search_address": "Search Address",
+      "base_address": "Base Address",
+      "detail_address": "Detail Address",
+      "phone": "Phone Number",
+      "fax": "Fax Number",
+      "email": "Email",
+      "email_id_placeholder": "Email ID",
+      "email_domain_placeholder": "Domain",
+      "email_domain_direct": "Enter directly",
+      "privacy_officer": "Privacy Officer",
+      "privacy_officer_placeholder": "Privacy officer name",
+      "privacy_officer_email": "Privacy Officer Email",
+      "privacy_officer_email_placeholder": "privacy@example.com",
+      "mail_order_number": "Mail Order Business Number",
+      "mail_order_number_placeholder": "e.g., 2024-Seoul-12345",
+      "telecom_number": "Telecom Business Number",
+      "telecom_number_placeholder": "Telecom business number",
+      "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins."
+    },
+    "inquiry_settings": {
+      "title": "1:1 Inquiry Board Settings",
+      "description": "Configure the product 1:1 inquiry feature.",
+      "module_not_installed": "Available after activating the Board module."
+    }
+  },
+  "language_currency": {
+    "language_settings": {
+      "title": "Language/Currency",
+      "description": "Configure default language and currency for the shop.",
+      "default_language": "Default Language",
+      "default_currency": "Default Currency",
+      "currency_change_warning": "Cannot be changed after the first product registration."
+    },
+    "exchange_settings": {
+      "title": "Exchange Rate Settings",
+      "description": "Configure exchange rates based on KRW 1,000 and rounding rules per currency.",
+      "default_label": "Default Currency",
+      "add_currency": "Add Currency",
+      "currency_code": "Currency Code",
+      "currency_name": "Currency Name",
+      "exchange_rate": "Exchange Rate",
+      "rounding_unit": "Rounding Unit",
+      "rounding_method": "Rounding Method",
+      "decimal_places": "Decimal Places",
+      "actions": "Actions",
+      "delete": "Delete",
+      "base_currency": "Base Currency",
+      "krw_base": "KRW 1,000 =",
+      "rounding_units": {
+        "1": "1 (ones place)",
+        "10": "10 (tens place)",
+        "100": "100 (hundreds place)",
+        "0_1": "0.1 (first decimal)",
+        "0_01": "0.01 (second decimal)"
+      },
+      "rounding_methods": {
+        "floor": "Floor",
+        "round": "Round",
+        "ceil": "Ceil"
+      },
+      "currencies": {
+        "KRW": "KRW (Won)",
+        "KRW_default": "KRW (Won) (Default Currency)",
+        "USD": "USD (Dollar)",
+        "JPY": "JPY (Yen)",
+        "CNY": "CNY (Yuan)",
+        "EUR": "EUR (Euro)"
+      },
+      "new_currency": {
+        "title": "Add New Currency",
+        "code_placeholder": "e.g., GBP",
+        "name_placeholder": "Currency name"
+      },
+      "edit_currency": {
+        "title": "Edit Currency"
+      },
+      "edit": "Edit",
+      "duplicate_currency_error": "This currency code is already registered."
+    }
+  },
+  "order_settings": {
+    "default_pg_provider": {
+      "title": "Default PG Provider",
+      "description": "Select the default PG provider for payment processing.",
+      "not_installed": "Install a PG plugin to select a provider.",
+      "select": "Select PG"
+    },
+    "payment_methods": {
+      "title": "Payment Methods",
+      "description": "Configure available payment methods and set priorities.",
+      "timing_order_placed": "On Order Placed",
+      "timing_payment_complete": "On Payment Complete",
+      "timing_none": "No Stock Deduction",
+      "stock_deduction_timing": "Stock Deduction Timing",
+      "min_order_amount": "Min. Order Amount",
+      "is_active": "Active",
+      "orphaned_badge": "Plugin Not Installed",
+      "remove_orphaned": "Remove",
+      "pg_provider": "PG Provider",
+      "pg_use_default": "Default PG",
+      "pg_not_required": "Not required",
+      "pg_not_installed": "No PG",
+      "pg_select_first": "Select PG first"
+    },
+    "bank_accounts": {
+      "title": "Bank Account Settings",
+      "description": "Manage bank account information for bank transfers.",
+      "manage_banks": "Manage Banks",
+      "add_account": "Add Account",
+      "bank": "Bank",
+      "account_number": "Account Number",
+      "account_number_placeholder": "Enter account number",
+      "account_holder": "Account Holder",
+      "account_holder_placeholder": "Enter account holder name",
+      "is_default": "Default",
+      "is_active": "Active",
+      "empty": "No accounts registered."
+    },
+    "bank_management": {
+      "modal_title": "Bank Management",
+      "code": "Bank Code",
+      "code_placeholder": "e.g., 004",
+      "name": "Bank Name",
+      "name_placeholder": "Enter bank name",
+      "name_ko": "Korean Name",
+      "name_ko_placeholder": "e.g., Kookmin Bank",
+      "name_en": "English Name",
+      "name_en_placeholder": "e.g., Kookmin Bank",
+      "add_bank": "Add Bank",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "empty": "No banks registered.",
+      "saving": "Saving...",
+      "validation_error": "Please check your input."
+    },
+    "cancellable_statuses": {
+      "title": "Cancellable Statuses",
+      "description": "Configure which order statuses allow cancellation by users and administrators.",
+      "label": "Cancellable Order Statuses",
+      "hint": "Only orders in selected statuses can be cancelled. Default statuses (Pending Order, Pending Payment, Payment Complete) are always cancellable.",
+      "placeholder": "Select cancellable statuses"
+    },
+    "confirmable_statuses": {
+      "title": "Confirmable Statuses",
+      "description": "Configure which order option statuses allow purchase confirmation by users.",
+      "label": "Confirmable Order Statuses",
+      "hint": "Only order options in selected statuses can be confirmed.",
+      "placeholder": "Select confirmable statuses"
+    },
+    "auto_cancel": {
+      "title": "Auto Cancel Orders",
+      "description": "Configure auto-cancellation and payment due dates for pending orders.",
+      "toggle_label": "Auto Cancel Orders",
+      "toggle_description": "Automatically cancel pending payment orders after the specified period.",
+      "toggle_hint": "When disabled, pending payment orders will not be auto-cancelled.",
+      "days_prefix": "Pending payment orders will be auto-cancelled",
+      "days_suffix": "days after the order date.",
+      "vbank_due_days_label": "Virtual Account Due:",
+      "vbank_due_days_suffix": "days",
+      "dbank_due_days_label": "Bank Transfer Due:",
+      "dbank_due_days_suffix": "days"
+    },
+    "cart_expiry": {
+      "title": "Cart Expiry",
+      "description": "Configure auto-deletion period for cart items.",
+      "prefix": "Cart items will be auto-deleted after",
+      "suffix": "days."
+    },
+    "stock_management": {
+      "title": "Stock Management",
+      "description": "Configure global stock management policies.",
+      "restore_on_cancel": "Restore Stock on Cancel",
+      "restore_on_cancel_description": "Automatically restore deducted stock when an order is cancelled.",
+      "restore_on_cancel_hint": "Also applies to returns and exchanges."
+    }
+  },
+  "claim": {
+    "title": "Claims Settings",
+    "refund_reasons": {
+      "section_title": "Refund Reason Management",
+      "add_button": "Add Reason",
+      "empty": "No refund reasons registered.",
+      "columns": {
+        "code": "Code",
+        "name": "Reason",
+        "fault_type": "Fault Type",
+        "is_user_selectable": "User Selectable",
+        "is_active": "Active",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Reason Code",
+        "code_placeholder": "Lowercase letters, underscores (e.g., order_mistake)",
+        "name": "Reason Name",
+        "name_ko_placeholder": "Korean",
+        "name_en_placeholder": "English",
+        "fault_type": "Fault Type",
+        "fault_types": {
+          "customer": "Customer",
+          "seller": "Seller",
+          "carrier": "Carrier"
+        },
+        "is_user_selectable": "User Selectable",
+        "cancel": "Cancel",
+        "save": "Add"
+      },
+      "confirm_delete": "Are you sure you want to delete this refund reason?",
+      "validation": {
+        "code_required": "Code is required",
+        "name_required": "Reason name is required"
+      }
+    }
+  },
+  "shipping": {
+    "title": "Shipping Settings",
+    "description": "Manage shipping related settings.",
+    "basic": {
+      "title": "Basic Shipping Settings",
+      "description": "Manage default shipping country and international shipping settings.",
+      "default_country": "Default Country",
+      "default_country_hint": "Default country added when creating a new shipping policy",
+      "international_shipping": "International Shipping",
+      "international_shipping_description": "Enable international shipping features"
+    },
+    "countries": {
+      "title": "Available Countries",
+      "description": "Configure countries available for shipping.",
+      "add": "Add Country",
+      "country_code": "Country Code",
+      "country_code_placeholder": "e.g., KR",
+      "country_name": "Country Name",
+      "country_name_ko": "Korean Name",
+      "name_ko_placeholder": "e.g., South Korea",
+      "country_name_en": "English Name",
+      "name_en_placeholder": "e.g., South Korea",
+      "is_active": "Active",
+      "actions": "Actions",
+      "delete": "Delete",
+      "edit": "Edit",
+      "empty": "No shipping countries registered.",
+      "duplicate_error": "This country code is already registered.",
+      "default_badge": "Default"
+    },
+    "carriers": {
+      "section_title": "Shipping Carriers",
+      "add_button": "Add Carrier",
+      "empty": "No shipping carriers registered.",
+      "columns": {
+        "code": "Code",
+        "name": "Carrier Name",
+        "type": "Type",
+        "tracking_url": "Tracking URL",
+        "is_active": "Active",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Carrier Code",
+        "code_placeholder": "Lowercase letters, numbers, hyphens (e.g., cj, fedex)",
+        "name": "Carrier Name",
+        "type": "Type",
+        "type_domestic": "Domestic",
+        "type_international": "International",
+        "tracking_url": "Tracking URL",
+        "tracking_url_placeholder": "https://example.com/track?no={tracking_number}",
+        "tracking_url_help": "{tracking_number} will be replaced with the tracking number.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "name_ko_placeholder": "Korean"
+      },
+      "created": "Shipping carrier has been created.",
+      "updated": "Shipping carrier has been updated.",
+      "deleted": "Shipping carrier has been deleted.",
+      "confirm_delete": "Are you sure you want to delete this carrier?",
+      "validation": {
+        "code_required": "Code is required",
+        "name_required": "Carrier name is required"
+      }
+    },
+    "remote_area": {
+      "title": "Remote Area Shipping Fee Defaults",
+      "description": "Configure default shipping fees for remote areas.",
+      "enable": "Use Remote Area Extra Fee",
+      "remote_extra_fee": "Remote Area Extra Fee",
+      "island_extra_fee": "Island/Jeju Extra Fee"
+    },
+    "modal": {
+      "disable_international": {
+        "title": "Confirm Disable International Shipping",
+        "message": "Disabling international shipping will deactivate all countries except the default country. Do you want to continue?",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+      }
+    }
+  },
+  "seo": {
+    "meta_settings": {
+      "title": "Meta Tag Settings",
+      "description": "Configure meta tags for each page. You can use variables for dynamic settings.",
+      "main_page": "Main Page",
+      "category_page": "Category",
+      "search_page": "Search Results",
+      "product_page": "Product Detail",
+      "meta_title": "Title",
+      "meta_description": "Description",
+      "available_variables": "Available Variables",
+      "main_description_placeholder": "Main page description",
+      "category_description_placeholder": "Category page description",
+      "search_description_placeholder": "Search results page description",
+      "product_description_placeholder": "Product detail page description"
+    },
+    "seo_friendly": {
+      "title": "SEO-Friendly Page Settings",
+      "description": "Provide optimized pages for search engines.",
+      "provide_pages": "Pages to provide SEO-friendly versions",
+      "site_main": "Site Main",
+      "category": "Category",
+      "search_result": "Search Results",
+      "product_detail": "Product Detail",
+      "user_agent_management": "Search Engine User-Agent Management",
+      "user_agent_description": "Manage User-Agents to provide SEO-friendly pages.",
+      "user_agent_placeholder": "Enter User-Agent (e.g., Googlebot)",
+      "cache_management": "SEO-Friendly Page Cache Management",
+      "cache_description": "Manage cache for SEO-friendly pages.",
+      "current_cache_size": "Current Cache Size",
+      "clear_cache": "Clear Cache"
+    }
+  },
+  "review_settings": {
+    "title": "Review Settings",
+    "description": "Manage product review settings.",
+    "write_deadline_days_label": "Review Period",
+    "write_deadline_days_hint": "Days after purchase confirmation to write a review",
+    "days_unit": "days",
+    "max_images_label": "Max Images",
+    "max_images_hint": "Max images per review (0 = no images allowed)",
+    "images_unit": "images",
+    "max_image_size_mb_label": "Max Image Size",
+    "max_image_size_mb_hint": "Maximum file size for uploaded images"
+  },
+  "mail_templates": {
+    "title": "Mail Template Management",
+    "description": "Manage email notification templates for orders. You can customize the subject and body for each notification type.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "default_badge": "Default",
+    "btn_edit": "Edit",
+    "btn_reset": "Reset to Default",
+    "btn_activate": "Activate",
+    "btn_deactivate": "Deactivate",
+    "toggle_success": "Mail template status has been changed.",
+    "reset_success": "Mail template has been reset to default.",
+    "save_success": "Mail template has been saved.",
+    "save_error": "Failed to save mail template.",
+    "types": {
+      "order_confirmed": "Order Confirmed",
+      "order_shipped": "Order Shipped",
+      "order_completed": "Purchase Completed",
+      "order_cancelled": "Order Cancelled",
+      "new_order_admin": "New Order (Admin)",
+      "inquiry_received": "Product Inquiry Received (Admin)",
+      "inquiry_replied": "Product Inquiry Answered"
+    },
+    "btn_search": "Search",
+    "btn_reset_filter": "Reset",
+    "search_placeholder": "Enter search keyword",
+    "search_type_all": "All",
+    "search_type_subject": "Subject",
+    "search_type_body": "Body",
+    "total_count": "Total {{count}} items",
+    "per_page_label": "Per page",
+    "empty_message": "No mail templates registered.",
+    "empty_no_results": "No search results found.",
+    "edit_modal": {
+      "title": "Edit Mail Template",
+      "type_label": "Type:",
+      "subject": "Subject",
+      "body": "Body",
+      "variables_title": "Available Variables",
+      "btn_preview": "Preview",
+      "validation_error": "Please check the input fields.",
+      "is_active_label": "Active"
+    },
+    "preview_modal": {
+      "title": "Mail Template Preview",
+      "rendered_subject": "Rendered Subject",
+      "rendered_body": "Rendered Body",
+      "btn_close": "Close"
+    }
+  }
+}

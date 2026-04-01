@@ -1,0 +1,166 @@
+{
+  "layout_name": "panel_menu_list",
+  "id": "menu_list_panel",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+  },
+  "children": [
+    {
+      "id": "menu_list_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:admin.menus.menu_list_title"
+        }
+      ]
+    },
+    {
+      "id": "sortable_menu_list",
+      "type": "composite",
+      "name": "SortableMenuList",
+      "props": {
+        "items": "{{menus?.data?.data ?? []}}",
+        "selectedId": "{{_global.selectedMenuId}}",
+        "enableDrag": "{{menus?.data?.abilities?.can_update ?? false}}",
+        "toggleDisabled": "{{menus?.data?.abilities?.can_update !== true}}",
+        "className": "py-2",
+        "itemClassName": "py-2.5 px-3 mx-4 my-2 rounded-lg border",
+        "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
+        "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+        "childrenContainerClassName": "bg-gray-50 dark:bg-gray-900/50"
+      },
+      "lifecycle": {
+        "onMount": [
+          {
+            "type": "click",
+            "handler": "initMenuFromUrl"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "event": "onSelect",
+          "type": "action",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "selectedMenuId": "{{$args[0].id}}",
+                "selectedMenu": "{{$args[0]}}",
+                "panelMode": "view"
+              }
+            },
+            {
+              "handler": "replaceUrl",
+              "params": {
+                "query": { "menu": "{{$args[0].slug}}", "mode": "view" }
+              }
+            }
+          ]
+        },
+        {
+          "event": "onOrderChange",
+          "type": "action",
+          "handler": "apiCall",
+          "auth_required": true,
+          "target": "/api/admin/menus/order",
+          "params": {
+            "method": "PUT",
+            "body": "{{$args[0]}}"
+          },
+          "onSuccess": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:admin.menus.messages.order_updated"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "admin_menu",
+                    "sync": true
+                  }
+                }
+              ]
+            }
+          ],
+          "onError": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "$t:admin.menus.messages.order_update_failed"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "menus"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "event": "onToggleStatus",
+          "type": "action",
+          "handler": "apiCall",
+          "auth_required": true,
+          "target": "/api/admin/menus/{{$args[0]}}/toggle-status",
+          "params": {
+            "method": "PATCH"
+          },
+          "onSuccess": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:admin.menus.messages.status_changed"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "menus"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "admin_menu",
+                    "sync": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

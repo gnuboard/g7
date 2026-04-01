@@ -1,0 +1,16 @@
+{
+  "default_shipping": "기본 배송",
+  "order_number": "주문번호",
+  "order_date": "주문일",
+  "total_amount": "총 금액",
+  "status": "주문 상태",
+  "statuses": {
+    "pending": "대기중",
+    "paid": "결제완료",
+    "preparing": "준비중",
+    "shipped": "배송중",
+    "delivered": "배송완료",
+    "cancelled": "취소됨",
+    "refunded": "환불됨"
+  }
+}

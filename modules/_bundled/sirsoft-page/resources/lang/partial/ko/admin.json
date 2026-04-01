@@ -1,0 +1,166 @@
+{
+  "page": {
+    "page_title": "페이지 관리",
+    "page_description": "페이지를 관리합니다.",
+    "title": "페이지 관리",
+    "description": "정적 페이지를 관리합니다.",
+    "add_page": "페이지 추가",
+    "search": "검색",
+    "search_placeholder": "제목 또는 슬러그로 검색...",
+    "search_fields": {
+      "all": "전체",
+      "title": "제목",
+      "slug": "슬러그"
+    },
+    "columns": {
+      "id": "ID",
+      "title": "제목",
+      "slug": "슬러그",
+      "published": "발행",
+      "current_version": "버전",
+      "creator": "작성자",
+      "created_at": "생성일",
+      "published_at": "발행일시",
+      "updated_at": "수정일"
+    },
+    "published_filter": {
+      "all": "전체",
+      "published": "발행",
+      "unpublished": "미발행"
+    },
+    "published_status": {
+      "published": "발행",
+      "unpublished": "미발행",
+      "publish_action": "발행",
+      "unpublish_action": "미발행 처리"
+    },
+    "total_count": "총 {{count}}개",
+    "per_page": "{{count}}개",
+    "sort": {
+      "created_at_desc": "최근 생성순",
+      "created_at_asc": "오래된 생성순",
+      "published_at_desc": "최근 발행순",
+      "published_at_asc": "오래된 발행순"
+    },
+    "selected_count": "{{count}}개 선택됨",
+    "bulk_status_change": "상태 변경:",
+    "bulk_publish": "일괄 발행",
+    "bulk_unpublish": "일괄 미발행",
+    "bulk_clear_selection": "선택 해제",
+    "actions": {
+      "view": "상세보기",
+      "edit": "수정",
+      "delete": "삭제"
+    },
+    "modals": {
+      "delete_title": "페이지 삭제",
+      "delete_confirm": "정말로 이 페이지를 삭제하시겠습니까?",
+      "delete_success": "페이지가 삭제되었습니다.",
+      "restore_title": "버전 복원",
+      "restore_confirm": "이 버전으로 복원하시겠습니까? 현재 내용이 덮어씌워집니다.",
+      "restore_notice": "복원 시 선택한 버전의 내용으로 새 버전이 생성됩니다. 기존 버전 이력은 모두 보존됩니다. 첨부파일은 복원 대상에 포함되지 않습니다.",
+      "restoring": "복원 중...",
+      "restore_success": "버전이 복원되었습니다.",
+      "bulk_publish_title": "일괄 발행",
+      "bulk_publish_confirm": "{{count}}개의 페이지를 발행 상태로 변경합니다.",
+      "bulk_publish_success": "선택한 페이지가 발행되었습니다.",
+      "bulk_unpublish_title": "일괄 미발행",
+      "bulk_unpublish_confirm": "{{count}}개의 페이지를 미발행 상태로 변경합니다.",
+      "bulk_unpublish_success": "선택한 페이지가 미발행으로 변경되었습니다."
+    },
+    "errors": {
+      "delete_failed": "페이지 삭제에 실패했습니다.",
+      "restore_failed": "버전 복원에 실패했습니다.",
+      "publish_change_failed": "발행 상태 변경에 실패했습니다."
+    },
+    "form": {
+      "page_title_create": "페이지 등록",
+      "page_title_edit": "페이지 수정",
+      "page_description_create": "새로운 페이지를 등록합니다.",
+      "page_description_edit": "페이지 정보를 수정합니다.",
+      "sections": {
+        "basic_info": "기본 정보"
+      },
+      "fields": {
+        "title": "제목",
+        "title_placeholder": "페이지 제목을 입력하세요",
+        "slug": "슬러그",
+        "slug_placeholder": "url-slug",
+        "slug_hint": "URL: /page/{{slug}}",
+        "slug_check": "중복 확인",
+        "slug_available": "사용 가능한 슬러그입니다.",
+        "slug_unavailable": "이미 사용 중인 슬러그입니다.",
+        "slug_format_hint": "영문 소문자, 숫자, 하이픈(-)만 사용 가능",
+        "slug_checking": "확인 중...",
+        "slug_check_required": "슬러그 중복 확인을 먼저 해주세요.",
+        "published": "발행 여부",
+        "content": "내용",
+        "content_mode": "편집 모드"
+      },
+      "seo": {
+        "title": "SEO 설정",
+        "seo_title": "SEO 제목",
+        "seo_title_placeholder": "검색 엔진에 표시될 제목",
+        "seo_description": "SEO 설명",
+        "seo_description_placeholder": "검색 엔진에 표시될 설명",
+        "seo_keywords": "SEO 키워드",
+        "seo_keywords_placeholder": "쉼표로 구분하여 입력"
+      },
+      "lang_tabs": {
+        "ko": "한국어",
+        "en": "English"
+      },
+      "attachments": "첨부파일",
+      "attachments_section": "첨부파일",
+      "confirm_remove_attachment_title": "첨부파일 삭제",
+      "confirm_remove_attachment_message": "파일이 즉시 삭제됩니다. 페이지 저장과 관계없이 되돌릴 수 없습니다.",
+      "create_success": "페이지가 등록되었습니다.",
+      "update_success": "페이지가 수정되었습니다.",
+      "validation_error": "입력 정보를 확인해주세요.",
+      "read_only_message": "수정 권한이 없어 읽기 전용으로 표시됩니다."
+    },
+    "attachment": {
+      "download": "다운로드"
+    },
+    "show": {
+      "title": "페이지"
+    },
+    "detail": {
+      "page_title": "페이지 상세",
+      "page_description": "페이지 상세 정보를 확인합니다.",
+      "back_to_list": "목록으로",
+      "edit": "수정",
+      "delete": "삭제",
+      "display_language": "표시 언어",
+      "display_language_hint": "선택한 언어로 제목과 내용이 표시됩니다.",
+      "view_page": "페이지 보기",
+      "publish_changed": "발행 상태가 변경되었습니다.",
+      "attachments": "첨부파일 ({{count}})",
+      "info": {
+        "published_at": "발행일시",
+        "created_at": "생성일",
+        "updated_at": "수정일",
+        "creator": "작성자"
+      },
+      "tabs": {
+        "preview": "내용 미리보기",
+        "versions": "버전 이력"
+      },
+      "versions": {
+        "version": "버전",
+        "creator": "저장자",
+        "created_at": "저장일시",
+        "changes": "변경내역",
+        "actions": "작업",
+        "view": "보기",
+        "preview_modal_title": "버전 v{{version}} 미리보기",
+        "restore": "복원",
+        "current": "현재",
+        "initial": "최초 생성",
+        "changed_fields": "변경: {{fields}}",
+        "restored_from": "v{{version}}에서 복원",
+        "restore_guide": "보기 버튼을 클릭하면 내용을 확인하고 복원할 수 있습니다. 첨부파일은 버전 관리에 포함되지 않습니다."
+      }
+    }
+  }
+}

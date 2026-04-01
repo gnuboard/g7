@@ -1,0 +1,1174 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_promotion_coupon_form",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
+    },
+    "data_sources": [
+        {
+            "id": "coupon",
+            "type": "api",
+            "endpoint": "\/api\/modules\/sirsoft-ecommerce\/admin\/promotion-coupons\/{{route.id}}",
+            "method": "GET",
+            "if": "{{!!route.id}}",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking"
+        },
+        {
+            "id": "categories",
+            "type": "api",
+            "endpoint": "\/api\/modules\/sirsoft-ecommerce\/admin\/categories\/tree",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "cache": {
+                "ttl": 300
+            }
+        },
+        {
+            "id": "products",
+            "type": "api",
+            "endpoint": "\/api\/modules\/sirsoft-ecommerce\/admin\/products",
+            "method": "GET",
+            "params": {
+                "per_page": 100
+            },
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive"
+        }
+    ],
+    "initLocal": {
+        "isSaving": false,
+        "hasChanges": false,
+        "errors": null,
+        "activeTab": "basic",
+        "form": {
+            "name": {
+                "ko": "",
+                "en": ""
+            },
+            "coupon_code": "",
+            "description": {
+                "ko": "",
+                "en": ""
+            },
+            "target_type": "all_products",
+            "discount_type": "fixed_amount",
+            "discount_value": 0,
+            "max_discount_amount": null,
+            "min_order_amount": 0,
+            "max_issue_count": null,
+            "max_use_count_per_user": 1,
+            "valid_from": null,
+            "valid_until": null,
+            "issue_start_at": null,
+            "issue_end_at": null,
+            "issue_status": "active",
+            "issue_method": "download",
+            "issue_condition": "none",
+            "combinable": false,
+            "products": [],
+            "categories": []
+        },
+        "showProductModal": false,
+        "showCategoryModal": false,
+        "productSearchKeyword": ""
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "coupon_form_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
+                                        "text": "$t:common.cancel",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "\/admin\/ecommerce\/promotion-coupons"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary",
+                                            "disabled": "{{_local.isSaving}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_local.isSaving ? 'loader' : 'save'}}",
+                                                    "className": "w-4 h-4 mr-2 {{_local.isSaving ? 'animate-spin' : ''}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{_local.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "params": {
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "isSaving": true,
+                                                                "errors": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "auth_mode": "required",
+                                                            "target": "{{route.id ? '\/api\/modules\/sirsoft-ecommerce\/admin\/promotion-coupons\/' + route.id : '\/api\/modules\/sirsoft-ecommerce\/admin\/promotion-coupons'}}",
+                                                            "params": {
+                                                                "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                                "body": "{{_local.form}}"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "isSaving": false,
+                                                                        "hasChanges": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "\/admin\/ecommerce\/promotion-coupons"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "isSaving": false,
+                                                                        "errors": "{{response.errors}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{response.message || '$t:common.validation_error'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "form_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-6"
+                        },
+                        "children": [
+                            {
+                                "id": "main_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "lg:col-span-2 space-y-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "basic_info_card",
+                                        "type": "composite",
+                                        "name": "Card",
+                                        "props": {
+                                            "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.sections.basic_info"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.name",
+                                                            "required": true,
+                                                            "error": "{{_local.errors?.['name.ko']?.[0]}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "LocaleInput",
+                                                                "props": {
+                                                                    "value": "{{_local.form.name}}",
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholders.name"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onChange",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.name": "{{$args[0]}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.coupon_code",
+                                                            "required": true,
+                                                            "hint": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hints.coupon_code",
+                                                            "error": "{{_local.errors?.coupon_code?.[0]}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "text",
+                                                                            "className": "form-input flex-1",
+                                                                            "value": "{{_local.form.coupon_code}}",
+                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholders.coupon_code",
+                                                                            "maxLength": 20
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.coupon_code": "{{$event.target.value.toUpperCase()}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "btn btn-secondary"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.actions.generate_code",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.coupon_code": "{{$random.alphanumeric(10).toUpperCase()}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.description"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "LocaleTextarea",
+                                                                "props": {
+                                                                    "value": "{{_local.form.description}}",
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholders.description",
+                                                                    "rows": 3
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onChange",
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.description": "{{$args[0]}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "discount_settings_card",
+                                        "type": "composite",
+                                        "name": "Card",
+                                        "props": {
+                                            "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.sections.discount_settings"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.target_type",
+                                                            "required": true
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "className": "form-select w-full",
+                                                                    "value": "{{_local.form.target_type}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "all_products"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.all_products"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "specific_products"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.specific_products"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "specific_categories"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.specific_categories"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "order_total"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.order_total"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "shipping"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.shipping"
+                                                                    }
+                                                                ],
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.target_type": "{{$event.target.value}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "FormField",
+                                                                "props": {
+                                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.discount_type",
+                                                                    "required": true
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Select",
+                                                                        "props": {
+                                                                            "className": "form-select w-full",
+                                                                            "value": "{{_local.form.discount_type}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "fixed_amount"
+                                                                                },
+                                                                                "text": "$t:sirsoft-ecommerce.enums.coupon_discount_type.fixed_amount"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "percentage"
+                                                                                },
+                                                                                "text": "$t:sirsoft-ecommerce.enums.coupon_discount_type.percentage"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "free_shipping"
+                                                                                },
+                                                                                "text": "$t:sirsoft-ecommerce.enums.coupon_discount_type.free_shipping"
+                                                                            }
+                                                                        ],
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.discount_type": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "FormField",
+                                                                "props": {
+                                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.discount_value",
+                                                                    "required": true,
+                                                                    "error": "{{_local.errors?.discount_value?.[0]}}"
+                                                                },
+                                                                "if": "{{_local.form.discount_type !== 'free_shipping'}}",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "relative"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Input",
+                                                                                "props": {
+                                                                                    "type": "number",
+                                                                                    "className": "form-input w-full pr-12",
+                                                                                    "value": "{{_local.form.discount_value}}",
+                                                                                    "min": 0,
+                                                                                    "placeholder": "0"
+                                                                                },
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "type": "change",
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "_local",
+                                                                                            "form.discount_value": "{{Number($event.target.value)}}",
+                                                                                            "hasChanges": true
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "absolute right-3 top-1\/2 -translate-y-1\/2 text-gray-500 dark:text-gray-400"
+                                                                                },
+                                                                                "text": "{{_local.form.discount_type === 'percentage' ? '%' : '$t:currency.krw'}}"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                        },
+                                                        "if": "{{_local.form.discount_type === 'percentage'}}",
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "FormField",
+                                                                "props": {
+                                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.max_discount_amount",
+                                                                    "hint": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hints.max_discount_amount"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "className": "form-input w-full",
+                                                                            "value": "{{_local.form.max_discount_amount}}",
+                                                                            "min": 0,
+                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholders.no_limit"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.max_discount_amount": "{{$event.target.value ? Number($event.target.value) : null}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.min_order_amount",
+                                                            "hint": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hints.min_order_amount"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "className": "form-input w-full",
+                                                                    "value": "{{_local.form.min_order_amount}}",
+                                                                    "min": 0,
+                                                                    "placeholder": "0"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.min_order_amount": "{{Number($event.target.value)}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "period_settings_card",
+                                        "type": "composite",
+                                        "name": "Card",
+                                        "props": {
+                                            "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.sections.period_settings"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.valid_period"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "datetime-local",
+                                                                            "className": "form-input flex-1",
+                                                                            "value": "{{_local.form.valid_from}}"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.valid_from": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-500"
+                                                                        },
+                                                                        "text": "~"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "datetime-local",
+                                                                            "className": "form-input flex-1",
+                                                                            "value": "{{_local.form.valid_until}}"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.valid_until": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.issue_period"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "datetime-local",
+                                                                            "className": "form-input flex-1",
+                                                                            "value": "{{_local.form.issue_start_at}}"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.issue_start_at": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-500"
+                                                                        },
+                                                                        "text": "~"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "datetime-local",
+                                                                            "className": "form-input flex-1",
+                                                                            "value": "{{_local.form.issue_end_at}}"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "_local",
+                                                                                    "form.issue_end_at": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "sidebar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "lg:col-span-1 space-y-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "issue_settings_card",
+                                        "type": "composite",
+                                        "name": "Card",
+                                        "props": {
+                                            "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.sections.issue_settings"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-4"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.issue_status"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "className": "form-select w-full",
+                                                                    "value": "{{_local.form.issue_status}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "active"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.active"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "paused"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.paused"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "ended"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.ended"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "scheduled"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.scheduled"
+                                                                    }
+                                                                ],
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.issue_status": "{{$event.target.value}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.issue_method"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "className": "form-select w-full",
+                                                                    "value": "{{_local.form.issue_method}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "auto"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.auto"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "manual"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.manual"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "code"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.code"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "download"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.download"
+                                                                    }
+                                                                ],
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.issue_method": "{{$event.target.value}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.issue_condition"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "className": "form-select w-full",
+                                                                    "value": "{{_local.form.issue_condition}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "none"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.none"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "signup"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.signup"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "first_order"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.first_order"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "birthday"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.birthday"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "grade"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.grade"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Option",
+                                                                        "props": {
+                                                                            "value": "event"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.event"
+                                                                    }
+                                                                ],
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.issue_condition": "{{$event.target.value}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.max_issue_count",
+                                                            "hint": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hints.max_issue_count"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "className": "form-input w-full",
+                                                                    "value": "{{_local.form.max_issue_count}}",
+                                                                    "min": 0,
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.placeholders.no_limit"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.max_issue_count": "{{$event.target.value ? Number($event.target.value) : null}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "FormField",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.max_use_count_per_user",
+                                                            "hint": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hints.max_use_count_per_user"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "className": "form-input w-full",
+                                                                    "value": "{{_local.form.max_use_count_per_user}}",
+                                                                    "min": 1,
+                                                                    "placeholder": "1"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.max_use_count_per_user": "{{Number($event.target.value) || 1}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-2 pt-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "id": "combinable",
+                                                                    "className": "form-checkbox",
+                                                                    "checked": "{{_local.form.combinable}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "form.combinable": "{{$event.target.checked}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "for": "combinable",
+                                                                    "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.fields.combinable"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "장바구니 상품 삭제 확인 모달"
+  },
+  "id": "cart_delete_confirm_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:shop.cart.delete_modal.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "comment": "모달 내용",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "p-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-3 mb-4" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "w-6 h-6 text-red-500" } },
+            { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white font-medium" }, "text": "$t:shop.cart.delete_modal.confirm" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-700 dark:text-gray-300" },
+          "text": "{{$parent._local.deleteModal.targetIds?.length > 1 ? '$t:shop.cart.delete_modal.message_multiple' : '$t:shop.cart.delete_modal.message_single'}}"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{$parent._local.deleteModal.targetIds?.length > 1}}",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-2" },
+          "text": "$t:shop.cart.delete_modal.count|count={{$parent._local.deleteModal.targetIds?.length}}"
+        }
+      ]
+    },
+    {
+      "comment": "모달 푸터",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "if": "{{_global.isDeleting}}", "props": { "name": "spinner", "spin": true, "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "isDeleting": true }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_mode": "optional",
+                  "target": "/api/modules/sirsoft-ecommerce/cart",
+                  "params": {
+                    "method": "DELETE",
+                    "body": { "ids": "{{$parent._local.deleteModal.targetIds}}" },
+                    "headers": { "X-Cart-Key": "{{_global.cartKey}}" }
+                  },
+                  "onSuccess": [
+                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                    { "handler": "setState", "params": { "target": "$parent._local", "deleteModal": { "visible": false, "targetIds": [] } } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "cartItems" } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "cart" } },
+                    { "handler": "toast", "params": { "type": "success", "message": "$t:shop.cart.items_deleted" } },
+                    { "handler": "closeModal" }
+                  ],
+                  "onError": [
+                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

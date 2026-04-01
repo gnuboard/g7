@@ -1,0 +1,11 @@
+/**
+ * G7 Admin Template - Design Guide
+ * 카테고리별 스타일 통합 import
+ */
+
+@import "./colors.css";
+@import "./typography.css";
+@import "./ui-elements.css";
+@import "./components.css";
+@import "./layout.css";
+@import "./other.css";

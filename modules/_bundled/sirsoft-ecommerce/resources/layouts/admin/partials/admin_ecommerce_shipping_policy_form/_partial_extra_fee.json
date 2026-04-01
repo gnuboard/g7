@@ -1,0 +1,609 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 도서산간 추가배송비 (한국 전용, 국가별 탭 내)"
+    },
+    "id": "extra_fee_section",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeCountrySetting && _computed.activeCountryCode === 'KR'}}",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center gap-2 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_extra_fee"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_kr_only"
+                }
+            ]
+        },
+        {
+            "id": "extra_fee_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "id": "field_extra_fee_enabled",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Toggle",
+                            "props": {
+                                "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled",
+                                "checked": "{{_computed.activeCountrySetting?.extra_fee_enabled ?? false}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                    "params": {
+                                        "field": "extra_fee_enabled",
+                                        "value": "{{!(_computed.activeCountrySetting?.extra_fee_enabled ?? false)}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1 block"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_enabled_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "extra_fee_detail",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_computed.activeCountrySetting?.extra_fee_enabled}}",
+                    "props": {
+                        "className": "space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                    },
+                    "children": [
+                        {
+                            "id": "extra_fee_multiply_toggle",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply",
+                                        "checked": "{{_computed.activeCountrySetting?.extra_fee_multiply ?? false}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.updateCountryField",
+                                            "params": {
+                                                "field": "extra_fee_multiply",
+                                                "value": "{{!(_computed.activeCountrySetting?.extra_fee_multiply ?? false)}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1 block"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_multiply_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "extra_fee_settings_header",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_settings"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "file-text",
+                                                        "className": "text-xs mr-1"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_load"
+                                                }
+                                            ],
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "extra_fee_templates"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "extra_fee_template"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "plus",
+                                                        "className": "text-xs mr-1"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_add"
+                                                }
+                                            ],
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sirsoft-ecommerce.addExtraFeeRow",
+                                                    "params": {
+                                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "extra_fee_list_container",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length > 0}}",
+                            "props": { "className": "w-full" },
+                            "children": [
+                                {
+                                    "id": "extra_fee_table",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": { "className": "table-container" },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Table",
+                                            "props": { "className": "table w-full" },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Thead",
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Tr",
+                                                            "children": [
+                                                                { "type": "composite", "name": "Th", "props": { "className": "w-[180px]" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode" },
+                                                                { "type": "composite", "name": "Th", "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" },
+                                                                { "type": "composite", "name": "Th", "props": { "className": "w-[140px]" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount" },
+                                                                { "type": "composite", "name": "Th", "props": { "className": "w-[50px]" } }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Tbody",
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Tr",
+                                                            "iteration": {
+                                                                "source": "{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}",
+                                                                "item_var": "feeItem",
+                                                                "index_var": "feeIdx"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Td",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.zipcode ?? ''}}",
+                                                                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder",
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "zipcode",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Td",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.region ?? ''}}",
+                                                                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region",
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "region",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Td",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "number",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.fee ?? 0}}",
+                                                                                "min": 0,
+                                                                                "step": 100,
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "fee",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Td",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Icon",
+                                                                                    "props": {
+                                                                                        "name": "trash",
+                                                                                        "className": "text-sm"
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sirsoft-ecommerce.removeExtraFeeRow",
+                                                                                    "params": {
+                                                                                        "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                                                                        "feeIndex": "{{feeItem._idx}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "responsive": {
+                                "portable": {
+                                    "children": [
+                                        {
+                                            "id": "extra_fee_cards",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": { "className": "space-y-4" },
+                                            "iteration": {
+                                                "source": "{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}",
+                                                "item_var": "feeItem",
+                                                "index_var": "feeIdx"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": { "className": "excel-card" },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": { "className": "excel-card-header" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": { "className": "font-medium text-sm text-gray-900 dark:text-gray-100" },
+                                                                    "text": "{{feeItem.zipcode || '$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{policy?.data?.abilities?.can_update === true}}",
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": { "name": "trash", "className": "text-sm" }
+                                                                        }
+                                                                    ],
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sirsoft-ecommerce.removeExtraFeeRow",
+                                                                            "params": {
+                                                                                "countryIndex": "{{_local.activeCountryTab ?? 0}}",
+                                                                                "feeIndex": "{{feeItem._idx}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": { "className": "excel-card-body space-y-3" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": { "className": "form-group" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Label",
+                                                                            "props": { "className": "form-label text-xs" },
+                                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.zipcode ?? ''}}",
+                                                                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder",
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "zipcode",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": { "className": "form-group" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Label",
+                                                                            "props": { "className": "form-label text-xs" },
+                                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "text",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.region ?? ''}}",
+                                                                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region",
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "region",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": { "className": "form-group" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Label",
+                                                                            "props": { "className": "form-label text-xs" },
+                                                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Input",
+                                                                            "props": {
+                                                                                "type": "number",
+                                                                                "className": "input w-full",
+                                                                                "value": "{{feeItem.fee ?? 0}}",
+                                                                                "min": 0,
+                                                                                "step": 100,
+                                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "sirsoft-ecommerce.updateExtraFeeField",
+                                                                                    "debounce": 300,
+                                                                                    "params": {
+                                                                                        "feeIndex": "{{feeItem._idx}}",
+                                                                                        "field": "fee",
+                                                                                        "value": "{{$event.target.value}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_extra_fee"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

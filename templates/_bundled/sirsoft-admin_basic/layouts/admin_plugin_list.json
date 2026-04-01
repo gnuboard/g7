@@ -1,0 +1,1135 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_plugin_list",
+    "permissions": [
+        "core.plugins.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.plugins.page_title",
+        "description": "$t:admin.plugins.page_description"
+    },
+    "state": {
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "plugins",
+            "type": "api",
+            "endpoint": "/api/admin/plugins",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page || 12}}",
+                "search": "{{query.search}}",
+                "status": "{{query.status}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 12,
+                    "total": 0
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "plugin_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.plugins.title",
+                            "description": "$t:admin.plugins.description"
+                        },
+                        "children": [
+                            {
+                                "id": "check_updates_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}",
+                                    "type": "button"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isCheckingUpdates": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/plugins/check-updates",
+                                                "params": {
+                                                    "method": "POST"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isCheckingUpdates": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "plugins"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.plugins.check_updates_success|count=' + response.data.update_count : '$t:admin.plugins.check_updates_no_updates'}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isCheckingUpdates": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{$error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isCheckingUpdates}}",
+                                        "props": {
+                                            "name": "refresh",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isCheckingUpdates}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "className": "animate-spin"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.actions.check_updates"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "manual_install_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "plugin_manual_install_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "upload",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.manual_install"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "marketplace_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{false}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "globe",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.marketplace"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "mobile_action_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "hidden"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "flex items-center gap-2 -mt-4 mb-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "mobile_manual_install_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "plugin_manual_install_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "upload",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.manual_install"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "mobile_marketplace_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{false}}",
+                                "props": {
+                                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "globe",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.marketplace"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_bar_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mb-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "search_bar",
+                                "type": "composite",
+                                "name": "SearchBar",
+                                "props": {
+                                    "placeholder": "$t:admin.plugins.search_placeholder",
+                                    "value": "{{_local.searchQuery || ''}}",
+                                    "className": "w-64"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "w-full"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "searchQuery": "{{$event.target.value}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "submit",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins",
+                                            "query": {
+                                                "search": "{{_local.searchQuery || undefined}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "content_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+                        },
+                        "children": [
+                            {
+                                "id": "plugin_card_grid",
+                                "type": "composite",
+                                "name": "CardGrid",
+                                "blur_until_loaded": true,
+                                "props": {
+                                    "data": "{{plugins?.data?.data ?? []}}",
+                                    "gridColumns": 1,
+                                    "gap": 4,
+                                    "idField": "identifier",
+                                    "pagination": true,
+                                    "alwaysShowPagination": true,
+                                    "serverSidePagination": true,
+                                    "serverCurrentPage": "{{plugins?.data?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{plugins?.data?.last_page ?? 1}}",
+                                    "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
+                                    "cardColumns": [
+                                        {
+                                            "id": "plugin_content",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-start gap-4"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "puzzle-piece",
+                                                                        "className": "text-2xl text-gray-600 dark:text-gray-400"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-1 min-w-0 flex items-start justify-between gap-4"
+                                                            },
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "flex-1 min-w-0 flex flex-col gap-3"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-1 min-w-0"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex items-center gap-2 flex-wrap"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "font-semibold text-gray-900 dark:text-white"
+                                                                                    },
+                                                                                    "text": "{{row.name}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                                                                    },
+                                                                                    "text": "v{{row.version}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status === 'active'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.active"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status == 'inactive'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.inactive"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status == 'uninstalled'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.not_installed"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status == 'installing'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.installing"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status == 'uninstalling'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.uninstalling"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.status == 'updating'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.status.updating"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
+                                                                                    "props": {
+                                                                                        "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
+                                                                                    },
+                                                                                    "text": "$t:admin.plugins.update_available"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{row.update_available && row.latest_version && row.status != 'updating' && row.status != 'uninstalled'}}",
+                                                                                    "props": {
+                                                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                                    },
+                                                                                    "text": "$t:defer:admin.plugins.version_available|version={{row.latest_version ?? ''}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "P",
+                                                                            "props": {
+                                                                                "className": "mt-1 text-sm text-gray-600 dark:text-gray-400"
+                                                                            },
+                                                                            "text": "{{row.description}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500"
+                                                                            },
+                                                                            "responsive": {
+                                                                                "portable": {
+                                                                                    "props": {
+                                                                                        "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "$t:defer:admin.plugins.vendor|vendor={{row.vendor}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "if": "{{row.dependencies && row.dependencies.length > 0}}",
+                                                                                    "props": {
+                                                                                        "className": "flex items-center gap-1 flex-wrap"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "text": "$t:admin.plugins.dependencies_label"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Div",
+                                                                                            "props": {
+                                                                                                "className": "inline"
+                                                                                            },
+                                                                                            "iteration": {
+                                                                                                "source": "{{row.dependencies}}",
+                                                                                                "item_var": "dep",
+                                                                                                "index_var": "depIndex"
+                                                                                            },
+                                                                                            "children": [
+                                                                                                {
+                                                                                                    "type": "basic",
+                                                                                                    "name": "Span",
+                                                                                                    "props": {
+                                                                                                        "className": "inline-flex items-center gap-1"
+                                                                                                    },
+                                                                                                    "children": [
+                                                                                                        {
+                                                                                                            "type": "basic",
+                                                                                                            "name": "Icon",
+                                                                                                            "if": "{{dep.type === 'module'}}",
+                                                                                                            "props": {
+                                                                                                                "name": "cube",
+                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "type": "basic",
+                                                                                                            "name": "Icon",
+                                                                                                            "if": "{{dep.type === 'plugin'}}",
+                                                                                                            "props": {
+                                                                                                                "name": "puzzle-piece",
+                                                                                                                "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "type": "basic",
+                                                                                                            "name": "Span",
+                                                                                                            "text": "{{dep.name}}"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                },
+                                                                                                {
+                                                                                                    "type": "basic",
+                                                                                                    "name": "Span",
+                                                                                                    "if": "{{depIndex < row.dependencies.length - 1}}",
+                                                                                                    "text": ",",
+                                                                                                    "props": {
+                                                                                                        "className": "ml-0 mr-1"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{!row.dependencies || row.dependencies.length === 0}}",
+                                                                                    "text": "$t:admin.plugins.no_dependencies"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex items-center gap-3 shrink-0"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "if": "{{row.status == 'uninstalled'}}",
+                                                                            "props": {
+                                                                                "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                "disabled": "{{row.abilities?.can_install !== true}}"
+                                                                            },
+                                                                            "responsive": {
+                                                                                "portable": {
+                                                                                    "props": {
+                                                                                        "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "selectedPlugin": "{{row}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "openModal",
+                                                                                            "target": "plugin_install_modal"
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ],
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Icon",
+                                                                                    "props": {
+                                                                                        "name": "download",
+                                                                                        "className": "w-4 h-4"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "$t:admin.plugins.actions.install"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "id": "update_button",
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
+                                                                            "props": {
+                                                                                "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                "type": "button",
+                                                                                "disabled": "{{row.abilities?.can_install !== true}}"
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "selectedPlugin": "{{row}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "apiCall",
+                                                                                            "auth_required": true,
+                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&from_version={{row.version}}&to_version={{row.latest_version}}",
+                                                                                            "params": {
+                                                                                                "method": "GET"
+                                                                                            },
+                                                                                            "onSuccess": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "updateChangelog": "{{response.data.changelog ?? []}}"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "pluginUpdateError": null
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "openModal",
+                                                                                                    "target": "plugin_update_modal"
+                                                                                                }
+                                                                                            ],
+                                                                                            "onError": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "updateChangelog": [],
+                                                                                                        "pluginUpdateError": null
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "openModal",
+                                                                                                    "target": "plugin_update_modal"
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ],
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Icon",
+                                                                                    "props": {
+                                                                                        "name": "refresh",
+                                                                                        "className": "w-4 h-4"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "$t:admin.plugins.actions.update"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "composite",
+                                                                            "name": "Toggle",
+                                                                            "if": "{{row.status != 'uninstalled'}}",
+                                                                            "props": {
+                                                                                "checked": "{{row.status == 'active'}}",
+                                                                                "disabled": "{{row.abilities?.can_activate !== true}}",
+                                                                                "size": "sm",
+                                                                                "className": ""
+                                                                            },
+                                                                            "responsive": {
+                                                                                "portable": {
+                                                                                    "props": {
+                                                                                        "className": "absolute right-4 top-1/2 -translate-y-1/2"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "change",
+                                                                                    "handler": "apiCall",
+                                                                                    "auth_required": true,
+                                                                                    "target": "{{$event.target.checked ? '/api/admin/plugins/activate' : '/api/admin/plugins/deactivate'}}",
+                                                                                    "params": {
+                                                                                        "method": "POST",
+                                                                                        "body": {
+                                                                                            "plugin_name": "{{row.identifier}}"
+                                                                                        }
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "parallel",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "handler": "toast",
+                                                                                                    "params": {
+                                                                                                        "type": "success",
+                                                                                                        "message": "{{$event.target.checked ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "refetchDataSource",
+                                                                                                    "params": {
+                                                                                                        "dataSourceId": "plugins"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "refetchDataSource",
+                                                                                                    "params": {
+                                                                                                        "dataSourceId": "admin_menu"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "reloadRoutes"
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "reloadTranslations"
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "reloadPluginHandlers",
+                                                                                                    "params": {
+                                                                                                        "pluginInfo": "{{result}}",
+                                                                                                        "action": "{{$event.target.checked ? 'add' : 'remove'}}"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ],
+                                                                                    "errorHandling": {
+                                                                                        "409": {
+                                                                                            "handler": "sequence",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "selectedPlugin": "{{row}}",
+                                                                                                        "deactivateWarningData": "{{error.errors?.dependent_templates ? error.errors : null}}",
+                                                                                                        "activateWarningData": "{{error.errors?.missing_modules || error.errors?.missing_plugins ? error.errors : null}}"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "openModal",
+                                                                                                    "target": "{{error.errors?.dependent_templates || error.errors?.dependent_modules || error.errors?.dependent_plugins ? 'plugin_force_deactivate_modal' : 'plugin_force_activate_modal'}}"
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "sequence",
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "handler": "toast",
+                                                                                                    "params": {
+                                                                                                        "type": "error",
+                                                                                                        "message": "{{error.message}}"
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "handler": "refetchDataSource",
+                                                                                                    "params": {
+                                                                                                        "dataSourceId": "plugins"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": ""
+                                                                            },
+                                                                            "responsive": {
+                                                                                "portable": {
+                                                                                    "props": {
+                                                                                        "className": "absolute right-0 top-0"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "composite",
+                                                                                    "name": "ActionMenu",
+                                                                                    "props": {
+                                                                                        "triggerLabel": "",
+                                                                                        "items": [
+                                                                                            {
+                                                                                                "id": "settings",
+                                                                                                "label": "$t:admin.plugins.actions.settings",
+                                                                                                "iconName": "cog",
+                                                                                                "disabled": "{{!row.has_settings || row.status !== 'active' || row.abilities?.can_activate !== true}}"
+                                                                                            },
+                                                                                            {
+                                                                                                "id": "refresh_layouts",
+                                                                                                "label": "$t:admin.plugins.actions.refresh_layouts",
+                                                                                                "iconName": "refresh",
+                                                                                                "disabled": "{{row.status !== 'active' || row.abilities?.can_activate !== true}}"
+                                                                                            },
+                                                                                            {
+                                                                                                "id": "view_detail",
+                                                                                                "label": "$t:admin.plugins.actions.view_detail",
+                                                                                                "iconName": "info-circle"
+                                                                                            },
+                                                                                            {
+                                                                                                "id": "uninstall",
+                                                                                                "label": "$t:admin.plugins.actions.uninstall",
+                                                                                                "iconName": "trash",
+                                                                                                "variant": "danger",
+                                                                                                "disabled": "{{row.status == 'uninstalled' || row.status == 'uninstalling' || row.status == 'installing' || row.abilities?.can_uninstall !== true}}"
+                                                                                            }
+                                                                                        ]
+                                                                                    },
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "event": "onItemClick",
+                                                                                            "type": "action",
+                                                                                            "handler": "switch",
+                                                                                            "cases": {
+                                                                                                "settings": {
+                                                                                                    "handler": "navigate",
+                                                                                                    "params": {
+                                                                                                        "path": "{{row.settings_route}}"
+                                                                                                    }
+                                                                                                },
+                                                                                                "refresh_layouts": {
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "selectedPlugin": "{{row}}"
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "plugin_refresh_layouts_modal"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                },
+                                                                                                "view_detail": {
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "selectedPlugin": "{{row}}"
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "apiCall",
+                                                                                                            "auth_required": true,
+                                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/changelog",
+                                                                                                            "params": {
+                                                                                                                "method": "GET"
+                                                                                                            },
+                                                                                                            "onSuccess": [
+                                                                                                                {
+                                                                                                                    "handler": "setState",
+                                                                                                                    "params": {
+                                                                                                                        "target": "global",
+                                                                                                                        "pluginChangelog": "{{response.data.changelog ?? []}}"
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "handler": "openModal",
+                                                                                                                    "target": "plugin_detail_modal"
+                                                                                                                }
+                                                                                                            ],
+                                                                                                            "onError": [
+                                                                                                                {
+                                                                                                                    "handler": "setState",
+                                                                                                                    "params": {
+                                                                                                                        "target": "global",
+                                                                                                                        "pluginChangelog": []
+                                                                                                                    }
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "handler": "openModal",
+                                                                                                                    "target": "plugin_detail_modal"
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    ]
+                                                                                                },
+                                                                                                "uninstall": {
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "selectedPlugin": "{{row}}",
+                                                                                                                "deletePluginData": false,
+                                                                                                                "pluginUninstallInfo": null
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "plugin_uninstall_modal"
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "apiCall",
+                                                                                                            "auth_required": true,
+                                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/uninstall-info",
+                                                                                                            "params": {
+                                                                                                                "method": "GET"
+                                                                                                            },
+                                                                                                            "onSuccess": [
+                                                                                                                {
+                                                                                                                    "handler": "setState",
+                                                                                                                    "params": {
+                                                                                                                        "target": "global",
+                                                                                                                        "pluginUninstallInfo": "{{response.data}}"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "event": "onPageChange",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "pagination_info",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mt-4 text-sm text-gray-600 dark:text-gray-400 text-center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.plugins.pagination_info|total={{plugins?.data?.total ?? 0}}|from={{((plugins?.data?.current_page ?? 1) - 1) * (plugins?.data?.per_page ?? 12) + 1}}|to={{Math.min((plugins?.data?.current_page ?? 1) * (plugins?.data?.per_page ?? 12), plugins?.data?.total ?? 0)}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_plugin_list/_modal_detail.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_install.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_uninstall.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_manual_install.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_refresh_layouts.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_force_deactivate.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_force_activate.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_update.json"
+        },
+        {
+            "partial": "partials/admin_plugin_list/_modal_extension_license.json"
+        }
+    ]
+}

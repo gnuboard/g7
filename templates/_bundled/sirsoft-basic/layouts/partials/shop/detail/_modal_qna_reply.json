@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "상품 1:1 문의 답변 작성/수정 모달"
+  },
+  "id": "qna_reply_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "{{_global.qnaReplyEditId ? $t('shop.qna.reply_edit_title') : $t('shop.qna.reply_write_title')}}",
+    "size": "md",
+    "closeOnBackdropClick": false
+  },
+  "children": [
+    {
+      "comment": "답변 내용 입력",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+              "text": "$t:shop.qna.reply_content"
+            },
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
+                "placeholder": "$t:shop.qna.reply_content_placeholder",
+                "rows": 5,
+                "value": "{{_global.qnaReplyForm.content ?? ''}}",
+                "disabled": "{{_global.qnaSubmitting}}"
+              },
+              "actions": [
+                {
+                  "event": "onChange",
+                  "handler": "setState",
+                  "params": { "target": "global", "qnaReplyForm": { "content": "{{$event.target.value}}" } }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_global.qnaErrors?.content}}",
+              "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+              "text": "{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "모달 푸터 - 취소 / 등록",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.qnaSubmitting}}"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "qnaSubmitting": false, "qnaErrors": null }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.qnaSubmitting}}"
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "if": "{{_global.qnaSubmitting}}", "props": { "name": "spinner", "className": "text-sm animate-spin" } },
+            { "type": "basic", "name": "Span", "text": "{{_global.qnaReplyEditId ? $t('shop.qna.save') : $t('shop.qna.reply_submit')}}" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "qnaSubmitting": true }
+                },
+                {
+                  "handler": "conditions",
+                  "conditions": [
+                    {
+                      "comment": "수정 모드: PUT /user/inquiries/{id}/reply",
+                      "if": "{{!!_global.qnaReplyEditId}}",
+                      "then": [
+                        {
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/modules/sirsoft-ecommerce/user/inquiries/{{_global.qnaReplyEditId}}/reply",
+                          "params": {
+                            "method": "PUT",
+                            "body": { "content": "{{_global.qnaReplyForm.content ?? ''}}" }
+                          },
+                          "onSuccess": [
+                            { "handler": "setState", "params": { "target": "global", "qnaSubmitting": false, "qnaErrors": null, "qnaReplyEditId": null } },
+                            { "handler": "closeModal" },
+                            { "handler": "refetchDataSource", "params": { "dataSourceId": "qna" } },
+                            { "handler": "toast", "params": { "type": "success", "message": "$t:shop.qna.reply_updated" } }
+                          ],
+                          "onError": [
+                            { "handler": "setState", "params": { "target": "global", "qnaSubmitting": false, "qnaErrors": "{{error.errors ?? null}}" } },
+                            { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? $t('shop.qna.reply_update_failed')}}" } }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "등록 모드: POST /user/inquiries/{id}/reply",
+                      "then": [
+                        {
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/modules/sirsoft-ecommerce/user/inquiries/{{_global.qnaReplyTargetId}}/reply",
+                          "params": {
+                            "method": "POST",
+                            "body": { "content": "{{_global.qnaReplyForm.content ?? ''}}" }
+                          },
+                          "onSuccess": [
+                            { "handler": "setState", "params": { "target": "global", "qnaSubmitting": false, "qnaErrors": null, "qnaReplyTargetId": null } },
+                            { "handler": "closeModal" },
+                            { "handler": "refetchDataSource", "params": { "dataSourceId": "qna" } },
+                            { "handler": "toast", "params": { "type": "success", "message": "$t:shop.qna.reply_submitted" } }
+                          ],
+                          "onError": [
+                            { "handler": "setState", "params": { "target": "global", "qnaSubmitting": false, "qnaErrors": "{{error.errors ?? null}}" } },
+                            { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? $t('shop.qna.reply_submit_failed')}}" } }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

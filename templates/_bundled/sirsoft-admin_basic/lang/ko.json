@@ -1,0 +1,20 @@
+{
+  "auth": {
+    "$partial": "partial/ko/auth.json"
+  },
+  "admin": {
+    "$partial": "partial/ko/admin.json"
+  },
+  "common": {
+    "$partial": "partial/ko/common.json"
+  },
+  "attachment": {
+    "$partial": "partial/ko/attachment.json"
+  },
+  "errors": {
+    "$partial": "partial/ko/errors.json"
+  },
+  "countries": {
+    "$partial": "partial/ko/countries.json"
+  }
+}

@@ -1,0 +1,428 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Personal Payment Create - Member Search Modal"
+  },
+  "id": "modal_member_search",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.title",
+    "description": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "id": "member_search_input",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "input-search-container mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "search",
+            "className": "input-search-icon"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "className": "input input-search",
+            "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.search_placeholder"
+          }
+        }
+      ]
+    },
+    {
+      "id": "member_search_results",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-2"
+      },
+      "children": [
+        {
+          "id": "member_item_1",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-heading"
+                      },
+                      "text": "김철수"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-sm"
+                      },
+                      "text": "(user001)"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm truncate"
+                  },
+                  "text": "kim@example.com · 010-1234-5678"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "member_item_2",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-heading"
+                      },
+                      "text": "이영희"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-sm"
+                      },
+                      "text": "(user002)"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm truncate"
+                  },
+                  "text": "lee@example.com · 010-2345-6789"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "member_item_3",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-heading"
+                      },
+                      "text": "박민수"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-sm"
+                      },
+                      "text": "(user003)"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm truncate"
+                  },
+                  "text": "park@example.com · 010-3456-7890"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "member_item_4",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-heading"
+                      },
+                      "text": "정수진"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-sm"
+                      },
+                      "text": "(user004)"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm truncate"
+                  },
+                  "text": "jung@example.com · 010-4567-8901"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "member_item_5",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium text-heading"
+                      },
+                      "text": "최영수"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-sm"
+                      },
+                      "text": "(user005)"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm truncate"
+                  },
+                  "text": "choi@example.com · 010-5678-9012"
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시글 상세 유형별 렌더러. 상단 네비게이션 + 유형별 본문(basic/gallery/card)을 렌더링한다."
+  },
+  "comment": "게시글 상세 유형별 렌더러",
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "partial": "partials/board/show/_navigation.json"
+    },
+    {
+      "comment": "basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가",
+      "if": "{{post?.data?.board?.type === 'basic' || !['gallery','card'].includes(post?.data?.board?.type ?? 'basic')}}",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/show.json"
+        }
+      ]
+    },
+    {
+      "comment": "gallery 유형",
+      "if": "{{post?.data?.board?.type === 'gallery'}}",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/show.json"
+        }
+      ]
+    },
+    {
+      "comment": "card 유형",
+      "if": "{{post?.data?.board?.type === 'card'}}",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/show.json"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1115 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_user_detail",
+    "permissions": [
+        "core.users.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.users.detail.page_title",
+        "description": "$t:admin.users.detail.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "user",
+            "type": "api",
+            "endpoint": "/api/admin/users/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true
+        }
+    ],
+    "errorHandling": {
+        "403": { "handler": "showErrorPage", "params": { "target": "content" } },
+        "404": { "handler": "showErrorPage", "params": { "target": "content" } }
+    },
+    "state": {
+        "activeTab": "basic_info"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "user_detail_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "sticky_header_container",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 -mx-6 -mt-6 pt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_wrapper",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "page_header",
+                                        "type": "composite",
+                                        "name": "PageHeader",
+                                "props": {
+                                    "title": "$t:admin.users.detail.page_title",
+                                    "description": "$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}",
+                                    "backLink": "/admin/users",
+                                    "backLinkText": "$t:admin.users.detail.back_to_list"
+                                },
+                                "children": [
+                                    {
+                                        "id": "header_back_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigateBack"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-left",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.back"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_edit_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users/{{route?.id}}/edit"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "pencil",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.detail.edit"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                                ]
+                            },
+                            {
+                                "id": "user_detail_tabs",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "props": {
+                                    "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
+                                    "enableScrollSpy": true,
+                                    "scrollSpyOffset": 120,
+                                    "sectionIdPrefix": "",
+                                    "tabs": [
+                                        {
+                                            "id": "basic_info",
+                                            "label": "$t:admin.users.detail.tabs.basic_info"
+                                        },
+                                        {
+                                            "id": "contact_info",
+                                            "label": "$t:admin.users.detail.tabs.contact_info"
+                                        },
+                                        {
+                                            "id": "location_info",
+                                            "label": "$t:admin.users.detail.tabs.location_info"
+                                        },
+                                        {
+                                            "id": "profile_memo",
+                                            "label": "$t:admin.users.detail.tabs.profile_memo"
+                                        },
+                                        {
+                                            "id": "activity_info",
+                                            "label": "$t:admin.users.detail.tabs.activity_info"
+                                        },
+                                        {
+                                            "id": "consent_info",
+                                            "label": "$t:admin.users.detail.tabs.consent_info"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "user_api_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_dataSourceErrors?.user}}",
+                        "props": {
+                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
+                                                "text": "$t:admin.users.detail.error_loading_user"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-sm text-red-700 dark:text-red-300 mt-1"
+                                                },
+                                                "text": "{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_basic_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "basic_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.basic_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_uuid",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "UUID"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white font-mono"
+                                                },
+                                                "text": "{{user?.data?.uuid ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_name",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.name"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.name ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_nickname",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.nickname"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.nickname ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_roles",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.role"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "iteration": {
+                                                            "source": "user?.data?.roles ?? []",
+                                                            "item_var": "role"
+                                                        },
+                                                        "props": {
+                                                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                        },
+                                                        "text": "{{role.name}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_status",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.status"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "{{user?.data?.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user?.data?.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : user?.data?.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}"
+                                                },
+                                                "text": "{{user?.data?.status_label ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_email_verified",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.email_verification"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "condition": "{{user?.data?.email_verified_at}}",
+                                                        "props": {
+                                                            "name": "check-circle",
+                                                            "className": "w-4 h-4 text-green-500"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_contact_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "contact_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "envelope",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.contact_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_email",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.email"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.email ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_homepage",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.homepage"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.homepage ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_mobile",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.mobile"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.mobile ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_phone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.phone"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.phone ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_location_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "location_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "map-pin",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.location_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_address",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "md:col-span-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.address"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.zipcode || user?.data?.address || user?.data?.address_detail ? ((user?.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user?.data?.address ?? '') + (user?.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_country",
+                                        "if": false,
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.country"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.country_name ?? user?.data?.country ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_language",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.language"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{user?.data?.language}}",
+                                                "props": {
+                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                                                },
+                                                "text": "{{user?.data?.language_label ?? user?.data?.language ?? '-'}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!user?.data?.language}}",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "-"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_timezone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.timezone"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.timezone ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_profile_memo",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "profile_memo",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user-circle",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.profile_memo"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_signature",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.signature"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.signature ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_bio",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.bio"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white whitespace-pre-line"
+                                                },
+                                                "text": "{{user?.data?.bio ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_admin_memo",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "md:col-span-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.admin_memo"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white whitespace-pre-line"
+                                                },
+                                                "text": "{{user?.data?.admin_memo ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_activity_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "activity_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "clock",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.activity_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_created_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.created_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.created_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_last_login_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.last_login_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.last_login_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_ip_address",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.ip_address"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.ip_address ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_withdrawn_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.withdrawn_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.withdrawn_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_blocked_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.blocked_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.blocked_at ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_consent_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "consent_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "file-contract",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.detail.consent_history"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_terms_consent",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.consent_type.terms"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.terms_consent?.agreed_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_privacy_consent",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                },
+                                                "text": "$t:admin.users.detail.consent_type.privacy"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{user?.data?.privacy_consent?.agreed_at ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "extension_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "comment": "확장(모듈/플러그인)이 inject_props로 탭을 추가하고 append_child로 섹션 콘텐츠를 주입하는 영역"
+                    }
+                ]
+            }
+        ]
+    }
+}

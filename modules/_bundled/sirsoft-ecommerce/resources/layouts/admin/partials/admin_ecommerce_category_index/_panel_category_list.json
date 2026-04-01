@@ -1,0 +1,226 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Category List Panel - Hierarchical Tree with Drag & Drop"
+  },
+  "id": "category_list_panel",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+  },
+  "children": [
+    {
+      "id": "category_list_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "folder",
+                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.category.tree.title"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sortable_category_list",
+      "type": "composite",
+      "name": "SortableMenuList",
+      "if": "{{(categories?.data?.data?.length ?? 0) > 0}}",
+      "props": {
+        "items": "{{categories?.data?.data ?? []}}",
+        "selectedId": "{{_global.selectedCategoryId}}",
+        "enableDrag": "{{categories?.data?.abilities?.can_update === true}}",
+        "toggleDisabled": "{{categories?.data?.abilities?.can_update !== true}}",
+        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
+        "itemClassName": "py-1 px-3 mb-1 rounded-lg border",
+        "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
+        "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+        "childrenContainerClassName": "bg-gray-50 dark:bg-gray-900/50"
+      },
+      "lifecycle": {
+        "onMount": [
+          {
+            "type": "click",
+            "handler": "sirsoft-ecommerce.initCategoryFromUrl"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "event": "onSelect",
+          "type": "action",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "selectedCategoryId": "{{$args[0]?.id}}",
+                "selectedCategory": "{{$args[0]}}",
+                "panelMode": "view"
+              }
+            },
+            {
+              "handler": "replaceUrl",
+              "params": {
+                "query": { "id": "{{$args[0]?.id}}", "mode": "view" }
+              }
+            }
+          ]
+        },
+        {
+          "event": "onOrderChange",
+          "type": "action",
+          "handler": "apiCall",
+          "auth_required": true,
+          "target": "/api/modules/sirsoft-ecommerce/admin/categories/order",
+          "params": {
+            "method": "PUT",
+            "body": "{{$args[0]}}"
+          },
+          "onSuccess": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:sirsoft-ecommerce.admin.category.messages.order_updated"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "categories"
+                  }
+                }
+              ]
+            }
+          ],
+          "onError": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "$t:sirsoft-ecommerce.admin.category.messages.order_update_failed"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "categories"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "event": "onToggleStatus",
+          "type": "action",
+          "handler": "apiCall",
+          "auth_required": true,
+          "target": "/api/modules/sirsoft-ecommerce/admin/categories/{{$args[0]}}/toggle-status",
+          "params": {
+            "method": "PATCH"
+          },
+          "onSuccess": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:sirsoft-ecommerce.admin.category.messages.status_changed"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "categories"
+                  }
+                }
+              ]
+            }
+          ],
+          "onError": [
+            {
+              "handler": "parallel",
+              "actions": [
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "{{error.message}}"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "categories"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empty_category_state",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(categories?.data?.data?.length ?? 0) === 0}}",
+      "props": {
+        "className": "flex-1 flex items-center justify-center gap-3 px-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "folder",
+            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.category.tree.empty"
+        }
+      ]
+    }
+  ]
+}

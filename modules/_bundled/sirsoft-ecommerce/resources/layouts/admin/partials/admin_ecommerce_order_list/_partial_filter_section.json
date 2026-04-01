@@ -1,0 +1,2788 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order List - Filter Section with Slot System (v2)"
+  },
+  "id": "filter_card",
+  "type": "basic",
+  "name": "Div",
+  "dataKey": "filter",
+  "props": {
+    "className": "card"
+  },
+  "children": [
+    {
+      "id": "filter_visibility_selector",
+      "type": "composite",
+      "name": "FilterVisibilitySelector",
+      "comment": "필터 표시/숨김 컨트롤",
+      "props": {
+        "id": "admin_ecommerce_order_filters",
+        "visibleFilters": "{{_local.visibleFilters}}",
+        "defaultFilters": [
+          "searchField",
+          "searchKeyword",
+          "date",
+          "orderStatus"
+        ]
+      },
+      "actions": [
+        {
+          "event": "onFilterVisibilityChange",
+          "type": "change",
+          "handler": "setState",
+          "params": {
+            "target": "_local",
+            "visibleFilters": "{{$args[0]}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slot_registration_area",
+      "type": "basic",
+      "name": "Div",
+      "comment": "슬롯 등록 영역 - 모든 필터 행 정의 (hidden)",
+      "props": {
+        "className": "hidden",
+        "aria-hidden": "true"
+      },
+      "children": [
+        {
+          "id": "date_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-010 ~ F-019 일자 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 2,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-002 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('date')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_010_date_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-010",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.date"
+            },
+            {
+              "id": "f_011_date_type_select",
+              "type": "composite",
+              "name": "Select",
+              "comment": "F-011",
+              "props": {
+                "name": "dateType",
+                "className": "w-28",
+                "value": "{{_local.filter.dateType || 'ordered_at'}}",
+                "options": [
+                  {
+                    "value": "ordered_at",
+                    "label": "$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date"
+                  },
+                  {
+                    "value": "paid_at",
+                    "label": "$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date"
+                  },
+                  {
+                    "value": "shipped_at",
+                    "label": "$t:sirsoft-ecommerce.admin.order.filter.date_type.shipping_date"
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "filter.dateType": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "f_012_start_date",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-012",
+                  "props": {
+                    "type": "date",
+                    "name": "startDate",
+                    "value": "{{_local.filter.startDate || ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.start_date",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.startDate": "{{$event.target.value}}",
+                        "filter.dateQuick": ""
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "~"
+                },
+                {
+                  "id": "f_013_end_date",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-013",
+                  "props": {
+                    "type": "date",
+                    "name": "endDate",
+                    "value": "{{_local.filter.endDate || ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.end_date",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.endDate": "{{$event.target.value}}",
+                        "filter.dateQuick": ""
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "id": "f_014_quick_today",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-014",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.today",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "today"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_015_quick_week",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-015",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.week",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "week"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_016_quick_month",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-016",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.1_month",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "month"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_017_quick_3months",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-017",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.3_months",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "3months"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_018_quick_6months",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-018",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.6_months",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "6months"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_019_quick_1year",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-019",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.filter.date_quick.1_year",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "sirsoft-ecommerce.setDateRange",
+                          "params": {
+                            "preset": "1year"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.dateQuick": "{{$prev.preset}}",
+                            "filter.startDate": "{{$prev.startDate}}",
+                            "filter.endDate": "{{$prev.endDate}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "orderStatus_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-020 ~ F-030 주문상태 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 3,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-003 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('orderStatus')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_020_order_status_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-020",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.order_status"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "f_021_status_pending_order",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-021",
+                  "props": {
+                    "value": "pending_order",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('pending_order')}}",
+                    "icon": "clock",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.waiting",
+                    "variant": "gray"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "pending_order"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_022_status_pending_payment",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-022",
+                  "props": {
+                    "value": "pending_payment",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('pending_payment')}}",
+                    "icon": "clock",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.payment_pending",
+                    "variant": "gray"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "pending_payment"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_023_status_payment_complete",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-023",
+                  "props": {
+                    "value": "payment_complete",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('payment_complete')}}",
+                    "icon": "check",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.payment_complete",
+                    "variant": "green"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "payment_complete"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_024_status_shipping_hold",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-024",
+                  "props": {
+                    "value": "shipping_hold",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('shipping_hold')}}",
+                    "icon": "pause",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.shipping_hold",
+                    "variant": "gray"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "shipping_hold"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_025_status_preparing",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-025",
+                  "props": {
+                    "value": "preparing",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('preparing')}}",
+                    "icon": "box",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.preparing",
+                    "variant": "green"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "preparing"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_026_status_shipping_ready",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-026",
+                  "props": {
+                    "value": "shipping_ready",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('shipping_ready')}}",
+                    "icon": "box",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.shipping_ready",
+                    "variant": "green"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "shipping_ready"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_027_status_shipping",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-027",
+                  "props": {
+                    "value": "shipping",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('shipping')}}",
+                    "icon": "truck",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.shipping",
+                    "variant": "green"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "shipping"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_028_status_delivered",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-028",
+                  "props": {
+                    "value": "delivered",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('delivered')}}",
+                    "icon": "check",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.delivered",
+                    "variant": "green"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "delivered"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_029_status_cancelled",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-029",
+                  "props": {
+                    "value": "cancelled",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('cancelled')}}",
+                    "icon": "x",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.cancelled",
+                    "variant": "gray"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "cancelled"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_030_status_confirmed",
+                  "type": "composite",
+                  "name": "ChipCheckbox",
+                  "comment": "F-030",
+                  "props": {
+                    "value": "confirmed",
+                    "checked": "{{(_local.filter.orderStatus || []).includes('confirmed')}}",
+                    "icon": "thumbs-up",
+                    "label": "$t:sirsoft-ecommerce.admin.order.status.confirmed",
+                    "variant": "blue"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleArrayValue",
+                      "params": {
+                        "target": "_local",
+                        "path": "filter.orderStatus",
+                        "value": "confirmed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "deliveryMethod_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-080 ~ F-084 배송방법 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 5,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-005 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('deliveryMethod')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_080_delivery_method_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-080",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.delivery_method"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-4"
+              },
+              "children": [
+                {
+                  "id": "f_081_delivery_parcel",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-081",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.deliveryMethods || []).includes('parcel')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.deliveryMethods",
+                            "value": "parcel"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.delivery_options.parcel"
+                    }
+                  ]
+                },
+                {
+                  "id": "f_082_delivery_direct",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-082",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.deliveryMethods || []).includes('direct')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.deliveryMethods",
+                            "value": "direct"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.delivery_options.direct"
+                    }
+                  ]
+                },
+                {
+                  "id": "f_083_delivery_quick",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-083",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.deliveryMethods || []).includes('quick')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.deliveryMethods",
+                            "value": "quick"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.delivery_options.quick"
+                    }
+                  ]
+                },
+                {
+                  "id": "f_084_delivery_pickup",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-084",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.deliveryMethods || []).includes('pickup')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.deliveryMethods",
+                            "value": "pickup"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.delivery_options.pickup"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "paymentMethod_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-090 ~ F-096 결제수단 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('paymentMethod') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 6,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-006 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('paymentMethod')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_090_payment_method_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-090",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.payment_method"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-091 동적 결제수단 체크박스",
+                  "iteration": {
+                    "source": "_computed.availablePaymentMethods",
+                    "item_var": "method"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.paymentMethods || []).includes(method.id)}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.paymentMethods",
+                            "value": "{{method.id}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{method.name}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "category_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-100 ~ F-105 상품카테고리 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 7,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-007 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('category')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_100_category_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-100",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.category"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "f_101_category_1",
+                  "type": "basic",
+                  "name": "Select",
+                  "comment": "F-101",
+                  "props": {
+                    "name": "category1",
+                    "value": "{{_local.filter.category1}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
+                    "className": "w-32",
+                    "options": "{{_computed.category1Options || []}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.category1": "{{$event.target.value}}",
+                        "filter.category2": "",
+                        "filter.category3": "",
+                        "filter.category4": ""
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_102_category_2",
+                  "type": "basic",
+                  "name": "Select",
+                  "comment": "F-102",
+                  "if": "{{_local.filter.category1}}",
+                  "props": {
+                    "name": "category2",
+                    "value": "{{_local.filter.category2}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
+                    "className": "w-32",
+                    "options": "{{_computed.category2Options || []}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.category2": "{{$event.target.value}}",
+                        "filter.category3": "",
+                        "filter.category4": ""
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_103_category_3",
+                  "type": "basic",
+                  "name": "Select",
+                  "comment": "F-103",
+                  "if": "{{_local.filter.category2}}",
+                  "props": {
+                    "name": "category3",
+                    "value": "{{_local.filter.category3}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
+                    "className": "w-32",
+                    "options": "{{_computed.category3Options || []}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.category3": "{{$event.target.value}}",
+                        "filter.category4": ""
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_104_category_4",
+                  "type": "basic",
+                  "name": "Select",
+                  "comment": "F-104",
+                  "if": "{{_local.filter.category3}}",
+                  "props": {
+                    "name": "category4",
+                    "value": "{{_local.filter.category4}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
+                    "className": "w-32",
+                    "options": "{{_computed.category4Options || []}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.category4": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "price_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-110 ~ F-114 구매금액 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 8,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-008 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('price')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_110_price_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-110",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.price"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "f_111_min_price",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-111",
+                  "props": {
+                    "type": "number",
+                    "min": "0",
+                    "step": "100",
+                    "name": "minPrice",
+                    "value": "{{_local.filter.minPrice}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.min_price",
+                    "className": "input w-32 text-right"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.minPrice": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_112_price_separator",
+                  "type": "basic",
+                  "name": "Span",
+                  "comment": "F-112",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "~"
+                },
+                {
+                  "id": "f_113_max_price",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-113",
+                  "props": {
+                    "type": "number",
+                    "min": "0",
+                    "step": "100",
+                    "name": "maxPrice",
+                    "value": "{{_local.filter.maxPrice}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.max_price",
+                    "className": "input w-32 text-right"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.maxPrice": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_114_currency_select",
+                  "type": "composite",
+                  "name": "Select",
+                  "comment": "F-114",
+                  "props": {
+                    "name": "currency",
+                    "className": "w-20",
+                    "value": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.default_currency || 'KRW'}}",
+                    "options": "{{(_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []).map(c => ({ value: c.code, label: c.code }))}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "country_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-120 ~ F-126 배송국가 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 9,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-009 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('country')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_120_country_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-120",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.country"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-121 동적 국가 체크박스",
+                  "iteration": {
+                    "source": "_computed.availableCountries",
+                    "item_var": "country"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.countries || []).includes(country.code)}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.countries",
+                            "value": "{{country.code}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "fi fi-{{country.code}} fis rounded"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{country.name}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "device_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-130 ~ F-132 구매환경 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('device') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 10,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-010 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('device')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_130_device_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-130",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.device"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-4"
+              },
+              "children": [
+                {
+                  "id": "f_131_device_pc",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-131",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.devices || []).includes('pc')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.devices",
+                            "value": "pc"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.device_options.pc"
+                    }
+                  ]
+                },
+                {
+                  "id": "f_132_device_mobile",
+                  "type": "basic",
+                  "name": "Label",
+                  "comment": "F-132",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox",
+                        "checked": "{{(_local.filter.devices || []).includes('mobile')}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sirsoft-ecommerce.toggleArrayValue",
+                          "params": {
+                            "target": "_local",
+                            "path": "filter.devices",
+                            "value": "mobile"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.filter.device_options.mobile"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shippingPolicy_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-140 ~ F-142 배송정책 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 11,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-011 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('shippingPolicy')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_140_shipping_policy_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-140",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.shipping_policy"
+            },
+            {
+              "id": "f_141_shipping_policy_select",
+              "type": "composite",
+              "name": "Select",
+              "comment": "F-141",
+              "props": {
+                "name": "shippingPolicy",
+                "className": "!w-48",
+                "value": "{{_local.filter.shippingPolicy || ''}}",
+                "options": "{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "filter.shippingPolicy": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "shippingFee_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-150 ~ F-153 배송비 필터",
+          "slot": "{{(_local.visibleFilters || []).includes('shippingFee') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 12,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-012 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('shippingFee')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_150_shipping_fee_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-150",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.shipping_fee"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "id": "f_151_min_shipping_fee",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-151",
+                  "props": {
+                    "type": "number",
+                    "min": "0",
+                    "step": "100",
+                    "name": "minShippingFee",
+                    "value": "{{_local.filter.minShippingFee}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.min_shipping_fee",
+                    "className": "input w-32 text-right"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.minShippingFee": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_152_shipping_fee_separator",
+                  "type": "basic",
+                  "name": "Span",
+                  "comment": "F-152",
+                  "props": {
+                    "className": "text-secondary"
+                  },
+                  "text": "~"
+                },
+                {
+                  "id": "f_153_max_shipping_fee",
+                  "type": "basic",
+                  "name": "Input",
+                  "comment": "F-153",
+                  "props": {
+                    "type": "number",
+                    "min": "0",
+                    "step": "100",
+                    "name": "maxShippingFee",
+                    "value": "{{_local.filter.maxShippingFee}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.max_shipping_fee",
+                    "className": "input w-32 text-right"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.maxShippingFee": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "orderer_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-160 ~ F-162 주문자 필터 (회원 검색)",
+          "slot": "{{(_local.visibleFilters || []).includes('orderer') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 13,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "comment": "E-013 편집모드 체크박스",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('orderer')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_order_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "f_160_orderer_label",
+              "type": "basic",
+              "name": "Span",
+              "comment": "F-160",
+              "props": {
+                "className": "filter-label w-20"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.filter.orderer"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-1"
+              },
+              "children": [
+                {
+                  "id": "f_161_orderer_searchable_dropdown",
+                  "type": "composite",
+                  "name": "SearchableDropdown",
+                  "comment": "F-161",
+                  "props": {
+                    "options": "{{_local.ordererSearchResults ?? []}}",
+                    "value": "{{_local.filter.ordererUuid || ''}}",
+                    "triggerLabel": "$t:sirsoft-ecommerce.admin.order.filter.orderer_select",
+                    "searchPlaceholder": "$t:sirsoft-ecommerce.admin.order.filter.orderer_search_placeholder",
+                    "noResultsText": "$t:common.no_results",
+                    "initialText": "$t:sirsoft-ecommerce.admin.order.filter.orderer_search_initial",
+                    "className": "w-64"
+                  },
+                  "actions": [
+                    {
+                      "event": "onSearch",
+                      "handler": "apiCall",
+                      "debounce": 300,
+                      "auth_required": true,
+                      "target": "/api/admin/users/search",
+                      "params": {
+                        "method": "GET",
+                        "query": {
+                          "keyword": "{{$args[0]}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "ordererSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "ordererSearchResults": []
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "event": "onChange",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "filter.ordererUuid": "{{$args[0]}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "f_162_orderer_clear_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-162",
+                  "if": "{{!!_local.filter.ordererUuid}}",
+                  "props": {
+                    "type": "button",
+                    "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "xmark",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "filter.ordererUuid": "",
+                        "ordererSearchResults": []
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "preset_row",
+      "type": "basic",
+      "name": "Div",
+      "comment": "프리셋 영역 - 데이터소스 기반 동적 표시",
+      "props": {
+        "className": "flex flex-wrap items-center gap-3 mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "sliders",
+                "className": "w-4 h-4"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.label"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "openModal",
+              "target": "modal_preset_manage"
+            }
+          ]
+        },
+        {
+          "id": "preset_buttons_dynamic",
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "presets.data || []",
+            "item_var": "preset"
+          },
+          "props": {
+            "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
+          },
+          "text": "{{preset.name}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "merge": "shallow",
+                    "filter": {
+                      "selectedPreset": "{{preset.id}}",
+                      "searchField": "{{preset.conditions?.searchField || 'all'}}",
+                      "searchKeyword": "{{preset.conditions?.searchKeyword || ''}}",
+                      "dateType": "{{preset.conditions?.dateType || 'order_date'}}",
+                      "startDate": "{{preset.conditions?.startDate || ''}}",
+                      "endDate": "{{preset.conditions?.endDate || ''}}",
+                      "dateQuick": "{{preset.conditions?.dateQuick || ''}}",
+                      "orderStatus": "{{preset.conditions?.orderStatus || []}}",
+                      "claimRefundStatus": "{{preset.conditions?.claimRefundStatus || []}}",
+                      "claimReturnStatus": "{{preset.conditions?.claimReturnStatus || []}}",
+                      "claimExchangeStatus": "{{preset.conditions?.claimExchangeStatus || []}}",
+                      "deliveryMethods": "{{preset.conditions?.deliveryMethods || []}}",
+                      "paymentMethods": "{{preset.conditions?.paymentMethods || []}}",
+                      "category1": "{{preset.conditions?.category1 || ''}}",
+                      "category2": "{{preset.conditions?.category2 || ''}}",
+                      "category3": "{{preset.conditions?.category3 || ''}}",
+                      "category4": "{{preset.conditions?.category4 || ''}}",
+                      "minPrice": "{{preset.conditions?.minPrice || ''}}",
+                      "maxPrice": "{{preset.conditions?.maxPrice || ''}}",
+                      "countries": "{{preset.conditions?.countries || []}}",
+                      "devices": "{{preset.conditions?.devices || []}}",
+                      "ordererUuid": "{{preset.conditions?.ordererUuid || ''}}"
+                    }
+                  }
+                },
+                {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/ecommerce/orders",
+                    "replace": true,
+                    "mergeQuery": false,
+                    "query": {
+                      "page": 1,
+                      "preset_id": "{{preset.id}}",
+                      "search_field": "{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}",
+                      "search_keyword": "{{preset.conditions?.searchKeyword || null}}",
+                      "date_type": "{{(preset.conditions?.dateType || 'order_date') !== 'order_date' ? preset.conditions?.dateType : null}}",
+                      "start_date": "{{preset.conditions?.startDate || null}}",
+                      "end_date": "{{preset.conditions?.endDate || null}}",
+                      "order_status[]": "{{(preset.conditions?.orderStatus || []).length > 0 ? preset.conditions?.orderStatus : null}}",
+                      "claim_refund_status[]": "{{(preset.conditions?.claimRefundStatus || []).length > 0 ? preset.conditions?.claimRefundStatus : null}}",
+                      "claim_return_status[]": "{{(preset.conditions?.claimReturnStatus || []).length > 0 ? preset.conditions?.claimReturnStatus : null}}",
+                      "claim_exchange_status[]": "{{(preset.conditions?.claimExchangeStatus || []).length > 0 ? preset.conditions?.claimExchangeStatus : null}}",
+                      "shipping_type[]": "{{(preset.conditions?.deliveryMethods || []).length > 0 ? preset.conditions?.deliveryMethods : null}}",
+                      "payment_method[]": "{{(preset.conditions?.paymentMethods || []).length > 0 ? preset.conditions?.paymentMethods : null}}",
+                      "category1": "{{preset.conditions?.category1 || null}}",
+                      "category2": "{{preset.conditions?.category2 || null}}",
+                      "category3": "{{preset.conditions?.category3 || null}}",
+                      "category4": "{{preset.conditions?.category4 || null}}",
+                      "min_amount": "{{preset.conditions?.minPrice || null}}",
+                      "max_amount": "{{preset.conditions?.maxPrice || null}}",
+                      "country_codes[]": "{{(preset.conditions?.countries || []).length > 0 ? preset.conditions?.countries : null}}",
+                      "order_device[]": "{{(preset.conditions?.devices || []).length > 0 ? preset.conditions?.devices : null}}",
+                      "orderer_uuid": "{{preset.conditions?.ordererUuid || null}}"
+                    }
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "info",
+                    "message": "$t:sirsoft-ecommerce.admin.order.preset.applied|name={{preset.name}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search_row_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "comment": "검색 영역 - 검색 필드와 버튼 영역 분리",
+      "props": {
+        "className": "flex flex-col md:flex-row md:items-center gap-3"
+      },
+      "children": [
+        {
+          "id": "search_row_line1",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-001, F-002 검색 필드 + 검색어 입력",
+          "props": {
+            "className": "flex-1 flex items-center gap-2"
+          },
+          "children": [
+            {
+              "id": "f_001_search_field_select",
+              "type": "composite",
+              "name": "Select",
+              "comment": "F-001",
+              "props": {
+                "name": "searchField",
+                "className": "w-80 shrink-0",
+                "value": "{{_local.filter.searchField}}",
+                "options": [
+                  {
+                    "value": "all",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.all"
+                  },
+                  {
+                    "value": "order_number",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.order_number"
+                  },
+                  {
+                    "value": "orderer_name",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.orderer_name"
+                  },
+                  {
+                    "value": "product_name",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.product_name"
+                  },
+                  {
+                    "value": "receiver_name",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.receiver_name"
+                  },
+                  {
+                    "value": "phone",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.phone"
+                  },
+                  {
+                    "value": "email",
+                    "label": "$t:sirsoft-ecommerce.admin.order.search.field.email"
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "filter.searchField": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "f_002_search_keyword_input",
+              "type": "basic",
+              "name": "Div",
+              "comment": "F-002",
+              "props": {
+                "className": "flex-1 min-w-64 relative"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.order.search.placeholder",
+                    "className": "input w-full pr-10",
+                    "value": "{{_local.filter.searchKeyword}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.searchKeyword": "{{$event.target.value}}"
+                      }
+                    },
+                    {
+                      "type": "keypress",
+                      "key": "Enter",
+                      "actionRef": "searchOrders"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "search",
+                    "className": "w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "search_row_line2",
+          "type": "basic",
+          "name": "Div",
+          "comment": "F-003, F-004 컬럼 선택 + 상세검색 버튼",
+          "props": {
+            "className": "flex items-center gap-2 ml-auto"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex items-center gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "f_003_column_selector",
+              "type": "composite",
+              "name": "ColumnSelector",
+              "comment": "F-003",
+              "props": {
+                "id": "admin_order_list_columns",
+                "columns": [
+                  {
+                    "field": "ordered_at",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.order_date",
+                    "required": true
+                  },
+                  {
+                    "field": "order_number",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.order_number",
+                    "required": true
+                  },
+                  {
+                    "field": "product",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.product"
+                  },
+                  {
+                    "field": "order_amount",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.order_amount",
+                    "required": true
+                  },
+                  {
+                    "field": "order_status",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.order_status",
+                    "required": true
+                  },
+                  {
+                    "field": "orderer",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.orderer"
+                  },
+                  {
+                    "field": "payment_method",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.payment_method"
+                  },
+                  {
+                    "field": "delivery_method",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.delivery_method"
+                  },
+                  {
+                    "field": "country",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.country"
+                  },
+                  {
+                    "field": "device",
+                    "header": "$t:sirsoft-ecommerce.admin.order.column.device"
+                  }
+                ],
+                "visibleColumns": "{{_local.visibleColumns}}",
+                "triggerLabel": "$t:sirsoft-ecommerce.admin.order.search.column_select",
+                "menuTitle": "$t:common.column_selector_title",
+                "menuDescription": "$t:common.column_selector_description",
+                "position": "right",
+                "defaultColumns": [
+                  "ordered_at",
+                  "order_number",
+                  "product",
+                  "order_amount",
+                  "order_status",
+                  "orderer",
+                  "payment_method",
+                  "delivery_method",
+                  "country",
+                  "device"
+                ]
+              },
+              "actions": [
+                {
+                  "event": "onColumnVisibilityChange",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleColumns": "{{$args[0]}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "f_004_detail_search_button",
+              "type": "basic",
+              "name": "Button",
+              "comment": "F-004 상세검색 토글",
+              "props": {
+                "type": "button",
+                "className": "{{_local.showDetailFilter ? 'btn btn-primary' : 'btn btn-outline'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "filter",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.search.detail_search"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
+                    "className": "w-4 h-4"
+                  }
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "showDetailFilter": "{{!_local.showDetailFilter}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "basic_filter_section",
+      "type": "basic",
+      "name": "Div",
+      "comment": "기본 필터 영역 - SlotContainer로 렌더링",
+      "props": {
+        "className": "flex flex-col p-4"
+      },
+      "children": [
+        {
+          "id": "basic_filters_slot",
+          "type": "composite",
+          "name": "SlotContainer",
+          "props": {
+            "slotId": "basic_filters",
+            "className": "flex flex-col gap-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "detail_filter_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "comment": "상세 필터 영역 - showDetailFilter 시 표시",
+      "if": "{{_local.showDetailFilter}}",
+      "props": {
+        "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mx-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.filter.detail_title"
+        },
+        {
+          "id": "detail_filters_slot",
+          "type": "composite",
+          "name": "SlotContainer",
+          "props": {
+            "slotId": "detail_filters",
+            "className": "flex flex-col gap-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "filter_actions",
+      "type": "basic",
+      "name": "Div",
+      "comment": "필터 액션 버튼 영역",
+      "props": {
+        "className": "flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "filter_actions_row1",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "contents"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "edit_search_button_wrapper",
+              "type": "basic",
+              "name": "Div",
+              "comment": "좌측: 검색편집 버튼 래퍼 (flex-1)",
+              "props": {
+                "className": "flex-1"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "hidden"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "f_140_edit_search_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-140 검색 편집 버튼",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.isEditMode ? 'btn btn-primary' : 'btn btn-outline'}}"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "sliders",
+                        "className": "w-4 h-4"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.order.search.edit_search"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "isEditMode": "{{!_local.isEditMode}}",
+                        "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "comment": "중앙: 검색/초기화/프리셋 버튼 그룹 (flex-1 justify-center)",
+              "props": {
+                "className": "flex-1 flex items-center justify-center gap-2"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "contents"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "f_141_search_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-141 검색 버튼",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "btn btn-primary flex-1"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.action.search",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "actionRef": "searchOrders"
+                    }
+                  ]
+                },
+                {
+                  "id": "f_142_reset_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-142 초기화 버튼",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "btn btn-outline flex-1"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.action.reset",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "merge": "shallow",
+                            "ordererSearchResults": [],
+                            "filter": {
+                              "selectedPreset": "",
+                              "searchField": "all",
+                              "searchKeyword": "",
+                              "dateType": "ordered_at",
+                              "startDate": "",
+                              "endDate": "",
+                              "dateQuick": "",
+                              "orderStatus": [],
+                              "claimRefundStatus": [],
+                              "claimReturnStatus": [],
+                              "claimExchangeStatus": [],
+                              "deliveryMethods": [],
+                              "paymentMethods": [],
+                              "category1": "",
+                              "category2": "",
+                              "category3": "",
+                              "category4": "",
+                              "minPrice": "",
+                              "maxPrice": "",
+                              "countries": [],
+                              "devices": [],
+                              "ordererUuid": ""
+                            }
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/ecommerce/orders",
+                            "mergeQuery": false
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "f_143_preset_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "comment": "F-143 프리셋 저장 버튼",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "hidden"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.preset.save_title",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "savingPresetConditions": "{{_local.filter}}"
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "modal_preset_save"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "comment": "우측: 스페이서 (flex-1)",
+              "props": {
+                "className": "flex-1"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "hidden"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "filter_actions_row2_mobile",
+          "type": "basic",
+          "name": "Div",
+          "comment": "모바일용 2번째 행 (검색편집 + 프리셋 저장)",
+          "props": {
+            "className": "hidden"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "edit_search_button_mobile",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.isEditMode ? 'btn btn-primary flex-1' : 'btn btn-outline flex-1'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "sliders",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.order.search.edit_search"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "isEditMode": "{{!_local.isEditMode}}",
+                    "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "preset_save_button_mobile",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline flex-1"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.save_title",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "savingPresetConditions": "{{_local.filter}}"
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "modal_preset_save"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

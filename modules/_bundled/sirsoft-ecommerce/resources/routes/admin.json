@@ -1,0 +1,277 @@
+{
+  "version": "1.0.0",
+  "routes": [
+    {
+      "path": "*/admin/ecommerce/products/create",
+      "layout": "admin_ecommerce_product_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.product.create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product.title_create",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.menu.products", "path": "/admin/ecommerce/products" },
+          { "label": "$t:sirsoft-ecommerce.admin.product.title_create" }
+        ]
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/products/:itemCode/edit",
+      "layout": "admin_ecommerce_product_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.product.update",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product.title_edit",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.menu.products", "path": "/admin/ecommerce/products" },
+          { "label": "$t:sirsoft-ecommerce.admin.product.title_edit" }
+        ]
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/brands",
+      "layout": "admin_ecommerce_brand_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.brand.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.brand.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/categories",
+      "layout": "admin_ecommerce_category_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.category.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.category.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/products",
+      "layout": "admin_ecommerce_product_list",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.product.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/settings",
+      "layout": "admin_ecommerce_settings",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.settings.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.settings.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/mileage-deposit-settings",
+      "layout": "admin_ecommerce_mileage_deposit_settings",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.mileage-deposit-settings.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/manage-excel-download",
+      "layout": "admin_ecommerce_excel_download_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.excel-download.read",
+      "comment": "엑셀 다운로드 미제공 - 진입 버튼 숨김 처리됨",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.excel_download.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/payment-failure-history",
+      "layout": "admin_ecommerce_payment_failure_history",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.order.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.payment_failure_history.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/personal-payment",
+      "layout": "admin_ecommerce_personal_payment",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.personal-payment.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.personal_payment.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/personal-payment-create",
+      "layout": "admin_ecommerce_personal_payment_create",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.personal-payment.create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.personal_payment_create.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/personal-payment/:id",
+      "layout": "admin_ecommerce_personal_payment_detail",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.personal-payment.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/product-notices",
+      "layout": "admin_ecommerce_product_notice_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.product-notice.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product_notice.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/common-info",
+      "layout": "admin_ecommerce_product_common_info_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.common-info.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/deposits",
+      "layout": "admin_ecommerce_deposit_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.deposit.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.deposit.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/promotion-coupons",
+      "layout": "admin_ecommerce_promotion_coupon_list",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.promotion-coupon.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/promotion-coupon-create",
+      "layout": "admin_ecommerce_promotion_coupon_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.promotion-coupon.create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/promotion-coupons/:id/edit",
+      "layout": "admin_ecommerce_promotion_coupon_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.promotion-coupon.update",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/promotion-discount-codes",
+      "layout": "admin_ecommerce_promotion_discount_code_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.promotion-discount-code.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/promotion-discount-code-create",
+      "layout": "admin_ecommerce_promotion_discount_code_create",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.promotion-discount-code.create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/main-banners",
+      "layout": "admin_ecommerce_main_banner_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.main-banner.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.main_banner.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/orders",
+      "layout": "admin_ecommerce_order_list",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.order.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.order.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/orders/:orderNumber",
+      "layout": "admin_ecommerce_order_detail",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.order.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.order.detail.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/reviews",
+      "layout": "admin_ecommerce_product_review_index",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.reviews.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product_review.title"
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/shipping-policies",
+      "layout": "admin_ecommerce_shipping_policy_list",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.shipping-policies.read",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title" }
+        ]
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/shipping-policies/create",
+      "layout": "admin_ecommerce_shipping_policy_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.shipping-policies.create",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title_create",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title", "path": "/admin/ecommerce/shipping-policies" },
+          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_create" }
+        ]
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/shipping-policies/:id/edit",
+      "layout": "admin_ecommerce_shipping_policy_form",
+      "auth_required": true,
+      "permission": "sirsoft-ecommerce.shipping-policies.update",
+      "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title_edit",
+        "breadcrumb": [
+          { "label": "$t:sirsoft-ecommerce.admin.menu.ecommerce", "path": "/admin/ecommerce" },
+          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title", "path": "/admin/ecommerce/shipping-policies" },
+          { "label": "$t:sirsoft-ecommerce.admin.shipping_policy.title_edit" }
+        ]
+      }
+    },
+    {
+      "path": "*/admin/ecommerce/product-create",
+      "redirect": "/admin/ecommerce/products/create"
+    }
+  ]
+}

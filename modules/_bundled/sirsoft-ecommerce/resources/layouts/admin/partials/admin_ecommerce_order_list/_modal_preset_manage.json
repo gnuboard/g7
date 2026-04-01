@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order List - Preset Management Modal"
+  },
+  "id": "modal_preset_manage",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title",
+    "description": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!presets.data || presets.data.length === 0}}",
+      "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400" },
+      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.empty"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{presets.data && presets.data.length > 0}}",
+      "props": { "className": "space-y-3" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "presets.data",
+            "item_var": "presetItem"
+          },
+          "props": { "className": "flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+              "text": "{{presetItem.name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": { "name": "pen-to-square", "className": "text-sm" }
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "editingPresetId": "{{presetItem.id}}",
+                            "editingPresetName": "{{presetItem.name}}"
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "modal_preset_edit"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": { "name": "trash", "className": "text-sm" }
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "deletingPresetId": "{{presetItem.id}}",
+                            "deletingPresetName": "{{presetItem.name}}"
+                          }
+                        },
+                        {
+                          "handler": "openModal",
+                          "target": "modal_preset_delete_confirm"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "mt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_new",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "openModal",
+              "target": "modal_preset_save"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

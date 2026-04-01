@@ -1,0 +1,104 @@
+{
+  "marketing_consent_title": "마케팅 동의 정보",
+  "email_subscription": "광고성 이메일 수신",
+  "email_subscription_desc": "프로모션, 이벤트, 할인 등의 마케팅 이메일을 수신합니다.",
+  "marketing_consent": "마케팅 동의",
+  "marketing_consent_desc": "마케팅 목적의 개인정보 수집 및 이용에 동의합니다.",
+  "third_party_consent": "제3자 제공 동의",
+  "third_party_consent_desc": "마케팅 목적의 제3자 개인정보 제공에 동의합니다.",
+  "info_disclosure": "정보 공개",
+  "info_disclosure_desc": "프로필 정보를 다른 사용자에게 공개합니다.",
+"agree_marketing_consent": "(선택) 마케팅 동의",
+  "agree_third_party_consent": "(선택) 제3자 제공 동의",
+  "agree_info_disclosure": "(선택) 정보 공개 동의",
+  "no_consent_history": "동의 이력이 없습니다.",
+  "history_date": "일시",
+  "history_channel_key": "동의 항목",
+  "history_action": "변경",
+  "history_source": "경로",
+  "action_granted": "동의",
+  "action_revoked": "철회",
+  "source_register": "회원가입",
+  "source_admin": "관리자",
+  "source_profile": "마이페이지",
+  "consent_date_prefix": "동의일:",
+  "not_agreed": "미동의",
+  "marketing_consent_edit_hint": "수정은 프로필 편집에서 가능합니다",
+  "view_terms": "보기",
+  "info_disclosure_warning": "미동의 시 일부 커뮤니티 기능 이용이 제한될 수 있습니다.",
+  "no_terms_content": "약관 내용이 등록되지 않았습니다.",
+  "terms_published_at": "발행일",
+  "terms_modal_marketing_consent": "마케팅 동의 약관",
+  "terms_modal_email_subscription": "광고성 이메일 수신 약관",
+  "terms_modal_third_party_consent": "제3자 제공 동의 약관",
+  "terms_modal_info_disclosure": "정보 공개 약관",
+  "settings": {
+    "title": "마케팅 동의 설정",
+    "description": "마케팅 동의 항목 및 약관 페이지를 관리합니다.",
+    "section": {
+      "channels": "마케팅 채널",
+      "legal": "법적 동의 항목"
+    },
+    "fields": {
+      "marketing_consent_enabled": {
+        "label": "마케팅 동의 사용",
+        "hint": "비활성화 시 모든 화면에서 마케팅 동의 항목이 숨겨집니다."
+      },
+      "marketing_consent_terms_slug": {
+        "label": "마케팅 동의 약관 페이지",
+        "hint": "페이지 모듈에서 관리하는 약관 페이지의 SLUG를 입력하세요. 비워두면 약관 보기 버튼이 숨겨집니다."
+      },
+      "terms_slug_placeholder": "예: marketing-terms",
+      "channels": {
+        "label": "채널"
+      },
+      "third_party_consent_enabled": {
+        "label": "제3자 제공 동의 사용",
+        "hint": "비활성화 시 제3자 제공 동의 항목이 숨겨집니다."
+      },
+      "third_party_consent_terms_slug": {
+        "label": "제3자 제공 동의 약관 페이지",
+        "hint": "페이지 모듈에서 관리하는 약관 페이지의 SLUG를 입력하세요."
+      },
+      "info_disclosure_enabled": {
+        "label": "정보 공개 동의 사용",
+        "hint": "비활성화 시 정보 공개 동의 항목이 숨겨집니다."
+      },
+      "info_disclosure_terms_slug": {
+        "label": "정보 공개 동의 약관 페이지",
+        "hint": "페이지 모듈에서 관리하는 약관 페이지의 SLUG를 입력하세요."
+      }
+    },
+    "channels": {
+      "description": "마케팅 동의 채널을 관리합니다. 각 채널은 독립적인 동의 항목으로, 회원가입 및 마이페이지에서 개별 수신 여부를 선택할 수 있습니다.",
+      "col_label": "항목명",
+      "col_slug": "약관 slug",
+      "col_enabled": "사용",
+      "add": "채널 추가",
+      "system_badge": "시스템",
+      "delete_success": "채널이 삭제되었습니다.",
+      "save_success": "채널이 저장되었습니다.",
+      "save_error": "채널 저장에 실패하였습니다."
+    },
+    "channel_modal": {
+      "title": "채널 추가 / 편집",
+      "enabled": "사용 여부",
+      "key": "항목 키",
+      "key_hint": "영문 소문자, 숫자, 밑줄(_)만 사용 가능합니다.",
+      "key_placeholder": "예: sms_subscription",
+      "label_ko": "항목명 (한국어)",
+      "label_en": "항목명 (English)",
+      "label_placeholder": "예: 광고성 SMS 수신",
+      "page_slug": "약관 페이지 slug",
+      "page_slug_hint": "비워두면 약관 보기 버튼이 숨겨집니다.",
+      "page_slug_placeholder": "예: sms-terms",
+      "save": "저장",
+      "cancel": "취소"
+    },
+    "channel_deactivate_modal": {
+      "title": "채널을 삭제할 수 없습니다",
+      "message": "이 채널에 동의한 회원이 있어 삭제할 수 없습니다. 대신 채널을 비활성화하시겠습니까?",
+      "confirm": "비활성화로 전환"
+    }
+  }
+}

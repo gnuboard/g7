@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 > 답변글 탭"
+  },
+  "id": "reply",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_reply",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-2 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.reply"
+        },
+        {
+          "id": "field_use_reply",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('use_reply') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reply')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.use_reply" },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
+                          "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_reply"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "basic_defaults.use_reply",
+                    "className": "flex-shrink-0",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_max_reply_depth",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.max_reply_depth" },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
+                          "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_reply_depth"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-shrink-0" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "basic_defaults.max_reply_depth",
+                        "min": 1,
+                        "max": 5,
+                        "className": "{{(_local.errors?.['basic_defaults.max_reply_depth']) ? 'w-32 px-3 py-2 text-sm border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-32 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['basic_defaults.max_reply_depth']}}",
+                      "props": { "className": "text-xs text-red-600 dark:text-red-400 block mt-1" },
+                      "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_reply_depth']) ? _local.errors['basic_defaults.max_reply_depth'][0] : _local.errors?.['basic_defaults.max_reply_depth']) ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

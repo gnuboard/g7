@@ -1,0 +1,600 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Brand Form Panel - Create/Edit Form"
+  },
+  "id": "form_panel",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
+  "children": [
+    {
+      "id": "form_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "if": "{{_global.panelMode === 'create'}}",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.brand.form.create_title"
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "if": "{{_global.panelMode === 'edit'}}",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.brand.form.edit_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "panelMode": "{{_global.selectedBrandId ? 'view' : 'empty'}}"
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "errors": null,
+                    "form": null
+                  }
+                }
+              ],
+              "text": "$t:sirsoft-ecommerce.common.cancel"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "submit",
+                "form": "brand_form",
+                "disabled": "{{_local?.isSaving || (_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true)}}",
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{!_local.isSaving}}",
+                  "props": {
+                    "name": "save",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isSaving}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "w-4 h-4 animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_local.isSaving}}",
+                  "text": "$t:sirsoft-ecommerce.common.save"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.isSaving}}",
+                  "text": "$t:sirsoft-ecommerce.common.saving"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "validation_error",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.errors}}",
+      "props": {
+        "className": "mx-4 mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                  },
+                  "text": "$t:common.validation_error"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{typeof _local.errors === 'string'}}",
+                  "props": {
+                    "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                  },
+                  "text": "{{_local.errors}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                  "props": {
+                    "className": "mt-2 list-disc list-inside space-y-1"
+                  },
+                  "iteration": {
+                    "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                    "item_var": "message"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "props": {
+                        "className": "text-sm text-red-700 dark:text-red-300"
+                      },
+                      "text": "{{message}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brand_form",
+      "blur_until_loaded": "{{_local.isSaving}}",
+      "type": "basic",
+      "name": "Form",
+      "dataKey": "form",
+      "trackChanges": true,
+      "props": {
+        "id": "brand_form",
+        "className": "p-4 space-y-6"
+      },
+      "actions": [
+        {
+          "type": "submit",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "isSaving": true,
+                "errors": null
+              }
+            },
+            {
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "{{_global.panelMode === 'create' ? '/api/modules/sirsoft-ecommerce/admin/brands' : '/api/modules/sirsoft-ecommerce/admin/brands/' + _global.selectedBrandId}}",
+              "params": {
+                "method": "{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}",
+                "body": "{{(() => { const data = {..._local.form}; if (_global.panelMode === 'edit') { delete data.slug; } return data; })()}}"
+              },
+              "onSuccess": [
+                {
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "toast",
+                      "if": "{{_global.panelMode === 'create'}}",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.brand.messages.created"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "if": "{{_global.panelMode === 'edit'}}",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.brand.messages.updated"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "brands"
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "panelMode": "view",
+                        "selectedBrandId": "{{result.data.id}}",
+                        "selectedBrand": "{{result.data}}"
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isSaving": false,
+                        "errors": null
+                      }
+                    }
+                  ]
+                }
+              ],
+              "onError": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isSaving": false,
+                    "errors": "{{error.errors}}"
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "{{error.message}}",
+                    "icon": "triangle-exclamation"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "id": "form_basic_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "form_basic_title",
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.brand.info.basic"
+            },
+            {
+              "id": "form_slug_field",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "id": "form_slug_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.brand.form.slug"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 ml-1"
+                      },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "id": "form_slug_input",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "slug",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.brand.form.slug_placeholder",
+                    "readonly": "{{_global.panelMode === 'edit'}}",
+                    "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}",
+                    "className": "{{_global.panelMode === 'edit' ? 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-mono cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent font-mono'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.slug}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.slug?.[0] ?? ''}}"
+                },
+                {
+                  "id": "form_slug_hint",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_local.errors?.slug}}",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.brand.form.slug_hint"
+                }
+              ]
+            },
+            {
+              "id": "form_name_field",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "id": "form_name_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.brand.form.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 ml-1"
+                      },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "id": "form_name_input",
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "name": "name",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.brand.form.name_placeholder",
+                    "maxLength": 100,
+                    "required": true,
+                    "layout": "tabs",
+                    "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.name}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "form_additional_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 pt-6"
+          },
+          "children": [
+            {
+              "id": "form_website_field",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "id": "form_website_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.brand.form.website"
+                },
+                {
+                  "id": "form_website_input",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "url",
+                    "name": "website",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.brand.form.website_placeholder",
+                    "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.website}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.website?.[0] ?? ''}}"
+                },
+                {
+                  "id": "form_website_hint",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_local.errors?.website}}",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.brand.form.website_hint"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border-t border-gray-200 dark:border-gray-700"
+          }
+        },
+        {
+          "id": "form_status_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 pt-6"
+          },
+          "children": [
+            {
+              "id": "form_status_title",
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.brand.info.status"
+            },
+            {
+              "id": "form_toggle",
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "label": "$t:sirsoft-ecommerce.admin.brand.form.is_active",
+                "name": "is_active",
+                "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "form_timestamps_section",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.panelMode === 'edit'}}",
+          "props": {
+            "className": "pt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.created_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{_global.selectedBrand?.created_at}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.updated_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{_global.selectedBrand?.updated_at}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

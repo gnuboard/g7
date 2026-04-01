@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "최근 게시글 카드"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "clock", "className": "w-5 h-5 text-gray-500 dark:text-gray-400" } },
+            { "type": "basic", "name": "Span", "text": "$t:home.recent_posts" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer" },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/boards/popular" } }],
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:common.more" },
+            { "type": "basic", "name": "Icon", "props": { "name": "arrow-right", "className": "w-4 h-4" } }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{recent_posts.data && recent_posts.data.length > 0}}",
+      "props": { "className": "space-y-2 mb-1" },
+      "iteration": { "source": "{{recent_posts.data ?? []}}", "item_var": "post" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors cursor-pointer" },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{post.board_slug}}/{{post.id}}" } }],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between gap-2 text-xs" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2 flex-1 min-w-0" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 shrink-0" }, "text": "{{post.board_name}}" },
+                    { "type": "basic", "name": "Icon", "if": "{{post.is_secret}}", "props": { "name": "lock", "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" } },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white text-left line-clamp-1" }, "text": "{{post.title}}" },
+                    { "type": "basic", "name": "Span", "if": "{{post.is_new}}", "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded shrink-0" }, "text": "N" },
+                    { "type": "basic", "name": "Span", "if": "{{post.comment_count > 0}}", "props": { "className": "text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0" }, "text": "[{{post.comment_count}}]" }
+                  ]
+                },
+                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0", "title": "{{post.created_at ?? ''}}" }, "text": "{{post.created_at_formatted ?? ''}}" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!recent_posts.data || recent_posts.data.length === 0}}",
+      "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "inbox", "className": "w-8 h-8 mx-auto mb-2 opacity-50" } },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm" }, "text": "$t:home.no_posts" }
+      ]
+    }
+  ]
+}

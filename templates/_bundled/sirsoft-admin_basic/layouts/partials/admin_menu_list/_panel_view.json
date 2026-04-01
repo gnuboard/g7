@@ -1,0 +1,735 @@
+{
+  "layout_name": "panel_view",
+  "id": "view_panel",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_global.selectedMenuId && _global.panelMode === 'view'}}",
+  "children": [
+    {
+      "id": "view_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:admin.menus.menu_info_title"
+        }
+      ]
+    },
+    {
+      "id": "view_content",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-4 divide-y divide-gray-200 dark:divide-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "py-4 first:pt-0"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+              },
+              "text": "$t:admin.menus.info.basic"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{$localized(_global.selectedMenu?.name)}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.slug"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white font-mono"
+                      },
+                      "text": "{{_global.selectedMenu?.slug}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.path"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white font-mono"
+                      },
+                      "text": "{{_global.selectedMenu?.url}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.icon"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_global.selectedMenu?.icon || 'file'}}",
+                            "className": "w-4 h-4 text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{_global.selectedMenu?.icon}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.order"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{_global.selectedMenu?.order ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.status"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.is_active}}",
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                      },
+                      "text": "$t:admin.menus.info.active"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_global.selectedMenu?.is_active}}",
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                      },
+                      "text": "$t:admin.menus.info.inactive"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "py-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+              },
+              "text": "$t:admin.menus.info.affiliation"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.module"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.extension_type === 'core' || _global.selectedMenu?.extension_type == null}}",
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
+                      },
+                      "text": "Core"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.extension_type != null && _global.selectedMenu?.extension_type !== 'core'}}",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{_global.selectedMenu?.extension_identifier ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.plugin"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.plugin_id === null || _global.selectedMenu?.plugin_id === undefined}}",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "-"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.plugin_id !== null && _global.selectedMenu?.plugin_id !== undefined}}",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{$localized(_global.selectedMenu?.plugin?.name)}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "py-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+              },
+              "text": "$t:admin.menus.info.hierarchy"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.parent_menu"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.parent_id === null}}",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.menus.info.top_level"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.parent_id !== null}}",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{$localized(_global.selectedMenu?.parent?.name)}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.child_menus"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_global.selectedMenu?.children || _global.selectedMenu?.children?.length === 0}}",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.menus.info.no_children"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.selectedMenu?.children?.length > 0}}",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.menus.info.children_count|count={{_global.selectedMenu?.children?.length}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "py-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+              },
+              "text": "$t:admin.menus.info.access_permission"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.form.roles"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "iteration": {
+                        "source": "{{_global.selectedMenu?.roles ?? []}}",
+                        "item_var": "role"
+                      },
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded mr-1"
+                      },
+                      "text": "{{$localized(role.name)}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_global.selectedMenu?.roles || _global.selectedMenu?.roles?.length < 1}}",
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                      },
+                      "text": "$t:admin.menus.info.all_roles"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "py-4 last:pb-0"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": {
+                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3"
+              },
+              "text": "$t:admin.menus.info.creator_info"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.creator"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white font-medium"
+                          },
+                          "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "{{_global.selectedMenu?.creator?.email ?? 'system@g7platform.com'}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.created_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-1.5 text-sm text-gray-900 dark:text-white"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "calendar",
+                            "className": "w-4 h-4 text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_global.selectedMenu?.created_at}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "w-24 text-sm text-gray-500 dark:text-gray-400 shrink-0"
+                      },
+                      "text": "$t:admin.menus.info.updated_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-1.5 text-sm text-gray-900 dark:text-white"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "clock",
+                            "className": "w-4 h-4 text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_global.selectedMenu?.updated_at}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "view_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "disabled": "{{menus?.data?.abilities?.can_update !== true}}",
+                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "panelMode": "edit",
+                        "formData": {
+                          "name": "{{_global.selectedMenu?.name}}",
+                          "slug": "{{_global.selectedMenu?.slug}}",
+                          "url": "{{_global.selectedMenu?.url}}",
+                          "icon": "{{_global.selectedMenu?.icon}}",
+                          "parent_id": "{{_global.selectedMenu?.parent_id}}",
+                          "extension_type": "{{_global.selectedMenu?.extension_type}}",
+                          "extension_identifier": "{{_global.selectedMenu?.extension_identifier}}",
+                          "is_active": "{{_global.selectedMenu?.is_active}}",
+                          "roles": "{{(_global.selectedMenu?.roles ?? []).map(r => r.id)}}"
+                        }
+                      }
+                    },
+                    {
+                      "handler": "replaceUrl",
+                      "params": {
+                        "query": { "menu": "{{_global.selectedMenu?.slug}}", "mode": "edit" }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "text": "$t:common.edit"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_global.selectedMenu?.extension_type !== 'core'}}",
+              "props": {
+                "disabled": "{{menus?.data?.abilities?.can_delete !== true}}",
+                "className": "flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "delete_confirm_modal"
+                }
+              ],
+              "text": "$t:common.delete"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_global.selectedMenu?.extension_type === 'core'}}",
+              "props": {
+                "className": "flex-1 px-4 py-2 text-gray-300 dark:text-gray-600 border border-gray-200 dark:border-gray-700 cursor-not-allowed rounded-lg text-sm",
+                "disabled": true
+              },
+              "text": "$t:common.delete"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.selectedMenu?.extension_type === 'core'}}",
+          "props": {
+            "className": "mt-3 text-center text-xs text-gray-500 dark:text-gray-400"
+          },
+          "text": "$t:admin.menus.modals.delete_core_warning"
+        }
+      ]
+    }
+  ]
+}

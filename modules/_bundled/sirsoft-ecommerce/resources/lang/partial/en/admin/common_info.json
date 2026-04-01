@@ -1,0 +1,89 @@
+{
+  "title": "Common Info Management",
+  "description": "Manage common information displayed on product detail pages",
+  "list": {
+    "title": "Common Info",
+    "add": "Add",
+    "languages_count": "{count} languages",
+    "default": "Default",
+    "empty": "No common info registered.",
+    "search_placeholder": "Search by name"
+  },
+  "empty_state": {
+    "title": "Select Common Info",
+    "description": "Select common info from the list on the left or add a new one."
+  },
+  "detail": {
+    "title": "Common Info Details",
+    "name": "Common Info Name",
+    "status": "Status",
+    "default": "Default",
+    "active": "Active",
+    "created_at": "Created At",
+    "updated_at": "Updated At",
+    "copy": "Copy",
+    "content": "Content",
+    "content_placeholder": "Content displayed here"
+  },
+  "form": {
+    "title_add": "Add Common Info",
+    "title_edit": "Edit Common Info",
+    "title_copy": "Copy Common Info",
+    "name": "Common Info Name",
+    "name_placeholder": "Enter common info name",
+    "set_default": "Set as default",
+    "is_active": "Status",
+    "active_label": "Active",
+    "content_section": "Content",
+    "mode_text": "Text",
+    "mode_html": "HTML",
+    "preview": "Preview",
+    "placeholder_text": "Enter content",
+    "placeholder_html": "Enter content in HTML format",
+    "status_section": "Status Settings",
+    "status_default": "Set as Default",
+    "status_active": "Active"
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  },
+  "modal": {
+    "delete": {
+      "title": "Delete Common Info",
+      "confirm_message": "Are you sure you want to delete '{name}'?",
+      "confirm_suffix": "Would you like to delete this common info?",
+      "warning": "All products using this common info will be unlinked.",
+      "irreversible": "※ This action cannot be undone."
+    },
+    "editing": {
+      "title": "Editing in Progress",
+      "message": "Changes will not be saved.",
+      "confirm_message": "Are you sure you want to cancel and select another item?",
+      "continue": "Continue Editing",
+      "discard": "Discard and Move"
+    },
+    "content_mode_change": {
+      "title": "Change Input Mode",
+      "message": "Switching from HTML to plain text will remove all HTML tags. Continue?",
+      "confirm": "Change"
+    },
+    "set_default": {
+      "title": "Confirm Default Setting",
+      "message": "Set this common info as default? The existing default setting will be removed."
+    },
+    "copy": {
+      "title": "Copy Common Info",
+      "message": "Are you sure you want to copy '{name}'?",
+      "confirm": "Copy"
+    }
+  },
+  "button": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "set_default": "Set as Default"
+  }
+}

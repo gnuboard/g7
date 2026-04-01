@@ -1,0 +1,832 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_template_layout_edit",
+    "permissions": [
+        "core.templates.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.templates.layout_edit.title",
+        "description": "$t:admin.templates.layout_edit.description"
+    },
+    "data_sources": [
+        {
+            "id": "template_info",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{route.identifier}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "layout_files",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "initGlobal": [
+                "layoutFilesList",
+                {
+                    "key": "selectedLayoutName",
+                    "path": "[0].name"
+                }
+            ],
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "current_layout",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || _global.layoutFilesList?.[0]?.name}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": {
+                "key": "editorContent",
+                "path": "content"
+            },
+            "fallback": {
+                "data": {
+                    "content": "{}",
+                    "name": "",
+                    "description": "",
+                    "updated_at": null
+                }
+            }
+        },
+        {
+            "id": "layout_versions",
+            "type": "api",
+            "endpoint": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName}}/versions",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "page_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.templates.layout_edit.page_title ({{template_info?.data?.name ?? route.identifier}})",
+                            "description": "$t:admin.templates.layout_edit.page_description"
+                        },
+                        "children": [
+                            {
+                                "id": "header_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigateBack"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "params": {
+                                            "actions": [
+                                                {
+                                                    "handler": "apiCall",
+                                                    "auth_required": true,
+                                                    "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "content": "{{_global.editorContent}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "openWindow",
+                                                            "params": {
+                                                                "path": "/preview/{{response.data.token}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:admin.templates.layout_edit.preview_error"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-eye",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:admin.templates.layout_edit.preview"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{current_layout?.data?.abilities?.can_update !== false}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "disabled": "{{_global.isSaving}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isSaving": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}",
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": {
+                                                        "content": "{{_global.editorContent}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.templates.layout_edit.save_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "current_layout"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isSaving}}",
+                                        "props": {
+                                            "name": "fa-regular fa-floppy-disk",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isSaving}}",
+                                        "props": {
+                                            "name": "fa-solid fa-spinner",
+                                            "className": "w-4 h-4 animate-spin"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "mobile_file_selector",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": "{{_global.isSaving}}",
+                        "props": {
+                            "className": "hidden"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "block mt-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2 mb-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-regular fa-folder-open",
+                                                    "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-white"
+                                                },
+                                                "text": "$t:admin.templates.layout_edit.layout_files"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "RichSelect",
+                                        "props": {
+                                            "value": "{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}",
+                                            "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name, name: f.name, size: f.size, updated_at: f.updated_at, has_update: f.has_update }))}}",
+                                            "placeholder": "$t:admin.templates.layout_edit.select_file"
+                                        },
+                                        "component_layout": {
+                                            "item": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col w-full"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center justify-between"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{item.name}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{item.has_update}}",
+                                                                    "props": {
+                                                                        "className": "px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded"
+                                                                    },
+                                                                    "text": "$t:admin.templates.layout_edit.update_available"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{item.size}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "•"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{item.updated_at}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "selected": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "truncate"
+                                                    },
+                                                    "text": "{{item.name}}"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedLayoutName": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "current_layout"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "main_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": "{{_global.isSaving}}",
+                        "props": {
+                            "className": "mt-6 flex flex-row gap-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mt-6 flex flex-col gap-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "file_list_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "w-72 flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "p-4 border-b border-gray-200 dark:border-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-regular fa-folder-open",
+                                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "$t:admin.templates.layout_edit.layout_files"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:admin.templates.layout_edit.select_file_prompt"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "divide-y divide-gray-200 dark:divide-gray-700 max-h-[calc(100vh-320px)] overflow-y-auto"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{layout_files?.data ?? []}}",
+                                                    "item_var": "file",
+                                                    "index_var": "fileIdx"
+                                                },
+                                                "props": {
+                                                    "className": "p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors {{(_global.selectedLayoutName || layout_files?.data?.[0]?.name) === file.name ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500' : ''}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "selectedLayoutName": "{{file.name}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "current_layout"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "fa-regular fa-file-code",
+                                                                    "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "font-medium text-gray-900 dark:text-white text-sm"
+                                                                },
+                                                                "text": "{{file.name}}.json"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{file.has_update}}",
+                                                                "props": {
+                                                                    "className": "px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
+                                                                },
+                                                                "text": "$t:admin.templates.layout_edit.updated_badge"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "{{raw:file.description || file.name}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "mt-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "{{file.size_formatted || '0 KB'}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "•"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "{{file.updated_at}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "editor_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "p-4 border-b border-gray-200 dark:border-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-start justify-between gap-4"
+                                                },
+                                                "responsive": {
+                                                    "portable": {
+                                                        "props": {
+                                                            "className": "flex flex-col gap-3"
+                                                        }
+                                                    }
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-2 flex-wrap"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "fa-regular fa-file-code",
+                                                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "font-medium text-gray-900 dark:text-white"
+                                                                        },
+                                                                        "text": "{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.json"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{current_layout?.data?.has_update}}",
+                                                                        "props": {
+                                                                            "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
+                                                                        },
+                                                                        "text": "$t:admin.templates.layout_edit.layout_updated_badge"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "{{raw:current_layout?.data?.description || ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.templates.layout_edit.modified_at|date={{current_layout?.data?.updated_at ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "layout_versions"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "openModal",
+                                                                                "target": "version_history_modal"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "fa-solid fa-clock-rotate-left",
+                                                                            "className": "w-4 h-4"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.templates.layout_edit.version_history_button"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "CodeEditor",
+                                                "props": {
+                                                    "value": "{{raw:_global.editorContent ?? current_layout?.data?.content ?? '{}'}}",
+                                                    "language": "json",
+                                                    "theme": "vs-dark",
+                                                    "height": "calc(100vh - 340px)"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "event": "onChange",
+                                                        "handler": "setState",
+                                                        "debounce": 300,
+                                                        "params": {
+                                                            "target": "global",
+                                                            "editorContent": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "p-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-circle-info",
+                                                            "className": "w-4 h-4"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.templates.layout_edit.save_creates_view"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_template_layout_edit/_modal_version_history.json"
+        }
+    ]
+}

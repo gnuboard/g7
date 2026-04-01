@@ -1,0 +1,259 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Order Detail - Payment Info Tab"
+    },
+    "id": "section_payment_info",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "data-section-id": "payment_info"
+    },
+    "children": [
+        {
+            "id": "payment_info_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.title"
+                },
+                {
+                    "id": "payment_cards",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-6"
+                    },
+                    "iteration": {
+                        "source": "{{order.data?.payments ?? []}}",
+                        "item_var": "payment",
+                        "index_var": "payIdx"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "variant": "outline"
+                                                    },
+                                                    "text": "{{payment.payment_type_label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                    },
+                                                    "text": "{{payment.payment_number}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "props": {
+                                                "variant": "{{payment.payment_status_variant}}"
+                                            },
+                                            "text": "{{payment.payment_status_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Hr",
+                                    "props": { "className": "border-gray-100 dark:border-gray-800 mb-4" }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method" },
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 block" }, "text": "{{payment.payment_method_label}}" },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{payment.account_info}}",
+                                                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" },
+                                                    "text": "{{payment.account_info}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_request_date" },
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-gray-100 block" }, "text": "{{payment.requested_at_formatted}}" }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{payment.paid_at_formatted}}",
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_date" },
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-gray-100 block" }, "text": "{{payment.paid_at_formatted}}" }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{payment.due_date_formatted}}",
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.due_date" },
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-red-600 dark:text-red-400 font-medium block" }, "text": "{{payment.due_date_formatted}}" }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Hr",
+                                    "props": { "className": "border-gray-100 dark:border-gray-800 mb-4" }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": { "className": "space-y-2" },
+                                    "children": [
+                                        { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.order_amount" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{order.data?.subtotal_amount_formatted}}" }
+                                        ] },
+                                        { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.shipping_fee" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{order.data?.total_shipping_amount_formatted}}" }
+                                        ] },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{order.data?.total_discount_amount > 0}}",
+                                            "props": { "className": "space-y-1" },
+                                            "children": [
+                                                { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 font-medium" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.total_discount" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400" }, "text": "-{{order.data?.total_discount_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{order.data?.total_product_coupon_discount_amount > 0}}", "props": { "className": "flex justify-between text-xs pl-4" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "-{{order.data?.total_product_coupon_discount_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{order.data?.total_code_discount_amount > 0}}", "props": { "className": "flex justify-between text-xs pl-4" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "-{{order.data?.total_code_discount_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{payment.event_discount_amount > 0}}", "props": { "className": "flex justify-between text-xs pl-4" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.event" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "-{{payment.event_discount_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{payment.referral_discount_amount > 0}}", "props": { "className": "flex justify-between text-xs pl-4" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "-{{payment.referral_discount_amount_formatted}}" }
+                                                ] }
+                                            ]
+                                        },
+                                        { "type": "basic", "name": "Div", "if": "{{order.data?.total_points_used_amount > 0}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-purple-600 dark:text-purple-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.mileage_used" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-purple-600 dark:text-purple-400" }, "text": "-{{order.data?.total_points_used_amount_formatted}}" }
+                                        ] },
+                                        { "type": "basic", "name": "Div", "if": "{{order.data?.total_deposit_used_amount > 0}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-green-600 dark:text-green-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-green-600 dark:text-green-400" }, "text": "-{{order.data?.total_deposit_used_amount_formatted}}" }
+                                        ] },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": { "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2 mt-2" },
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.final_amount" },
+                                                { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-gray-100" }, "text": "{{order.data?.total_paid_amount_formatted}}" }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{payment.cancelled_amount > 0}}",
+                                            "props": { "className": "space-y-2 border-t border-red-200 dark:border-red-800 pt-2 mt-2" },
+                                            "children": [
+                                                { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 font-medium" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_amount" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 font-medium" }, "text": "-{{payment.cancelled_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{payment.refunded_amount > 0}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-orange-600 dark:text-orange-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-orange-600 dark:text-orange-400" }, "text": "-{{payment.refunded_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{payment.refund_points_amount > 0}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-purple-600 dark:text-purple-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_points_amount" },
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-purple-600 dark:text-purple-400" }, "text": "-{{payment.refund_points_amount_formatted}}" }
+                                                ] },
+                                                { "type": "basic", "name": "Div", "if": "{{payment.refund_status_label}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_status" },
+                                                    { "type": "composite", "name": "Badge", "props": { "variant": "{{payment.refund_status_variant ?? 'secondary'}}" }, "text": "{{payment.refund_status_label}}" }
+                                                ] }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Hr",
+                                            "props": { "className": "border-gray-100 dark:border-gray-800 my-2" }
+                                        },
+                                        { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{order.data?.total_tax_amount_formatted}}" }
+                                        ] },
+                                        { "type": "basic", "name": "Div", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{order.data?.total_vat_amount_formatted}}" }
+                                        ] },
+                                        { "type": "basic", "name": "Div", "if": "{{order.data?.total_earned_points_amount > 0}}", "props": { "className": "flex justify-between text-sm" }, "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400" }, "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.expected_points" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400" }, "text": "{{order.data?.total_earned_points_amount | number}}P" }
+                                        ] }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

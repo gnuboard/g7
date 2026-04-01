@@ -1,0 +1,1130 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_posts_index",
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title",
+        "description": "{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
+    },
+    "state": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "posts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || '15'}}",
+                "status": "{{query.status}}",
+                "category": "{{query.category}}",
+                "is_notice": "{{query.is_notice}}",
+                "user_id": "{{query.user_id}}",
+                "created_at_from": "{{query.created_at_from}}",
+                "created_at_to": "{{query.created_at_to}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
+                "filters[0][value]": "{{query['filters[0][value]']}}",
+                "filters[0][operator]": "{{query['filters[0][operator]']}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "500": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "422": {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "board_posts_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "{{posts?.data?.board?.name}} $t:sirsoft-board.admin.posts.page_title",
+                            "description": "{{posts?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
+                        },
+                        "children": [
+                            {
+                                "id": "header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "refresh",
+                                                    "className": "w-5 h-5"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "create_post_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}/create"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "plus",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.actions.create"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-row gap-3 items-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_field_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{_local.searchField || 'all'}}",
+                                            "className": "w-32 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                            "options": [
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.all",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title",
+                                                    "value": "title"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.author",
+                                                    "value": "author"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchField": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "$t:sirsoft-board.admin.posts.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mr-4"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "keypress",
+                                                "key": "Enter",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                        "filters[0][value]": "{{$event.target.value}}",
+                                                        "filters[0][operator]": "like"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "advanced_search_toggle",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.advanced_search"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
+                                                    "className": "w-4 h-4 text-white dark:text-gray-300"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "advanced_filters",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-4 mt-4"
+                                },
+                                "if": "{{_global.showAdvancedSearch}}",
+                                "children": [
+                                    {
+                                        "id": "category_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-3"
+                                        },
+                                        "if": "{{posts?.data?.board?.categories && posts?.data?.board?.categories.length > 0}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.posts.filters.category_label"
+                                            },
+                                            {
+                                                "id": "category_filter",
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "value": "{{query.category || 'all'}}",
+                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm min-w-[200px]",
+                                                    "options": "{{[{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/board/{{route.slug}}",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "category": "{{$event.target.value === 'all' ? '' : $event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "date_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.posts.filters.date_from"
+                                            },
+                                            {
+                                                "id": "date_from",
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "date",
+                                                    "value": "{{query.created_at_from || ''}}",
+                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm min-w-[200px]"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "dateFrom": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "~"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.posts.filters.date_to"
+                                            },
+                                            {
+                                                "id": "date_to",
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "date",
+                                                    "value": "{{query.created_at_to || ''}}",
+                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm min-w-[200px]"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "dateTo": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "status_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.posts.filters.status_label"
+                                            },
+                                            {
+                                                "id": "status_filter",
+                                                "type": "composite",
+                                                "name": "RadioGroup",
+                                                "props": {
+                                                    "name": "status_filter",
+                                                    "value": "{{query.status || ''}}",
+                                                    "inline": true,
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:sirsoft-board.admin.posts.filters.status_all",
+                                                            "value": ""
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-board.admin.posts.filters.status_published",
+                                                            "value": "published"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-board.admin.posts.filters.status_blinded",
+                                                            "value": "blinded"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-board.admin.posts.filters.status_deleted",
+                                                            "value": "deleted"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-board.admin.posts.filters.status_secret",
+                                                            "value": "secret"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/board/{{route.slug}}",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "status": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "search_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex justify-center gap-2 mt-4"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "grid grid-cols-2 gap-2 mt-4"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "id": "reset_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                                }
+                                            }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "searchField": "all",
+                                                    "searchQuery": "",
+                                                    "categoryFilter": "",
+                                                    "dateFrom": "",
+                                                    "dateTo": ""
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.reset"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                                }
+                                            }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/board/{{route.slug}}",
+                                                    "mergeQuery": false,
+                                                    "query": {
+                                                        "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                        "filters[0][value]": "{{_local.searchQuery || ''}}",
+                                                        "filters[0][operator]": "like",
+                                                        "category": "{{_global.categoryFilter !== undefined ? _global.categoryFilter : (query.category || '')}}",
+                                                        "created_at_from": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.created_at_from || '')}}",
+                                                        "created_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.created_at_to || '')}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.posts.search"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end items-center gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "composite",
+                                "name": "Select",
+                                "props": {
+                                    "name": "sort_by",
+                                    "className": "w-40",
+                                    "value": "{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}",
+                                    "options": [
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.sort.latest",
+                                            "value": "created_at_desc"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.sort.oldest",
+                                            "value": "created_at_asc"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_high",
+                                            "value": "view_count_desc"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.sort.view_count_low",
+                                            "value": "view_count_asc"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Select",
+                                "props": {
+                                    "name": "per_page",
+                                    "className": "w-36",
+                                    "value": "{{query.per_page || '15'}}",
+                                    "options": [
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.15",
+                                            "value": "15"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.30",
+                                            "value": "30"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.50",
+                                            "value": "50"
+                                        },
+                                        {
+                                            "label": "$t:sirsoft-board.admin.posts.per_page.100",
+                                            "value": "100"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "per_page": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "posts_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
+                            "columns": [
+                                {
+                                    "field": "number",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.number",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
+                                            },
+                                            "text": "{{row.number}}",
+                                            "if": "{{row.row_type === 'notice'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                            },
+                                            "text": "{{row.number}}",
+                                            "if": "{{row.row_type === 'reply'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.number}}",
+                                            "if": "{{row.row_type === 'normal'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "title",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.title",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-start gap-2",
+                                                "style": {
+                                                  "paddingLeft": "{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"
+                                                }
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "level-up-alt",
+                                                        "className": "w-3.5 h-3.5 fa-rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "if": "{{row.is_reply}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-2 flex-wrap"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "comment": "카테고리 배지",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                                    },
+                                                                    "text": "{{row.category}}",
+                                                                    "if": "{{row.category}}"
+                                                                },
+                                                                {
+                                                                    "comment": "비밀글 아이콘",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "lock",
+                                                                        "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "if": "{{row.is_secret}}"
+                                                                },
+                                                                {
+                                                                    "comment": "블라인드 배지",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.posts.status.blinded",
+                                                                    "if": "{{row?.status === 'blinded'}}"
+                                                                },
+                                                                {
+                                                                    "comment": "제목",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                                    },
+                                                                    "text": "{{row.title}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "comment": "첨부파일 아이콘",
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "paperclip",
+                                                                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
+                                                                    },
+                                                                    "if": "{{row.has_attachment}}"
+                                                                },
+                                                                {
+                                                                    "comment": "댓글 수",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs text-blue-600 dark:text-blue-400 font-medium"
+                                                                    },
+                                                                    "text": "[{{row?.comment_count}}]",
+                                                                    "if": "{{row?.comment_count && row?.comment_count > 0}}"
+                                                                },
+                                                                {
+                                                                    "comment": "신규 배지",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{row?.is_new}}",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white"
+                                                                    },
+                                                                    "text": "N"
+                                                                },
+                                                                {
+                                                                    "comment": "삭제됨 배지",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.posts.detail.status_deleted",
+                                                                    "if": "{{row?.status === 'deleted'}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "author",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.author",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            },
+                                                            "text": "{{row.author.name}}",
+                                                            "if": "{{!row.author.is_guest}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{row.author.uuid}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "{{row.author.name}}",
+                                                            "if": "{{row.author.is_guest}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.posts.guest",
+                                                            "if": "{{row.author.is_guest}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "({{row.author.email}})",
+                                                    "if": "{{!row.author.is_guest && row.author.email}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "view_count",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.view_count",
+                                    "sortable": false,
+                                    "if": "{{posts?.data?.board?.show_view_count}}",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{row.view_count || 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-board.admin.posts.columns.created_at",
+                                    "sortable": false
+                                }
+                            ],
+                            "data": "{{posts?.data?.data}}",
+                            "sortable": true,
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 15,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{posts?.data?.pagination?.last_page ?? 1}}",
+                            "selectable": false,
+                            "responsiveBreakpoint": 768,
+                            "showFirstLast": true,
+                            "columnSelectorText": "$t:common.column_selector",
+                            "emptyMessage": "$t:common.no_data",
+                            "requiredText": "$t:common.required"
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/board/{{route.slug}}",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pagination_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 text-sm text-gray-600 dark:text-gray-400 text-center"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.admin.posts.pagination_info|total={{posts?.data?.pagination?.total ?? 0}}|from={{posts?.data?.pagination?.from ?? 0}}|to={{posts?.data?.pagination?.to ?? 0}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.posts.modals.delete_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.modals.delete_confirm"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleteModalLoading}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "trigger": "admin",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleteModalLoading": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{_global.modal_data?.id}}",
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deleteModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/board/{{route.slug}}",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-board.admin.posts.modals.delete_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deleteModalLoading": false
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

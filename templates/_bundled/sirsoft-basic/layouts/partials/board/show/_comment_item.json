@@ -1,0 +1,1018 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "개별 댓글 아이템"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "flex gap-3 p-4 rounded-lg",
+    "style": {
+      "marginLeft": "{{Math.min(comment?.depth ?? 0, 10) * 1}}rem"
+    }
+  },
+  "children": [
+    {
+      "comment": "답글 아이콘 (depth > 0일 때만)",
+      "type": "composite",
+      "name": "Icon",
+      "if": "{{(comment?.depth ?? 0) > 0}}",
+      "props": {
+        "name": "turn-up",
+        "size": "sm",
+        "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0 self-start mt-4"
+      }
+    },
+    {
+      "comment": "댓글 작성자 아바타",
+      "type": "composite",
+      "name": "Avatar",
+      "props": {
+        "author": "{{comment?.author}}",
+        "size": "sm"
+      }
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex-1"
+      },
+      "children": [
+        {
+          "comment": "작성자 정보 + 버튼 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start justify-between mb-1"
+          },
+          "children": [
+            {
+              "comment": "작성자 정보",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "comment": "UserInfo 컴포넌트 (이름 + 작성일시 한 줄)",
+                  "type": "composite",
+                  "name": "UserInfo",
+                  "props": {
+                    "author": "{{comment?.author}}",
+                    "subText": "{{comment?.created_at_formatted ?? ''}}",
+                    "subTextTitle": "{{comment?.created_at ?? ''}}",
+                    "layout": "horizontal"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!comment?.deleted_at && comment?.status !== 'blinded' && ((comment?.is_author && post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage || (_global.currentUser?.uuid && post?.data?.board?.use_report && !comment?.is_author) || (post?.data?.abilities?.can_write_comments && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at))}}",
+              "props": {
+                "className": "relative"
+              },
+              "children": [
+                {
+                  "comment": "더보기 버튼 (⋮)",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "commentDropdownId": "{{_local.commentDropdownId === comment?.id ? null : comment?.id}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "ellipsis-vertical",
+                        "size": "sm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "드롭다운 메뉴",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.commentDropdownId === comment?.id}}",
+                  "props": {
+                    "className": "absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 min-w-[120px] z-10"
+                  },
+                  "children": [
+                    {
+                      "comment": "답글 메뉴 아이템 (답글 기능 활성화 + 권한 + depth 제한)",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{comment?.abilities?.can_write && (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
+                      "props": {
+                        "className": "w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "commentDropdownId": null,
+                                "editingCommentId": null,
+                                "editingCommentContent": null
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "replyToCommentId": "{{comment?.id}}",
+                                "replyToCommentDepth": "{{comment?.depth ?? 0}}"
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "share",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:board.reply"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "수정 메뉴 아이템 ((본인 + 권한) || 비회원 || manager)",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{(comment?.is_author && post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}",
+                      "props": {
+                        "className": "w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "commentDropdownId": null
+                              }
+                            },
+                            {
+                              "comment": "비회원 댓글 + manager가 아닌 경우에만 비밀번호 확인 모달",
+                              "if": "{{comment?.is_guest_comment && !post?.data?.abilities?.can_manage}}",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "guestPasswordModal": {
+                                  "targetType": "comment",
+                                  "action": "edit",
+                                  "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/comments/{{comment?.id}}/verify-password",
+                                  "storageKey": "verified_guest_comment_{{comment?.id}}",
+                                  "redirectPath": null,
+                                  "commentEdit": {
+                                    "editingCommentId": "{{comment?.id}}",
+                                    "editingCommentContent": "{{comment?.content}}"
+                                  },
+                                  "isVerifying": false
+                                }
+                              }
+                            },
+                            {
+                              "if": "{{comment?.is_guest_comment && !post?.data?.abilities?.can_manage}}",
+                              "handler": "openModal",
+                              "target": "board_guest_password_modal"
+                            },
+                            {
+                              "comment": "회원 댓글이거나, 비회원 댓글이지만 manager인 경우 바로 수정 모드 진입",
+                              "if": "{{!comment?.is_guest_comment || post?.data?.abilities?.can_manage}}",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "commentEdit": {
+                                  "editingCommentId": "{{comment?.id}}",
+                                  "editingCommentContent": "{{comment?.content}}"
+                                },
+                                "replyToCommentId": null,
+                                "replyToCommentDepth": null
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "edit",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:common.edit"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "삭제 메뉴 아이템 ((본인 + 권한) || 비회원 || manager)",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{(comment?.is_author && post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}",
+                      "props": {
+                        "className": "w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "commentDropdownId": null
+                              }
+                            },
+                            {
+                              "comment": "manager인 경우 isGuest를 false로 설정하여 비밀번호 확인 우회",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "deleteModal": {
+                                  "type": "comment",
+                                  "isGuest": "{{comment?.is_guest_comment && !post?.data?.abilities?.can_manage}}",
+                                  "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/comments/{{comment?.id}}"
+                                }
+                              }
+                            },
+                            {
+                              "handler": "openModal",
+                              "target": "board_delete_modal"
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "trash",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:common.delete"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "신고 메뉴 아이템 — 미신고 상태 (모달 오픈)",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !comment?.is_author && !comment?.is_already_reported}}",
+                      "props": {
+                        "className": "w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "commentDropdownId": null
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "reportModal": {
+                                  "type": "comment",
+                                  "comment_content": "{{comment?.content ?? ''}}",
+                                  "comment_author_name": "{{comment?.author?.name ?? comment?.guest_name ?? ''}}",
+                                  "comment_author_avatar": "{{comment?.author?.avatar ?? ''}}",
+                                  "comment_created_at": "{{comment?.created_at ?? ''}}",
+                                  "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/comments/{{comment?.id}}/reports"
+                                }
+                              }
+                            },
+                            {
+                              "comment": "모달은 modals 섹션이므로 _global로 초기화",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "reportForm": {
+                                  "reason_type": "",
+                                  "reason_detail": ""
+                                }
+                              }
+                            },
+                            {
+                              "handler": "openModal",
+                              "target": "board_report_modal"
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "flag",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:board.post.report"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "신고 메뉴 아이템 — 이미 신고한 상태 (클릭 불가)",
+                      "type": "basic",
+                      "name": "Button",
+                      "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !comment?.is_author && comment?.is_already_reported}}",
+                      "props": {
+                        "disabled": true,
+                        "className": "w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "flag",
+                            "size": "sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:board.post.reported"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "삭제된 댓글",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{comment?.deleted_at && _global.commentEdit?.editingCommentId !== comment?.id}}",
+          "props": {
+            "className": "py-3 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-3 text-gray-400 dark:text-gray-500"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "trash",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium"
+                  },
+                  "text": "$t:board.comment.deleted_comment_content"
+                },
+                {
+                  "comment": "관리자용 원문 보기 버튼",
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{post?.data?.abilities?.can_manage === true}}",
+                  "props": {
+                    "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                  },
+                  "text": "{{_local.showDeletedContent === comment?.id ? '$t:board.comment.hide_original' : '$t:board.comment.view_original'}}",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "showDeletedContent": "{{_local.showDeletedContent === comment?.id ? null : comment?.id}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "관리자용 원문 내용",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showDeletedContent === comment?.id}}",
+              "props": {
+                "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "{{comment?.content}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "블라인드 처리된 댓글",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!comment?.deleted_at && comment?.status === 'blinded' && _global.commentEdit?.editingCommentId !== comment?.id}}",
+          "props": {
+            "className": "py-3 px-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-gray-500 dark:text-gray-400"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "eye-slash",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium"
+                  },
+                  "text": "$t:board.comment.blinded_comment"
+                },
+                {
+                  "comment": "원글 보기/숨기기 토글 버튼",
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{comment?.content}}",
+                  "props": {
+                    "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "showBlindedCommentContent": "{{Object.assign({}, _local.showBlindedCommentContent || {}, {[comment?.id]: !(_local.showBlindedCommentContent?.[comment?.id])})}}"
+                      }
+                    }
+                  ],
+                  "text": "{{_local.showBlindedCommentContent?.[comment?.id] ? '$t:board.hide_original' : '$t:board.view_original'}}"
+                }
+              ]
+            },
+            {
+              "comment": "블라인드 댓글 원본 내용 표시",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.showBlindedCommentContent?.[comment?.id] && comment?.content}}",
+              "props": {
+                "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "{{comment?.content}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "댓글 내용 (읽기 모드)",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!comment?.deleted_at && comment?.status !== 'blinded' && _global.commentEdit?.editingCommentId !== comment?.id}}",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "{{comment?.content}}"
+        },
+        {
+          "comment": "댓글 수정 폼",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global?.commentEdit?.editingCommentId === comment?.id}}",
+          "props": {
+            "className": "mb-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "name": "editing_comment_content",
+                "value": "{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}",
+                "rows": 3,
+                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "commentEdit": {
+                      "editingCommentId": "{{_global.commentEdit?.editingCommentId}}",
+                      "editingCommentContent": "{{$event.target.value}}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-end gap-2 mt-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "commentEdit": null,
+                        "verifiedGuestPassword": null,
+                        "form": {
+                          "editing_comment_content": ""
+                        }
+                      }
+                    }
+                  ],
+                  "text": "$t:common.cancel"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_local.editingCommentSubmitting === true}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "if": "{{_local.editingCommentSubmitting !== true}}",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "editingCommentSubmitting": true
+                          }
+                        },
+                        {
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments/{{comment?.id}}",
+                          "params": {
+                            "method": "PUT",
+                            "body": {
+                              "content": "{{_global.commentEdit?.editingCommentContent}}",
+                              "password": "{{comment?.is_guest_comment ? _global.verifiedGuestPassword : undefined}}"
+                            }
+                          },
+                          "onSuccess": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "editingCommentId": null,
+                                "editingCommentContent": null,
+                                "editingCommentSubmitting": false
+                              }
+                            },
+                            {
+                              "comment": "댓글 수정 상태 초기화",
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "commentEdit": null,
+                                "verifiedGuestPassword": null
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "post"
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "type": "success",
+                                "message": "$t:board.comment_updated"
+                              }
+                            }
+                          ],
+                          "onError": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "editingCommentSubmitting": false
+                              }
+                            },
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "type": "error",
+                                "message": "{{error?.message ?? '$t:board.comment_update_error'}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "if": "{{_local.editingCommentSubmitting}}",
+                          "props": {
+                            "name": "spinner",
+                            "size": "sm",
+                            "className": "animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:common.save"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "답글 입력 폼 (답글 버튼 클릭 시 해당 댓글 아래 표시)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.replyToCommentId === comment?.id && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at}}",
+          "props": {
+            "className": "mt-4 ml-14 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800"
+          },
+          "children": [
+            {
+              "comment": "답글 대상 표시",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium mb-3"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "share",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.replying_to|name={{comment?.author?.name}}"
+                }
+              ]
+            },
+            {
+              "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_global.currentUser?.uuid}}",
+              "props": {
+                "className": "flex gap-3 mb-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "guest_reply_author_name",
+                    "value": "{{_local.guest_reply_author_name ?? ''}}",
+                    "placeholder": "$t:board.guest_author_name",
+                    "className": "flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "guest_reply_author_name": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "password",
+                    "name": "guest_reply_password",
+                    "value": "{{_local.guest_reply_password ?? ''}}",
+                    "placeholder": "$t:board.guest_password",
+                    "className": "flex-1 px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "guest_reply_password": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "답글 입력 영역",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex gap-3"
+              },
+              "children": [
+                {
+                  "comment": "현재 사용자 아바타 (로그인 시만 표시)",
+                  "type": "composite",
+                  "name": "Avatar",
+                  "if": "{{_global.currentUser?.uuid}}",
+                  "props": {
+                    "name": "{{_global.currentUser?.name}}",
+                    "avatar": "{{_global.currentUser?.avatar}}",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Textarea",
+                      "props": {
+                        "name": "reply_content",
+                        "value": "{{_local.reply_content ?? ''}}",
+                        "placeholder": "$t:board.reply_placeholder",
+                        "rows": 3,
+                        "className": "w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2"
+                      },
+                      "actions": [
+                        {
+                          "type": "input",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "reply_content": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex justify-end gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                          },
+                          "text": "$t:common.cancel",
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "replyToCommentId": null,
+                                "replyToCommentDepth": null
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_local.commentSubmitting === true}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "commentSubmitting": true
+                                  }
+                                },
+                                {
+                                  "handler": "apiCall",
+                                  "auth_required": true,
+                                  "target": "/api/modules/sirsoft-board/boards/{{route?.slug}}/posts/{{route?.id}}/comments",
+                                  "params": {
+                                    "method": "POST",
+                                    "body": {
+                                      "content": "{{_local.reply_content}}",
+                                      "parent_id": "{{_local.replyToCommentId}}",
+                                      "author_name": "{{_local.guest_reply_author_name}}",
+                                      "password": "{{_local.guest_reply_password}}"
+                                    }
+                                  },
+                                  "onSuccess": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "reply_content": "",
+                                        "guest_reply_author_name": "",
+                                        "guest_reply_password": "",
+                                        "replyToCommentId": null,
+                                        "replyToCommentDepth": null,
+                                        "commentSubmitting": false
+                                      }
+                                    },
+                                    {
+                                      "handler": "refetchDataSource",
+                                      "params": {
+                                        "dataSourceId": "post"
+                                      }
+                                    },
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "type": "success",
+                                        "message": "$t:board.reply_submit_success"
+                                      }
+                                    }
+                                  ],
+                                  "onError": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "commentSubmitting": false
+                                      }
+                                    },
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "type": "error",
+                                        "message": "{{error.message}}"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "composite",
+                                  "name": "Icon",
+                                  "if": "{{!_local.commentSubmitting}}",
+                                  "props": {
+                                    "name": "paper-plane",
+                                    "size": "sm"
+                                  }
+                                },
+                                {
+                                  "type": "composite",
+                                  "name": "Icon",
+                                  "if": "{{_local.commentSubmitting}}",
+                                  "props": {
+                                    "name": "spinner",
+                                    "size": "sm",
+                                    "className": "animate-spin"
+                                  }
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "{{_local.commentSubmitting ? '$t:board.comment_submitting' : '$t:board.comment_reply'}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

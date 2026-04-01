@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Bulk Stock Change Modal"
+  },
+  "id": "modal_bulk_stock",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.title",
+    "description": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "id": "bulk_stock_form",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "id": "stock_method_field",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method"
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "select w-full"
+              },
+              "bindings": {
+                "value": "bulkStockMethod"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "bulkStockMethod": "{{$event.target.value}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "increase"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase"
+                },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "decrease"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease"
+                },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "set"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stock_value_field",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.value"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "placeholder": "0",
+                "className": "input w-full"
+              },
+              "bindings": {
+                "value": "bulkStockValue"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "bulkStockValue": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stock_preview",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "id": "stock_preview_increase",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkStockMethod || 'increase') === 'increase'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_increase|value={{_local.bulkStockValue || 0}}"
+            },
+            {
+              "id": "stock_preview_decrease",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkStockMethod || 'increase') === 'decrease'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_decrease|value={{_local.bulkStockValue || 0}}"
+            },
+            {
+              "id": "stock_preview_set",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkStockMethod || 'increase') === 'set'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.preview_set|value={{_local.bulkStockValue || 0}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bulk_stock_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "bulkStockCondition": "{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}",
+                "bulkStockMethod": "{{_local.bulkStockMethod || 'increase'}}",
+                "bulkStockValue": "{{_local.bulkStockValue || 0}}"
+              }
+            },
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

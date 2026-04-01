@@ -1,0 +1,9 @@
+{
+  "unauthorized_preset_access": "프리셋 ':preset_name'에 대한 접근 권한이 없습니다.",
+  "stock_mismatch": "상품 ':product_name'의 재고가 일치하지 않습니다. 예상: :expected, 실제: :actual",
+  "currency_setting_locked": "통화 ':currency' 설정이 잠겨있어 변경할 수 없습니다. 이유: :reason",
+  "product_notice_template_not_found": "상품정보제공고시 템플릿을 찾을 수 없습니다.",
+  "product_notice_template_has_notices": ":count개의 상품에서 이 템플릿을 사용 중입니다. 먼저 해당 상품의 상품정보제공고시를 변경해주세요.",
+  "product_common_info_not_found": "공통정보를 찾을 수 없습니다.",
+  "order_cancel_not_allowed": "현재 주문 상태에서는 결제 취소를 기록할 수 없습니다."
+}

@@ -1,0 +1,98 @@
+{
+  "title": "Payment Failure History",
+  "description": "View and manage failed payment orders",
+  "search": {
+    "field": {
+      "order_number": "Order Number",
+      "member_name": "Member Name",
+      "member_id": "Member ID",
+      "product_name": "Product Name",
+      "failure_reason": "Failure Reason",
+      "failure_code": "Failure Code"
+    },
+    "placeholder": "Enter search keyword",
+    "reset": "Reset"
+  },
+  "filter": {
+    "payment_method": "Payment Method",
+    "device": "Device",
+    "failure_date": "Failure Date",
+    "all": "All",
+    "card": "Card",
+    "bank_transfer": "Bank Transfer",
+    "virtual_account": "Virtual Account",
+    "easy_payment": "Easy Payment",
+    "bank_deposit": "Bank Deposit",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "start_date": "Start Date",
+    "end_date": "End Date"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort_by": "Failure Date (Latest)",
+    "per_page": "{{count}} per page",
+    "sort": {
+      "failure_date_desc": "Failure Date (Latest)",
+      "failure_date_asc": "Failure Date (Oldest)",
+      "amount_desc": "Amount (High to Low)",
+      "amount_asc": "Amount (Low to High)",
+      "order_number_asc": "Order Number (Asc)",
+      "order_number_desc": "Order Number (Desc)"
+    },
+    "columns": {
+      "no": "No.",
+      "order_number": "Order Number",
+      "member_info": "Member Info",
+      "product_name": "Product Name",
+      "payment_method": "Payment Method",
+      "payment_amount": "Payment Amount",
+      "failure_reason": "Failure Reason",
+      "failure_date": "Failure Date",
+      "detail": "Detail"
+    },
+    "product_count": "+ {{count}} more"
+  },
+  "dropdown": {
+    "view_order_detail": "View Order Detail",
+    "search_by_member": "Search by Member",
+    "view_member_info": "View Member Info"
+  },
+  "detail": {
+    "payment_failure_info": {
+      "title": "Payment Failure Info",
+      "transaction_number": "Transaction No.",
+      "payment_method": "Payment Method",
+      "payment_amount": "Payment Amount",
+      "failure_date": "Failure Date",
+      "failure_reason": "Failure Reason",
+      "error_code": "Error Code"
+    },
+    "customer_info": {
+      "title": "Customer Info",
+      "name": "Name",
+      "id": "ID",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "access_info": {
+      "title": "Access Info",
+      "device": "Device",
+      "browser": "Browser",
+      "os": "OS",
+      "ip": "IP"
+    }
+  },
+  "failure_reasons": {
+    "exceed_max_one_time_auth_amount": "Exceeded one-time authorization limit",
+    "invalid_stopped_card": "Card is suspended",
+    "not_enough_balance": "Insufficient account balance",
+    "user_cancel": "Payment cancelled by user",
+    "incorrect_card_password": "Incorrect card password",
+    "reject_card_company": "Authorization rejected by card company",
+    "virtual_account_expired": "Virtual account deposit deadline expired",
+    "invalid_card_expiration": "Invalid card expiration date",
+    "invalid_card_number": "Invalid card number",
+    "exceed_max_auth_count": "Exceeded daily authorization limit"
+  }
+}

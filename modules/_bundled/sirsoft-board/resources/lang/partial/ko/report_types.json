@@ -1,0 +1,10 @@
+{
+  "spam": "스팸/광고",
+  "abuse": "욕설/비방",
+  "obscenity": "음란물",
+  "illegal": "불법정보",
+  "hate_speech": "혐오 발언",
+  "privacy": "개인정보 노출",
+  "copyright": "저작권 침해",
+  "other": "기타"
+}

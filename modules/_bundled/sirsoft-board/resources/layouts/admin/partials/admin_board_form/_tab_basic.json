@@ -1,0 +1,713 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Board Form - Basic Tab Content"
+  },
+  "id": "tab_content_basic",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "id": "tab_content_basic"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_basic_card",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "background": "white",
+        "border": true,
+        "shadow": "md",
+        "rounded": true,
+        "padding": "xl",
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "id": "section_basic_settings",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.form.tabs.basic"
+        },
+        {
+          "id": "field_is_active",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-between items-start mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.is_active"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.descriptions.is_active"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "is_active",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-shrink-0 ml-4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "field_slug",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "id": "field_slug_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "required": true,
+                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.slug"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 ml-1"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "id": "field_slug_input",
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "name": "slug",
+                "type": "text",
+                "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
+                "required": true,
+                "disabled": "{{!!route?.id || _computed.isReadOnly}}",
+                "className": "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 {{!!route?.id || _computed.isReadOnly ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.slug}}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.slug?.[0] ?? ''}}"
+            },
+            {
+              "id": "field_slug_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+              },
+              "text": "$t:sirsoft-board.admin.form.descriptions.slug"
+            },
+            {
+              "id": "field_menu_guide",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-2 mb-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "circle-info",
+                        "className": "w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.menu.manual_guide"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-2 text-xs text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-baseline gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "•"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 flex-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "font-medium"
+                                  },
+                                  "text": "$t:sirsoft-board.admin.form.menu.manual_admin_label:"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
+                                  },
+                                  "text": "/admin/board/{{_local.form?.slug ?? 'notice'}}"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{!!route?.id}}",
+                              "props": {
+                                "className": "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "plus",
+                                    "className": "w-3 h-3"
+                                  }
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-board.admin.form.menu.add_to_admin_menu"
+                                }
+                              ],
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "apiCall",
+                                  "target": "/api/modules/sirsoft-board/admin/boards/{{route?.id}}/add-to-menu",
+                                  "params": {
+                                    "method": "POST"
+                                  },
+                                  "auth_required": true,
+                                  "onSuccess": [
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "type": "success",
+                                        "message": "{{result.message}}"
+                                      }
+                                    },
+                                    {
+                                      "handler": "refetchDataSource",
+                                      "params": {
+                                        "dataSourceId": "admin_menu",
+                                        "sync": true
+                                      }
+                                    }
+                                  ],
+                                  "onError": [
+                                    {
+                                      "handler": "toast",
+                                      "params": {
+                                        "type": "error",
+                                        "message": "{{error.message}}"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-baseline gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "•"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "font-medium"
+                              },
+                              "text": "$t:sirsoft-board.admin.form.menu.manual_user_label:"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "ml-2 px-2 py-0.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 font-mono"
+                              },
+                              "text": "/board/{{_local.form?.slug ?? 'notice'}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_name",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "id": "field_name_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "required": true,
+                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 ml-1"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "id": "field_name_input",
+              "type": "composite",
+              "name": "MultilingualInput",
+              "props": {
+                "name": "name",
+                "layout": "tabs",
+                "placeholder": "$t:sirsoft-board.admin.form.placeholders.name",
+                "maxLength": 100,
+                "required": true,
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.name}}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.name?.[0] ?? ''}}"
+            }
+          ]
+        },
+        {
+          "id": "field_description",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "id": "field_description_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.description"
+                }
+              ]
+            },
+            {
+              "id": "field_description_input",
+              "type": "composite",
+              "name": "MultilingualInput",
+              "props": {
+                "name": "description",
+                "layout": "tabs",
+                "inputType": "textarea",
+                "placeholder": "$t:sirsoft-board.admin.form.placeholders.description",
+                "rows": 3,
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.description}}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.description?.[0] ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+              },
+              "text": "$t:sirsoft-board.admin.form.descriptions.description"
+            }
+          ]
+        },
+        {
+          "id": "field_type",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "id": "field_type_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "required": true,
+                "className": "block text-sm font-medium text-gray-900 dark:text-white mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.type"
+                }
+              ]
+            },
+            {
+              "id": "field_type_select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "type",
+                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                "placeholder": "$t:sirsoft-board.admin.form.placeholders.select_type",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "w-full"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+              },
+              "text": "$t:sirsoft-board.admin.form.descriptions.type"
+            }
+          ]
+        },
+        {
+          "id": "field_categories",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6 pb-6"
+          },
+          "children": [
+            {
+              "id": "field_categories_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.categories"
+                }
+              ]
+            },
+            {
+              "id": "field_categories_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+              },
+              "text": "$t:sirsoft-board.admin.form.descriptions.categories"
+            },
+            {
+              "id": "field_categories_input",
+              "type": "composite",
+              "name": "TagInput",
+              "props": {
+                "name": "categories",
+                "options": "{{_local.form?.category_options ?? []}}",
+                "creatable": true,
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "before_remove",
+                  "handler": "check_category_usage",
+                  "on_blocked": {
+                    "handler": "setState",
+                    "target": "_local.showCategoryRemoveModal",
+                    "value": true
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.categories}}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.categories?.[0] ?? ''}}"
+            },
+            {
+              "id": "field_categories_notice",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-amber-600 dark:text-amber-400 mt-2"
+              },
+              "text": "$t:sirsoft-board.admin.form.descriptions.categories_notice"
+            }
+          ]
+        },
+        {
+          "id": "field_secret_mode",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex pt-4 justify-between items-center"
+          },
+          "children": [
+            {
+              "id": "field_secret_mode_label",
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.form.fields.secret_mode"
+                }
+              ]
+            },
+            {
+              "id": "field_secret_mode_select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "secret_mode",
+                "disabled": "{{_computed.isReadOnly}}",
+                "options": [
+                  {
+                    "value": "disabled",
+                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.disabled"
+                  },
+                  {
+                    "value": "enabled",
+                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.enabled"
+                  },
+                  {
+                    "value": "always",
+                    "label": "$t:sirsoft-board.admin.form.options.secret_mode.always"
+                  }
+                ],
+                "className": "w-48"
+              }
+            }
+          ]
+        },
+        {
+          "id": "field_show_view_count",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex pt-4 justify-between items-start"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.show_view_count"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.descriptions.show_view_count"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "show_view_count",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-shrink-0 ml-4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "field_use_report",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex pt-4 justify-between items-start"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.use_report"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.descriptions.use_report"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "use_report",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-shrink-0 ml-4"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

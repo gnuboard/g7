@@ -1,0 +1,245 @@
+{
+  "attributes": {
+    "name": "Product Name",
+    "product_code": "Product Code",
+    "list_price": "List Price",
+    "selling_price": "Selling Price",
+    "stock": "Stock",
+    "cancel_code": "Cancel Code",
+    "cancel_message": "Cancel Reason"
+  },
+  "settings": {
+    "key_required": "Setting key is required.",
+    "value_present": "Setting value is required."
+  },
+  "product": {
+    "name": {
+      "required": "Product name is required."
+    },
+    "name_ko": {
+      "required": "Korean product name is required."
+    },
+    "product_code": {
+      "required": "Product code is required.",
+      "unique": "This product code is already in use."
+    },
+    "list_price": {
+      "required": "List price is required."
+    },
+    "selling_price": {
+      "required": "Selling price is required."
+    },
+    "invalid_sales_status": "Invalid sales status.",
+    "invalid_display_status": "Invalid display status."
+  },
+  "brand": {
+    "name_required": "Brand name is required.",
+    "slug_required": "Slug is required.",
+    "slug_unique": "This slug is already in use.",
+    "slug_format": "Slug must start with a lowercase letter and can only contain lowercase letters, numbers, and hyphens (-).",
+    "website_invalid_url": "Invalid URL format."
+  },
+  "preset": {
+    "name_required": "Preset name is required.",
+    "name_exists": "This preset name is already in use.",
+    "conditions_required": "Search conditions are required."
+  },
+  "bulk": {
+    "ids_required": "No products selected.",
+    "method_required": "Change method is required.",
+    "value_required": "Change value is required."
+  },
+  "bulk_option_price": {
+    "product_ids": {
+      "required": "No products selected.",
+      "min": "At least 1 product must be selected."
+    },
+    "method": {
+      "required": "Change method is required.",
+      "in": "Invalid change method."
+    },
+    "value": {
+      "required": "Change value is required.",
+      "integer": "Change value must be an integer.",
+      "min": "Change value must be 0 or greater."
+    },
+    "unit": {
+      "required": "Unit is required.",
+      "in": "Invalid unit."
+    }
+  },
+  "bulk_option_stock": {
+    "product_ids": {
+      "required": "No products selected.",
+      "min": "At least 1 product must be selected."
+    },
+    "method": {
+      "required": "Change method is required.",
+      "in": "Invalid change method."
+    },
+    "value": {
+      "required": "Change quantity is required.",
+      "integer": "Change quantity must be an integer.",
+      "min": "Change quantity must be 0 or greater."
+    }
+  },
+  "custom": {
+    "language_currency": {
+      "currencies": {
+        "duplicate_code": "Duplicate currency code exists.",
+        "name_required": "Currency name is required."
+      }
+    },
+    "basic_info": {
+      "shop_name": {
+        "required": "Shop name is required."
+      },
+      "route_path": {
+        "required": "Route path is required."
+      },
+      "privacy_officer_email": {
+        "email": "Invalid email format."
+      }
+    }
+  },
+  "shipping_policy": {
+    "name": {
+      "required": "Policy name is required."
+    },
+    "is_active": {
+      "required": "Active status is required."
+    },
+    "country_settings": {
+      "required": "At least one country setting is required.",
+      "min": "At least one country setting is required.",
+      "country_code": {
+        "required": "Country is required.",
+        "distinct": "Duplicate country exists.",
+        "max": "Country code must not exceed 10 characters."
+      },
+      "shipping_method": {
+        "required": "Shipping method is required.",
+        "in": "Invalid shipping method."
+      },
+      "carrier": {
+        "in": "Invalid carrier."
+      },
+      "currency_code": {
+        "required": "Base currency is required.",
+        "max": "Currency code must not exceed 10 characters."
+      },
+      "charge_policy": {
+        "required": "Charge policy is required.",
+        "in": "Invalid charge policy."
+      },
+      "base_fee": {
+        "numeric": "Shipping fee must be a number.",
+        "min": "Shipping fee must be 0 or greater."
+      },
+      "free_threshold": {
+        "numeric": "Free shipping threshold must be a number.",
+        "min": "Free shipping threshold must be 0 or greater."
+      },
+      "api_endpoint": {
+        "url": "Invalid URL format.",
+        "max": "API endpoint must not exceed 500 characters."
+      },
+      "extra_fee_enabled": {
+        "required": "Remote area fee usage setting is required."
+      },
+      "is_active": {
+        "required": "Active status is required."
+      }
+    },
+    "ranges": {
+      "first_min_zero": "The first range must start at 0.",
+      "last_max_unlimited": "The last range must have no upper limit.",
+      "continuity": "Ranges are not continuous.",
+      "min_less_than_max": "Start value must be less than end value.",
+      "fee_non_negative": "Shipping fee must be 0 or greater."
+    }
+  },
+  "list": {
+    "search": {
+      "string": "Search must be a string.",
+      "max": "Search must not exceed 200 characters."
+    },
+    "shipping_methods": {
+      "array": "Shipping methods must be an array.",
+      "string": "Shipping method must be a string.",
+      "in": "Invalid shipping method."
+    },
+    "carriers": {
+      "array": "Carriers must be an array.",
+      "string": "Carrier must be a string.",
+      "in": "Invalid carrier."
+    },
+    "charge_policies": {
+      "array": "Charge policies must be an array.",
+      "string": "Charge policy must be a string.",
+      "in": "Invalid charge policy."
+    },
+    "countries": {
+      "array": "Countries must be an array.",
+      "string": "Country code must be a string.",
+      "max": "Country code must not exceed 10 characters."
+    },
+    "is_active": {
+      "in": "Invalid active status value."
+    },
+    "sort_by": {
+      "in": "Invalid sort field."
+    },
+    "sort_order": {
+      "in": "Invalid sort order."
+    },
+    "per_page": {
+      "integer": "Per page must be an integer.",
+      "min": "Per page minimum is 10.",
+      "max": "Per page maximum is 100."
+    },
+    "page": {
+      "integer": "Page must be an integer.",
+      "min": "Page must be 1 or greater."
+    }
+  },
+  "extra_fee_template": {
+    "zipcode_required": "Zipcode is required.",
+    "zipcode_unique": "This zipcode is already registered.",
+    "zipcode_max": "Zipcode must not exceed 20 characters.",
+    "zipcode_format": "Zipcode must contain only numbers and hyphens (-). (e.g., 12345 or 12345-12399)",
+    "fee_required": "Fee is required.",
+    "fee_numeric": "Fee must be a number.",
+    "fee_min": "Fee must be 0 or greater.",
+    "items_required": "Items are required.",
+    "items_array": "Invalid items format.",
+    "items_min": "At least one item is required.",
+    "items_max": "Maximum 1,000 items can be registered at once.",
+    "item_zipcode_required": "Zipcode is required.",
+    "item_fee_required": "Fee is required.",
+    "ids_required": "No items selected.",
+    "ids_array": "Invalid items format.",
+    "ids_min": "At least one item must be selected.",
+    "id_not_found": "Contains non-existent items.",
+    "is_active_required": "Active status is required.",
+    "is_active_boolean": "Active status must be true or false."
+  },
+  "product_notice_template": {
+    "name_required": "Product group name is required.",
+    "name_max": "Product group name cannot exceed 100 characters.",
+    "fields_required": "At least one item is required.",
+    "fields_min": "At least one item is required.",
+    "field_name_required": "Item name is required.",
+    "field_name_min": "Item name must be at least 1 character.",
+    "field_name_max": "Item name cannot exceed 200 characters.",
+    "field_content_required": "Item content is required.",
+    "field_content_min": "Item content must be at least 1 character.",
+    "field_content_max": "Item content cannot exceed 2000 characters."
+  },
+  "review_image": {
+    "image_required": "Image file is required.",
+    "image_file": "Please upload a valid file.",
+    "image_image": "Only image files are allowed.",
+    "image_max": "Image file size cannot exceed 10MB."
+  }
+}

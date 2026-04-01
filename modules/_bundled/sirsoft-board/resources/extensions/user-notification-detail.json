@@ -1,0 +1,192 @@
+{
+  "target_layout": "admin_user_detail",
+  "injections": [
+    {
+      "target_id": "user_detail_tabs",
+      "position": "inject_props",
+      "props": {
+        "tabs": {
+          "_append": [
+            {
+              "id": "ext_notification",
+              "label": "$t:sirsoft-board.admin.users.form.sections.notification_settings",
+              "iconName": "cubes"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target_id": "extension_tab_content",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_notification_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "id": "ext_notification",
+            "className": "scroll-mt-32"
+          },
+          "children": [
+            {
+              "id": "section_notification_settings",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "bell",
+                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "ExtensionBadge",
+                      "props": {
+                        "type": "module",
+                        "identifier": "sirsoft-board",
+                        "installedModules": "{{_global.installedModules}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_notify_post_complete",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_notify_post_reply",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.notify_post_reply ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_notify_comment",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.notify_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_notify_reply_comment",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.notify_reply_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 300
+}

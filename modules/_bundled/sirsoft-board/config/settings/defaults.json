@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "게시판 모듈 환경설정",
+    "categories": ["basic_defaults", "report_policy", "spam_security", "display"]
+  },
+  "defaults": {
+    "basic_defaults": {
+      "type": "basic",
+      "per_page": 20,
+      "per_page_mobile": 15,
+      "order_by": "created_at",
+      "order_direction": "DESC",
+      "secret_mode": "disabled",
+      "use_comment": true,
+      "use_reply": true,
+      "max_reply_depth": 5,
+      "max_comment_depth": 10,
+      "comment_order": "ASC",
+      "show_view_count": true,
+      "use_report": false,
+      "min_title_length": 2,
+      "max_title_length": 200,
+      "min_content_length": 2,
+      "max_content_length": 10000,
+      "min_comment_length": 2,
+      "max_comment_length": 1000,
+      "use_file_upload": false,
+      "max_file_size": 10,
+      "max_file_count": 5,
+      "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "hwp", "txt", "zip"],
+      "notify_admin_on_post": true,
+      "notify_author": true,
+      "new_display_hours": 24,
+      "blocked_keywords": [
+        "시발", "씨발", "ㅅㅂ", "ㅆㅂ", "좆", "ㅈㄴ", "존나", "씹",
+        "지랄", "ㅈㄹ", "개새끼", "새끼", "ㅅㄲ", "개자식",
+        "병신", "ㅂㅅ", "미친놈", "미친년", "느금마", "니애미", "느금",
+        "엠창", "엠뒤", "빡대가리", "개같은", "개년", "개놈", "개돼지", "개씹", "개쓰레기",
+        "닥쳐", "꺼져", "죽어", "자살해", "뒤져", "저능아", "정신병자",
+        "썅", "쌍놈", "쌍년", "쉬발", "쒸발", "시팔", "씨팔",
+        "한남", "한녀", "김치녀", "된장녀", "맘충", "틀딱", "느개비",
+        "장애인놈", "병신새끼", "흑형", "짱깨", "쪽바리", "왜놈", "튀기", "똥남아",
+        "야동", "포르노", "섹스", "야사", "음란", "성인사이트", "조건만남",
+        "원나잇", "섹파", "오피", "키스방", "매춘", "성매매", "몸파는"
+      ],
+      "notify_admin_on_post_channels": ["mail"],
+      "notify_author_channels": ["mail"],
+      "default_board_permissions": {
+        "admin.posts.read": ["admin"],
+        "admin.posts.write": ["admin"],
+        "admin.posts.read-secret": ["admin"],
+        "admin.comments.read": ["admin"],
+        "admin.comments.write": ["admin"],
+        "admin.attachments.upload": ["admin"],
+        "admin.attachments.download": ["admin"],
+        "admin.manage": ["admin"],
+        "posts.read": ["admin", "user", "guest"],
+        "posts.write": ["admin", "user"],
+        "posts.read-secret": ["admin"],
+        "comments.read": ["admin", "user", "guest"],
+        "comments.write": ["admin", "user"],
+        "attachments.upload": ["admin", "user"],
+        "attachments.download": ["admin", "user", "guest"],
+        "manager": ["admin"]
+      }
+    },
+    "report_policy": {
+      "auto_hide_threshold": 5,
+      "auto_hide_target": "both",
+      "daily_report_limit": 10,
+      "rejection_limit_count": 5,
+      "rejection_limit_days": 30,
+      "notify_admin_on_report": true,
+      "notify_admin_on_report_scope": "per_case",
+      "notify_admin_on_report_channels": ["mail"],
+      "notify_author_on_report_action": true,
+      "notify_author_on_report_action_channels": ["mail"]
+    },
+    "spam_security": {
+      "post_cooldown_seconds": 0,
+      "comment_cooldown_seconds": 0,
+      "report_cooldown_seconds": 60,
+      "view_count_cache_ttl": 86400
+    },
+    "display": {
+      "date_display_format": "standard"
+    }
+  },
+  "frontend_schema": {
+    "_comment": "프론트엔드에서 미참조 — 전체 카테고리 노출 제외",
+    "basic_defaults": {
+      "expose": false
+    },
+    "report_policy": {
+      "expose": false
+    },
+    "spam_security": {
+      "expose": false
+    },
+    "display": {
+      "expose": false
+    }
+  }
+}

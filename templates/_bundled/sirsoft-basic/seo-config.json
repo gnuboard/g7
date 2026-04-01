@@ -1,0 +1,381 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "sirsoft-basic 템플릿 SEO 페이지 생성 설정",
+    "text_props": ["text", "label", "value", "title"],
+    "attr_map": {
+        "className": "class",
+        "htmlFor": "for"
+    },
+    "allowed_attrs": [
+        "class", "id", "href", "src", "alt", "title", "name", "type",
+        "placeholder", "for", "target", "rel", "width", "height",
+        "role", "aria-label", "aria-describedby", "data-testid", "style"
+    ],
+    "stylesheets": [
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    ],
+    "self_closing": ["img", "input", "hr", "br"],
+    "seo_overrides": {
+        "_local": {
+            "collapsedReplies": { "*": false },
+            "activeTab": ["info", "reviews", "qna"]
+        }
+    },
+    "render_modes": {
+        "image_gallery": {
+            "type": "iterate",
+            "source": "$props_source",
+            "item_tag": "img",
+            "item_attrs": { "src": "{url|download_url|src|image_url}", "alt": "{alt_text_current|alt_text|alt}" }
+        },
+        "tab_list": {
+            "type": "iterate",
+            "source": "$props_source",
+            "item_tag": "span",
+            "item_content": "{label}",
+            "badge_field": "badge"
+        },
+        "text_format": {
+            "type": "format"
+        },
+        "html_content": {
+            "type": "raw",
+            "source": "$props_source"
+        },
+        "pagination_links": {
+            "type": "pagination",
+            "max_links": 10
+        },
+        "header_nav": {
+            "type": "fields",
+            "source": "$all_props",
+            "fields": [
+                { "tag": "a", "attrs": { "href": "/" }, "content": "{siteName}" },
+                {
+                    "tag": "nav",
+                    "children": [
+                        { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
+                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular" },
+                        { "tag": "a", "attrs": { "href": "/shop/products" }, "content": "$t:nav.shop" }
+                    ]
+                },
+                {
+                    "tag": "nav",
+                    "iterate": "boards",
+                    "item_tag": "a",
+                    "item_content": "{name}",
+                    "item_attrs": { "href": "/board/{slug}" }
+                }
+            ]
+        },
+        "footer_nav": {
+            "type": "fields",
+            "source": "$all_props",
+            "fields": [
+                { "tag": "p", "content": "{siteName}" },
+                { "tag": "p", "content": "{siteDescription}", "if": "{siteDescription}" },
+                {
+                    "tag": "nav",
+                    "children": [
+                        { "tag": "a", "attrs": { "href": "{socialLinks.github}" }, "content": "GitHub", "if": "{socialLinks.github}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.twitter}" }, "content": "Twitter", "if": "{socialLinks.twitter}" },
+                        { "tag": "a", "attrs": { "href": "{socialLinks.discord}" }, "content": "Discord", "if": "{socialLinks.discord}" }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "children": [
+                        {
+                            "tag": "div",
+                            "children": [
+                                { "tag": "h4", "content": "$t:footer.community" },
+                                { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
+                                { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular" },
+                                { "tag": "a", "attrs": { "href": "/boards" }, "content": "$t:footer.all_boards" }
+                            ]
+                        },
+                        {
+                            "tag": "div",
+                            "children": [
+                                { "tag": "h4", "content": "$t:footer.info" },
+                                { "tag": "a", "attrs": { "href": "/page/about" }, "content": "$t:footer.about" },
+                                { "tag": "a", "attrs": { "href": "/page/faq" }, "content": "$t:footer.faq" },
+                                { "tag": "a", "attrs": { "href": "/page/contact" }, "content": "$t:footer.contact" }
+                            ]
+                        },
+                        {
+                            "tag": "div",
+                            "children": [
+                                { "tag": "h4", "content": "$t:footer.policy" },
+                                { "tag": "a", "attrs": { "href": "/page/terms" }, "content": "$t:footer.terms" },
+                                { "tag": "a", "attrs": { "href": "/page/privacy" }, "content": "$t:footer.privacy" },
+                                { "tag": "a", "attrs": { "href": "/page/refund" }, "content": "$t:footer.refund" }
+                            ]
+                        }
+                    ]
+                },
+                { "tag": "p", "content": "© {siteName}. All rights reserved." },
+                { "tag": "p", "content": "Powered by 그누보드7" }
+            ]
+        },
+        "product_card_view": {
+            "type": "fields",
+            "source": "$props_source",
+            "link": {
+                "href": "/products/{id}",
+                "base_url": "$var:shopBase"
+            },
+            "fields": [
+                { "tag": "img", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}" } },
+                { "tag": "h3", "content": "{name_localized|name}" },
+                {
+                    "tag": "p",
+                    "children": [
+                        { "tag": "span", "content": "{primary_category}", "if": "{primary_category}" },
+                        { "tag": "span", "content": "{brand_name}", "if": "{brand_name}" }
+                    ]
+                },
+                {
+                    "tag": "p",
+                    "children": [
+                        { "tag": "span", "content": "{selling_price_formatted}" },
+                        { "tag": "del", "content": "{list_price_formatted}", "if": "{discount_rate}" },
+                        { "tag": "span", "content": "{discount_rate}%", "if": "{discount_rate}" }
+                    ]
+                },
+                {
+                    "tag": "p",
+                    "iterate": "labels",
+                    "item_tag": "span",
+                    "item_content": "{name}"
+                },
+                { "tag": "span", "content": "{sales_status_label}", "if": "{sales_status}" }
+            ]
+        }
+    },
+    "component_map": {
+        "Div": { "tag": "div" },
+        "Span": { "tag": "span" },
+        "P": { "tag": "p" },
+        "H1": { "tag": "h1" },
+        "H2": { "tag": "h2" },
+        "H3": { "tag": "h3" },
+        "H4": { "tag": "h4" },
+        "H5": { "tag": "h5" },
+        "H6": { "tag": "h6" },
+        "A": { "tag": "a" },
+        "Button": { "tag": "button" },
+        "Img": { "tag": "img" },
+        "Input": { "tag": "input" },
+        "Form": { "tag": "form" },
+        "Ul": { "tag": "ul" },
+        "Ol": { "tag": "ol" },
+        "Li": { "tag": "li" },
+        "Nav": { "tag": "nav" },
+        "Header": { "tag": "header", "render": "header_nav" },
+        "Footer": { "tag": "footer", "render": "footer_nav" },
+        "Main": { "tag": "main" },
+        "Section": { "tag": "section" },
+        "Article": { "tag": "article" },
+        "Icon": { "tag": "i", "name_to_class": "fas fa-{name}" },
+        "Table": { "tag": "table" },
+        "Thead": { "tag": "thead" },
+        "Tbody": { "tag": "tbody" },
+        "Tr": { "tag": "tr" },
+        "Th": { "tag": "th" },
+        "Td": { "tag": "td" },
+        "Label": { "tag": "label" },
+        "Select": { "tag": "select" },
+        "Textarea": { "tag": "textarea" },
+        "Strong": { "tag": "strong" },
+        "Em": { "tag": "em" },
+        "Small": { "tag": "small" },
+        "Hr": { "tag": "hr" },
+        "Br": { "tag": "br" },
+        "Fragment": { "tag": "" },
+        "ProductImageViewer": {
+            "tag": "div",
+            "render": "image_gallery",
+            "props_source": "images"
+        },
+        "TabNavigation": {
+            "tag": "nav",
+            "render": "tab_list",
+            "props_source": "tabs"
+        },
+        "StarRating": {
+            "tag": "span",
+            "render": "text_format",
+            "format": "{value} / {max}",
+            "defaults": { "max": "5" }
+        },
+        "Pagination": {
+            "tag": "nav",
+            "render": "pagination_links"
+        },
+        "FormField": {
+            "tag": "div"
+        },
+        "Modal": {
+            "tag": "div",
+            "skip": true
+        },
+        "ConfirmDialog": {
+            "tag": "div",
+            "skip": true
+        },
+        "Accordion": {
+            "tag": "div"
+        },
+        "AccordionItem": {
+            "tag": "div"
+        },
+        "Tabs": {
+            "tag": "div"
+        },
+        "Badge": {
+            "tag": "span"
+        },
+        "Alert": {
+            "tag": "div"
+        },
+        "Toast": {
+            "tag": "div",
+            "skip": true
+        },
+        "Tooltip": {
+            "tag": "span"
+        },
+        "Dropdown": {
+            "tag": "div"
+        },
+        "Breadcrumb": {
+            "tag": "nav"
+        },
+        "FileUploader": {
+            "tag": "div",
+            "skip": true
+        },
+        "HtmlEditor": {
+            "tag": "div",
+            "skip": true
+        },
+        "DatePicker": {
+            "tag": "div",
+            "skip": true
+        },
+        "Toggle": {
+            "tag": "div",
+            "skip": true
+        },
+        "Checkbox": {
+            "tag": "div"
+        },
+        "Radio": {
+            "tag": "div"
+        },
+        "TagInput": {
+            "tag": "div",
+            "skip": true
+        },
+        "Sortable": {
+            "tag": "div",
+            "skip": true
+        },
+        "DynamicFieldList": {
+            "tag": "div",
+            "skip": true
+        },
+        "ProductCard": {
+            "tag": "article",
+            "render": "product_card_view",
+            "props_source": "product"
+        },
+        "ImageGallery": {
+            "tag": "div",
+            "render": "image_gallery",
+            "props_source": "images"
+        },
+        "QuantitySelector": {
+            "tag": "div",
+            "skip": true
+        },
+        "PostReactions": {
+            "tag": "div",
+            "skip": true
+        },
+        "SocialLoginButtons": {
+            "tag": "div",
+            "skip": true
+        },
+        "SearchBar": {
+            "tag": "div"
+        },
+        "Avatar": {
+            "tag": "span",
+            "render": "text_format",
+            "format": "{author.name}"
+        },
+        "UserInfo": {
+            "tag": "span",
+            "render": "text_format",
+            "format": "{author.name} · {subText}"
+        },
+        "HtmlContent": {
+            "tag": "div",
+            "render": "html_content",
+            "props_source": "content"
+        },
+        "ExpandableContent": {
+            "tag": "div"
+        },
+        "ThemeToggle": {
+            "tag": "div",
+            "skip": true
+        },
+        "PageTransitionIndicator": {
+            "tag": "div",
+            "skip": true
+        },
+        "MobileNav": {
+            "tag": "nav",
+            "skip": true
+        },
+        "RichTextEditor": {
+            "tag": "div",
+            "skip": true
+        },
+        "AvatarUploader": {
+            "tag": "div",
+            "skip": true
+        },
+        "PasswordInput": {
+            "tag": "div",
+            "skip": true
+        },
+        "Container": {
+            "tag": "div"
+        },
+        "Flex": {
+            "tag": "div"
+        },
+        "Grid": {
+            "tag": "div"
+        },
+        "SectionLayout": {
+            "tag": "section"
+        },
+        "ThreeColumnLayout": {
+            "tag": "div"
+        },
+        "DataGrid": {
+            "tag": "table"
+        },
+        "PageHeader": {
+            "tag": "header"
+        },
+        "Card": {
+            "tag": "article"
+        }
+    }
+}

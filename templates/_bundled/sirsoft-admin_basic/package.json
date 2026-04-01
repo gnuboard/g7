@@ -1,0 +1,61 @@
+{
+  "name": "sirsoft-admin_basic",
+  "version": "1.0.0-beta.1",
+  "description": "Gnuboard7 Basic Admin Template Components",
+  "type": "module",
+  "main": "dist/components.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "components.json"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "g7",
+    "template",
+    "admin",
+    "react",
+    "components"
+  ],
+  "author": "sirsoft",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "axe-core": "^4.11.0",
+    "happy-dom": "^20.0.10",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.6",
+    "vitest-axe": "^0.1.0"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@monaco-editor/react": "^4.7.0",
+    "browser-image-compression": "^2.0.2",
+    "flag-icons": "^7.5.0",
+    "react-select": "^5.10.2",
+    "yet-another-react-lightbox": "^3.27.0"
+  }
+}

@@ -1,0 +1,449 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "할인/쿠폰 적용 섹션 - 쿠폰 선택 및 할인코드 입력 (PC/모바일 반응형)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 헤더",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "children": [
+        {
+          "comment": "좌측: 아이콘 + 타이틀",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "tag", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" } },
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "$t:shop.checkout.discount_section_title"
+            }
+          ]
+        },
+        {
+          "comment": "우측: 쿠폰 다운로드 버튼 (로그인 사용자만)",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{_global.currentUser?.uuid}}",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "download", "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.coupon_download_btn" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "downloadableCouponsLoading": true,
+                    "downloadableCouponsPage": 1
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/user/coupons/downloadable?page=1&per_page=8",
+                  "auth_mode": "required",
+                  "params": { "method": "GET" },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "downloadableCoupons": "{{response.data}}",
+                        "downloadableCouponsLoading": false
+                      }
+                    },
+                    { "handler": "openModal", "target": "coupon_download_modal" }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": { "target": "local", "downloadableCouponsLoading": false }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "$t:shop.coupon_download.fetch_failed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "주문 쿠폰 선택 (로그인 사용자만)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.currentUser?.uuid}}",
+      "props": { "className": "mb-4" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "mb-3" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.order_coupon_select" },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
+              "props": { "className": "ml-2 text-xs text-blue-600 dark:text-blue-400" },
+              "text": "({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length}}$t:shop.checkout.coupon_count_suffix)"
+            }
+          ]
+        },
+        {
+          "comment": "주문 쿠폰 드롭다운",
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "name": "order_coupon_issue_id",
+            "value": "{{_local.checkout?.order_coupon_issue_id ?? ''}}",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Option",
+              "props": { "value": "" },
+              "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}"
+            },
+            {
+              "type": "basic",
+              "name": "Option",
+              "iteration": {
+                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}",
+                "item_var": "coupon",
+                "index_var": "couponIdx"
+              },
+              "props": {
+                "value": "{{coupon.id}}"
+              },
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + coupon.benefit_formatted + ')'}}"
+            }
+          ],
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "checkout": "{{Object.assign({}, _local.checkout, { order_coupon_issue_id: $event.target.value || null })}}"
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "auth_mode": "optional",
+                  "params": {
+                    "method": "PUT",
+                    "body": "{{_local.checkout}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "updateDataSource",
+                      "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "{{$event.target.value ? '$t:shop.checkout.order_coupon_applied' : '$t:shop.checkout.order_coupon_removed'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적용된 주문 쿠폰 정보",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.checkout?.order_coupon_issue_id && (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}",
+          "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "배송비 쿠폰 선택 (로그인 사용자만)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.currentUser?.uuid}}",
+      "props": { "className": "mb-4" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "mb-3" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.shipping_coupon_select" },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
+              "props": { "className": "ml-2 text-xs text-blue-600 dark:text-blue-400" },
+              "text": "({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length}}$t:shop.checkout.coupon_count_suffix)"
+            }
+          ]
+        },
+        {
+          "comment": "배송비 쿠폰 드롭다운",
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "name": "shipping_coupon_issue_id",
+            "value": "{{_local.checkout?.shipping_coupon_issue_id ?? ''}}",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Option",
+              "props": { "value": "" },
+              "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}"
+            },
+            {
+              "type": "basic",
+              "name": "Option",
+              "iteration": {
+                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}",
+                "item_var": "coupon",
+                "index_var": "couponIdx"
+              },
+              "props": {
+                "value": "{{coupon.id}}"
+              },
+              "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + coupon.benefit_formatted + ')'}}"
+            }
+          ],
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "checkout": "{{Object.assign({}, _local.checkout, { shipping_coupon_issue_id: $event.target.value || null })}}"
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "auth_mode": "optional",
+                  "params": {
+                    "method": "PUT",
+                    "body": "{{_local.checkout}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "updateDataSource",
+                      "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "{{$event.target.value ? '$t:shop.checkout.shipping_coupon_applied' : '$t:shop.checkout.shipping_coupon_removed'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적용된 배송비 쿠폰 정보",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.checkout?.shipping_coupon_issue_id && (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}",
+          "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? (checkoutData.data.calculation?.summary?.shipping_discount + '원')}}" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "할인코드 입력",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+          "text": "$t:shop.checkout.discount_code"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "discount_code",
+                "value": "{{_local.checkout?.discount_code ?? ''}}",
+                "placeholder": "$t:shop.checkout.discount_code_placeholder",
+                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "checkout": "{{Object.assign({}, _local.checkout, { discount_code: $event.target.value || null })}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                "disabled": "{{!_local.checkout?.discount_code}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  }
+                }
+              },
+              "text": "$t:shop.checkout.discount_code_apply",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "auth_mode": "optional",
+                  "params": {
+                    "method": "PUT",
+                    "body": "{{_local.checkout}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "updateDataSource",
+                      "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:shop.checkout.discount_code_applied"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "$t:shop.checkout.discount_code_invalid"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적용된 할인코드 정보",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}",
+          "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.code_discount_formatted}}" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Preset Edit Modal"
+  },
+  "id": "modal_preset_edit",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "id": "preset_edit_input",
+      "type": "basic",
+      "name": "Input",
+      "props": {
+        "type": "text",
+        "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder",
+        "className": "input w-full",
+        "value": "{{_global.editingPresetName}}"
+      },
+      "actions": [
+        {
+          "type": "input",
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "editingPresetName": "{{$event.target.value}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "preset_edit_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-secondary"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary",
+            "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
+          },
+          "text": "$t:common.save",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
+              "params": {
+                "method": "PUT",
+                "body": {
+                  "name": "{{_global.editingPresetName}}"
+                }
+              },
+              "onSuccess": [
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "presets"
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:sirsoft-ecommerce.messages.presets.updated"
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ],
+              "onError": {
+                "handler": "toast",
+                "params": {
+                  "type": "error",
+                  "message": "{{error.message}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

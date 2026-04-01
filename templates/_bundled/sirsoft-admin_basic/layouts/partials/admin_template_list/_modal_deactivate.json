@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 비활성화 확인 모달"
+  },
+  "id": "template_deactivate_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.templates.modals.deactivate_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "remount",
+                  "params": {
+                    "componentId": "template_card_grid"
+                  }
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isTemplateDeactivating": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/templates/deactivate",
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "template_name": "{{_global.selectedTemplate.identifier}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateDeactivating": false
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedTemplate": null
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.templates.deactivate_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "templates"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateDeactivating": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isTemplateDeactivating}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isTemplateDeactivating ? '$t:admin.templates.deactivating' : '$t:admin.templates.actions.deactivate'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

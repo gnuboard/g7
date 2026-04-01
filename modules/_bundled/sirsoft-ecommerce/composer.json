@@ -1,0 +1,22 @@
+{
+    "name": "modules/sirsoft-ecommerce",
+    "description": "Ecommerce module for Gnuboard7",
+    "type": "library",
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Sirsoft\\Ecommerce\\": "src/",
+            "Modules\\Sirsoft\\Ecommerce\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Sirsoft\\Ecommerce\\Database\\Factories\\": "database/factories/",
+            "Modules\\Sirsoft\\Ecommerce\\Upgrades\\": "upgrades/"
+        },
+        "files": [
+            "src/Helpers/helpers.php"
+        ]
+    },
+    "require": {
+        "php": "^8.2",
+        "ezyang/htmlpurifier": "^4.19"
+    }
+}

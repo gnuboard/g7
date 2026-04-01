@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "공용 삭제 모달 - 게시글/댓글"
+  },
+  "comment": "공용 삭제 모달 - 게시글/댓글 모두 사용 가능",
+  "id": "board_delete_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "id": "board_delete_modal",
+    "title": "{{_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_title' : '$t:board.modals.delete_post_title'}}",
+    "icon": "trash",
+    "iconClassName": "text-red-500",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "comment": "삭제 확인 메시지 (비회원인 경우 비밀번호 안내, 회원인 경우 삭제 확인)",
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-600 dark:text-gray-400"
+          },
+          "text": "{{_global.deleteModal.isGuest ? (_global.deleteModal.type === 'comment' ? '$t:board.guest_password_comment_delete_message' : '$t:board.guest_password_post_delete_message') : (_global.deleteModal.type === 'comment' ? '$t:board.modals.delete_comment_confirm' : '$t:board.modals.delete_post_confirm')}}"
+        },
+        {
+          "comment": "비회원 비밀번호 입력 (비회원만 표시)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.deleteModal.isGuest}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1.5 mb-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "xs",
+                    "className": "text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:board.guest_password"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "password",
+                "placeholder": "$t:board.guest_password_placeholder",
+                "value": "{{_global.deleteModal.password ?? ''}}",
+                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "deleteModal": {
+                      "type": "{{_global.deleteModal.type}}",
+                      "isGuest": "{{_global.deleteModal.isGuest}}",
+                      "apiEndpoint": "{{_global.deleteModal.apiEndpoint}}",
+                      "password": "{{$event.target.value}}"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "에러 메시지",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.deleteError}}",
+          "props": {
+            "className": "text-sm text-red-500"
+          },
+          "text": "{{_local.deleteError}}"
+        },
+        {
+          "comment": "버튼 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "comment": "로컬 상태 초기화",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "deleteError": ""
+                      }
+                    },
+                    {
+                      "comment": "모달 상태 초기화",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "deleteModal": null
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "disabled": "{{_local.deleteSubmitting || (_global.deleteModal.isGuest && !_global.deleteModal.password)}}",
+                "className": "px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "if": "{{_local.deleteSubmitting}}",
+                  "props": {
+                    "name": "spinner",
+                    "size": "sm",
+                    "className": "animate-spin mr-2"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.delete"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "deleteSubmitting": true,
+                        "deleteError": ""
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "target": "{{_global.deleteModal.apiEndpoint}}",
+                      "auth_required": true,
+                      "params": {
+                        "method": "DELETE",
+                        "body": "{{_global.deleteModal.isGuest ? {password: _global.deleteModal.password} : {}}}"
+                      },
+                      "onSuccess": [
+                        {
+                          "comment": "로컬 상태 초기화",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "deleteSubmitting": false,
+                            "deleteError": ""
+                          }
+                        },
+                        {
+                          "comment": "모달 상태 초기화",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "deleteModal": null
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "{{_global.deleteModal.type === 'comment' ? '$t:board.comment_deleted' : '$t:board.post_deleted'}}"
+                          }
+                        },
+                        {
+                          "comment": "댓글 삭제 시 데이터소스 갱신, 게시글 삭제 시 목록으로 이동",
+                          "if": "{{_global.deleteModal.type === 'comment'}}",
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "post"
+                          }
+                        },
+                        {
+                          "if": "{{_global.deleteModal.type !== 'comment'}}",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/board/{{route.slug}}"
+                          }
+                        },
+                        {
+                          "handler": "closeModal"
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "deleteSubmitting": false,
+                            "deleteError": "{{error.message}}"
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

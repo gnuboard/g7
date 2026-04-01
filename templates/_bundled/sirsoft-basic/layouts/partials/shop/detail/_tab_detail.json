@@ -1,0 +1,127 @@
+{
+  "meta": { "is_partial": true, "description": "상품 상세정보 탭 (HTML 콘텐츠, 상품정보제공고시, 공통정보)" },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_local.activeTab ?? 'info') === 'info'}}",
+  "props": { "className": "py-6 space-y-8" },
+  "children": [
+    {
+      "comment": "=== 상세 설명 HTML (펼치기/접기) ===",
+      "type": "composite",
+      "name": "ExpandableContent",
+      "props": {
+        "maxHeight": 500,
+        "expandText": "$t:shop.product.expand_detail",
+        "collapseText": "$t:shop.product.collapse_detail"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "HtmlContent",
+          "props": {
+            "content": "{{product.data?.description_localized ?? ''}}",
+            "className": "prose dark:prose-invert max-w-none"
+          }
+        }
+      ]
+    },
+    {
+      "comment": "=== 상품정보제공고시 ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{product.data?.notice && product.data?.notice?.values && product.data?.notice?.values.length > 0}}",
+      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-base font-semibold text-gray-900 dark:text-white mb-4" },
+          "text": "$t:shop.product.product_notice"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{product.data?.notice?.template_name}}",
+              "props": { "className": "bg-gray-50 dark:bg-gray-700/50 px-4 py-2 border-b border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "text": "{{product.data?.notice?.template_name}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "divide-y divide-gray-200 dark:divide-gray-700" },
+              "iteration": { "source": "{{product.data?.notice?.values ?? []}}", "item_var": "noticeItem" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "w-1/3 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300" },
+                      "text": "{{noticeItem.label ?? noticeItem.key ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "w-2/3 px-3 py-2 text-xs text-gray-900 dark:text-white" },
+                      "text": "{{noticeItem.value ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "=== 공통정보 ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{product.data?.common_info && product.data?.common_info?.content}}",
+      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-base font-semibold text-gray-900 dark:text-white mb-4" },
+          "text": "{{product.data?.common_info?.name ?? '$t:shop.product.common_info'}}"
+        },
+        {
+          "comment": "공통정보 - HTML 모드",
+          "type": "composite",
+          "name": "HtmlContent",
+          "if": "{{product.data?.common_info?.content_mode === 'html'}}",
+          "props": {
+            "content": "{{product.data?.common_info?.content ?? ''}}",
+            "className": "prose dark:prose-invert max-w-none text-sm"
+          }
+        },
+        {
+          "comment": "공통정보 - Text 모드 (줄바꿈 유지)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{product.data?.common_info?.content_mode !== 'html'}}",
+          "props": {
+            "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line"
+          },
+          "text": "{{product.data?.common_info?.content ?? ''}}"
+        }
+      ]
+    }
+  ]
+}

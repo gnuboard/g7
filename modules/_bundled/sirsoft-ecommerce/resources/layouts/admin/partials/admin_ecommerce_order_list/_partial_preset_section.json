@@ -1,0 +1,251 @@
+{
+  "id": "preset_section",
+  "type": "basic",
+  "name": "Div",
+  "comment": "P-001 ~ P-005, MB-012 ~ MB-014 프리셋 영역 (PC/모바일 동일 표시)",
+  "props": {
+    "className": "card mb-4"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-3 py-3 px-4"
+      },
+      "children": [
+        {
+          "id": "p_001_preset_icon",
+          "type": "basic",
+          "name": "Button",
+          "comment": "P-001, P-002",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 hover:opacity-70"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "settings",
+                "className": "w-4 h-4 icon-muted"
+              }
+            },
+            {
+              "id": "p_002_preset_label",
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary text-sm"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.label"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "openModal",
+              "target": "modal_preset_manage"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 flex-wrap"
+          },
+          "children": [
+            {
+              "id": "p_003_preset_button_1",
+              "type": "basic",
+              "name": "Button",
+              "comment": "P-003 오늘 결제완료",
+              "props": {
+                "type": "button",
+                "className": "{{_local.filter.selectedPreset === 'today_payment' ? 'px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 text-gray-900 dark:border-white dark:text-white' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.today_payment",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.selectedPreset": "today_payment",
+                        "filter.dateType": "payment_date",
+                        "filter.startDate": "{{$date.today()}}",
+                        "filter.endDate": "{{$date.today()}}",
+                        "filter.orderStatus": ["payment_complete"]
+                      }
+                    },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/ecommerce/orders",
+                        "replace": true,
+                        "query": {
+                          "preset_id": "today_payment",
+                          "date_type": "payment_date",
+                          "start_date": "{{$date.today()}}",
+                          "end_date": "{{$date.today()}}",
+                          "order_status[]": ["payment_complete"],
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "p_004_preset_button_2",
+              "type": "basic",
+              "name": "Button",
+              "comment": "P-004 무통장 입금대기",
+              "props": {
+                "type": "button",
+                "className": "{{_local.filter.selectedPreset === 'bank_pending' ? 'px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 text-gray-900 dark:border-white dark:text-white' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.bank_pending",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.selectedPreset": "bank_pending",
+                        "filter.orderStatus": ["pending_payment"],
+                        "filter.paymentMethods": ["bank_transfer"]
+                      }
+                    },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/ecommerce/orders",
+                        "replace": true,
+                        "query": {
+                          "preset_id": "bank_pending",
+                          "order_status[]": ["pending_payment"],
+                          "payment_method[]": ["bank_transfer"],
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "dynamic_presets",
+              "type": "basic",
+              "name": "Fragment",
+              "iterator": {
+                "source": "{{(presets?.data || []).slice(0, 3)}}",
+                "item": "preset",
+                "index": "presetIndex"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.filter.selectedPreset === preset.id ? 'px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 text-gray-900 dark:border-white dark:text-white' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}}"
+                  },
+                  "text": "{{preset.name}}",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.selectedPreset": "{{preset.id}}"
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/ecommerce/orders",
+                            "replace": true,
+                            "query": "{{preset.conditions}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p_005_preset_more",
+          "type": "composite",
+          "name": "DropdownButton",
+          "comment": "P-005 프리셋 더보기",
+          "if": "{{(presets?.data || []).length > 3}}",
+          "props": {
+            "className": "btn btn-outline btn-sm",
+            "icon": "chevron-down",
+            "iconPosition": "right",
+            "label": "$t:sirsoft-ecommerce.admin.order.preset.more"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Fragment",
+              "iterator": {
+                "source": "{{(presets?.data || []).slice(3)}}",
+                "item": "preset",
+                "index": "moreIndex"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "DropdownItem",
+                  "props": {
+                    "label": "{{preset.name}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.selectedPreset": "{{preset.id}}"
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/ecommerce/orders",
+                            "replace": true,
+                            "query": "{{preset.conditions}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

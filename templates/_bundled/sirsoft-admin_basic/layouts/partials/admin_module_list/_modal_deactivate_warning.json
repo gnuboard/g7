@@ -1,0 +1,218 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "모듈 비활성화 경고 모달"
+  },
+  "id": "module_deactivate_warning_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.modules.modals.deactivate_warning_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "exclamation-triangle",
+                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:admin.modules.modals.deactivate_warning_message"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.affectedTemplates && _global.affectedTemplates.length > 0}}",
+          "props": {
+            "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.modules.modals.affected_templates"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_global.affectedTemplates",
+                    "item_var": "template"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "palette",
+                        "className": "w-4 h-4"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{template.name}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{template.type}}",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
+                      },
+                      "text": "({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/modules/{{_global.selectedModule.identifier}}/deactivate",
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "force": true
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.modules.deactivate_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "modules"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:admin.modules.modals.confirm_deactivate"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

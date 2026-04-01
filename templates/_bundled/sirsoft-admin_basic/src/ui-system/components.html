@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components - 그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-subtitle {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      margin-top: 1.5rem;
+      color: #374151;
+    }
+    .dark .preview-subtitle {
+      color: #d1d5db;
+    }
+    .preview-subsubtitle {
+      font-size: 0.925rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      margin-top: 1rem;
+      color: #4b5563;
+    }
+    .dark .preview-subsubtitle {
+      color: #9ca3af;
+    }
+    .preview-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    @media (max-width: 640px) {
+      .preview-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+    }
+    .preview-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-breadcrumb a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .preview-breadcrumb a:hover {
+      color: #3b82f6;
+    }
+    .dark .preview-breadcrumb a {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb a:hover {
+      color: #60a5fa;
+    }
+    .preview-breadcrumb span {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb span {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <div class="preview-breadcrumb">
+      <a href="index.html"><i class="fas fa-home"></i></a>
+      <span>/</span>
+      <span class="text-gray-900 dark:text-white">Components</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Components</h1>
+
+    <!-- DataGrid -->
+    <section class="preview-section">
+      <h2 class="preview-title">1. DataGrid</h2>
+
+      <h3 class="preview-subtitle">1.1 Tables</h3>
+      <h4 class="preview-subsubtitle">Data Table (주문내역)</h4>
+      <div class="table-container table-desktop overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="w-10"><input type="checkbox" class="checkbox"></th>
+              <th class="sortable">주문일시 <i class="fas fa-sort ml-1"></i></th>
+              <th>주문번호</th>
+              <th>주문상태</th>
+              <th class="text-right">주문금액</th>
+              <th>상품정보</th>
+              <th>주문자명</th>
+              <th class="w-16 text-center">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" class="checkbox"></td>
+              <td>2024-10-16 10:30:00</td>
+              <td>ord251016123456</td>
+              <td><span class="badge badge-green">결제완료</span></td>
+              <td class="text-right">
+                <div class="price">50,000원</div>
+                <div class="price-increase">+45,000원</div>
+              </td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <img src="https://via.placeholder.com/48" class="product-image" alt="">
+                  <div>
+                    <div class="text-heading">노트북 거치대</div>
+                    <div class="text-tertiary">외 2건</div>
+                  </div>
+                </div>
+              </td>
+              <td>유 김철수</td>
+              <td class="text-center">
+                <button class="btn-icon"><i class="fas fa-ellipsis-h"></i></button>
+              </td>
+            </tr>
+            <tr class="selected">
+              <td><input type="checkbox" class="checkbox" checked></td>
+              <td>2024-10-15 18:20:00</td>
+              <td>ord251015345678</td>
+              <td><span class="badge badge-indigo">배송중</span></td>
+              <td class="text-right">
+                <div class="price">95,000원</div>
+                <div class="price-increase">+89,700원</div>
+              </td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <img src="https://via.placeholder.com/48" class="product-image" alt="">
+                  <div>
+                    <div class="text-heading">USB 허브</div>
+                    <div class="text-tertiary">외 3건</div>
+                  </div>
+                </div>
+              </td>
+              <td>박지성</td>
+              <td class="text-center">
+                <button class="btn-icon"><i class="fas fa-ellipsis-h"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="preview-subsubtitle mt-8">Log Table (로그/이력)</h4>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">처리일시, 처리자, 이벤트를 표시하는 로그 테이블</p>
+      <div class="table-container table-desktop overflow-x-auto max-w-2xl">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th class="w-44">처리일시</th>
+              <th class="w-36">처리자</th>
+              <th>이벤트</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2025-10-28 10:30:25</td>
+              <td><span class="log-table-actor">관리자 (admin)</span></td>
+              <td>결제 링크 재발송</td>
+            </tr>
+            <tr>
+              <td>2025-10-28 09:15:00</td>
+              <td><span class="log-table-actor">시스템</span></td>
+              <td>주문 상태 변경: 결제대기 → 결제완료</td>
+            </tr>
+            <tr>
+              <td>2025-10-27 18:45:30</td>
+              <td><span class="log-table-actor">홍길동 (user123)</span></td>
+              <td>배송지 정보 수정</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="preview-subsubtitle mt-8">Mobile Card View (Log Table 반응형)</h4>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">로그 테이블의 모바일 카드 형태</p>
+      <div class="table-mobile-cards block max-w-md">
+        <div class="log-card">
+          <div class="log-card-header">
+            <span class="log-table-actor">관리자 (admin)</span>
+            <span class="text-tertiary text-sm">2025-10-28 10:30:25</span>
+          </div>
+          <div class="log-card-body">
+            결제 링크 재발송
+          </div>
+        </div>
+        <div class="log-card mt-3">
+          <div class="log-card-header">
+            <span class="log-table-actor">시스템</span>
+            <span class="text-tertiary text-sm">2025-10-28 09:15:00</span>
+          </div>
+          <div class="log-card-body">
+            주문 상태 변경: 결제대기 → 결제완료
+          </div>
+        </div>
+        <div class="log-card mt-3">
+          <div class="log-card-header">
+            <span class="log-table-actor">홍길동 (user123)</span>
+            <span class="text-tertiary text-sm">2025-10-27 18:45:30</span>
+          </div>
+          <div class="log-card-body">
+            배송지 정보 수정
+          </div>
+        </div>
+      </div>
+
+      <h4 class="preview-subsubtitle mt-8">Mobile Card View (DataGrid 반응형)</h4>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">사용자 목록 형태 - 주요필드 + 서브텍스트 + 뱃지</p>
+      <div class="table-mobile-cards block max-w-md">
+        <div class="excel-card relative">
+          <!-- Action button: top-right corner -->
+          <button class="btn-icon absolute top-2 right-2"><i class="fas fa-ellipsis-v"></i></button>
+          <!-- Header: checkbox + primary + badge -->
+          <div class="excel-card-header pr-10">
+            <input type="checkbox" class="checkbox flex-shrink-0">
+            <div class="flex-1 min-w-0">
+              <div class="excel-card-label">{primary_label}</div>
+              <div class="excel-card-title">{primary_value}</div>
+              <div class="text-tertiary text-sm">({sub_value})</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="excel-card-label">{badge_label}</div>
+              <span class="badge badge-blue">{badge_value}</span>
+            </div>
+          </div>
+          <!-- Body: 2-column grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field1_label}</span>
+              <span class="excel-card-value !text-left">{field1_value}</span>
+            </div>
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field2_label}</span>
+              <span class="excel-card-value !text-left">{field2_value}</span>
+            </div>
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field3_label}</span>
+              <span class="excel-card-value !text-left">{field3_value}</span>
+            </div>
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{status_label}</span>
+              <span class="badge badge-red">{status_value}</span>
+            </div>
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field4_label}</span>
+              <span class="excel-card-value !text-left">{field4_value}</span>
+            </div>
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field5_label}</span>
+              <span class="excel-card-value !text-left">{field5_value}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 mt-6">권한 관리 형태 - 인라인 뱃지 + 아이콘 값 + 전체너비 필드</p>
+      <div class="table-mobile-cards block max-w-md">
+        <div class="excel-card relative">
+          <!-- Action button: top-right corner -->
+          <button class="btn-icon absolute top-2 right-2"><i class="fas fa-ellipsis-v"></i></button>
+          <!-- Header: primary(with inline badge) + secondary text -->
+          <div class="excel-card-header pr-10">
+            <div class="flex-1 min-w-0">
+              <div class="excel-card-label">{primary_label}</div>
+              <div class="flex items-center gap-2">
+                <span class="excel-card-title">{primary_value}</span>
+                <span class="badge badge-gray">{inline_badge}</span>
+              </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="excel-card-label">{secondary_label}</div>
+              <span class="excel-card-value !text-right truncate max-w-[150px]">{secondary_value}</span>
+            </div>
+          </div>
+          <!-- Body: 2-column grid with variations -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <!-- field with icon -->
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{field1_label}</span>
+              <span class="excel-card-value !text-left flex items-center gap-1">
+                <i class="fas fa-users text-gray-400"></i> {field1_value}
+              </span>
+            </div>
+            <!-- field with badge -->
+            <div class="excel-card-row flex-col !items-start !py-0">
+              <span class="excel-card-label">{status_label}</span>
+              <span class="badge badge-green">{status_value}</span>
+            </div>
+            <!-- full-width field (col-span-2) -->
+            <div class="excel-card-row flex-col !items-start !py-0 col-span-2">
+              <span class="excel-card-label">{fullwidth_label}</span>
+              <span class="excel-card-value !text-left">{fullwidth_value}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 mt-6">설치 카드 형태 - 아이콘 + 뱃지그룹 + 토글/버튼 액션</p>
+      <div class="table-mobile-cards block max-w-md">
+        <div class="excel-card relative">
+          <!-- Action button: top-right corner -->
+          <button class="btn-icon absolute top-2 right-2"><i class="fas fa-ellipsis-v"></i></button>
+          <!-- Header: icon + title with badges -->
+          <div class="excel-card-header !items-start pr-10">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-puzzle-piece text-xl text-gray-500 dark:text-gray-400"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="excel-card-title">{title}</span>
+                <span class="badge badge-blue">{status_badge}</span>
+                <span class="text-tertiary text-sm">{version}</span>
+              </div>
+              <div class="text-tertiary text-sm mt-1">{description}</div>
+            </div>
+          </div>
+          <!-- Body: meta info + toggle -->
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-1 text-sm">
+              <span class="text-tertiary">{meta1_label}: {meta1_value}</span>
+              <span class="text-tertiary">{meta2_label}: {meta2_value}</span>
+            </div>
+            <!-- Toggle (ui-elements.html 방식) -->
+            <div class="toggle active" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Install button variant -->
+        <div class="excel-card mt-3 relative">
+          <!-- Action button: top-right corner -->
+          <button class="btn-icon absolute top-2 right-2"><i class="fas fa-ellipsis-v"></i></button>
+          <div class="excel-card-header !items-start pr-10">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-puzzle-piece text-xl text-gray-500 dark:text-gray-400"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="excel-card-title">{title}</span>
+                <span class="badge badge-gray">{status_badge}</span>
+                <span class="text-tertiary text-sm">{version}</span>
+              </div>
+              <div class="text-tertiary text-sm mt-1">{description}</div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1 text-sm">
+            <span class="text-tertiary">{meta1_label}: {meta1_value}</span>
+            <span class="text-tertiary">{meta2_label}: {meta2_value}</span>
+          </div>
+          <!-- Full-width action button -->
+          <button class="btn btn-primary w-full mt-3"><i class="fas fa-download mr-2"></i> 설치</button>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-10">1.2 CardGrid</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">테이블 대신 카드 형태로 데이터를 표시하는 그리드 레이아웃</p>
+
+      <h4 class="preview-subsubtitle">확장 관리 형태 (모듈/플러그인/템플릿)</h4>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">아이콘 + 제목 + 뱃지그룹 + 설명 + 메타정보 + 토글/버튼</p>
+      <div class="flex flex-col gap-3 max-w-4xl">
+        <!-- Active item with toggle -->
+        <div class="card p-4 relative">
+          <button class="btn-icon absolute top-4 right-4"><i class="fas fa-ellipsis-v"></i></button>
+          <div class="flex items-start gap-4 pr-10">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-cube text-xl text-gray-500 dark:text-gray-400"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-heading">{title}</span>
+                <span class="text-tertiary text-sm">{version}</span>
+                <span class="badge badge-green">{status_badge}</span>
+              </div>
+              <div class="text-tertiary text-sm mt-1">{description}</div>
+              <div class="flex items-center gap-4 mt-2 text-sm text-tertiary">
+                <span>{meta1_label}: {meta1_value}</span>
+                <span>{meta2_label}: {meta2_value}</span>
+              </div>
+            </div>
+            <div class="toggle active flex-shrink-0" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inactive item with install button -->
+        <div class="card p-4 relative">
+          <button class="btn-icon absolute top-4 right-4"><i class="fas fa-ellipsis-v"></i></button>
+          <div class="flex items-start gap-4 pr-10">
+            <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-cube text-xl text-gray-500 dark:text-gray-400"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-semibold text-heading">{title}</span>
+                <span class="text-tertiary text-sm">{version}</span>
+                <span class="badge badge-gray">{status_badge}</span>
+              </div>
+              <div class="text-tertiary text-sm mt-1">{description}</div>
+              <div class="flex items-center gap-4 mt-2 text-sm text-tertiary">
+                <span>{meta1_label}: {meta1_value}</span>
+                <span>{meta2_label}: {meta2_value}</span>
+              </div>
+            </div>
+            <button class="btn btn-primary flex-shrink-0"><i class="fas fa-download mr-2"></i> 설치</button>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="preview-subsubtitle mt-8">게시판 관리 형태</h4>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">뱃지 + 제목 + 서브텍스트 + 메타정보 (심플 가로형)</p>
+      <div class="flex flex-col gap-3 max-w-4xl">
+        <div class="card p-4 relative">
+          <button class="btn-icon absolute top-4 right-4"><i class="fas fa-ellipsis-h"></i></button>
+          <div class="flex items-center gap-3 pr-10">
+            <span class="badge badge-blue flex-shrink-0">{category}</span>
+            <span class="font-semibold text-heading">{title}</span>
+            <span class="text-tertiary text-sm">({sub_text})</span>
+          </div>
+          <div class="flex items-center gap-4 mt-2 text-sm text-tertiary">
+            <span>{meta1_label}: {meta1_value}</span>
+            <span class="text-gray-300 dark:text-gray-600">·</span>
+            <span>{meta2_label}: {meta2_value}</span>
+          </div>
+        </div>
+
+        <div class="card p-4 relative">
+          <button class="btn-icon absolute top-4 right-4"><i class="fas fa-ellipsis-h"></i></button>
+          <div class="flex items-center gap-3 pr-10">
+            <span class="badge badge-green flex-shrink-0">{category}</span>
+            <span class="font-semibold text-heading">{title}</span>
+            <span class="text-tertiary text-sm">({sub_text})</span>
+          </div>
+          <div class="flex items-center gap-4 mt-2 text-sm text-tertiary">
+            <span>{meta1_label}: {meta1_value}</span>
+            <span class="text-gray-300 dark:text-gray-600">·</span>
+            <span>{meta2_label}: {meta2_value}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modals -->
+    <section class="preview-section">
+      <h2 class="preview-title">2. Modals</h2>
+
+      <h3 class="preview-subtitle">Modal Trigger Buttons</h3>
+      <div class="preview-row">
+        <button class="btn btn-primary" onclick="openModal('excelDownloadModal')"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+        <button class="btn btn-outline" onclick="openModal('presetSaveModal')"><i class="fas fa-save"></i> 프리셋 저장</button>
+        <button class="btn btn-secondary" onclick="openModal('confirmModal')"><i class="fas fa-check"></i> 확인 모달</button>
+      </div>
+
+      <h3 class="preview-subtitle">Confirm Modal</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">확인/취소 액션을 요청하는 컴팩트한 확인 모달</p>
+      <div class="preview-row">
+        <button class="btn btn-primary" onclick="openModal('confirmModal')">Confirm Modal 열기</button>
+        <button class="btn btn-danger" onclick="openModal('confirmModalDanger')">Danger Confirm Modal</button>
+      </div>
+
+      <h3 class="preview-subtitle">Confirm Modal with Alert</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">경고/정보 영역이 포함된 확인 모달 (삭제 시 영향 범위 표시 등)</p>
+      <div class="preview-row">
+        <button class="btn btn-warning" onclick="openModal('confirmModalWithAlert')"><i class="fas fa-exclamation-triangle"></i> Alert 포함 모달</button>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="preview-section">
+      <h2 class="preview-title">3. Cards</h2>
+
+      <h3 class="preview-subtitle">Setting Card</h3>
+      <div class="responsive-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">쇼핑몰 정보</h3>
+            <p class="card-description">쇼핑몰의 기본 정보를 설정합니다.</p>
+          </div>
+          <div class="space-y-4">
+            <div class="form-group">
+              <label class="form-label">쇼핑몰 이름</label>
+              <input type="text" class="input" placeholder="쇼핑몰 이름을 입력하세요">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Section Title Card</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">구분선이 있는 섹션 제목 스타일 - 주문상세, 회원상세 등에서 사용</p>
+      <div class="responsive-grid">
+        <div class="card">
+          <h2 class="card-section-title">주문정보</h2>
+          <div class="space-y-6">
+            <div>
+              <h3 class="card-title mb-4">주문상품</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">섹션 내용...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Setting Card (Module Source)</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">모듈/플러그인에 의해 동적으로 추가된 UI 섹션 - 우측 상단에 출처 표시</p>
+      <div class="responsive-grid">
+        <!-- Plugin source -->
+        <div class="card relative">
+          <span class="absolute top-4 right-4 text-sm text-gray-400 dark:text-gray-500 flex items-center gap-1">
+            <i class="fas fa-puzzle-piece"></i> 플러그인
+          </span>
+          <div class="card-header">
+            <h3 class="card-title">섹션 제목</h3>
+            <p class="card-description">플러그인에 의해 추가된 섹션입니다.</p>
+          </div>
+          <div class="space-y-4">
+            <div class="form-group">
+              <label class="form-label">필드 라벨</label>
+              <input type="text" class="input" placeholder="입력값">
+            </div>
+          </div>
+        </div>
+
+        <!-- Module source -->
+        <div class="card relative">
+          <span class="absolute top-4 right-4 text-sm text-gray-400 dark:text-gray-500 flex items-center gap-1">
+            <i class="fas fa-cube"></i> 모듈
+          </span>
+          <div class="card-header">
+            <h3 class="card-title">섹션 제목</h3>
+            <p class="card-description">모듈에 의해 추가된 섹션입니다.</p>
+          </div>
+          <div class="space-y-4">
+            <div class="form-group">
+              <label class="form-label">필드 라벨</label>
+              <input type="text" class="input" placeholder="입력값">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Account Card (무통장 계좌)</h3>
+      <div class="responsive-grid max-w-2xl">
+        <div class="card-account">
+          <div class="card-account-default">
+            <span class="badge badge-gray"><i class="fas fa-star mr-1"></i> 기본 계좌</span>
+          </div>
+          <div class="card-account-delete">
+            <button class="btn-icon"><i class="fas fa-trash"></i></button>
+          </div>
+          <div class="pt-8 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-label-subtle w-16">은행</span>
+              <span class="text-heading">KB국민은행</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-label-subtle w-16">계좌번호</span>
+              <span class="text-heading">123-456-789012</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Accordion Card</h3>
+      <div class="responsive-grid max-w-md">
+        <div class="card-accordion">
+          <div class="card-accordion-header" onclick="toggleAccordion(this)">
+            <span class="card-accordion-title">title</span>
+            <svg class="card-accordion-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div class="card-accordion-body">
+            <p class="text-label">content</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Accordion Card (Toggle Only)</h3>
+      <div class="responsive-grid max-w-md">
+        <div class="card-accordion">
+          <div class="card-accordion-body">
+            <p class="text-label">content</p>
+          </div>
+          <div class="card-accordion-toggle" onclick="toggleAccordion(this)">
+            <svg class="card-accordion-icon open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <section class="preview-section">
+      <h2 class="preview-title">4. Tabs</h2>
+
+      <h3 class="preview-subtitle">기본 탭</h3>
+      <div class="tabs">
+        <button class="tab active">tab (active)</button>
+        <button class="tab">tab</button>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">언더라인 탭</h3>
+      <div class="inline-flex border-b border-gray-200 dark:border-gray-700">
+        <button class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">tab</button>
+        <button class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400 -mb-px">tab (active)</button>
+      </div>
+    </section>
+
+    <!-- Toast -->
+    <section class="preview-section">
+      <h2 class="preview-title">5. Toast</h2>
+
+      <div class="flex flex-col gap-3 max-w-sm">
+        <!-- Success Toast -->
+        <div class="flex items-center gap-3 bg-green-50 dark:bg-green-900/20 px-4 py-3 rounded-lg shadow-lg">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs"><i class="fas fa-check"></i></span>
+          <span class="flex-1 text-sm text-green-700 dark:text-green-300">사용자가 활성화되었습니다.</span>
+          <button class="flex-shrink-0 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-200"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Error Toast -->
+        <div class="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-lg shadow-lg">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs"><i class="fas fa-times"></i></span>
+          <span class="flex-1 text-sm text-red-700 dark:text-red-300">오류가 발생했습니다.</span>
+          <button class="flex-shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Warning Toast -->
+        <div class="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3 rounded-lg shadow-lg">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xs"><i class="fas fa-exclamation"></i></span>
+          <span class="flex-1 text-sm text-yellow-700 dark:text-yellow-300">주의가 필요합니다.</span>
+          <button class="flex-shrink-0 text-yellow-500 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-200"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Info Toast -->
+        <div class="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 rounded-lg shadow-lg">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs"><i class="fas fa-info"></i></span>
+          <span class="flex-1 text-sm text-blue-700 dark:text-blue-300">정보를 확인해주세요.</span>
+          <button class="flex-shrink-0 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dropdown Menu -->
+    <section class="preview-section">
+      <h2 class="preview-title">6. Dropdown Menu</h2>
+
+      <div class="preview-row">
+        <div class="dropdown-menu relative inline-block">
+          <div class="dropdown-item">
+            <span class="dropdown-item-icon"><i class="fas fa-user"></i></span>
+            menu item
+          </div>
+          <div class="dropdown-item">
+            <span class="dropdown-item-icon"><i class="fas fa-search"></i></span>
+            menu item
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item">
+            <span class="dropdown-item-icon"><i class="fas fa-cog"></i></span>
+            menu item
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Drag List -->
+    <section class="preview-section">
+      <h2 class="preview-title">7. Drag List</h2>
+
+      <h3 class="preview-subtitle">기본 드래그 리스트</h3>
+      <div class="card max-w-sm">
+        <div class="card-header">
+          <h3 class="card-title">title</h3>
+          <p class="card-description">description</p>
+        </div>
+        <div class="space-y-3">
+          <div class="drag-item">
+            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-folder icon-muted"></i>
+                <span class="text-heading">item</span>
+              </div>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+          <div class="drag-item">
+            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-folder icon-muted"></i>
+                <span class="text-heading">item (active)</span>
+              </div>
+            </div>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">계층형 드래그 리스트</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">부모-자식 관계가 있는 트리 구조 리스트</p>
+      <div class="card max-w-sm">
+        <div class="card-header">
+          <h3 class="card-title">title</h3>
+          <p class="card-description">description</p>
+        </div>
+        <div class="space-y-3">
+          <!-- 부모 아이템 (펼쳐진 상태) -->
+          <div class="drag-item">
+            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+            <button class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 -ml-1">
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-folder icon-muted"></i>
+                <span class="text-heading">parent (expanded)</span>
+              </div>
+            </div>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+          <!-- 자식 아이템 영역 -->
+          <div class="bg-gray-50 dark:bg-gray-800/50 -mx-4 px-4 py-3 space-y-3">
+            <!-- 자식 아이템 1 -->
+            <div class="drag-item pl-8">
+              <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file icon-muted"></i>
+                  <span class="text-heading">child item</span>
+                </div>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')">
+                <div class="toggle-track"></div>
+                <div class="toggle-handle"></div>
+              </div>
+            </div>
+            <!-- 자식 아이템 2 -->
+            <div class="drag-item pl-8">
+              <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file icon-muted"></i>
+                  <span class="text-heading">child item</span>
+                </div>
+              </div>
+              <div class="toggle" onclick="this.classList.toggle('active')">
+                <div class="toggle-track"></div>
+                <div class="toggle-handle"></div>
+              </div>
+            </div>
+          </div>
+          <!-- 단일 아이템 -->
+          <div class="drag-item">
+            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-folder icon-muted"></i>
+                <span class="text-heading">item</span>
+              </div>
+            </div>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+          <!-- 부모 아이템 (접힌 상태) -->
+          <div class="drag-item">
+            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+            <button class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 -ml-1">
+              <i class="fas fa-chevron-right text-xs"></i>
+            </button>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-folder icon-muted"></i>
+                <span class="text-heading">parent (collapsed)</span>
+              </div>
+            </div>
+            <div class="toggle active" onclick="this.classList.toggle('active')">
+              <div class="toggle-track"></div>
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Custom Select -->
+    <section class="preview-section">
+      <h2 class="preview-title">8. Custom Select</h2>
+
+      <h3 class="preview-subtitle">Custom Select (Select.tsx 호환)</h3>
+      <div class="preview-row">
+        <div class="select-custom w-[150px]">
+          <button type="button" class="select-trigger" onclick="toggleSelect(this)">
+            <span>select</span>
+            <svg class="select-trigger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="select-dropdown hidden">
+            <div class="select-dropdown-inner">
+              <button class="select-option selected" onclick="selectOption(this, 'select')">
+                <span>select</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, 'option1')">
+                <span>option1</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, 'option2')">
+                <span>option2</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, 'option3')">
+                <span>option3</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Multi Select (체크박스 드롭다운)</h3>
+      <div class="preview-row">
+        <div class="multi-select">
+          <button type="button" class="multi-select-trigger" onclick="toggleMultiSelect(this)">
+            <i class="fas fa-list"></i>
+            <span>select</span>
+            <span class="multi-select-count">(9)</span>
+          </button>
+          <div class="multi-select-dropdown hidden">
+            <div class="multi-select-header">
+              <div>title</div>
+              <div class="multi-select-hint">description</div>
+            </div>
+            <div class="multi-select-items">
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option1</span>
+              </label>
+              <label class="multi-select-item disabled">
+                <input type="checkbox" class="checkbox" checked disabled>
+                <span>option2 (required)</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option3</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option4</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option5</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option6</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option7</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option8</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox" checked>
+                <span>option9</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox">
+                <span>option10</span>
+              </label>
+              <label class="multi-select-item">
+                <input type="checkbox" class="checkbox">
+                <span>option11</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Ghost Select (배경 없는 셀렉트)</h3>
+      <div class="preview-row">
+        <div class="select-ghost">
+          <button type="button" class="select-ghost-trigger" onclick="toggleGhostSelect(this)">
+            <span>select</span>
+            <svg class="select-trigger-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="select-ghost-dropdown hidden">
+            <button class="select-ghost-option selected" onclick="selectGhostOption(this, 'select')">
+              <span>select</span>
+            </button>
+            <button class="select-ghost-option" onclick="selectGhostOption(this, 'option1')">
+              <span>option1</span>
+            </button>
+            <button class="select-ghost-option" onclick="selectGhostOption(this, 'option2')">
+              <span>option2</span>
+            </button>
+            <button class="select-ghost-option" onclick="selectGhostOption(this, 'option3')">
+              <span>option3</span>
+            </button>
+            <button class="select-ghost-option" onclick="selectGhostOption(this, 'option4')">
+              <span>option4</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Searchable Dropdown (검색 가능한 드롭다운)</h3>
+      <div class="preview-row gap-8">
+        <!-- 단일 선택 -->
+        <div class="searchable-dropdown" data-mode="single">
+          <button type="button" class="searchable-dropdown-trigger" onclick="toggleSearchableDropdown(this)">
+            <span>브랜드 선택</span>
+            <svg class="searchable-dropdown-trigger-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="searchable-dropdown-dropdown hidden">
+            <div class="searchable-dropdown-search">
+              <input type="text" class="searchable-dropdown-search-input" placeholder="브랜드 검색..." oninput="filterSearchableDropdown(this)">
+            </div>
+            <div class="searchable-dropdown-items">
+              <button class="searchable-dropdown-option selected" onclick="selectSearchableOption(this, 'Nike')">
+                <div class="searchable-dropdown-check-area">
+                  <svg class="searchable-dropdown-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">Nike</div>
+                  <div class="searchable-dropdown-option-description">스포츠 의류 및 용품</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="selectSearchableOption(this, 'Adidas')">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">Adidas</div>
+                  <div class="searchable-dropdown-option-description">스포츠웨어 브랜드</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="selectSearchableOption(this, 'Samsung')">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">Samsung</div>
+                  <div class="searchable-dropdown-option-description">전자제품 제조사</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="selectSearchableOption(this, 'Apple')">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">Apple</div>
+                  <div class="searchable-dropdown-option-description">스마트 디바이스</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="selectSearchableOption(this, 'Zara')">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">Zara</div>
+                  <div class="searchable-dropdown-option-description">패스트 패션 브랜드</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="selectSearchableOption(this, 'H&M')">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">H&M</div>
+                  <div class="searchable-dropdown-option-description">의류 브랜드</div>
+                </div>
+              </button>
+            </div>
+            <div class="searchable-dropdown-message hidden">검색 결과가 없습니다</div>
+          </div>
+        </div>
+
+        <!-- 다중 선택 -->
+        <div class="searchable-dropdown" data-mode="multiple">
+          <button type="button" class="searchable-dropdown-trigger" onclick="toggleSearchableDropdown(this)">
+            <span>카테고리 선택 (2)</span>
+            <svg class="searchable-dropdown-trigger-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="searchable-dropdown-dropdown hidden">
+            <div class="searchable-dropdown-search">
+              <input type="text" class="searchable-dropdown-search-input" placeholder="카테고리 검색..." oninput="filterSearchableDropdown(this)">
+            </div>
+            <div class="searchable-dropdown-items">
+              <button class="searchable-dropdown-option selected" onclick="toggleSearchableOption(this)">
+                <div class="searchable-dropdown-check-area">
+                  <svg class="searchable-dropdown-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">전자제품</div>
+                  <div class="searchable-dropdown-option-description">스마트폰, 태블릿, 노트북 등</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option selected" onclick="toggleSearchableOption(this)">
+                <div class="searchable-dropdown-check-area">
+                  <svg class="searchable-dropdown-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">패션/의류</div>
+                  <div class="searchable-dropdown-option-description">남성, 여성, 아동 의류</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="toggleSearchableOption(this)">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">가구/인테리어</div>
+                  <div class="searchable-dropdown-option-description">가구, 조명, 홈데코</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="toggleSearchableOption(this)">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">식품/음료</div>
+                  <div class="searchable-dropdown-option-description">신선식품, 가공식품, 음료</div>
+                </div>
+              </button>
+              <button class="searchable-dropdown-option" onclick="toggleSearchableOption(this)">
+                <div class="searchable-dropdown-check-area"></div>
+                <div class="searchable-dropdown-option-content">
+                  <div class="searchable-dropdown-option-label">스포츠/레저</div>
+                  <div class="searchable-dropdown-option-description">운동용품, 캠핑, 등산</div>
+                </div>
+              </button>
+            </div>
+            <div class="searchable-dropdown-message hidden">검색 결과가 없습니다</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Search Bar -->
+    <section class="preview-section">
+      <h2 class="preview-title">9. Search Bar</h2>
+
+      <h3 class="preview-subtitle">기본 검색바 (반응형)</h3>
+      <p class="text-secondary text-sm mb-4">모바일: 세로 배치 / 데스크탑(md 이상): 가로 배치</p>
+      <div class="search-bar">
+        <div class="select-custom search-bar-select-custom">
+          <button type="button" class="select-trigger" onclick="toggleSelect(this)">
+            <span>주문번호</span>
+            <svg class="select-trigger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="select-dropdown hidden">
+            <div class="select-dropdown-inner">
+              <button class="select-option selected" onclick="selectOption(this, '주문번호')">
+                <span>주문번호</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, '회원명')">
+                <span>회원명</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, '회원 ID')">
+                <span>회원 ID</span>
+              </button>
+              <button class="select-option" onclick="selectOption(this, '상품명')">
+                <span>상품명</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <input type="text" class="search-bar-input" placeholder="검색어를 입력하세요">
+        <button class="search-bar-reset">
+          <i class="fas fa-sync-alt"></i> 초기화
+        </button>
+      </div>
+    </section>
+
+    <!-- Filter Row -->
+    <section class="preview-section">
+      <h2 class="preview-title">10. Filter Row</h2>
+
+      <h3 class="preview-subtitle">필터 행 (반응형)</h3>
+      <p class="text-secondary text-sm mb-4">모바일: 세로 배치 / 데스크탑(md 이상): 가로 배치, 라벨 세로 중앙 정렬</p>
+
+      <div class="card p-6">
+        <!-- 필터 행 1: 결제수단 -->
+        <div class="filter-row">
+          <span class="filter-label">결제수단</span>
+          <div class="filter-buttons">
+            <div class="btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:bg-gray-700 dark:text-gray-300">
+              <i class="fas fa-list w-3 h-3"></i>
+              <span>전체</span>
+            </div>
+            <div class="btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400">
+              <i class="fas fa-credit-card w-3 h-3"></i>
+              <span>카드</span>
+            </div>
+            <div class="btn-badge cursor-pointer">
+              <i class="fas fa-university w-3 h-3"></i>
+              <span>계좌이체</span>
+            </div>
+            <div class="btn-badge cursor-pointer">
+              <i class="fas fa-wallet w-3 h-3"></i>
+              <span>가상계좌</span>
+            </div>
+            <div class="btn-badge cursor-pointer">
+              <i class="fas fa-mobile-alt w-3 h-3"></i>
+              <span>간편결제</span>
+            </div>
+            <div class="btn-badge cursor-pointer">
+              <i class="fas fa-money-bill w-3 h-3"></i>
+              <span>무통장입금</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 필터 행 2: 접속 디바이스 -->
+        <div class="filter-row">
+          <span class="filter-label">접속기기</span>
+          <div class="filter-buttons">
+            <div class="btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400">전체</div>
+            <div class="btn-badge cursor-pointer">데스크톱</div>
+            <div class="btn-badge cursor-pointer">모바일</div>
+          </div>
+        </div>
+
+        <!-- 필터 행 3: 실패일시 (마지막 행 - mb 없음) -->
+        <div class="filter-row-last">
+          <span class="filter-label">실패일시</span>
+          <div class="flex flex-col md:flex-row md:items-center gap-3">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-calendar icon-muted"></i>
+              <input type="date" class="input w-full md:w-36" placeholder="시작일">
+            </div>
+            <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-calendar icon-muted"></i>
+              <input type="date" class="input w-full md:w-36" placeholder="종료일">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">클래스 설명</h3>
+      <div class="overflow-x-auto">
+        <table class="table text-sm">
+          <thead>
+            <tr>
+              <th>클래스</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code class="text-pink-600 dark:text-pink-400">.filter-row</code></td>
+              <td>필터 행 컨테이너 (mb-4 포함). 반응형: 모바일 세로, 데스크탑 가로 배치</td>
+            </tr>
+            <tr>
+              <td><code class="text-pink-600 dark:text-pink-400">.filter-row-last</code></td>
+              <td>마지막 필터 행 (mb 없음)</td>
+            </tr>
+            <tr>
+              <td><code class="text-pink-600 dark:text-pink-400">.filter-label</code></td>
+              <td>필터 라벨. 데스크탑에서 세로 중앙 정렬, 고정 너비(w-14)</td>
+            </tr>
+            <tr>
+              <td><code class="text-pink-600 dark:text-pink-400">.filter-buttons</code></td>
+              <td>필터 버튼 그룹 컨테이너 (flex-wrap)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modals -->
+  <div id="excelDownloadModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">엑셀 다운로드</h3>
+          <p class="modal-description">다운로드할 주문서 범위를 선택하세요.</p>
+        </div>
+        <button class="modal-close" onclick="closeModal('excelDownloadModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body space-y-4">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="radio" name="modal-download" class="radio mt-0.5" checked>
+          <div>
+            <div class="text-heading">현재 검색 조건으로 다운로드</div>
+            <div class="text-label-subtle">총 12개의 주문서가 다운로드됩니다.</div>
+          </div>
+        </label>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="radio" name="modal-download" class="radio mt-0.5">
+          <div>
+            <div class="text-heading">선택한 주문서만 다운로드</div>
+            <div class="text-label-subtle">10개의 주문서가 다운로드됩니다.</div>
+          </div>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('excelDownloadModal')">취소</button>
+        <button class="btn btn-primary"><i class="fas fa-download"></i> 다운로드</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="presetSaveModal" class="modal-overlay hidden">
+    <div class="modal max-w-sm">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">프리셋 저장</h3>
+          <p class="modal-description">현재 검색 조건을 프리셋으로 저장합니다.</p>
+        </div>
+        <button class="modal-close" onclick="closeModal('presetSaveModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="input" placeholder="프리셋 이름을 입력하세요">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary w-full" onclick="closeModal('presetSaveModal')">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal (기본) -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal max-w-[400px]">
+      <div class="modal-header !pb-2">
+        <h3 class="modal-title">확인</h3>
+        <button class="modal-close" onclick="closeModal('confirmModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body !pt-2">
+        <p class="text-gray-700 dark:text-gray-300">체크된 1개 상품의 변경사항을 저장하시겠습니까?</p>
+      </div>
+      <div class="modal-footer !pt-2">
+        <button class="btn bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" onclick="closeModal('confirmModal')">취소</button>
+        <button class="btn bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600" onclick="closeModal('confirmModal')">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal (Danger) -->
+  <div id="confirmModalDanger" class="modal-overlay hidden">
+    <div class="modal max-w-[400px]">
+      <div class="modal-header !pb-2">
+        <h3 class="modal-title">삭제 확인</h3>
+        <button class="modal-close" onclick="closeModal('confirmModalDanger')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body !pt-2">
+        <p class="text-gray-700 dark:text-gray-300">정말 이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+      </div>
+      <div class="modal-footer !pt-2">
+        <button class="btn bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" onclick="closeModal('confirmModalDanger')">취소</button>
+        <button class="btn bg-red-600 text-white hover:bg-red-700" onclick="closeModal('confirmModalDanger')">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal with Alert -->
+  <div id="confirmModalWithAlert" class="modal-overlay hidden">
+    <div class="modal max-w-[480px]">
+      <div class="modal-header !pb-2">
+        <h3 class="modal-title">카테고리 삭제</h3>
+        <button class="modal-close" onclick="closeModal('confirmModalWithAlert')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body !pt-2">
+        <!-- 메시지 -->
+        <p class="text-gray-700 dark:text-gray-300"><strong class="font-semibold">패션/의류</strong> 를 정말 삭제하시겠습니까?</p>
+
+        <!-- Alert 영역 (Warning) -->
+        <div class="mt-4 p-3 rounded bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-500">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span class="font-medium text-yellow-800 dark:text-yellow-300">경고</span>
+          </div>
+          <ul class="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
+            <li>하위 카테고리 3개가 함께 삭제됩니다.</li>
+            <li>연결된 상품 350개의 카테고리 정보가 제거됩니다.</li>
+          </ul>
+        </div>
+
+        <!-- 추가 경고 텍스트 -->
+        <p class="mt-4 text-sm text-red-600 dark:text-red-400">이 작업은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?</p>
+      </div>
+      <div class="modal-footer !pt-2">
+        <button class="btn bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" onclick="closeModal('confirmModalWithAlert')">취소</button>
+        <button class="btn bg-red-600 text-white hover:bg-red-700" onclick="closeModal('confirmModalWithAlert')">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "입금 일괄 매칭 모달"
+  },
+  "id": "modal_bulk_match",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.title",
+    "description": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.description",
+    "size": "xl"
+  },
+  "children": [
+    {
+      "id": "bulk_match_instructions",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "text-secondary text-sm mb-4 space-y-1"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_1"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.instruction_2"
+        }
+      ]
+    },
+    {
+      "id": "bulk_match_table_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "overflow-x-auto"
+      },
+      "children": [
+        {
+          "id": "bulk_match_table",
+          "type": "basic",
+          "name": "Table",
+          "props": {
+            "className": "w-full text-sm"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Thead",
+              "props": {
+                "className": "bg-gray-50 dark:bg-gray-800"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Tbody",
+              "props": {
+                "className": "bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4 text-primary font-medium"
+                      },
+                      "text": "박민수"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold"
+                      },
+                      "text": "\\49,000"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-primary"
+                          },
+                          "text": "카카오뱅크"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-xs"
+                          },
+                          "text": "789-012-3456"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-primary"
+                          },
+                          "text": "2024. 01. 27."
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-xs"
+                          },
+                          "text": "11:25"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "relative mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "text",
+                                "value": "ORD20251118-0003",
+                                "className": "input w-full pr-8"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "x",
+                                    "className": "w-4 h-4"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center justify-between text-sm"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-secondary"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-primary ml-1"
+                                  },
+                                  "text": "박민수"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                  },
+                                  "text": "\\250,000"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-red-500 dark:text-red-400 ml-2 inline-flex items-center gap-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "w-3.5 h-3.5"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4 text-primary font-medium"
+                      },
+                      "text": "강해린"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold"
+                      },
+                      "text": "\\250,000"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-primary"
+                          },
+                          "text": "토스뱅크"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-xs"
+                          },
+                          "text": "100-200-3000"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-primary"
+                          },
+                          "text": "2024. 01. 26."
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-xs"
+                          },
+                          "text": "09:30"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
+                            "className": "input w-full"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": ""
+          },
+          "children": [
+            {
+              "id": "mobile_card_list",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "mobile_card_1",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary font-medium"
+                          },
+                          "text": "박민수"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-blue-600 dark:text-blue-400 font-semibold"
+                          },
+                          "text": "\\49,000"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-secondary text-sm mb-3"
+                      },
+                      "text": "카카오뱅크 · 11:25"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "relative mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "value": "ORD20251118-0003",
+                            "className": "input w-full pr-8"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "x",
+                                "className": "w-4 h-4"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between text-sm mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary ml-1"
+                              },
+                              "text": "박민수"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-label"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-red-500 dark:text-red-400 ml-1"
+                              },
+                              "text": "\\250,000"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "triangle-exclamation",
+                            "className": "w-4 h-4"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.amount_mismatch_full"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "mobile_card_2",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-primary font-medium"
+                          },
+                          "text": "최지은"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-blue-600 dark:text-blue-400 font-semibold"
+                          },
+                          "text": "\\120,000"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-secondary text-sm mb-3"
+                      },
+                      "text": "신한은행 · 10:15"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
+                        "className": "input w-full"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

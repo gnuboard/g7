@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "layout_name": "401",
+  "extends": "_admin_base",
+  "meta": {
+    "title": "$t:errors.401.title",
+    "is_error_layout": true,
+    "error_code": 401
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "error_container",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "flex flex-col items-center justify-center min-h-[60vh] text-center p-8"
+        },
+        "children": [
+          {
+            "id": "error_icon",
+            "type": "basic",
+            "name": "Icon",
+            "props": {
+              "name": "lock",
+              "className": "w-24 h-24 text-yellow-400 dark:text-yellow-500 mb-6"
+            }
+          },
+          {
+            "id": "error_code",
+            "type": "basic",
+            "name": "H1",
+            "props": {
+              "className": "text-6xl font-bold text-gray-900 dark:text-white mb-4"
+            },
+            "text": "401"
+          },
+          {
+            "id": "error_title",
+            "type": "basic",
+            "name": "H2",
+            "props": {
+              "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            },
+            "text": "$t:errors.401.title"
+          },
+          {
+            "id": "error_message",
+            "type": "basic",
+            "name": "P",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400 mb-8 max-w-md"
+            },
+            "text": "$t:errors.401.message"
+          },
+          {
+            "id": "back_button",
+            "type": "basic",
+            "name": "Button",
+            "props": {
+              "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            },
+            "text": "$t:errors.back_home",
+            "actions": [
+              {
+                "type": "click",
+                "handler": "navigate",
+                "params": {
+                  "path": "/admin"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

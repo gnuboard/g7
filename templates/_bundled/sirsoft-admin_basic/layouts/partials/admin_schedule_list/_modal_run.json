@@ -1,0 +1,248 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "스케줄 즉시 실행 확인 모달"
+  },
+  "id": "schedule_run_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.schedules.modals.run_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:admin.schedules.modals.run_confirm"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:admin.schedules.form.name:"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "font-medium text-gray-900 dark:text-white" },
+              "text": "{{_global.selectedSchedule?.name}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:admin.schedules.form.command:"
+            },
+            {
+              "type": "basic",
+              "name": "Code",
+              "props": { "className": "text-xs bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300" },
+              "text": "{{_global.selectedSchedule?.command}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.runResult}}",
+      "props": {
+        "className": "mt-4 p-3 rounded-lg {{_global.runResult?.status === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 mb-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.runResult?.status === 'success'}}",
+              "props": { "name": "check-circle", "className": "w-5 h-5 text-green-600 dark:text-green-400" }
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.runResult?.status !== 'success'}}",
+              "props": { "name": "x-circle", "className": "w-5 h-5 text-red-600 dark:text-red-400" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "font-medium {{_global.runResult?.status === 'success' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}}" },
+              "text": "{{_global.runResult?.status === 'success' ? '$t:admin.schedules.result.success' : '$t:admin.schedules.result.failed'}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.runResult?.duration}}",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "text": "$t:admin.schedules.modals.run_duration|duration={{_global.runResult?.duration_formatted}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.runResult?.output}}",
+          "props": { "className": "mt-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:admin.schedules.modals.output:"
+            },
+            {
+              "type": "basic",
+              "name": "Pre",
+              "props": { "className": "mt-1 text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-32 text-gray-700 dark:text-gray-300" },
+              "text": "{{_global.runResult?.output}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700",
+            "disabled": "{{_global.isRunning}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "runResult": null
+                  }
+                },
+                {
+                  "handler": "closeModal",
+                  "target": "schedule_run_modal"
+                }
+              ]
+            }
+          ],
+          "text": "$t:common.close"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{!_global.runResult}}",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isRunning}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isRunning": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/run",
+                  "params": { "method": "POST" },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isRunning": false,
+                        "runResult": "{{response.data}}"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": { "dataSourceId": "schedules" }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isRunning": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? '$t:admin.schedules.errors.run_failed'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isRunning}}",
+              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{!_global.isRunning}}",
+              "props": { "name": "play", "className": "w-4 h-4" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isRunning ? '$t:admin.schedules.modals.running' : '$t:admin.schedules.actions.run'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

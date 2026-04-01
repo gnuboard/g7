@@ -1,0 +1,146 @@
+{
+  "meta": { "is_partial": true, "description": "전체 탭 - 게시글 섹션 (단순 리스트 5개 + 전체보기)" },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mt-4" },
+  "children": [
+    {
+      "comment": "섹션 헤더",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "file-text", "size": "sm", "className": "text-gray-500 dark:text-gray-400" } },
+            { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "$t:search.tabs.posts" },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{searchResults?.data?.posts_count ?? 0}}" }
+          ]
+        },
+        {
+          "comment": "전체보기 버튼",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(searchResults?.data?.posts_count ?? 0) > 0}}",
+          "props": { "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:search.view_all" },
+            { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "size": "sm" } }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "global", "searchActiveTab": "posts", "searchPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "게시글 리스트 (최대 5개)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{searchResults?.data?.posts?.items?.length > 0}}",
+      "iteration": { "source": "{{searchResults?.data?.posts?.items ?? []}}", "item_var": "post", "index_var": "idx" },
+      "children": [
+        {
+          "comment": "구분선 (첫 번째 아이템 제외)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{idx > 0}}",
+          "props": { "className": "border-t border-gray-200 dark:border-gray-700" }
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{post?.url}}" } }],
+          "children": [
+            {
+              "comment": "제목 라인 (게시판명 + 제목)",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-start gap-2 mb-1" },
+              "children": [
+                {
+                  "comment": "게시판명 배지",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{post?.board_name}}",
+                  "props": { "className": "flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded" },
+                  "text": "{{post?.board_name}}"
+                },
+                {
+                  "comment": "제목 (HTML 하이라이트 지원)",
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{post?.title_highlighted ?? post?.title}}",
+                    "className": "font-medium text-gray-900 dark:text-white [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "발췌 내용 (HTML 하이라이트 지원)",
+              "type": "composite",
+              "name": "HtmlContent",
+              "if": "{{post?.content_preview}}",
+              "props": {
+                "content": "{{post?.content_preview_highlighted ?? post?.content_preview}}",
+                "className": "text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "comment": "메타 정보",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400" },
+              "children": [
+                { "type": "basic", "name": "Span", "text": "{{post?.author_name}}" },
+                { "type": "basic", "name": "Span", "props": { "title": "{{post?.created_at ?? ''}}" }, "text": "{{post?.created_at_formatted ?? ''}}" },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(post?.view_count ?? 0) > 0}}",
+                  "props": { "className": "flex items-center gap-1" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "xs" } },
+                    { "type": "basic", "name": "Span", "text": "{{post?.view_count}}" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(post?.comment_count ?? 0) > 0}}",
+                  "props": { "className": "flex items-center gap-1" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "message-square", "size": "xs" } },
+                    { "type": "basic", "name": "Span", "text": "{{post?.comment_count}}" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "결과 없음 안내",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!searchResults?.data?.posts?.items || searchResults?.data?.posts?.items?.length === 0}}",
+      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
+      "children": [
+        { "type": "basic", "name": "Span", "text": "$t:search.empty.posts_in_all" }
+      ]
+    }
+  ]
+}

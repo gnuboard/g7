@@ -1,0 +1,618 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "주문 상세 - 결제 정보"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 제목",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "credit-card", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" }
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+          "text": "$t:mypage.order_detail.payment_title",
+          "responsive": {
+            "portable": {
+              "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "결제 정보 목록",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-3" },
+      "children": [
+        {
+          "comment": "상품 금액",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.product_amount",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.mc_subtotal_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.subtotal_amount_formatted ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "=== 할인 섹션 (할인이 있을 때만) ===",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.total_discount_amount ?? 0) > 0}}",
+          "props": { "className": "space-y-2" },
+          "children": [
+            {
+              "comment": "총 할인 합계",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-gray-500 dark:text-gray-400" },
+                  "text": "$t:mypage.order_detail.discount_amount",
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
+                  "text": "-{{order.data.mc_total_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_discount_amount_formatted ?? ''}}",
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "할인 상세 내역",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "ml-4 space-y-1.5" },
+              "children": [
+                {
+                  "comment": "상품 쿠폰 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.total_product_coupon_discount_amount ?? 0) > 0}}",
+                  "props": { "className": "flex items-center justify-between" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-1.5" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                          "text": "$t:mypage.order_detail.product_coupon_discount"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
+                      "text": "-{{order.data.mc_total_product_coupon_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "적용 상품 쿠폰 상세 목록",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []).length > 0}}",
+                  "props": { "className": "ml-5 space-y-1" },
+                  "iteration": { "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []}}", "item_var": "pCoupon" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center justify-between" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex items-center gap-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": { "name": "ticket", "className": "w-3 h-3 text-red-400 dark:text-red-500" }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{pCoupon.name ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
+                          "text": "-{{pCoupon.total_discount_formatted ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "주문 쿠폰 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.total_order_coupon_discount_amount ?? 0) > 0}}",
+                  "props": { "className": "flex items-center justify-between" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-1.5" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                          "text": "$t:mypage.order_detail.order_coupon_discount"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
+                      "text": "-{{order.data.mc_total_order_coupon_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "적용 주문 쿠폰 상세 목록",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
+                  "props": { "className": "ml-5 space-y-1" },
+                  "iteration": { "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}", "item_var": "oCoupon" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center justify-between" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex items-center gap-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": { "name": "ticket", "className": "w-3 h-3 text-red-400 dark:text-red-500" }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{oCoupon.name ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
+                          "text": "-{{oCoupon.total_discount_formatted ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "할인코드 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.total_code_discount_amount ?? 0) > 0}}",
+                  "props": { "className": "flex items-center justify-between" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-1.5" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": { "name": "tag", "className": "w-3.5 h-3.5 text-orange-400 dark:text-orange-500" }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                          "text": "$t:mypage.order_detail.code_discount"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-sm text-red-500 dark:text-red-400" },
+                      "text": "-{{order.data.mc_total_code_discount_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_code_discount_amount_formatted ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "적용 할인코드 상세 목록",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []).length > 0}}",
+                  "props": { "className": "ml-5 space-y-1" },
+                  "iteration": { "source": "{{order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []}}", "item_var": "dCode" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center justify-between" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex items-center gap-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": { "name": "tag", "className": "w-3 h-3 text-orange-400 dark:text-orange-500" }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{dCode.code ?? ''}} ({{dCode.name ?? ''}})"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-red-400 dark:text-red-500" },
+                          "text": "-{{dCode.total_discount_formatted ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "=== 배송비 섹션 ===",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.shipping_fee",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "comment": "무료배송",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(order.data.total_shipping_amount ?? 0) === 0}}",
+              "props": { "className": "text-green-600 dark:text-green-400 font-medium" },
+              "text": "$t:mypage.order_detail.free_shipping",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-green-600 dark:text-green-400 font-medium text-sm" }
+                }
+              }
+            },
+            {
+              "comment": "유료배송",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(order.data.total_shipping_amount ?? 0) > 0}}",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_shipping_amount_formatted ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "배송비 쿠폰 할인 (있을 때만)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
+          "props": { "className": "ml-4 space-y-1" },
+          "iteration": { "source": "{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}", "item_var": "sCoupon" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-1.5" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": { "name": "ticket", "className": "w-3.5 h-3.5 text-red-400 dark:text-red-500" }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{sCoupon.name ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-red-400 dark:text-red-500" },
+                  "text": "-{{sCoupon.total_discount_formatted ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "=== 마일리지 사용 (있을 때만) ===",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.total_points_used_amount ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.points_used",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
+              "text": "-{{order.data.total_points_used_amount_formatted ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "=== 예치금 사용 (있을 때만) ===",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.total_deposit_used_amount ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.deposit_used",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-red-500 dark:text-red-400 font-medium" },
+              "text": "-{{order.data.total_deposit_used_amount_formatted ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-red-500 dark:text-red-400 font-medium text-sm" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "구분선",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border-t border-gray-200 dark:border-gray-700 my-3" }
+        },
+        {
+          "comment": "총 결제금액",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-medium" },
+              "text": "$t:mypage.order_detail.total_amount",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white font-medium text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-right" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+                  "text": "{{order.data.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.data.total_amount_formatted ?? ''}}",
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" }
+                    }
+                  }
+                },
+                {
+                  "comment": "보조 통화들",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-0.5" },
+                  "iteration": {
+                    "source": "{{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                    "item_var": "currency"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{currency[1]?.formatted ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적립 예정 마일리지 (있을 때만)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(order.data.total_earned_points_amount ?? 0) > 0}}",
+          "props": { "className": "flex items-center justify-between mt-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.points_earning"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm font-medium text-blue-600 dark:text-blue-400" },
+              "text": "+{{order.data.total_earned_points_amount_formatted ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "구분선",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border-t border-gray-200 dark:border-gray-700 my-3" }
+        },
+        {
+          "comment": "결제 방법",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.order_detail.payment_method",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-500 dark:text-gray-400 text-sm" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white" },
+              "text": "{{order.data.payment?.payment_method_label ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-gray-900 dark:text-white text-sm" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

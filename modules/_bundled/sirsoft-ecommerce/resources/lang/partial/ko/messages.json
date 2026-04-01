@@ -1,0 +1,85 @@
+{
+  "product_created": "상품이 등록되었습니다",
+  "product_updated": "상품이 수정되었습니다",
+  "products": {
+    "fetch_success": "상품 목록을 불러왔습니다.",
+    "fetch_failed": "상품 목록을 불러오는데 실패했습니다.",
+    "created": "상품이 등록되었습니다.",
+    "create_failed": "상품 등록에 실패했습니다.",
+    "updated": "상품이 수정되었습니다.",
+    "update_failed": "상품 수정에 실패했습니다.",
+    "deleted": "상품이 삭제되었습니다.",
+    "delete_failed": "상품 삭제에 실패했습니다.",
+    "bulk_updated": ":count개 상품이 일괄 수정되었습니다.",
+    "bulk_update_failed": "상품 일괄 수정에 실패했습니다.",
+    "bulk_price_updated": ":count개 상품의 가격이 일괄 변경되었습니다.",
+    "bulk_price_update_failed": "상품 가격 일괄 변경에 실패했습니다.",
+    "bulk_stock_updated": ":count개 상품의 재고가 일괄 변경되었습니다.",
+    "bulk_stock_update_failed": "상품 재고 일괄 변경에 실패했습니다.",
+    "bulk": {
+      "no_selection": "선택된 항목이 없습니다.",
+      "update_success": "상품 {products}개, 옵션 {options}개가 수정되었습니다.",
+      "update_error": "일괄 업데이트에 실패했습니다.",
+      "option_update_success": "옵션 {count}개가 수정되었습니다.",
+      "option_update_error": "옵션 일괄 업데이트에 실패했습니다.",
+      "overwrite_warning": "일괄 변경 옵션(판매상태, 전시상태, 가격변경, 재고변경)이 선택된 경우 개별 수정 내용은 무시됩니다."
+    }
+  },
+  "options": {
+    "bulk_price_updated": ":count개 옵션의 판매가가 일괄 변경되었습니다.",
+    "bulk_price_update_failed": "옵션 판매가 일괄 변경에 실패했습니다.",
+    "bulk_stock_updated": ":count개 옵션의 재고가 일괄 변경되었습니다.",
+    "bulk_stock_update_failed": "옵션 재고 일괄 변경에 실패했습니다.",
+    "bulk_update_success": "옵션 {count}개가 수정되었습니다.",
+    "bulk_update_error": "옵션 일괄 업데이트에 실패했습니다.",
+    "has_order_history": "주문 이력이 있는 옵션은 삭제할 수 없습니다."
+  },
+  "presets": {
+    "created": "프리셋이 저장되었습니다.",
+    "updated": "프리셋이 수정되었습니다.",
+    "deleted": "프리셋이 삭제되었습니다."
+  },
+  "notice_templates": {
+    "fetch_success": "상품정보제공고시 목록을 불러왔습니다.",
+    "created": "상품정보제공고시가 생성되었습니다.",
+    "updated": "상품정보제공고시가 수정되었습니다.",
+    "deleted": "상품정보제공고시가 삭제되었습니다.",
+    "copied": "상품정보제공고시가 복사되었습니다.",
+    "not_found": "상품정보제공고시를 찾을 수 없습니다."
+  },
+  "common_infos": {
+    "fetch_success": "공통정보 목록을 불러왔습니다.",
+    "created": "공통정보가 생성되었습니다.",
+    "updated": "공통정보가 수정되었습니다.",
+    "deleted": "공통정보가 삭제되었습니다.",
+    "not_found": "공통정보를 찾을 수 없습니다.",
+    "activated": "공통정보가 활성화되었습니다.",
+    "deactivated": "공통정보가 비활성화되었습니다."
+  },
+  "categories": {
+    "list_retrieved": "카테고리 목록을 조회했습니다.",
+    "fetch_success": "카테고리를 조회했습니다.",
+    "fetch_failed": "카테고리를 불러오는데 실패했습니다.",
+    "not_found": "카테고리를 찾을 수 없습니다.",
+    "created": "카테고리가 등록되었습니다.",
+    "retrieved": "카테고리를 조회했습니다.",
+    "updated": "카테고리가 수정되었습니다.",
+    "deleted": "카테고리가 삭제되었습니다.",
+    "status_changed": "카테고리 상태가 변경되었습니다.",
+    "reorder_data_required": "순서 변경 데이터가 필요합니다.",
+    "order_updated": "카테고리 순서가 변경되었습니다."
+  },
+  "extra_fee_template": {
+    "list_retrieved": "추가배송비 템플릿 목록을 불러왔습니다.",
+    "retrieved": "추가배송비 템플릿을 불러왔습니다.",
+    "not_found": "추가배송비 템플릿을 찾을 수 없습니다.",
+    "created": "추가배송비 템플릿이 등록되었습니다.",
+    "updated": "추가배송비 템플릿이 수정되었습니다.",
+    "deleted": "추가배송비 템플릿이 삭제되었습니다.",
+    "toggled": "사용여부가 변경되었습니다.",
+    "bulk_deleted": "선택한 템플릿이 삭제되었습니다.",
+    "bulk_toggled": "선택한 템플릿의 사용여부가 변경되었습니다.",
+    "bulk_created": "템플릿이 일괄 등록되었습니다.",
+    "settings_retrieved": "추가배송비 설정을 불러왔습니다."
+  }
+}

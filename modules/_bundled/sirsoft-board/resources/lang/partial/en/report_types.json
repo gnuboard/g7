@@ -1,0 +1,10 @@
+{
+  "spam": "Spam/Ads",
+  "abuse": "Abuse/Insult",
+  "obscenity": "Obscenity",
+  "illegal": "Illegal Content",
+  "hate_speech": "Hate Speech",
+  "privacy": "Privacy Violation",
+  "copyright": "Copyright Infringement",
+  "other": "Other"
+}

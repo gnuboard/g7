@@ -1,0 +1,124 @@
+{
+  "title": "Deposit Management",
+  "description": "Manage deposit records received via webhook and match with orders",
+  "search": {
+    "field": {
+      "order_number": "Order Number",
+      "depositor_name": "Depositor Name",
+      "member_name": "Member Name",
+      "member_id": "Member ID"
+    },
+    "placeholder": "Enter search keyword",
+    "reset": "Reset"
+  },
+  "filter": {
+    "matching_type": "Matching Type",
+    "payment_method": "Payment Method",
+    "deposit_date": "Deposit Date",
+    "all": "All",
+    "unmatched": "Unmatched",
+    "auto_matched": "Auto Matched",
+    "manual_matched": "Manual Matched",
+    "bank_transfer": "Bank Transfer",
+    "virtual_account": "Virtual Account",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "1_day": "1 Day",
+    "1_week": "1 Week",
+    "1_month": "1 Month",
+    "3_months": "3 Months"
+  },
+  "batch": {
+    "selected_count": "{{count}} selected",
+    "batch_match": "Batch Match"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort": {
+      "deposit_date_desc": "Deposit Date (Latest)",
+      "deposit_date_asc": "Deposit Date (Oldest)",
+      "amount_desc": "Amount (High to Low)",
+      "amount_asc": "Amount (Low to High)"
+    },
+    "per_page": "{{count}} per page",
+    "columns": {
+      "no": "No.",
+      "payment_method": "Payment Method",
+      "bank_account": "Bank/Account",
+      "depositor_name": "Depositor",
+      "amount": "Amount",
+      "deposit_time": "Deposit Time",
+      "order_number": "Order Number",
+      "member_info": "Member Info",
+      "matching_type": "Matching Type",
+      "receive_status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "status": {
+    "virtual_account": "Virtual Account",
+    "bank_transfer": "Bank Transfer",
+    "manual": "Manual",
+    "auto": "Auto",
+    "normal": "Normal"
+  },
+  "actions": {
+    "match": "Match",
+    "view_history": "View History"
+  },
+  "mobile": {
+    "select_all": "Select All",
+    "deposit_time": "Deposit Time",
+    "bank_account": "Bank/Account",
+    "member": "Member",
+    "order_number": "Order Number"
+  },
+  "modal": {
+    "manual_match": {
+      "title": "Manual Matching",
+      "description": "Manually connect deposit records with orders",
+      "deposit_info": "Deposit Info",
+      "depositor_name": "Depositor Name",
+      "deposit_amount": "Deposit Amount",
+      "deposit_bank": "Deposit Bank",
+      "search_label": "Search Order (Pending Deposits Only)",
+      "search_placeholder": "Search by order number, member name, or product name",
+      "cancel": "Cancel",
+      "match": "Match"
+    },
+    "process_history": {
+      "title": "Processing History",
+      "description": "View deposit processing history and webhook logs",
+      "order_number": "Order Number",
+      "timeline_title": "Processing Timeline",
+      "system_pg_webhook": "System (PG Webhook)",
+      "webhook_receive": "Webhook Received",
+      "match_complete": "Match Complete",
+      "failed": "Failed",
+      "toggle_detail_open": "Show Details",
+      "toggle_detail_close": "Hide Details",
+      "request_data": "Request Data",
+      "response_data": "Response Data"
+    },
+    "bulk_match": {
+      "title": "Bulk Matching",
+      "description": "Match {{count}} selected deposit records with orders.",
+      "instruction_1": "• Enter order number directly, or search results will appear automatically when you enter order number/customer name.",
+      "instruction_2": "• Select the desired order from search results to auto-fill. (e.g., ORD20251118-0001)",
+      "columns": {
+        "depositor_name": "Depositor",
+        "amount": "Amount",
+        "bank_account": "Bank/Account",
+        "deposit_time": "Deposit Time",
+        "order_number": "Order Number"
+      },
+      "orderer": "Orderer:",
+      "order_amount": "Amount:",
+      "amount_mismatch": "Amount Mismatch",
+      "amount_mismatch_full": "Order amount and deposit amount do not match",
+      "order_number_placeholder": "Enter order number or customer name",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  }
+}

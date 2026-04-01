@@ -1,0 +1,678 @@
+{
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "card"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-header"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "card-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.section_title"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!_local.isAddingRefundReason}}",
+              "props": {
+                "type": "button",
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingRefundReason": true,
+                    "refundReasonForm": {
+                      "code": "",
+                      "name": {
+                        "ko": "",
+                        "en": ""
+                      },
+                      "fault_type": "customer",
+                      "is_user_selectable": true,
+                      "is_active": true,
+                      "sort_order": 0
+                    },
+                    "refundReasonFormErrors": null
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "text-xs"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.add_button"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.isAddingRefundReason}}",
+      "props": {
+        "className": "p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{_local.refundReasonForm?.code ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.code_placeholder",
+                    "className": "{{_local.refundReasonFormErrors?.code ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundReasonForm.code": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.refundReasonFormErrors?.code}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.code_required"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name"
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "value": "{{_local.refundReasonForm?.name ?? {}}}",
+                    "layout": "inline",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
+                    "error": "{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundReasonForm.name": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{_local.refundReasonForm?.fault_type ?? 'customer'}}",
+                    "className": "w-full",
+                    "options": [
+                      {
+                        "value": "customer",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.customer"
+                      },
+                      {
+                        "value": "seller",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.seller"
+                      },
+                      {
+                        "value": "carrier",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.carrier"
+                      }
+                    ],
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "refundReasonForm.fault_type": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-end"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "checked": "{{_local.refundReasonForm?.is_user_selectable ?? true}}",
+                        "className": "checkbox",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "refundReasonForm.is_user_selectable": "{{!(_local.refundReasonForm?.is_user_selectable ?? true)}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.is_user_selectable"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 mt-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingRefundReason": false,
+                    "refundReasonForm": null,
+                    "refundReasonFormErrors": null
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.cancel"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "conditions",
+                  "conditions": [
+                    {
+                      "if": "{{(_local.refundReasonForm?.code ?? '').trim() && (_local.refundReasonForm?.name?.ko ?? '').trim()}}",
+                      "then": {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "form.claim.refund_reasons": "{{[...(_local.form?.claim?.refund_reasons ?? []), {..._local.refundReasonForm, sort_order: (_local.form?.claim?.refund_reasons ?? []).length}]}}",
+                          "isAddingRefundReason": false,
+                          "refundReasonForm": null,
+                          "refundReasonFormErrors": null,
+                          "hasChanges": true
+                        }
+                      }
+                    },
+                    {
+                      "then": {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "refundReasonFormErrors": {
+                            "code": "{{!(_local.refundReasonForm?.code ?? '').trim() ? true : null}}",
+                            "name_ko": "{{!(_local.refundReasonForm?.name?.ko ?? '').trim() ? true : null}}"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.save"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_local.form?.claim?.refund_reasons ?? []).length === 0 && !_local.isAddingRefundReason}}",
+      "props": {
+        "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.empty"
+    },
+    {
+      "id": "refund_reason_list",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_local.form?.claim?.refund_reasons ?? []).length > 0}}",
+      "props": {
+        "className": "overflow-x-auto"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": ""
+          },
+          "children": [
+            {
+              "partial": "_refund_reason_cards.json"
+            }
+          ]
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Table",
+          "props": {
+            "className": "w-full"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Thead",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-32"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.code"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-56"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-32"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.fault_type"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-20"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_user_selectable"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_active"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.actions"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Tbody",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "iteration": {
+                    "source": "(_local.form?.claim?.refund_reasons ?? []).map((r, i) => ({...r, _idx: i}))",
+                    "item_var": "reason",
+                    "index_var": "rIdx"
+                  },
+                  "props": {
+                    "className": "border-t border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-mono text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "{{reason.code}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "MultilingualInput",
+                          "props": {
+                            "value": "{{reason.name ?? {}}}",
+                            "layout": "compact",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
+                            "error": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.ko']?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Select",
+                          "props": {
+                            "value": "{{reason.fault_type ?? 'customer'}}",
+                            "className": "w-full",
+                            "options": [
+                              {
+                                "value": "customer",
+                                "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.customer"
+                              },
+                              {
+                                "value": "seller",
+                                "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.seller"
+                              },
+                              {
+                                "value": "carrier",
+                                "label": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.carrier"
+                              }
+                            ],
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, fault_type: $event.target.value} : r)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "checked": "{{reason.is_user_selectable ?? false}}",
+                            "className": "checkbox",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Toggle",
+                          "props": {
+                            "checked": "{{reason.is_active ?? false}}",
+                            "size": "sm",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                            "title": "$t:common.delete",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "confirm": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.confirm_delete",
+                              "params": {
+                                "target": "local",
+                                "form.claim.refund_reasons": "{{(_local.form?.claim?.refund_reasons ?? []).filter((_, i) => i !== reason._idx)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "fa-solid fa-trash",
+                                "className": "text-sm"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

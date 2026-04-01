@@ -1,0 +1,125 @@
+{
+  "meta": { "is_partial": true, "description": "검색 상태별 UI (요약, 초기, 빈 결과)" },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "comment": "검색 결과 요약",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.q && searchResults?.data}}",
+      "props": { "className": "mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" }, "text": "\"{{query?.q}}\"" },
+            { "type": "basic", "name": "Span", "text": " $t:search.result_summary|count={{searchResults?.data?.total ?? 0}}" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "검색어 없는 초기 상태",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!query?.q}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "search", "size": "4x" } }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
+          "text": "$t:search.initial.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mb-6" },
+          "text": "$t:search.initial.description"
+        },
+        {
+          "comment": "검색 팁 섹션",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "max-w-md mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-left" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "lightbulb", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_title" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Ul",
+              "props": { "className": "space-y-2 text-sm text-gray-600 dark:text-gray-400" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Li",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "check", "size": "sm", "className": "text-green-500 flex-shrink-0" } },
+                    { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_1" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Li",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "check", "size": "sm", "className": "text-green-500 flex-shrink-0" } },
+                    { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_2" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "검색 결과 없음 (전체 탭)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (_global.searchActiveTab ?? 'all') === 'all'}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "search", "size": "4x" } }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
+          "text": "$t:search.empty.all"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:search.empty.suggestion"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+    "identifier": "sirsoft-daum_postcode",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "Daum 우편번호",
+        "en": "Daum Postcode"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "Daum 우편번호 서비스를 통한 주소 검색 기능을 제공하는 플러그인입니다. API 키 없이 무료로 사용할 수 있습니다.",
+        "en": "Plugin that provides address search functionality through Daum Postcode service. Free to use without API key."
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-daum_postcode/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

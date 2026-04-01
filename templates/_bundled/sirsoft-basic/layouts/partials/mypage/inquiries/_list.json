@@ -1,0 +1,601 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 상품 1:1 문의내역 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "myInquiries"
+  },
+  "props": { "className": "space-y-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "space-y-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 헤더 - 문의내역 + 총 개수",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": { "className": "text-xl font-semibold text-gray-900 dark:text-white" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" }
+            }
+          },
+          "text": "$t:mypage.inquiries.title"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:mypage.inquiries.count|count={{myInquiries.data.meta.total ?? 0}}"
+        }
+      ]
+    },
+    {
+      "comment": "필터 탭 버튼 (전체 / 답변 대기 / 답변 완료)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "{{(_local.inquiriesFilter ?? '') === '' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"
+          },
+          "text": "$t:mypage.inquiries.filter.all",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "inquiriesFilter": "", "inquiriesPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "myInquiries" } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "{{(_local.inquiriesFilter ?? '') === '0' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"
+          },
+          "text": "$t:mypage.inquiries.filter.pending",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "inquiriesFilter": "0", "inquiriesPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "myInquiries" } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "{{(_local.inquiriesFilter ?? '') === '1' ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"
+          },
+          "text": "$t:mypage.inquiries.filter.answered",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "inquiriesFilter": "1", "inquiriesPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "myInquiries" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "문의 목록",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "comment": "문의 카드 목록 (데이터 있을 때)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{myInquiries.data.items && myInquiries.data.items.length > 0}}",
+          "props": { "className": "space-y-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": { "source": "{{myInquiries.data.items ?? []}}", "item_var": "item", "index_var": "idx" },
+              "children": [
+                {
+                  "comment": "개별 카드",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": { "target": "local", "openedInquiryId": "{{_local.openedInquiryId === item.id ? null : item.id}}" }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "comment": "카드 헤더",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-start gap-3 p-3" },
+                      "children": [
+                        {
+                          "comment": "상품 썸네일 (있을 때) - 클릭 시 상품 상세 이동",
+                          "type": "basic",
+                          "name": "Button",
+                          "if": "{{!!item.product?.thumbnail_url}}",
+                          "props": {
+                            "type": "button",
+                            "className": "shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
+                          },
+                          "actions": [
+                            { "type": "click", "handler": "navigate", "params": { "path": "{{item.product?.url ?? '/'}}" } }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Img",
+                              "props": {
+                                "src": "{{item.product.thumbnail_url}}",
+                                "alt": "{{item.product_name ?? ''}}",
+                                "className": "w-full h-full object-cover"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "썸네일 없을 때 placeholder",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{!item.product?.thumbnail_url}}",
+                          "props": {
+                            "className": "shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Icon", "props": { "name": "box", "className": "text-xl text-gray-400 dark:text-gray-500" } }
+                          ]
+                        },
+                        {
+                          "comment": "중앙: 상품명 + 제목 + 메타줄",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex-1 min-w-0" },
+                          "children": [
+                            {
+                              "comment": "상품명 - 클릭 시 상품 상세 이동",
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{!!item.product?.url}}",
+                              "props": {
+                                "type": "button",
+                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left"
+                              },
+                              "text": "{{item.product_name ?? ''}}",
+                              "actions": [
+                                { "type": "click", "handler": "navigate", "params": { "path": "{{item.product?.url ?? '/'}}" } }
+                              ]
+                            },
+                            {
+                              "comment": "상품명 (URL 없을 때) - 일반 텍스트",
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{!item.product?.url}}",
+                              "props": { "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate" },
+                              "text": "{{item.product_name ?? ''}}"
+                            },
+                            {
+                              "comment": "🔒 비공개 아이콘 + 분류태그 + 문의 제목",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center gap-1.5 mb-1" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "if": "{{!!item.is_secret}}",
+                                  "props": { "name": "lock", "className": "text-xs text-gray-400 dark:text-gray-500 shrink-0" }
+                                },
+                                {
+                                  "comment": "분류태그",
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{!!item.category}}",
+                                  "props": { "className": "shrink-0 inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded" },
+                                  "text": "{{item.category ?? ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": { "className": "font-semibold text-gray-900 dark:text-white truncate" },
+                                  "text": "{{item.title ?? item.content ?? ''}}"
+                                }
+                              ]
+                            },
+                            {
+                              "comment": "메타줄: 날짜 · 수정됨",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center gap-1.5 flex-wrap" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                                  "text": "{{item.created_at | datetime}}"
+                                },
+                                {
+                                  "comment": "수정됨 + 수정일시",
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{!!item.updated_at && item.updated_at !== item.created_at}}",
+                                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                                  "text": "$t:mypage.inquiries.updated_label_at|value={{item.updated_at | datetime}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "우측: 배지",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "shrink-0 flex flex-col items-end gap-2" },
+                          "children": [
+                            {
+                              "comment": "답변 상태 배지",
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "{{item.is_answered ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}}"
+                              },
+                              "text": "{{item.is_answered ? $t('mypage.inquiries.status.answered') : $t('mypage.inquiries.status.pending')}}"
+                            },
+                            {
+                              "comment": "펼침/접힘 화살표",
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "inline-flex items-center justify-center w-6 h-6 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                              },
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "setState",
+                                  "params": { "target": "local", "openedInquiryId": "{{_local.openedInquiryId === item.id ? null : item.id}}" }
+                                }
+                              ],
+                              "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "{{_local.openedInquiryId === item.id ? 'chevron-up' : 'chevron-down'}}", "className": "text-xs" } }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "펼침 상세 패널",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.openedInquiryId === item.id}}",
+                      "props": { "className": "border-t border-gray-100 dark:border-gray-700" },
+                      "children": [
+                        {
+                          "comment": "문의 내용",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "px-4 pt-4 pb-3" },
+                          "children": [
+                            {
+                              "comment": "Q 레이블 + 수정/삭제 버튼 (한 줄)",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center justify-between mb-2" },
+                              "children": [
+                                {
+                                  "comment": "Q 레이블 (아이콘 + 텍스트)",
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": { "className": "flex items-center gap-1.5" },
+                                  "children": [
+                                    { "type": "basic", "name": "Icon", "props": { "name": "comment-dots", "className": "text-xs text-blue-400 dark:text-blue-400" } },
+                                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-700 dark:text-gray-300" }, "text": "$t:mypage.inquiries.my_question" }
+                                  ]
+                                },
+                                {
+                                  "comment": "미답변: 수정 + 삭제",
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "if": "{{!item.is_answered}}",
+                                  "props": { "className": "flex items-center gap-1.5" },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Button",
+                                      "props": {
+                                        "type": "button",
+                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+                                      },
+                                      "children": [
+                                        { "type": "basic", "name": "Icon", "props": { "name": "pen", "className": "text-xs" } },
+                                        { "type": "basic", "name": "Span", "text": "$t:shop.qna.edit" }
+                                      ],
+                                      "actions": [
+                                        {
+                                          "type": "click",
+                                          "handler": "sequence",
+                                          "actions": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "qnaEditId": "{{item.id}}",
+                                                "qnaProductName": "{{item.product_name ?? ''}}",
+                                                "qnaProductImage": "{{item.product?.thumbnail_url ?? null}}",
+                                                "qnaCreatedAt": "{{item.created_at ?? null}}",
+                                                "qnaModalBoardSettings": "{{myInquiries.data.meta.board_settings ?? null}}",
+                                                "qnaSubmitting": false,
+                                                "qnaErrors": null,
+                                                "qnaForm": {
+                                                  "title": "{{item.title ?? ''}}",
+                                                  "category": "{{item.category ?? ''}}",
+                                                  "content": "{{item.content ?? ''}}",
+                                                  "is_secret": "{{item.is_secret ?? true}}"
+                                                }
+                                              }
+                                            },
+                                            { "handler": "openModal", "target": "qna_write_modal" }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Button",
+                                      "props": {
+                                        "type": "button",
+                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700"
+                                      },
+                                      "children": [
+                                        { "type": "basic", "name": "Icon", "props": { "name": "trash", "className": "text-xs" } },
+                                        { "type": "basic", "name": "Span", "text": "$t:shop.qna.delete" }
+                                      ],
+                                      "actions": [
+                                        {
+                                          "type": "click",
+                                          "handler": "sequence",
+                                          "actions": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "qnaDeleteId": "{{item.id}}",
+                                                "qnaDeleteIsAnswered": false,
+                                                "qnaDeleteIsReply": false,
+                                                "qnaDeleteIsAdmin": false,
+                                                "qnaDeleteSource": "mypage",
+                                                "qnaDeleting": false
+                                              }
+                                            },
+                                            { "handler": "openModal", "target": "inquiry_delete_modal" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "comment": "답변완료: 삭제만",
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "if": "{{!!item.is_answered}}",
+                                  "props": { "className": "flex items-center gap-1.5" },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Button",
+                                      "props": {
+                                        "type": "button",
+                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded hover:bg-red-50 dark:hover:bg-gray-700"
+                                      },
+                                      "children": [
+                                        { "type": "basic", "name": "Icon", "props": { "name": "trash", "className": "text-xs" } },
+                                        { "type": "basic", "name": "Span", "text": "$t:shop.qna.delete" }
+                                      ],
+                                      "actions": [
+                                        {
+                                          "type": "click",
+                                          "handler": "sequence",
+                                          "actions": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "qnaDeleteId": "{{item.id}}",
+                                                "qnaDeleteIsAnswered": true,
+                                                "qnaDeleteIsReply": false,
+                                                "qnaDeleteIsAdmin": false,
+                                                "qnaDeleteSource": "mypage",
+                                                "qnaDeleting": false
+                                              }
+                                            },
+                                            { "handler": "openModal", "target": "inquiry_delete_modal" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "comment": "문의 본문 박스",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "rounded-lg bg-gray-50 dark:bg-gray-900 px-4 py-3" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": { "className": "text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed" },
+                                  "text": "{{item.content ?? ''}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "판매자 답변 (있을 때)",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{!!item.reply}}",
+                          "props": { "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" },
+                          "children": [
+                            {
+                              "comment": "A 레이블 + 답변 날짜 (한 줄) - 답변 완료",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center gap-2 mb-2" },
+                              "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "circle-check", "className": "text-sm text-green-500 dark:text-green-400" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-green-600 dark:text-green-400" }, "text": "$t:mypage.inquiries.seller_reply" },
+                                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-400 dark:text-gray-500" }, "text": "{{item.reply?.created_at | datetime}}" }
+                              ]
+                            },
+                            {
+                              "comment": "판매자 답변 본문 박스",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "rounded-lg bg-white dark:bg-gray-800 px-4 py-3" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": { "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed" },
+                                  "text": "{{item.reply?.content ?? ''}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "아직 답변 없을 때",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{!item.reply}}",
+                          "props": { "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" },
+                          "children": [
+                            {
+                              "comment": "A 레이블 - 답변 대기",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center gap-2 mb-2" },
+                              "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "clock", "className": "text-sm text-gray-400 dark:text-gray-500" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.inquiries.seller_reply" }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-sm text-gray-400 dark:text-gray-500" },
+                              "text": "$t:mypage.inquiries.no_reply_yet"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "문의 없음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!myInquiries.data.items || myInquiries.data.items.length === 0}}",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "comment", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "text": "$t:mypage.inquiries.empty"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer"
+              },
+              "text": "$t:mypage.inquiries.go_shopping",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": { "path": "{{_global.shopBase ?? '/shop'}}/products" }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "페이지네이션",
+          "type": "composite",
+          "name": "Pagination",
+          "props": {
+            "currentPage": "{{myInquiries.data.meta.current_page ?? 1}}",
+            "totalPages": "{{myInquiries.data.meta.last_page ?? 1}}",
+            "className": "pt-4 flex justify-center"
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "inquiriesPage": "{{$args[0]}}" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "myInquiries" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

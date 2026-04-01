@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "name": "user-address-search",
+    "description": "사용자 화면용 다음 주소 검색 Extension",
+    "version": "1.0.0",
+    "extension_point": "address_search_slot",
+    "plugin": "sirsoft-daum_postcode"
+  },
+  "component": {
+    "type": "basic",
+    "name": "Button",
+    "props": {
+      "type": "button",
+      "className": "flex-shrink-0 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+    },
+    "responsive": {
+      "portable": {
+        "props": {
+          "type": "button",
+          "className": "flex-shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "basic",
+        "name": "Icon",
+        "props": { "name": "search", "className": "w-4 h-4 mr-1.5" }
+      },
+      {
+        "type": "basic",
+        "name": "Span",
+        "text": "$t:address.search"
+      }
+    ],
+    "actions": [
+      {
+        "type": "click",
+        "handler": "openDaumPostcode",
+        "params": {
+          "callbackSetState": {
+            "target": "{{$props.stateTarget || 'local'}}",
+            "zonecode": "{{$props.zonecodePath || 'shipping.zonecode'}}",
+            "address": "{{$props.addressPath || 'shipping.address'}}",
+            "detailFocusField": "{{$props.detailFocusField || 'shipping.addressDetail'}}"
+          }
+        }
+      }
+    ]
+  },
+  "translations": {
+    "ko": {
+      "address": {
+        "search": "주소 검색",
+        "search_placeholder": "주소를 검색해주세요",
+        "zonecode": "우편번호",
+        "address_main": "기본주소",
+        "address_detail": "상세주소",
+        "address_detail_placeholder": "상세주소를 입력해주세요"
+      }
+    },
+    "en": {
+      "address": {
+        "search": "Search Address",
+        "search_placeholder": "Please search for an address",
+        "zonecode": "Postal Code",
+        "address_main": "Address",
+        "address_detail": "Detail Address",
+        "address_detail_placeholder": "Please enter detail address"
+      }
+    }
+  }
+}

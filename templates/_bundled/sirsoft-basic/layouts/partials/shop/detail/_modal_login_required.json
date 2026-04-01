@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "로그인 필요 안내 모달 - 비로그인 사용자가 쿠폰 다운로드 시도 시"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "login_required_modal",
+  "props": {
+    "title": "$t:shop.coupon_download.login_required_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "text-center py-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "user", "className": "text-3xl text-gray-400 dark:text-gray-500 mb-3" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-6" },
+          "text": "$t:shop.coupon_download.login_required_message"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-center gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                { "type": "click", "handler": "closeModal" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              },
+              "text": "$t:shop.coupon_download.go_login",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "closeModal" },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/login",
+                        "query": { "redirect": "{{location.pathname}}" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

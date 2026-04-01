@@ -1,0 +1,126 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 목록 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음)"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "해당 페이지에 게시글 없음 (page 파라미터 존재 + 데이터 0건)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{posts?.data?.board?.slug && query.page && Number(query.page) > 1 && posts?.data?.data?.length === 0}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-6xl mb-4"
+                    },
+                    "text": "📄"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400 mb-2"
+                    },
+                    "text": "$t:board.no_posts_on_page"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer mt-4"
+                    },
+                    "text": "$t:board.go_to_first_page",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/board/{{route.slug}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "게시글 없음 (검색 아닐 때 + 공지 제외 일반 게시글 0개)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{posts?.data?.board?.slug && !query.search && !query.category && (!query.page || Number(query.page) <= 1) && posts?.data?.pagination?.total === 0}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-6xl mb-4"
+                    },
+                    "text": "📝"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:board.no_posts"
+                }
+            ]
+        },
+        {
+            "comment": "검색 결과 없음 (검색 시 + 공지 제외 일반 게시글 0개)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{posts?.data?.board?.slug && (query.search || query.category) && posts?.data?.pagination?.total === 0}}",
+            "props": {
+                "className": "flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-6xl mb-4"
+                    },
+                    "text": "🔍"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-600 dark:text-gray-400 mb-6"
+                    },
+                    "text": "$t:board.no_search_results"
+                },
+                {
+                    "comment": "검색 초기화 버튼",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors cursor-pointer"
+                    },
+                    "text": "$t:board.clear_search",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/board/{{route.slug}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

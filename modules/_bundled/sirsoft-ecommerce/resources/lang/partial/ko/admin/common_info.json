@@ -1,0 +1,89 @@
+{
+  "title": "공통 정보 관리",
+  "description": "상품 상세페이지에 표시될 공통 안내 정보를 관리합니다",
+  "list": {
+    "title": "공통정보",
+    "add": "추가",
+    "languages_count": "{count}개 언어",
+    "default": "기본",
+    "empty": "등록된 공통정보가 없습니다.",
+    "search_placeholder": "공통정보명으로 검색"
+  },
+  "empty_state": {
+    "title": "공통정보를 선택하세요",
+    "description": "좌측 목록에서 공통정보를 선택하거나 새로 추가하세요."
+  },
+  "detail": {
+    "title": "공통정보 정보",
+    "name": "공통정보명",
+    "status": "상태",
+    "default": "기본",
+    "active": "사용",
+    "created_at": "등록일",
+    "updated_at": "수정일",
+    "copy": "복사",
+    "content": "안내 내용",
+    "content_placeholder": "안내 내용 표시"
+  },
+  "form": {
+    "title_add": "공통정보 추가",
+    "title_edit": "공통정보 편집",
+    "title_copy": "공통정보 복사",
+    "name": "공통정보명",
+    "name_placeholder": "공통정보명을 입력하세요",
+    "set_default": "기본값으로 설정",
+    "is_active": "사용 여부",
+    "active_label": "사용",
+    "content_section": "안내 내용",
+    "mode_text": "텍스트",
+    "mode_html": "HTML",
+    "preview": "미리보기",
+    "placeholder_text": "안내 내용을 입력하세요",
+    "placeholder_html": "HTML 코드로 안내 내용을 입력하세요",
+    "status_section": "상태 설정",
+    "status_default": "기본 설정",
+    "status_active": "활성화"
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  },
+  "modal": {
+    "delete": {
+      "title": "공통정보 삭제",
+      "confirm_message": "'{name}' 공통정보를 삭제하시겠습니까?",
+      "confirm_suffix": "공통정보를 삭제하시겠습니까?",
+      "warning": "이 공통정보를 사용 중인 모든 상품의 연결이 해제됩니다.",
+      "irreversible": "※ 이 작업은 되돌릴 수 없습니다."
+    },
+    "editing": {
+      "title": "수정 중입니다",
+      "message": "수정 중인 내용이 저장되지 않습니다.",
+      "confirm_message": "정말로 취소하고 다른 상품군을 선택하시겠습니까?",
+      "continue": "계속 수정",
+      "discard": "취소하고 이동"
+    },
+    "content_mode_change": {
+      "title": "입력 모드 변경",
+      "message": "HTML에서 일반 텍스트로 변경하면 HTML 태그가 모두 제거됩니다. 계속하시겠습니까?",
+      "confirm": "변경"
+    },
+    "set_default": {
+      "title": "기본 설정 확인",
+      "message": "이 공통정보를 기본으로 설정하시겠습니까? 기존의 기본 설정은 해제됩니다."
+    },
+    "copy": {
+      "title": "공통정보 복사",
+      "message": "'{name}' 공통정보를 복사하시겠습니까?",
+      "confirm": "복사"
+    }
+  },
+  "button": {
+    "cancel": "취소",
+    "save": "저장",
+    "edit": "편집",
+    "delete": "삭제",
+    "confirm": "확인",
+    "set_default": "기본값으로 설정"
+  }
+}

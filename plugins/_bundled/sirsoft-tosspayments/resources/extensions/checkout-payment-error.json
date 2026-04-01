@@ -1,0 +1,141 @@
+{
+    "extension_point": "shop_checkout_extensions",
+    "modals": [
+        {
+            "id": "tosspayments_payment_error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-tosspayments.payment_error_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-center py-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-circle",
+                                "className": "text-red-500 text-4xl mb-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_local.paymentErrorMessage ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-center mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local.paymentErrorMessage",
+                                        "value": null
+                                    }
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "params": {
+                                        "id": "tosspayments_payment_error_modal"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        ,
+        {
+            "id": "tosspayments_payment_cancel_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-tosspayments.payment_cancel_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-center py-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "className": "text-yellow-500 text-4xl mb-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-tosspayments.payment_cancelled_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-center mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            },
+                            "text": "$t:common.confirm",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "params": {
+                                        "id": "tosspayments_payment_cancel_modal"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "priority": 100
+}

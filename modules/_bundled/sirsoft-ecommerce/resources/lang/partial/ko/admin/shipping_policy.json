@@ -1,0 +1,340 @@
+{
+  "title": "배송정책 관리",
+  "title_create": "배송정책 등록",
+  "title_edit": "배송정책 수정",
+  "description": "배송정책 목록을 관리합니다.",
+  "add": "배송정책 등록",
+
+  "enums": {
+    "shipping_method": {
+      "parcel": "택배",
+      "freight": "화물",
+      "express": "특급",
+      "economy": "이코노미",
+      "ems": "EMS",
+      "direct": "직접배송",
+      "pickup": "직접수령"
+    },
+    "carrier": {
+      "cj": "CJ대한통운",
+      "hanjin": "한진택배",
+      "lotte": "롯데택배",
+      "logen": "로젠택배",
+      "ups": "UPS",
+      "fedex": "FedEx",
+      "dhl": "DHL",
+      "ems": "EMS",
+      "sf": "SF Express",
+      "yamato": "야마토운수",
+      "sagawa": "사가와큐빈",
+      "other": "기타"
+    },
+    "charge_policy": {
+      "free": "무료배송",
+      "fixed": "고정배송비",
+      "conditional_free": "조건부 무료배송",
+      "range_amount": "금액별 구간배송비",
+      "range_quantity": "수량별 구간배송비",
+      "range_weight": "무게별 구간배송비",
+      "range_volume": "부피별 구간배송비",
+      "range_volume_weight": "용적중량별 구간배송비",
+      "per_quantity": "수량당 배송비",
+      "per_weight": "무게당 배송비",
+      "per_volume": "부피당 배송비",
+      "per_volume_weight": "용적중량당 배송비",
+      "per_amount": "금액당 배송비",
+      "api": "외부 API 연동"
+    }
+  },
+
+  "search": {
+    "placeholder": "정책명 검색..."
+  },
+
+  "filter": {
+    "name": "정책명",
+    "name_label": "정책명:",
+    "shipping_method": "배송방법",
+    "shipping_method_label": "배송방법:",
+    "carrier": "운송사",
+    "carrier_label": "운송사:",
+    "charge_policy": "부과정책",
+    "charge_policy_label": "부과정책:",
+    "country": "배송국가",
+    "is_active": "사용여부",
+    "is_active_label": "사용여부:",
+    "all": "전체",
+    "active": "사용",
+    "inactive": "미사용",
+    "search_type": {
+      "name": "정책명"
+    }
+  },
+
+  "table": {
+    "column": {
+      "is_default_header": "기본",
+      "name": "배송정책명",
+      "shipping_method": "배송방법",
+      "carrier": "운송사",
+      "charge_policy": "부과정책",
+      "countries": "배송국가",
+      "currency": "기준통화",
+      "extra_fee": "추가배송비",
+      "is_active": "사용여부",
+      "actions": "작업",
+      "fee_summary": "배송비 요약"
+    },
+    "no_country_settings": "국가별 설정이 없습니다",
+    "per_unit": "단위",
+    "range_based": "구간별",
+    "free_above": "이상 무료",
+    "extra_fee_badge": "도서산간",
+    "inactive": "비활성",
+    "summary": {
+      "total": "전체 {{count}}개",
+      "active": "사용중 {{count}}개",
+      "inactive": "미사용 {{count}}개"
+    }
+  },
+
+  "action": {
+    "edit": "수정",
+    "copy": "복사",
+    "delete": "삭제",
+    "search": "검색",
+    "reset": "초기화",
+    "bulk_delete": "선택 삭제",
+    "bulk_toggle": "사용여부 변경",
+    "bulk_apply": "일괄 적용"
+  },
+
+  "bulk": {
+    "selected_count": "{{count}}개 선택됨",
+    "toggle_active": "사용",
+    "toggle_inactive": "미사용",
+    "select_status": "사용여부 선택"
+  },
+
+  "fee_summary": {
+    "label": "배송비:",
+    "free": "무료배송",
+    "fixed": "배송비: {{fee}}원",
+    "conditional": "{{threshold}}원 미만 {{fee}}원 / {{threshold}}원 이상 무료",
+    "range_prefix": {
+      "amount": "",
+      "quantity": "개",
+      "weight": "kg",
+      "volume": "cm³"
+    },
+    "api": "외부 API 연동 (실시간 계산)",
+    "per_quantity": "{{unit}}개당 {{fee}}원",
+    "per_weight": "{{unit}}kg당 {{fee}}원",
+    "per_volume": "{{unit}}L당 {{fee}}원",
+    "per_volume_weight": "{{unit}}kg당 {{fee}}원",
+    "per_amount": "{{unit}}원당 {{fee}}원"
+  },
+
+  "fee_details": {
+    "base_fee": "배송비",
+    "free_threshold": "무료배송 기준",
+    "range_header": "구간별 배송비",
+    "extra_fee": "추가배송비 (도서산간)"
+  },
+
+  "modal": {
+    "copy": {
+      "title": "배송정책 복사",
+      "message": "다음 배송정책을 복사하시겠습니까?",
+      "note": "등록 화면으로 이동하여 데이터를 수정한 후 저장할 수 있습니다.",
+      "confirm": "복사하기",
+      "policy_name": "정책명:",
+      "country_count": "국가 설정:",
+      "country_count_value": "{{count}}개국"
+    },
+    "delete": {
+      "title": "배송정책 삭제",
+      "message": "다음 배송정책을 삭제하시겠습니까?",
+      "warning": "삭제된 정책은 복구할 수 없습니다.",
+      "product_warning": "이 정책을 사용 중인 상품이 있다면 해당 상품의 배송정책이 해제됩니다.",
+      "confirm": "삭제"
+    },
+    "bulk_delete": {
+      "title": "배송정책 일괄 삭제",
+      "message": "선택한 {{count}}개의 배송정책을 삭제하시겠습니까?",
+      "warning": "삭제된 정책은 복구할 수 없습니다.",
+      "product_warning": "삭제할 정책을 사용 중인 상품이 있다면 해당 상품의 배송정책이 해제됩니다.",
+      "confirm": "삭제"
+    },
+    "bulk_toggle": {
+      "title": "사용여부 일괄 변경",
+      "message": "선택한 {{count}}개의 배송정책의 사용여부를 변경하시겠습니까?",
+      "confirm": "변경"
+    },
+    "set_default": {
+      "title": "기본 배송정책 설정",
+      "message": "다음 배송정책을 기본값으로 설정하시겠습니까?",
+      "confirm": "설정",
+      "cancel": "취소",
+      "success": "기본 배송정책이 설정되었습니다."
+    }
+  },
+
+  "form": {
+    "section_basic": "기본 정보",
+    "section_country_settings": "국가별 배송 설정",
+    "section_country_basic": "기본 배송 설정",
+    "section_charge": "상세 설정",
+    "section_extra_fee": "도서산간 배송비",
+    "name": "배송정책명",
+    "name_placeholder": "배송정책 이름을 입력하세요",
+    "is_active": "사용여부",
+    "is_default": "기본 배송정책",
+    "countries": "배송국가",
+    "countries_placeholder": "배송국가를 선택하세요",
+    "country_tab_add": "국가 추가",
+    "country_tab_remove": "이 국가 삭제",
+    "country_tab_remove_confirm": "이 국가 설정을 삭제하시겠습니까?",
+    "country_select_placeholder": "국가를 선택하세요",
+    "no_country_settings": "국가별 설정을 추가하세요",
+    "country_is_active": "국가 사용여부",
+    "country_active": "국가 활성",
+    "extra_fee_kr_only": "도서산간 추가배송비 (한국 전용)",
+    "shipping_method": "배송방법",
+    "carrier": "운송사",
+    "carrier_placeholder": "운송사를 선택하세요",
+    "currency_code": "기준 통화",
+    "currency_code_placeholder": "통화를 선택하세요",
+    "charge_policy": "배송비 부과 정책",
+    "base_fee": "배송비",
+    "free_threshold": "무료배송 기준금액",
+    "free_threshold_hint": "이 금액 이상 구매 시 배송비 무료",
+    "range_tiers": "구간별 배송비",
+    "range_min": "시작값",
+    "range_max": "종료값",
+    "range_fee": "배송비",
+    "range_unlimited": "무제한",
+    "range_add": "구간 추가",
+    "range_error_first_min": "첫 구간의 시작값은 0이어야 합니다.",
+    "range_error_last_max": "마지막 구간의 종료값은 무제한이어야 합니다.",
+    "range_error_continuity": "구간이 연속적이지 않습니다.",
+    "range_error_min_max": "시작값은 종료값보다 작아야 합니다.",
+    "range_error_fee": "배송비는 0 이상이어야 합니다.",
+    "range_error_min_one": "최소 1개 구간이 필요합니다.",
+    "per_unit_value": "단위 기준값",
+    "per_unit_hint": "설정한 단위마다 위 배송비가 부과됩니다",
+    "api_endpoint": "API 엔드포인트",
+    "api_endpoint_placeholder": "https://api.example.com/shipping/calculate",
+    "api_endpoint_hint": "배송비 계산 API의 URL을 입력하세요",
+    "api_request_fields": "API 전송 필드",
+    "api_request_fields_placeholder": "필드명을 입력하고 Enter를 누르세요",
+    "api_request_fields_hint": "API 호출 시 전송할 필드명을 입력하세요 (예: weight, volume, quantity)",
+    "api_response_fee_field": "응답 배송비 필드",
+    "api_response_fee_field_placeholder": "shipping_fee",
+    "api_response_fee_field_hint": "API 응답에서 배송비 값이 담긴 필드명",
+    "extra_fee_enabled": "도서산간 추가배송비 사용",
+    "extra_fee_multiply": "건당 중복 부과",
+    "extra_fee_multiply_hint": "단위당 배송비 적용 시 도서산간 추가배송비를 건당 중복 부과합니다",
+    "extra_fee_zipcode": "우편번호",
+    "extra_fee_zipcode_placeholder": "63000 또는 63000-63644",
+    "extra_fee_amount": "추가배송비",
+    "extra_fee_region": "지역명",
+    "extra_fee_add": "우편번호 추가",
+    "extra_fee_load": "템플릿 불러오기",
+    "extra_fee_settings": "우편번호별 추가배송비",
+    "extra_fee_enabled_hint": "도서산간 지역에 추가배송비를 적용합니다",
+    "no_extra_fee": "추가배송비가 없습니다. 우편번호를 추가하세요.",
+    "template_applied": "도서산간 템플릿이 적용되었습니다.",
+    "sort_order": "정렬순서",
+    "carrier_none": "선택 안함",
+    "no_ranges": "구간을 추가하세요",
+    "api_settings": "API 설정",
+    "free_threshold_placeholder": "예: 50000",
+    "description": "배송정책 정보를 입력하세요.",
+    "save": "저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "back_to_list": "목록으로"
+  },
+
+  "modal_extra_fee": {
+    "title": "도서산간 배송비 템플릿",
+    "search_placeholder": "우편번호 또는 지역명 검색",
+    "region": "지역",
+    "region_all": "전체",
+    "status": "상태",
+    "status_all": "전체",
+    "active": "활성",
+    "inactive": "비활성",
+    "zipcode": "우편번호",
+    "fee": "배송비",
+    "manage": "관리",
+    "edit": "수정",
+    "delete": "삭제",
+    "add_section": "템플릿 추가/수정",
+    "description": "설명",
+    "description_placeholder": "설명 (선택사항)",
+    "reset": "초기화",
+    "add_btn": "추가",
+    "save_btn": "저장",
+    "selected_count": "선택된 항목: {{count}}개",
+    "bulk_delete": "선택 삭제",
+    "apply_all": "전체 적용 (활성 템플릿)",
+    "apply_selected": "선택 적용",
+    "close": "닫기",
+    "apply_confirm": "기존 도서산간 설정이 덮어씌워집니다. 계속하시겠습니까?",
+    "delete_confirm": "이 템플릿을 삭제하시겠습니까?",
+    "bulk_delete_confirm": "선택한 {{count}}개 템플릿을 삭제하시겠습니까?",
+    "no_templates": "등록된 템플릿이 없습니다.",
+    "items_count": "건",
+    "apply": "적용"
+  },
+
+  "empty": {
+    "title": "등록된 배송정책이 없습니다",
+    "message": "새로운 배송정책을 등록하여 상품에 적용해 보세요.",
+    "no_results": "검색 결과가 없습니다",
+    "no_results_message": "다른 검색어로 시도해 보세요.",
+    "button": "배송정책 등록",
+    "reset_filter": "필터 초기화"
+  },
+
+  "sort": {
+    "created_at_desc": "최신순",
+    "created_at_asc": "오래된순",
+    "name_asc": "정책명순",
+    "name_desc": "정책명역순",
+    "sort_order_asc": "정렬순서"
+  },
+
+  "pagination": {
+    "total": "총 {{count}}개"
+  },
+
+  "messages": {
+    "list_retrieved": "배송정책 목록을 조회했습니다.",
+    "retrieved": "배송정책을 조회했습니다.",
+    "created": "배송정책이 등록되었습니다.",
+    "updated": "배송정책이 수정되었습니다.",
+    "deleted": "배송정책이 삭제되었습니다.",
+    "toggled": "사용여부가 변경되었습니다.",
+    "bulk_deleted": "선택한 배송정책이 삭제되었습니다.",
+    "bulk_toggled": "선택한 배송정책의 사용여부가 변경되었습니다.",
+    "active_list_retrieved": "활성 배송정책 목록을 조회했습니다.",
+    "not_found": "배송정책을 찾을 수 없습니다.",
+    "template_saved": "추가배송비 템플릿이 저장되었습니다.",
+    "template_deleted": "추가배송비 템플릿이 삭제되었습니다.",
+    "template_bulk_deleted": "선택한 추가배송비 템플릿이 삭제되었습니다."
+  },
+
+  "common": {
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "deleting": "삭제 중...",
+    "change": "변경",
+    "changing": "변경 중...",
+    "yes": "예",
+    "no": "아니오"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 공통 탭 네비게이션"
+  },
+  "type": "composite",
+  "name": "TabNavigation",
+  "id": "mypageTabNavigation",
+  "props": {
+    "variant": "underline",
+    "className": "mb-6",
+    "tabs": [
+      {
+        "id": "profile",
+        "label": "$t:mypage.tabs.profile",
+        "iconName": "user"
+      },
+      {
+        "id": "board",
+        "label": "$t:mypage.tabs.board",
+        "iconName": "message-square"
+      },
+      {
+        "id": "orders",
+        "label": "$t:mypage.tabs.orders",
+        "iconName": "package"
+      },
+      {
+        "id": "wishlist",
+        "label": "$t:mypage.tabs.wishlist",
+        "iconName": "heart"
+      },
+      {
+        "id": "addresses",
+        "label": "$t:mypage.tabs.addresses",
+        "iconName": "map-pin"
+      },
+      {
+        "id": "notifications",
+        "label": "$t:mypage.tabs.notifications",
+        "iconName": "bell"
+      },
+      {
+        "id": "inquiries",
+        "label": "$t:mypage.tabs.inquiries",
+        "iconName": "comment"
+      }
+    ],
+    "hiddenTabIds": "{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']}}",
+    "activeTabId": "{{_computed?.currentTab}}"
+  },
+  "actions": [
+    {
+      "event": "onTabChange",
+      "type": "change",
+      "handler": "navigate",
+      "params": {
+        "path": "{{`/mypage/${$args[0]}`}}"
+      }
+    }
+  ]
+}

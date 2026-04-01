@@ -1,0 +1,161 @@
+{
+  "title": "상품리뷰 관리",
+  "description": "고객 리뷰를 확인하고 답변을 관리하세요",
+  "search": {
+    "field": {
+      "order_number": "주문번호",
+      "product_name": "상품명",
+      "option_name": "옵션명",
+      "reviewer": "작성자",
+      "content": "리뷰내용"
+    },
+    "placeholder": "검색어를 입력하세요",
+    "column_select": "컬럼 선택"
+  },
+  "filter": {
+    "rating": "평점",
+    "reply_status": "답변 상태",
+    "photo": "포토 여부",
+    "review_status": "리뷰 상태",
+    "date_range": "작성일 기간",
+    "all": "전체",
+    "replied": "답변완료",
+    "not_replied": "미답변",
+    "photo_review": "포토리뷰",
+    "text_review": "일반리뷰",
+    "visible": "전시중",
+    "hidden": "숨김",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "search": "검색",
+    "reset": "초기화",
+    "date_quick": {
+      "today": "오늘",
+      "3days": "3일간",
+      "week": "일주일",
+      "month": "1개월",
+      "3months": "3개월",
+      "all": "전체"
+    }
+  },
+  "batch": {
+    "selected_count": "{{count}}개 선택됨",
+    "status_change": "리뷰 상태 변경",
+    "apply": "적용"
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "sort": {
+      "created_at_desc": "작성일 (최신순)",
+      "created_at_asc": "작성일 (오래된순)",
+      "rating_desc": "평점 (높은순)",
+      "rating_asc": "평점 (낮은순)"
+    },
+    "per_page": {
+      "10": "10개씩 보기",
+      "20": "20개씩 보기",
+      "50": "50개씩 보기",
+      "100": "100개씩 보기",
+      "template": "{{count}}개씩 보기"
+    },
+    "columns": {
+      "checkbox": "선택",
+      "no": "순번",
+      "photo": "포토",
+      "product_name": "상품명",
+      "content": "리뷰 내용",
+      "rating": "평점",
+      "reviewer": "작성자",
+      "order_number": "주문번호",
+      "created_at": "작성일",
+      "reply": "답변",
+      "status": "상태",
+      "actions": "관리"
+    },
+    "photo_count": "+{{count}}",
+    "empty": "등록된 리뷰가 없습니다",
+    "reply_status": {
+      "replied": "답변완료",
+      "not_replied": "미답변"
+    }
+  },
+  "detail": {
+    "purchase_info": {
+      "title": "구매 정보",
+      "product_name": "상품명",
+      "options": "옵션",
+      "reviewer": "작성자",
+      "created_at": "작성일시",
+      "updated_at": "수정일시",
+      "order_number": "주문번호",
+      "quantity": "구매수량",
+      "purchase_date": "구매일시"
+    },
+    "customer_review": {
+      "title": "고객 리뷰",
+      "edited": "수정됨",
+      "attached_images": "첨부 이미지",
+      "images_count": "({{count}}장)",
+      "attached_images_label": "첨부 이미지 ({{count}}장)",
+      "created_at_label": "작성: ",
+      "updated_at_label": "수정: "
+    },
+    "image_preview": {
+      "title": "이미지 미리보기"
+    },
+    "seller_reply": {
+      "title": "판매자 답변",
+      "edited": "수정됨",
+      "created_at": "등록",
+      "updated_at": "수정",
+      "edit": "수정",
+      "edit_save": "저장",
+      "cancel": "취소",
+      "delete": "삭제",
+      "reply_complete": "답변 완료"
+    },
+    "reply_form": {
+      "title": "판매자 답변",
+      "placeholder": "고객에게 보낼 답변을 작성하세요...",
+      "hint_1": "친절하고 명확하게 답변해주세요",
+      "hint_2": "고객의 문의사항에 성실히 응답해주세요",
+      "char_count": "{{count}}자",
+      "submit": "답변 등록"
+    },
+    "expand": "접기",
+    "collapse": "펼치기"
+  },
+  "mobile": {
+    "select_all": "전체 선택",
+    "product_label": "상품",
+    "order_number_label": "주문번호",
+    "quantity_label": "수량",
+    "purchase_date_label": "구매일",
+    "rating_label": "평점",
+    "review_content_label": "리뷰",
+    "reviewer_label": "작성자",
+    "created_at_label": "작성일",
+    "updated_at_label": "수정일"
+  },
+  "modal": {
+    "status_change": {
+      "title": "확인",
+      "message": "{{count}}개 리뷰를 \"{{status}}\" 처리하시겠습니까?",
+      "cancel": "취소",
+      "confirm": "확인"
+    },
+    "reply_delete": {
+      "title": "답변 삭제",
+      "message": "이 답변을 삭제하시겠습니까?",
+      "warning": "삭제된 답변은 복구할 수 없습니다.",
+      "cancel": "취소",
+      "confirm": "삭제"
+    },
+    "reply_edit": {
+      "title": "답변 수정",
+      "placeholder": "수정할 답변을 입력하세요...",
+      "cancel": "취소",
+      "confirm": "저장"
+    }
+  }
+}

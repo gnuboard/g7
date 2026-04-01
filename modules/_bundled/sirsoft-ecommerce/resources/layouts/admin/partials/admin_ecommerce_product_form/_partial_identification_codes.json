@@ -1,0 +1,285 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Identification Codes Section"
+  },
+  "id": "section_identification",
+  "type": "basic",
+  "name": "Section",
+  "props": {
+    "id": "identification",
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "identification_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
+        {
+          "id": "identification_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "ui.identificationExpanded": "{{!_local.ui.identificationExpanded}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "barcode",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.identification"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "identification_body",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.ui.identificationExpanded !== false}}",
+          "props": {
+            "className": "card-accordion-body p-6"
+          },
+          "children": [
+            {
+              "id": "identification_grid",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-2 gap-6"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "grid grid-cols-1 gap-4"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "field_product_code",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.label"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "product_code",
+                        "className": "input w-full",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder",
+                        "disabled": "{{!!route?.itemCode || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "field_sku",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.fields.sku"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "sku",
+                        "className": "{{_local.errors?.sku ? 'input input-error w-full' : 'input w-full'}}",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.sku",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.sku}}",
+                      "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                      "text": "{{_local.errors?.sku?.[0]}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_barcode",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "barcode",
+                        "className": "{{_local.errors?.barcode ? 'input input-error w-full' : 'input w-full'}}",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.barcode}}",
+                      "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                      "text": "{{_local.errors?.barcode?.[0]}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_hs_code",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "hs_code",
+                        "className": "{{_local.errors?.hs_code ? 'input input-error w-full' : 'input w-full'}}",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.hs_code}}",
+                      "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                      "text": "{{_local.errors?.hs_code?.[0]}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Discount Code Delete Confirm Modal"
+  },
+  "id": "modal_delete_confirm",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.delete.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-secondary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.delete.description"
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.delete.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.delete.confirm",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

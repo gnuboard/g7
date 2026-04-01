@@ -1,0 +1,544 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Activity Log List DataGrid"
+    },
+    "id": "activity_log_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "props": {
+        "data": "{{activityLogs?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{activityLogs?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{activityLogs?.data?.pagination?.last_page ?? 1}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": true,
+        "selectedIds": "{{_global.selectedIds_admin_activity_logs || []}}",
+        "selectedCountText": "",
+        "loading": "{{activityLogs?.loading}}",
+        "expandable": true,
+        "expandConditionField": "has_changes",
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-4"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-center gap-4 text-sm"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{row.loggable_type_display}}",
+                                "props": {
+                                    "className": "flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:admin.activity_log.detail.target_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "{{row.loggable_type_display}} #{{row.loggable_id}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.changes && row.changes.length > 0}}",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                },
+                                "text": "$t:admin.activity_log.detail.changes_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "flex-1"
+                                                },
+                                                "text": "$t:admin.activity_log.detail.column_field"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "w-1/3 text-center"
+                                                },
+                                                "text": "$t:admin.activity_log.detail.column_old"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "w-1/3 text-center"
+                                                },
+                                                "text": "$t:admin.activity_log.detail.column_new"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "iteration": {
+                                            "source": "row.changes",
+                                            "item_var": "change"
+                                        },
+                                        "props": {
+                                            "className": "flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "text": "{{change.label ?? change.field}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "w-1/3 text-center text-red-600 dark:text-red-400 break-all"
+                                                },
+                                                "text": "{{change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "w-1/3 text-center text-green-600 dark:text-green-400 break-all"
+                                                },
+                                                "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.bulk_changes && row.bulk_changes.length > 0}}",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                },
+                                "text": "$t:admin.activity_log.detail.bulk_changes_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "iteration": {
+                                            "source": "row.bulk_changes",
+                                            "item_var": "group"
+                                        },
+                                        "props": {
+                                            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex bg-gray-100 dark:bg-gray-800 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "flex-1"
+                                                        },
+                                                        "text": "ID: {{group.model_id}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "w-1/3 text-center"
+                                                        },
+                                                        "text": "$t:admin.activity_log.detail.column_old"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "w-1/3 text-center"
+                                                        },
+                                                        "text": "$t:admin.activity_log.detail.column_new"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{group.changes}}",
+                                                    "item_var": "change"
+                                                },
+                                                "props": {
+                                                    "className": "flex items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "{{change.label ?? change.field}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "w-1/3 text-center text-red-600 dark:text-red-400 break-all"
+                                                        },
+                                                        "text": "{{change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "w-1/3 text-center text-green-600 dark:text-green-400 break-all"
+                                                        },
+                                                        "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.activity_log.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
+        "actionsColumnHeader": "$t:common.actions",
+        "columns": [
+            {
+                "field": "number",
+                "header": "$t:admin.activity_log.table.column.number",
+                "width": "60px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "{{row.number}}"
+                    }
+                ]
+            },
+            {
+                "field": "log_type",
+                "header": "$t:admin.activity_log.table.column.log_type",
+                "width": "90px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "{{row.log_type === 'admin' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : row.log_type === 'user' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}"
+                        },
+                        "text": "{{row.log_type_label}}"
+                    }
+                ]
+            },
+            {
+                "field": "action",
+                "header": "$t:admin.activity_log.table.column.action",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        },
+                        "text": "{{row.action_label}}"
+                    }
+                ]
+            },
+            {
+                "field": "description",
+                "header": "$t:admin.activity_log.table.column.description",
+                "width": "250px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-1"
+                        },
+                        "text": "{{row.localized_description ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "target",
+                "header": "$t:admin.activity_log.table.column.target",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "{{row.loggable_type_display ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "actor",
+                "header": "$t:admin.activity_log.table.column.actor",
+                "width": "150px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": { "className": "text-gray-500 dark:text-gray-400" },
+                        "text": "-",
+                        "if": "{{!row.user}}"
+                    },
+                    {
+                        "type": "composite",
+                        "name": "ActionMenu",
+                        "if": "{{!!row.user}}",
+                        "props": {
+                            "position": "right",
+                            "items": [
+                                {
+                                    "id": "view_member",
+                                    "label": "$t:admin.activity_log.action.view_member",
+                                    "iconName": "user",
+                                    "if": "{{!!row.user}}"
+                                },
+                                {
+                                    "id": "search_by_actor",
+                                    "label": "$t:admin.activity_log.action.search_by_actor",
+                                    "iconName": "search"
+                                }
+                            ]
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-user",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "min-w-0 flex-1" },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": { "className": "font-medium text-gray-900 dark:text-gray-100 truncate block" },
+                                                "text": "{{row.user.name}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": { "className": "text-xs text-gray-500 dark:text-gray-400 truncate block" },
+                                                "text": "({{row.user.email}})",
+                                                "if": "{{!!row.user.email}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "value": "{{$args[0]}}",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": { "path": "/admin/users/{{row.user.uuid}}" }
+                                    },
+                                    "search_by_actor": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "filter.createdBy": "{{row.user.uuid}}",
+                                                    "actorSearchResults": "{{[{ value: row.user.uuid, label: row.user.name, description: row.user.email }]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/activity-logs",
+                                                    "replace": true,
+                                                    "query": {
+                                                        "created_by": "{{row.user.uuid}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "ip_address",
+                "header": "$t:admin.activity_log.table.column.ip_address",
+                "width": "130px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400 font-mono"
+                        },
+                        "text": "{{row.ip_address ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "created_at",
+                "header": "$t:admin.activity_log.table.column.created_at",
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "{{row.created_at ?? '-'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "actions": [
+        {
+            "event": "onPageChange",
+            "type": "change",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/activity-logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "event": "onSelectionChange",
+            "type": "action",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_activity_logs": "{{$args[0]}}"
+            }
+        },
+        {
+            "event": "onRowAction",
+            "type": "action",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "openModal",
+                            "target": "delete_confirm_modal"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

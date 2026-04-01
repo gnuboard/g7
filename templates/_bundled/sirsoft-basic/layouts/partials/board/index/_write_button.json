@@ -1,0 +1,73 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "글쓰기 버튼 (권한/로그인 체크 포함)"
+    },
+    "comment": "글쓰기 버튼 - 권한 없으면 비활성화, 클릭 시 권한/로그인 체크",
+    "type": "basic",
+    "name": "Button",
+    "props": {
+        "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
+        "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    },
+    "actions": [
+        {
+            "type": "click",
+            "handler": "switch",
+            "params": {
+                "value": "{{posts?.data?.abilities?.can_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}"
+            },
+            "cases": {
+                "allowed": {
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/board/{{route.slug}}/write"
+                    }
+                },
+                "no_permission": {
+                    "handler": "toast",
+                    "params": {
+                        "type": "warning",
+                        "message": "$t:board.no_write_permission"
+                    }
+                },
+                "not_logged_in": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "info",
+                                "message": "$t:board.login_required_to_write"
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/login",
+                                "query": {
+                                    "redirect": "/board/{{route.slug}}/write"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "children": [
+        {
+            "type": "basic",
+            "name": "Icon",
+            "props": {
+                "name": "pencil",
+                "size": "sm"
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Span",
+            "text": "$t:board.write"
+        }
+    ]
+}

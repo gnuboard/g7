@@ -1,0 +1,7 @@
+{
+  "address": {
+    "zonecode_placeholder": "우편번호",
+    "address_placeholder": "주소를 검색하세요",
+    "detail_placeholder": "상세주소를 입력하세요"
+  }
+}

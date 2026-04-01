@@ -1,0 +1,35 @@
+{
+    "plugin_name": "토스페이먼츠",
+    "plugin_description": "토스페이먼츠 결제 게이트웨이 (통합결제창 연동)",
+    "settings": {
+        "title": "토스페이먼츠 설정",
+        "description": "토스페이먼츠 API 키를 설정합니다.",
+        "test_mode": "테스트 모드",
+        "test_mode_hint": "테스트 모드에서는 실제 결제가 발생하지 않습니다.",
+        "test_client_key": "테스트 클라이언트 키",
+        "test_client_key_hint": "개발자센터 > API 개별 연동 키에서 확인",
+        "test_secret_key": "테스트 시크릿 키",
+        "test_secret_key_hint": "외부에 노출되지 않도록 주의하세요.",
+        "live_client_key": "라이브 클라이언트 키",
+        "live_secret_key": "라이브 시크릿 키",
+        "live_secret_key_hint": "외부에 노출되지 않도록 주의하세요.",
+        "section_test_keys": "테스트 API 키",
+        "section_live_keys": "라이브 API 키",
+        "section_redirect": "리다이렉트 설정",
+        "redirect_success_url": "결제 성공 리다이렉트 URL",
+        "redirect_success_url_hint": "상대 경로(/shop/...) 또는 전체 URL(https://...) 모두 가능합니다. {orderId}는 실제 주문번호로 자동 치환됩니다.",
+        "redirect_fail_url": "결제 실패 리다이렉트 URL",
+        "redirect_fail_url_hint": "상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보(error, message, orderId)는 쿼리 파라미터로 자동 추가됩니다.",
+        "save": "저장",
+        "saved": "설정이 저장되었습니다."
+    },
+    "payment_error_title": "결제 오류",
+    "payment_cancel_title": "결제 취소",
+    "payment_cancelled_message": "결제가 취소되었습니다. 다시 결제를 시도하시거나 다른 결제 수단을 선택해 주세요.",
+    "errors": {
+        "confirm_failed": "결제 승인에 실패했습니다.",
+        "amount_mismatch": "결제 금액이 일치하지 않습니다.",
+        "order_not_found": "주문을 찾을 수 없습니다.",
+        "payment_failed": "결제에 실패했습니다."
+    }
+}

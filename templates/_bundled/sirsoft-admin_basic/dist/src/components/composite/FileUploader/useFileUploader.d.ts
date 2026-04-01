@@ -1,0 +1,56 @@
+import { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
+export interface UseFileUploaderOptions {
+    attachmentableType?: string;
+    attachmentableId?: number;
+    collection: string;
+    maxFiles: number;
+    maxSize: number;
+    maxConcurrentUploads: number;
+    accept?: string;
+    imageCompression?: FileUploaderProps['imageCompression'];
+    roleIds: number[];
+    autoUpload: boolean;
+    initialFiles: Attachment[];
+    endpoints: ApiEndpoints;
+    onFilesChange?: (files: PendingFile[]) => void;
+    onUploadComplete?: (attachments: Attachment[]) => void;
+    onUploadError?: (error: string, file: File) => void;
+    onRemove?: (id: number | string) => void;
+    onReorder?: (files: Attachment[]) => void;
+    uploadTriggerEvent?: string;
+    confirmBeforeRemove: boolean;
+    uploadParams?: Record<string, string>;
+}
+export interface UseFileUploaderReturn {
+    existingFiles: Attachment[];
+    pendingFiles: PendingFile[];
+    isDragOver: boolean;
+    setIsDragOver: (value: boolean) => void;
+    isDeleting: boolean;
+    totalCount: number;
+    hasFiles: boolean;
+    canAddMore: boolean;
+    allItems: (Attachment | PendingFile)[];
+    imageFiles: (Attachment | PendingFile)[];
+    handleFiles: (files: FileList) => Promise<void>;
+    handleRemove: (item: PendingFile | Attachment) => Promise<void>;
+    handleRetry: (pendingFile: PendingFile) => void;
+    handleUploadAll: () => Promise<Attachment[]>;
+    handleOpenGallery: (item: PendingFile | Attachment) => void;
+    handleDownload: (item: Attachment) => Promise<void>;
+    handleDragEnd: (event: import('@dnd-kit/core').DragEndEvent) => Promise<void>;
+    inputRef: React.RefObject<HTMLInputElement | null>;
+    galleryOpen: boolean;
+    setGalleryOpen: (value: boolean) => void;
+    galleryStartIndex: number;
+    galleryKeyRef: React.MutableRefObject<number>;
+    confirmDialogOpen: boolean;
+    setConfirmDialogOpen: (value: boolean) => void;
+    itemToDelete: Attachment | null;
+    executeRemoveAttachment: (item: Attachment) => Promise<void>;
+    authenticatedImageUrls: Map<number, string>;
+    clear: () => void;
+    getPendingFiles: () => PendingFile[];
+}
+export declare function useFileUploader(options: UseFileUploaderOptions): UseFileUploaderReturn;
+export default useFileUploader;

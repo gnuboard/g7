@@ -1,0 +1,104 @@
+{
+  "meta": { "is_partial": true, "description": "페이지 섹션 (전체 탭: 5개 미리보기, 페이지 탭: 전체 목록)" },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" },
+  "children": [
+    {
+      "comment": "섹션 헤더 (전체 탭에서만 표시)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.searchActiveTab ?? 'all') === 'all'}}",
+      "props": { "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "file-alt", "size": "sm", "className": "text-gray-500 dark:text-gray-400" } },
+            { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "$t:search.tabs.pages" },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{searchResults?.data?.pages_count ?? 0}}" }
+          ]
+        },
+        {
+          "comment": "전체보기 버튼",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(searchResults?.data?.pages_count ?? 0) > 0}}",
+          "props": { "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:search.view_all" },
+            { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "size": "sm" } }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "global", "searchActiveTab": "pages", "searchPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "페이지 리스트",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{searchResults?.data?.pages?.items?.length > 0}}",
+      "iteration": { "source": "{{searchResults?.data?.pages?.items ?? []}}", "item_var": "page", "index_var": "pageIdx" },
+      "children": [
+        {
+          "comment": "구분선 (첫 번째 아이템 제외)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{pageIdx > 0}}",
+          "props": { "className": "border-t border-gray-200 dark:border-gray-700" }
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{page.url}}" } }],
+          "children": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{page.title_highlighted ?? page.title}}",
+                "className": "font-medium text-gray-900 dark:text-white mb-1 [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{page.content_preview_highlighted ?? page.content_preview}}",
+                "className": "text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:search.page_published_at|date={{page.published_at ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "결과 없음 안내",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!searchResults?.data?.pages?.items || searchResults?.data?.pages?.items?.length === 0}}",
+      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
+      "children": [
+        { "type": "basic", "name": "Span", "text": "$t:search.empty.pages_in_all" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,748 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_index",
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-board.admin.board.index.title",
+        "description": "$t:sirsoft-board.admin.board.index.description"
+    },
+    "data_sources": [
+        {
+            "id": "boards",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/boards",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page ?? 10}}",
+                "search": "{{query.search}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "board_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-board.admin.board.index.title",
+                            "description": "$t:sirsoft-board.admin.board.index.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                    "aria-label": "$t:common.refresh"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "id": "refresh_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_board_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "target": "/admin/boards/create"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.board.index.add_board"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "content_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+                        },
+                        "children": [
+                            {
+                                "id": "search_area",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex justify-end mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_bar",
+                                        "type": "composite",
+                                        "name": "SearchBar",
+                                        "props": {
+                                            "name": "search",
+                                            "placeholder": "$t:sirsoft-board.admin.board.index.search_placeholder",
+                                            "value": "{{query.search || ''}}",
+                                            "className": "w-64"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "submit",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/boards",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "page": 1,
+                                                        "search": "{{$event.target.search.value}}"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "boards_card_grid",
+                                "type": "composite",
+                                "name": "CardGrid",
+                                "blur_until_loaded": true,
+                                "props": {
+                                    "data": "{{boards.data.data}}",
+                                    "gridColumns": 1,
+                                    "gap": 4,
+                                    "pagination": true,
+                                    "serverSidePagination": true,
+                                    "serverCurrentPage": "{{boards?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{boards?.data?.pagination?.last_page ?? 1}}",
+                                    "alwaysShowPagination": true,
+                                    "emptyMessage": "$t:sirsoft-board.admin.board.index.empty_description",
+                                    "cardClassName": "rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4",
+                                    "cardColumns": [
+                                        {
+                                            "id": "board_card",
+                                            "cellChildren": [
+                                                {
+                                                    "id": "card_header_row",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-start justify-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "header_left",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-3"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "board_slug_badge",
+                                                                    "type": "composite",
+                                                                    "name": "StatusBadge",
+                                                                    "props": {
+                                                                        "status": "info",
+                                                                        "label": "{{row.slug}}",
+                                                                        "showIcon": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "id": "board_name",
+                                                                    "type": "basic",
+                                                                    "name": "H3",
+                                                                    "props": {
+                                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{row.name}}"
+                                                                },
+                                                                {
+                                                                    "id": "board_type",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "({{row.type}})"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "header_right",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-3"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "active_toggle",
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "props": {
+                                                                        "checked": "{{row.is_active}}",
+                                                                        "name": "is_active",
+                                                                        "size": "sm",
+                                                                        "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "auth_required": true,
+                                                                                    "target": "/api/modules/sirsoft-board/admin/boards/{{row.id}}",
+                                                                                    "params": {
+                                                                                        "method": "PUT",
+                                                                                        "body": {
+                                                                                            "is_active": "{{!row.is_active}}"
+                                                                                        }
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "boards",
+                                                                                                "sync": true
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "success",
+                                                                                                "message": "{{row.is_active ? '$t:sirsoft-board.admin.board.messages.deactivated' : '$t:sirsoft-board.admin.board.messages.activated'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "id": "action_menu",
+                                                                    "type": "composite",
+                                                                    "name": "ActionMenu",
+                                                                    "props": {
+                                                                        "triggerLabel": "",
+                                                                        "triggerIconName": "ellipsis-h",
+                                                                        "position": "right",
+                                                                        "items": [
+                                                                            { "id": "edit", "label": "$t:sirsoft-board.admin.board.actions.edit", "iconName": "pencil", "disabled": "{{row.abilities?.can_update !== true}}" },
+                                                                            { "id": "manage_posts", "label": "$t:sirsoft-board.admin.board.actions.manage_posts", "iconName": "list" },
+                                                                            { "id": "copy", "label": "$t:sirsoft-board.admin.board.actions.copy", "iconName": "copy", "disabled": "{{row.abilities?.can_create !== true}}" },
+                                                                            { "id": "delete", "label": "$t:sirsoft-board.admin.board.actions.delete", "iconName": "trash", "variant": "danger", "disabled": "{{row.abilities?.can_delete !== true}}" }
+                                                                        ]
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "event": "onItemClick",
+                                                                            "handler": "switch",
+                                                                            "value": "{{$args[0]}}",
+                                                                            "cases": {
+                                                                                "edit": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/boards/{{row.id}}/edit",
+                                                                                        "mergeQuery": false,
+                                                                                        "query": []
+                                                                                    }
+                                                                                },
+                                                                                "manage_posts": {
+                                                                                    "handler": "navigate",
+                                                                                    "params": {
+                                                                                        "path": "/admin/board/{{row.slug}}"
+                                                                                    }
+                                                                                },
+                                                                                "copy": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "openModal",
+                                                                                            "target": "copy_confirm_modal"
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                "delete": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "modal_data": "{{row}}"
+                                                                                    },
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "openModal",
+                                                                                            "target": "delete_confirm_modal"
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "board_meta_row",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "post_count_label",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-semibold"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.board.index.post_count"
+                                                        },
+                                                        {
+                                                            "id": "post_count_value",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{row?.posts_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "id": "separator",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "mx-1"
+                                                            },
+                                                            "text": "·"
+                                                        },
+                                                        {
+                                                            "id": "created_date_label",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-semibold"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.board.index.created_at"
+                                                        },
+                                                        {
+                                                            "id": "created_date_value",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{row?.created_at}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "categories_row",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{row.categories && row.categories.length > 0}}",
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-2 items-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "category_label",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.board.index.categories_label"
+                                                        },
+                                                        {
+                                                            "id": "category_tag",
+                                                            "type": "composite",
+                                                            "name": "StatusBadge",
+                                                            "iteration": {
+                                                                "source": "row.categories",
+                                                                "item_var": "category"
+                                                            },
+                                                            "props": {
+                                                                "status": "default",
+                                                                "label": "{{category}}",
+                                                                "showIcon": false
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "event": "onPageChange",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "copy_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.modals.copy.title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "id": "copy_modal_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-4"
+                    },
+                    "children": [
+                        {
+                            "id": "copy_board_name",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                            },
+                            "text": "$t:sirsoft-board.admin.modals.copy.message|name={{_global.modal_data.name}}"
+                        },
+                        {
+                            "id": "copy_info",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-board.admin.modals.copy.info"
+                        },
+                        {
+                            "id": "copy_button_group",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "id": "copy_cancel_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                                    },
+                                    "text": "$t:common.cancel",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal",
+                                            "target": "copy_confirm_modal"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "copy_confirm_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.board.actions.copy",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal",
+                                            "target": "copy_confirm_modal"
+                                        },
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "target": "/admin/boards/create?copy_id={{_global.modal_data.id}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.modals.delete.title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "id": "delete_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "id": "delete_board_name",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-900 dark:text-white font-semibold text-lg"
+                            },
+                            "text": "$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}"
+                        },
+                        {
+                            "id": "delete_posts_info",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}"
+                        },
+                        {
+                            "id": "delete_main_alert",
+                            "type": "composite",
+                            "name": "Alert",
+                            "props": {
+                                "type": "{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}",
+                                "message": "{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"
+                            }
+                        },
+                        {
+                            "id": "delete_backup_notice",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.modal_data.posts_count > 0}}",
+                            "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-board.admin.modals.delete.backup_notice"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.id}}",
+                                            "params": {
+                                                "method": "DELETE",
+                                                "body": []
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "forceDeleteBoard": false,
+                                                        "modal_data": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "boards",
+                                                        "sync": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "admin_menu"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-board.admin.board.messages.deleted"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isDeleting}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

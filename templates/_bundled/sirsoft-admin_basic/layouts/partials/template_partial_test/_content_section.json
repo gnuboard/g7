@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 Partial 테스트 - Level 1 컨텐츠 섹션 (Level 2 partial 포함)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-4 p-6"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-4 bg-purple-50 dark:bg-purple-900 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 mb-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-2xl"
+              },
+              "text": "📦"
+            },
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": {
+                "className": "text-xl font-bold text-purple-900 dark:text-purple-100"
+              },
+              "text": "Level 1 Partial: 컨텐츠 섹션"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-purple-600 dark:text-purple-300"
+          },
+          "text": "이 파일은 아래에 Level 2 partial 파일들을 포함합니다"
+        }
+      ]
+    },    
+    {
+      "partial": "_info_card.json"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg border-2 border-yellow-300 dark:border-yellow-600 mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-md font-semibold text-yellow-900 dark:text-yellow-100 mb-2"
+          },
+          "text": "Partial 이후 추가 컨텐츠"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-yellow-600 dark:text-yellow-300"
+          },
+          "text": "Partial 파일 뒤에도 원하는 만큼 컨텐츠를 추가할 수 있습니다."
+        }
+      ]
+    }
+  ]
+}

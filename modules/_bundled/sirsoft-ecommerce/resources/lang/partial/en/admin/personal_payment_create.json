@@ -1,0 +1,61 @@
+{
+  "title": "Create Personal Payment",
+  "description": "Create a new personal payment",
+  "buyer_info": {
+    "title": "Buyer Information",
+    "required_notice": "Required fields",
+    "buyer_type": "Payment Target",
+    "member_select": "Select Member",
+    "guest_input": "Guest Input",
+    "selected_member": "Selected Member",
+    "name": "Name",
+    "name_placeholder": "e.g., John Doe",
+    "phone": "Phone",
+    "phone_placeholder": "e.g., 010-1234-5678",
+    "phone_hint": "Format will be applied automatically when entering numbers only",
+    "email": "Email",
+    "email_placeholder": "e.g., example@email.com"
+  },
+  "payment_detail": {
+    "title": "Payment Details",
+    "product_name": "Product Name",
+    "product_name_placeholder": "e.g., Premium Membership 1 Year",
+    "amount": "Amount",
+    "amount_placeholder": "e.g., 100,000",
+    "amount_hint": "Format will be applied automatically when entering numbers only",
+    "expired_at": "Expiry Date",
+    "expired_at_hint": "Default: Current date + 7 days",
+    "order_link": "Link Order",
+    "order_link_optional": "(Optional)",
+    "search_order": "Search and Link Order",
+    "search_order_hint": "Select to link with an existing order",
+    "linked_order": "Linked Order",
+    "linked_order_optional": "(Optional)",
+    "memo": "Admin Memo",
+    "memo_optional": "(Optional)",
+    "memo_placeholder": "e.g., Regular membership payment - VIP customer special discount applied\nYou can record customer requests here"
+  },
+  "modal": {
+    "member_search": {
+      "title": "Member Search",
+      "description": "Search by name, ID, or email to select a member",
+      "search_placeholder": "Search by name, ID, or email"
+    },
+    "order_search": {
+      "title": "Search and Link Order",
+      "description": "Search by order number, customer name, or product name to select",
+      "search_field": "Search Field",
+      "search_field_all": "All",
+      "search_field_order_number": "Order Number",
+      "search_field_member_name": "Customer Name",
+      "search_field_product_name": "Product Name",
+      "search_placeholder": "Enter search keyword",
+      "order_date": "Order Date",
+      "order_date_all": "All",
+      "order_date_last_7_days": "Last 7 days",
+      "order_date_last_30_days": "Last 30 days",
+      "order_date_last_90_days": "Last 90 days",
+      "result_count": "{{count}} orders found"
+    }
+  }
+}

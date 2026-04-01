@@ -1,0 +1,4737 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "templateId": "sirsoft-admin_basic",
+  "version": "1.0.0",
+  "components": {
+    "basic": [
+      {
+        "name": "Button",
+        "type": "basic",
+        "description": "HTML button element wrapper",
+        "path": "src/components/basic/Button.tsx",
+        "props": {
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "primary",
+            "description": "버튼 변형 (primary | secondary | danger | success)"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "버튼 크기 (sm | md | lg)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "버튼 내용"
+          }
+        }
+      },
+      {
+        "name": "Input",
+        "type": "basic",
+        "description": "HTML input element wrapper",
+        "path": "src/components/basic/Input.tsx",
+        "bindingType": "checkable",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "레이블 텍스트"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Textarea",
+        "type": "basic",
+        "description": "HTML textarea element wrapper",
+        "path": "src/components/basic/Textarea.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "레이블 텍스트"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Label",
+        "type": "basic",
+        "description": "HTML label element wrapper",
+        "path": "src/components/basic/Label.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "레이블 내용"
+          }
+        }
+      },
+      {
+        "name": "Select",
+        "type": "basic",
+        "description": "HTML select element wrapper",
+        "path": "src/components/basic/Select.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "레이블 텍스트"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "옵션 요소들"
+          }
+        }
+      },
+      {
+        "name": "Option",
+        "type": "basic",
+        "description": "HTML option element wrapper (Select 내부에서 사용)",
+        "path": "src/components/basic/Option.tsx",
+        "props": {
+          "value": {
+            "type": "string",
+            "required": false,
+            "description": "옵션 값"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "옵션 텍스트"
+          }
+        }
+      },
+      {
+        "name": "Optgroup",
+        "type": "basic",
+        "description": "HTML optgroup element wrapper (Select 내부에서 옵션 그룹화)",
+        "path": "src/components/basic/Optgroup.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": true,
+            "description": "그룹 레이블"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "옵션 요소들"
+          }
+        }
+      },
+      {
+        "name": "Checkbox",
+        "type": "basic",
+        "description": "HTML checkbox input wrapper",
+        "path": "src/components/basic/Checkbox.tsx",
+        "bindingType": "checked",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "레이블 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "P",
+        "type": "basic",
+        "description": "HTML paragraph element wrapper",
+        "path": "src/components/basic/P.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "단락 내용"
+          }
+        }
+      },
+      {
+        "name": "Div",
+        "type": "basic",
+        "description": "HTML div element wrapper",
+        "path": "src/components/basic/Div.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "div 내용"
+          }
+        }
+      },
+      {
+        "name": "Span",
+        "type": "basic",
+        "description": "HTML span element wrapper",
+        "path": "src/components/basic/Span.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "span 내용"
+          }
+        }
+      },
+      {
+        "name": "Img",
+        "type": "basic",
+        "description": "HTML img element wrapper",
+        "path": "src/components/basic/Img.tsx",
+        "props": {
+          "src": {
+            "type": "string",
+            "required": false,
+            "description": "이미지 URL"
+          },
+          "alt": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "대체 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "A",
+        "type": "basic",
+        "description": "HTML anchor element wrapper",
+        "path": "src/components/basic/A.tsx",
+        "props": {
+          "href": {
+            "type": "string",
+            "required": false,
+            "description": "링크 URL"
+          },
+          "target": {
+            "type": "string",
+            "required": false,
+            "description": "링크 타겟 (_blank | _self | _parent | _top)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "링크 내용"
+          }
+        }
+      },
+      {
+        "name": "H1",
+        "type": "basic",
+        "description": "HTML h1 heading element wrapper",
+        "path": "src/components/basic/H1.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "제목 내용"
+          }
+        }
+      },
+      {
+        "name": "H2",
+        "type": "basic",
+        "description": "HTML h2 heading element wrapper",
+        "path": "src/components/basic/H2.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "제목 내용"
+          }
+        }
+      },
+      {
+        "name": "H3",
+        "type": "basic",
+        "description": "HTML h3 heading element wrapper",
+        "path": "src/components/basic/H3.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "제목 내용"
+          }
+        }
+      },
+      {
+        "name": "H4",
+        "type": "basic",
+        "description": "HTML h4 heading element wrapper",
+        "path": "src/components/basic/H4.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "제목 내용"
+          }
+        }
+      },
+      {
+        "name": "Ul",
+        "type": "basic",
+        "description": "HTML unordered list element wrapper",
+        "path": "src/components/basic/Ul.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "목록 항목들"
+          }
+        }
+      },
+      {
+        "name": "Ol",
+        "type": "basic",
+        "description": "HTML ordered list element wrapper",
+        "path": "src/components/basic/Ol.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "목록 항목들"
+          }
+        }
+      },
+      {
+        "name": "Li",
+        "type": "basic",
+        "description": "HTML list item element wrapper",
+        "path": "src/components/basic/Li.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "항목 내용"
+          }
+        }
+      },
+      {
+        "name": "Table",
+        "type": "basic",
+        "description": "HTML table element wrapper",
+        "path": "src/components/basic/Table.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "테이블 내용 (thead, tbody)"
+          }
+        }
+      },
+      {
+        "name": "Thead",
+        "type": "basic",
+        "description": "HTML table head element wrapper",
+        "path": "src/components/basic/Thead.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "헤더 행들"
+          }
+        }
+      },
+      {
+        "name": "Tbody",
+        "type": "basic",
+        "description": "HTML table body element wrapper",
+        "path": "src/components/basic/Tbody.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "데이터 행들"
+          }
+        }
+      },
+      {
+        "name": "Tfoot",
+        "type": "basic",
+        "description": "HTML table footer element wrapper",
+        "path": "src/components/basic/Tfoot.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "푸터 행들"
+          }
+        }
+      },
+      {
+        "name": "Tr",
+        "type": "basic",
+        "description": "HTML table row element wrapper",
+        "path": "src/components/basic/Tr.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "셀들 (th, td)"
+          }
+        }
+      },
+      {
+        "name": "Th",
+        "type": "basic",
+        "description": "HTML table header cell element wrapper",
+        "path": "src/components/basic/Th.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "헤더 셀 내용"
+          }
+        }
+      },
+      {
+        "name": "Td",
+        "type": "basic",
+        "description": "HTML table data cell element wrapper",
+        "path": "src/components/basic/Td.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "데이터 셀 내용"
+          }
+        }
+      },
+      {
+        "name": "Form",
+        "type": "basic",
+        "description": "HTML form element wrapper",
+        "path": "src/components/basic/Form.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "폼 내용"
+          }
+        }
+      },
+      {
+        "name": "Nav",
+        "type": "basic",
+        "description": "HTML nav element wrapper",
+        "path": "src/components/basic/Nav.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "내비게이션 내용"
+          }
+        }
+      },
+      {
+        "name": "Section",
+        "type": "basic",
+        "description": "HTML section element wrapper",
+        "path": "src/components/basic/Section.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "섹션 내용"
+          }
+        }
+      },
+      {
+        "name": "Svg",
+        "type": "basic",
+        "description": "SVG element wrapper",
+        "path": "src/components/basic/Svg.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "SVG 요소들"
+          }
+        }
+      },
+      {
+        "name": "Icon",
+        "type": "basic",
+        "description": "Font Awesome icon wrapper",
+        "path": "src/components/basic/Icon.tsx",
+        "props": {
+          "name": {
+            "type": "string",
+            "required": true,
+            "description": "아이콘 이름 (Font Awesome 클래스명)"
+          },
+          "iconStyle": {
+            "type": "string",
+            "required": false,
+            "default": "solid",
+            "description": "아이콘 스타일 (solid | regular | light | duotone | brands)"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 크기"
+          },
+          "color": {
+            "type": "string",
+            "required": false,
+            "description": "색상 (Tailwind 클래스 또는 CSS 색상)"
+          },
+          "spin": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "회전 애니메이션 활성화"
+          },
+          "pulse": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "펄스 애니메이션 활성화"
+          },
+          "fixedWidth": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "고정 너비 (아이콘 정렬 시 유용)"
+          },
+          "ariaLabel": {
+            "type": "string",
+            "required": false,
+            "description": "접근성 레이블"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Code",
+        "type": "basic",
+        "description": "HTML code element wrapper for inline code",
+        "path": "src/components/basic/Code.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "코드 내용"
+          }
+        }
+      },
+      {
+        "name": "Pre",
+        "type": "basic",
+        "description": "HTML pre element wrapper for preformatted text",
+        "path": "src/components/basic/Pre.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "서식 지정 텍스트 내용"
+          }
+        }
+      },
+      {
+        "name": "I",
+        "type": "basic",
+        "description": "HTML i element wrapper for icons",
+        "path": "src/components/basic/I.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스 (예: Font Awesome 아이콘 클래스)"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "내용"
+          }
+        }
+      },
+      {
+        "name": "FileInput",
+        "type": "basic",
+        "description": "File upload input component with validation",
+        "path": "src/components/basic/FileInput.tsx",
+        "props": {
+          "accept": {
+            "type": "string",
+            "required": false,
+            "description": "허용되는 파일 확장자 (예: .zip,.pdf)"
+          },
+          "maxSize": {
+            "type": "number",
+            "required": false,
+            "description": "최대 파일 크기 (MB)"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "파일 선택 시 콜백 (file: File | null) => void"
+          },
+          "onError": {
+            "type": "function",
+            "required": false,
+            "description": "에러 발생 시 콜백 (error: string) => void"
+          },
+          "buttonText": {
+            "type": "string",
+            "required": false,
+            "default": "Browse",
+            "description": "버튼 텍스트"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "No file selected",
+            "description": "빈 상태 텍스트"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Fragment",
+        "type": "basic",
+        "description": "React.Fragment wrapper for iterator without wrapper DOM",
+        "path": "src/components/basic/Fragment.tsx",
+        "props": {
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소"
+          }
+        }
+      },
+      {
+        "name": "Hr",
+        "type": "basic",
+        "description": "HTML hr element wrapper for horizontal rule",
+        "path": "src/components/basic/Hr.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "CSS 클래스"
+          }
+        }
+      }
+    ],
+    "composite": [
+      {
+        "name": "SortableMenuList",
+        "type": "composite",
+        "description": "드래그앤드롭 가능한 계층형 메뉴 목록",
+        "path": "src/components/composite/SortableMenuList.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": true,
+            "description": "메뉴 아이템 배열"
+          },
+          "selectedId": {
+            "type": "number",
+            "required": false,
+            "description": "선택된 메뉴 ID"
+          },
+          "onSelect": {
+            "type": "function",
+            "required": false,
+            "description": "메뉴 선택 시 콜백"
+          },
+          "onOrderChange": {
+            "type": "function",
+            "required": false,
+            "description": "순서 변경 시 콜백"
+          },
+          "onToggleStatus": {
+            "type": "function",
+            "required": false,
+            "description": "상태 토글 시 콜백"
+          },
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "목록 제목"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "SortableMenuItem",
+        "type": "composite",
+        "description": "개별 메뉴 아이템 (드래그 가능)",
+        "path": "src/components/composite/SortableMenuItem.tsx",
+        "props": {
+          "item": {
+            "type": "object",
+            "required": true,
+            "description": "메뉴 아이템 데이터"
+          },
+          "isSelected": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "선택 상태"
+          },
+          "isExpanded": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "펼침 상태"
+          },
+          "level": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "계층 레벨"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 시 콜백"
+          },
+          "onToggle": {
+            "type": "function",
+            "required": false,
+            "description": "상태 토글 시 콜백"
+          },
+          "onExpandToggle": {
+            "type": "function",
+            "required": false,
+            "description": "펼침 토글 시 콜백"
+          }
+        }
+      },
+      {
+        "name": "IconSelect",
+        "type": "composite",
+        "description": "아이콘 선택 드롭다운",
+        "path": "src/components/composite/IconSelect.tsx",
+        "props": {
+          "value": {
+            "type": "string",
+            "required": false,
+            "description": "선택된 아이콘 값"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 시 콜백"
+          },
+          "options": {
+            "type": "array",
+            "required": false,
+            "description": "아이콘 옵션 배열"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "description": "플레이스홀더 텍스트"
+          },
+          "searchPlaceholder": {
+            "type": "string",
+            "required": false,
+            "description": "검색 플레이스홀더 텍스트"
+          },
+          "noResultsText": {
+            "type": "string",
+            "required": false,
+            "description": "검색 결과 없음 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 상태"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "hidden input name 속성"
+          }
+        }
+      },
+      {
+        "name": "Accordion",
+        "type": "composite",
+        "description": "접기/펼치기가 가능한 아코디언 UI 컴포넌트",
+        "path": "src/components/composite/Accordion.tsx",
+        "props": {
+          "defaultOpen": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "기본 열림 상태"
+          },
+          "isOpen": {
+            "type": "boolean",
+            "required": false,
+            "description": "외부에서 열림 상태 제어 (제어 모드)"
+          },
+          "onToggle": {
+            "type": "function",
+            "required": false,
+            "description": "열림 상태 변경 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "object",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          }
+        },
+        "slots": {
+          "trigger": {
+            "description": "헤더(트리거) 영역에 표시할 콘텐츠"
+          },
+          "content": {
+            "description": "접기/펼치기되는 본문 영역"
+          }
+        }
+      },
+      {
+        "name": "Card",
+        "type": "composite",
+        "description": "Card container component with header, body, and footer sections",
+        "path": "src/components/composite/Card.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "카드 제목"
+          },
+          "content": {
+            "type": "string",
+            "required": false,
+            "description": "카드 내용"
+          },
+          "imageUrl": {
+            "type": "string",
+            "required": false,
+            "description": "이미지 URL"
+          },
+          "imageAlt": {
+            "type": "string",
+            "required": false,
+            "description": "이미지 대체 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "카드 클릭 시 콜백"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "ChipCheckbox",
+        "type": "composite",
+        "description": "Chip-style checkbox with icon and label for filter UI",
+        "path": "src/components/composite/ChipCheckbox.tsx",
+        "bindingType": "checked",
+        "props": {
+          "value": {
+            "type": "string",
+            "required": true,
+            "description": "체크박스 값"
+          },
+          "checked": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "체크 상태"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 이름"
+          },
+          "label": {
+            "type": "string",
+            "required": true,
+            "description": "라벨 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "체크 상태 변경 시 콜백"
+          }
+        }
+      },
+      {
+        "name": "DataGrid",
+        "type": "composite",
+        "description": "Data grid with sorting, filtering, and pagination",
+        "path": "src/components/composite/DataGrid.tsx",
+        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition"],
+        "props": {
+          "columns": {
+            "type": "array",
+            "required": true,
+            "description": "컬럼 정의 배열 (DataGridColumn[])"
+          },
+          "data": {
+            "type": "array",
+            "required": true,
+            "description": "표시할 데이터 배열"
+          },
+          "sortable": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "정렬 기능 활성화 여부"
+          },
+          "pagination": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "페이지네이션 활성화 여부"
+          },
+          "pageSize": {
+            "type": "number",
+            "required": false,
+            "default": 10,
+            "description": "페이지당 항목 수"
+          },
+          "onRowClick": {
+            "type": "function",
+            "required": false,
+            "description": "행 클릭 시 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "CardGrid",
+        "type": "composite",
+        "description": "Card grid layout with automatic skeleton loading and pagination support",
+        "path": "src/components/composite/CardGrid.tsx",
+        "skipBindingKeys": ["cardChildren"],
+        "props": {
+          "data": {
+            "type": "array",
+            "required": false,
+            "description": "표시할 데이터 배열 (undefined일 경우 자동 스켈레톤 표시)"
+          },
+          "cardChildren": {
+            "type": "array",
+            "required": true,
+            "description": "카드 내용 정의 배열 (CardGridCellChild[])"
+          },
+          "columns": {
+            "type": "number",
+            "required": false,
+            "default": 3,
+            "description": "한 줄에 표시할 카드 수"
+          },
+          "gap": {
+            "type": "number",
+            "required": false,
+            "default": 4,
+            "description": "카드 간격 (Tailwind gap-{n})"
+          },
+          "responsiveColumns": {
+            "type": "object",
+            "required": false,
+            "description": "반응형 컬럼 설정 {sm?: number, md?: number, lg?: number, xl?: number}"
+          },
+          "cardClassName": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "개별 카드 추가 클래스"
+          },
+          "idField": {
+            "type": "string",
+            "required": false,
+            "default": "id",
+            "description": "각 row의 고유 ID 필드명"
+          },
+          "pagination": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "페이지네이션 활성화 여부"
+          },
+          "pageSize": {
+            "type": "number",
+            "required": false,
+            "default": 12,
+            "description": "페이지당 카드 수"
+          },
+          "serverSidePagination": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "서버 사이드 페이지네이션 사용 여부"
+          },
+          "serverCurrentPage": {
+            "type": "number",
+            "required": false,
+            "description": "서버 사이드 페이지네이션 현재 페이지"
+          },
+          "serverTotalPages": {
+            "type": "number",
+            "required": false,
+            "description": "서버 사이드 페이지네이션 전체 페이지 수"
+          },
+          "alwaysShowPagination": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "페이지가 1개여도 페이지네이션 항상 표시"
+          },
+          "onPageChange": {
+            "type": "function",
+            "required": false,
+            "description": "페이지 변경 시 콜백 (page: number) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "전체 컨테이너 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "emptyMessage": {
+            "type": "string",
+            "required": false,
+            "default": "데이터가 없습니다.",
+            "description": "빈 데이터 메시지"
+          },
+          "prevText": {
+            "type": "string",
+            "required": false,
+            "default": "이전",
+            "description": "이전 버튼 텍스트"
+          },
+          "nextText": {
+            "type": "string",
+            "required": false,
+            "default": "다음",
+            "description": "다음 버튼 텍스트"
+          }
+        }
+      },
+      {
+        "name": "Modal",
+        "type": "composite",
+        "description": "Modal dialog with overlay and focus trap",
+        "path": "src/components/composite/Modal.tsx",
+        "props": {
+          "isOpen": {
+            "type": "boolean",
+            "required": true,
+            "description": "모달 열림/닫힘 상태"
+          },
+          "onClose": {
+            "type": "function",
+            "required": true,
+            "description": "모달 닫기 콜백"
+          },
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "모달 제목"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "모달 내용"
+          },
+          "width": {
+            "type": "string",
+            "required": false,
+            "description": "모달 너비"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Dropdown",
+        "type": "composite",
+        "description": "Dropdown menu component",
+        "path": "src/components/composite/Dropdown.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": true,
+            "description": "드롭다운 라벨"
+          },
+          "items": {
+            "type": "array",
+            "required": true,
+            "description": "드롭다운 아이템 목록 (DropdownItem[])"
+          },
+          "onItemClick": {
+            "type": "function",
+            "required": false,
+            "description": "아이템 클릭 시 콜백"
+          },
+          "position": {
+            "type": "string",
+            "required": false,
+            "default": "bottom-left",
+            "description": "드롭다운 위치 (bottom-left | bottom-right | top-left | top-right)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Pagination",
+        "type": "composite",
+        "description": "Pagination component for data lists",
+        "path": "src/components/composite/Pagination.tsx",
+        "props": {
+          "currentPage": {
+            "type": "number",
+            "required": true,
+            "description": "현재 페이지 번호"
+          },
+          "totalPages": {
+            "type": "number",
+            "required": true,
+            "description": "전체 페이지 수"
+          },
+          "onPageChange": {
+            "type": "function",
+            "required": true,
+            "description": "페이지 변경 시 콜백"
+          },
+          "maxVisiblePages": {
+            "type": "number",
+            "required": false,
+            "default": 5,
+            "description": "표시할 최대 페이지 버튼 수"
+          },
+          "showFirstLast": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "처음/마지막 버튼 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Badge",
+        "type": "composite",
+        "description": "Color-based label badge for status and type display",
+        "path": "src/components/composite/Badge.tsx",
+        "props": {
+          "color": {
+            "type": "string",
+            "required": false,
+            "default": "gray",
+            "description": "뱃지 색상 (blue, green, red, gray, yellow, purple, orange, teal, cyan)"
+          },
+          "text": {
+            "type": "string",
+            "required": false,
+            "description": "뱃지 텍스트"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "뱃지 크기 (sm | md | lg)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "StatusBadge",
+        "type": "composite",
+        "description": "Badge component for displaying status",
+        "path": "src/components/composite/StatusBadge.tsx",
+        "props": {
+          "status": {
+            "type": "string",
+            "required": true,
+            "description": "상태 타입 (success | warning | error | info | pending | default)"
+          },
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "뱃지 라벨"
+          },
+          "showIcon": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "아이콘 표시 여부"
+          },
+          "iconName": {
+            "type": "string",
+            "required": false,
+            "description": "커스텀 아이콘 이름"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "ActionMenu",
+        "type": "composite",
+        "description": "Action menu with dropdown items",
+        "path": "src/components/composite/ActionMenu.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": true,
+            "description": "액션 메뉴 아이템 목록 (ActionMenuItem[])"
+          },
+          "triggerLabel": {
+            "type": "string",
+            "required": false,
+            "default": "작업",
+            "description": "트리거 버튼 라벨"
+          },
+          "triggerIconName": {
+            "type": "string",
+            "required": false,
+            "description": "트리거 버튼 아이콘"
+          },
+          "position": {
+            "type": "string",
+            "required": false,
+            "default": "right",
+            "description": "메뉴 위치 (left | right)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "TabNavigation",
+        "type": "composite",
+        "description": "Tab navigation component",
+        "path": "src/components/composite/TabNavigation.tsx",
+        "props": {
+          "tabs": {
+            "type": "array",
+            "required": true,
+            "description": "탭 목록 (Tab[])"
+          },
+          "activeTabId": {
+            "type": "string|number",
+            "required": false,
+            "description": "활성 탭 ID"
+          },
+          "onTabChange": {
+            "type": "function",
+            "required": false,
+            "description": "탭 변경 시 콜백"
+          },
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "default",
+            "description": "탭 스타일 (default | pills | underline)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "TabNavigationScroll",
+        "type": "composite",
+        "description": "Tab navigation with built-in default handler (setState + scrollToSection)",
+        "path": "src/components/composite/TabNavigationScroll.tsx",
+        "props": {
+          "tabs": {
+            "type": "array",
+            "required": true,
+            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?}"
+          },
+          "activeTabId": {
+            "type": "string|number",
+            "required": false,
+            "description": "활성 탭 ID"
+          },
+          "actions": {
+            "type": "array",
+            "required": false,
+            "description": "공통 actions (개별 actions가 없을 때 사용, {{$tabId}} 사용 가능)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "bg-white dark:bg-gray-800 flex gap-1 border-b border-gray-200 dark:border-gray-700 px-6",
+            "description": "컨테이너 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "activeClassName": {
+            "type": "string",
+            "required": false,
+            "default": "px-3 py-2 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 font-medium -mb-px text-sm",
+            "description": "활성 탭 클래스"
+          },
+          "inactiveClassName": {
+            "type": "string",
+            "required": false,
+            "default": "px-3 py-2 border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 text-sm",
+            "description": "비활성 탭 클래스"
+          },
+          "sectionIdPrefix": {
+            "type": "string",
+            "required": false,
+            "default": "tab_content_",
+            "description": "섹션 ID 접두사 (기본 핸들러용)"
+          },
+          "scrollOffset": {
+            "type": "number",
+            "required": false,
+            "default": 120,
+            "description": "스크롤 오프셋 px (기본 핸들러용)"
+          },
+          "scrollDelay": {
+            "type": "number",
+            "required": false,
+            "default": 100,
+            "description": "스크롤 딜레이 ms (기본 핸들러용)"
+          }
+        }
+      },
+      {
+        "name": "IconButton",
+        "type": "composite",
+        "description": "Button with icon support",
+        "path": "src/components/composite/IconButton.tsx",
+        "props": {
+          "iconName": {
+            "type": "string",
+            "required": true,
+            "description": "아이콘 이름"
+          },
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "버튼 라벨"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 시 콜백"
+          },
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "primary",
+            "description": "버튼 변형 (primary | secondary | danger | ghost)"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "버튼 크기 (sm | md | lg)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Dialog",
+        "type": "composite",
+        "description": "Dialog component (alias for Modal)",
+        "path": "src/components/composite/Dialog.tsx",
+        "props": {
+          "isOpen": {
+            "type": "boolean",
+            "required": true,
+            "description": "다이얼로그 열림/닫힘 상태"
+          },
+          "onClose": {
+            "type": "function",
+            "required": true,
+            "description": "다이얼로그 닫기 콜백"
+          },
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "다이얼로그 제목"
+          },
+          "content": {
+            "type": "ReactNode",
+            "required": true,
+            "description": "다이얼로그 본문 내용"
+          },
+          "actions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "액션 버튼 목록 (DialogAction[])"
+          },
+          "width": {
+            "type": "string",
+            "required": false,
+            "default": "500px",
+            "description": "다이얼로그 너비"
+          },
+          "closeOnOverlay": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "오버레이 클릭 시 닫기 여부"
+          },
+          "showCloseButton": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "닫기 버튼 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "ConfirmDialog",
+        "type": "composite",
+        "description": "Confirmation dialog with confirm/cancel buttons",
+        "path": "src/components/composite/ConfirmDialog.tsx",
+        "props": {
+          "isOpen": {
+            "type": "boolean",
+            "required": true,
+            "description": "다이얼로그 열림/닫힘 상태"
+          },
+          "onClose": {
+            "type": "function",
+            "required": true,
+            "description": "다이얼로그 닫기 콜백"
+          },
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "다이얼로그 제목"
+          },
+          "message": {
+            "type": "string|ReactNode",
+            "required": true,
+            "description": "확인 메시지"
+          },
+          "confirmText": {
+            "type": "string",
+            "required": false,
+            "default": "확인",
+            "description": "확인 버튼 텍스트"
+          },
+          "cancelText": {
+            "type": "string",
+            "required": false,
+            "default": "취소",
+            "description": "취소 버튼 텍스트"
+          },
+          "onConfirm": {
+            "type": "function",
+            "required": true,
+            "description": "확인 버튼 클릭 시 콜백"
+          },
+          "onCancel": {
+            "type": "function",
+            "required": false,
+            "description": "취소 버튼 클릭 시 콜백"
+          },
+          "confirmButtonVariant": {
+            "type": "string",
+            "required": false,
+            "default": "primary",
+            "description": "확인 버튼 변형 (primary | secondary | danger | ghost)"
+          },
+          "cancelButtonVariant": {
+            "type": "string",
+            "required": false,
+            "default": "secondary",
+            "description": "취소 버튼 변형 (primary | secondary | danger | ghost)"
+          },
+          "width": {
+            "type": "string",
+            "required": false,
+            "default": "500px",
+            "description": "다이얼로그 너비"
+          },
+          "closeOnOverlay": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "오버레이 클릭 시 닫기 여부"
+          }
+        }
+      },
+      {
+        "name": "AlertDialog",
+        "type": "composite",
+        "description": "Alert dialog with single confirmation button",
+        "path": "src/components/composite/AlertDialog.tsx",
+        "props": {
+          "isOpen": {
+            "type": "boolean",
+            "required": true,
+            "description": "다이얼로그 열림/닫힘 상태"
+          },
+          "onClose": {
+            "type": "function",
+            "required": true,
+            "description": "다이얼로그 닫기 콜백"
+          },
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "다이얼로그 제목"
+          },
+          "message": {
+            "type": "string|ReactNode",
+            "required": true,
+            "description": "알림 메시지"
+          },
+          "confirmText": {
+            "type": "string",
+            "required": false,
+            "default": "확인",
+            "description": "확인 버튼 텍스트"
+          },
+          "onConfirm": {
+            "type": "function",
+            "required": false,
+            "description": "확인 버튼 클릭 시 콜백"
+          },
+          "confirmButtonVariant": {
+            "type": "string",
+            "required": false,
+            "default": "primary",
+            "description": "확인 버튼 변형 (primary | secondary | danger | ghost)"
+          },
+          "width": {
+            "type": "string",
+            "required": false,
+            "default": "500px",
+            "description": "다이얼로그 너비"
+          },
+          "closeOnOverlay": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "오버레이 클릭 시 닫기 여부"
+          }
+        }
+      },
+      {
+        "name": "Toast",
+        "type": "composite",
+        "description": "Toast notification component",
+        "path": "src/components/composite/Toast.tsx",
+        "props": {
+          "toasts": {
+            "type": "array",
+            "required": true,
+            "description": "토스트 아이템 목록 (ToastItem[])"
+          },
+          "position": {
+            "type": "string",
+            "required": false,
+            "default": "top-right",
+            "description": "토스트 위치 (top-left | top-center | top-right | bottom-left | bottom-center | bottom-right)"
+          },
+          "onRemove": {
+            "type": "function",
+            "required": true,
+            "description": "토스트 제거 콜백"
+          }
+        }
+      },
+      {
+        "name": "Breadcrumb",
+        "type": "composite",
+        "description": "Breadcrumb navigation component",
+        "path": "src/components/composite/Breadcrumb.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": true,
+            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[])"
+          },
+          "separator": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "구분자 (기본값: ChevronRight 아이콘)"
+          },
+          "showHome": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "홈 아이콘 표시 여부"
+          },
+          "homeHref": {
+            "type": "string",
+            "required": false,
+            "default": "/",
+            "description": "홈 링크 URL"
+          },
+          "maxItems": {
+            "type": "number",
+            "required": false,
+            "description": "표시할 최대 아이템 수 (초과 시 중간 생략)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "EmptyState",
+        "type": "composite",
+        "description": "Empty state component for no data scenarios",
+        "path": "src/components/composite/EmptyState.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "빈 상태 제목"
+          },
+          "description": {
+            "type": "string",
+            "required": false,
+            "description": "빈 상태 설명"
+          },
+          "iconName": {
+            "type": "string",
+            "required": false,
+            "description": "표시할 아이콘 이름"
+          },
+          "illustrationSrc": {
+            "type": "string",
+            "required": false,
+            "description": "일러스트레이션 이미지 URL"
+          },
+          "illustrationAlt": {
+            "type": "string",
+            "required": false,
+            "default": "Empty state illustration",
+            "description": "일러스트레이션 대체 텍스트"
+          },
+          "actions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "액션 버튼 목록 (EmptyStateAction[])"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "LoadingSpinner",
+        "type": "composite",
+        "description": "Loading spinner component with various sizes",
+        "path": "src/components/composite/LoadingSpinner.tsx",
+        "props": {
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "스피너 크기 (sm | md | lg | xl)"
+          },
+          "color": {
+            "type": "string",
+            "required": false,
+            "default": "text-blue-600",
+            "description": "스피너 색상 (Tailwind 클래스)"
+          },
+          "fullscreen": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "전체 화면 모드 여부"
+          },
+          "text": {
+            "type": "string",
+            "required": false,
+            "description": "로딩 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "AdminSidebar",
+        "type": "composite",
+        "description": "Admin sidebar navigation component",
+        "path": "src/components/composite/AdminSidebar.tsx",
+        "props": {
+          "logo": {
+            "type": "string",
+            "required": false,
+            "description": "로고 이미지 URL"
+          },
+          "logoAlt": {
+            "type": "string",
+            "required": false,
+            "default": "Logo",
+            "description": "로고 대체 텍스트"
+          },
+          "menu": {
+            "type": "array",
+            "required": true,
+            "description": "메뉴 아이템 목록 (MenuItem[])"
+          },
+          "collapsed": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "사이드바 접힘 여부"
+          },
+          "onToggleCollapse": {
+            "type": "function",
+            "required": false,
+            "description": "접기/펼치기 토글 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "AdminHeader",
+        "type": "composite",
+        "description": "Admin header component",
+        "path": "src/components/composite/AdminHeader.tsx",
+        "props": {
+          "user": {
+            "type": "object",
+            "required": true,
+            "description": "사용자 정보 (AdminUser)"
+          },
+          "notifications": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "알림 목록 (NotificationItem[])"
+          },
+          "onNotificationClick": {
+            "type": "function",
+            "required": false,
+            "description": "알림 클릭 시 콜백"
+          },
+          "onProfileClick": {
+            "type": "function",
+            "required": false,
+            "description": "프로필 클릭 시 콜백"
+          },
+          "onLogoutClick": {
+            "type": "function",
+            "required": false,
+            "description": "로그아웃 클릭 시 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "AdminFooter",
+        "type": "composite",
+        "description": "Admin footer component",
+        "path": "src/components/composite/AdminFooter.tsx",
+        "props": {
+          "copyright": {
+            "type": "string",
+            "required": false,
+            "default": "© 2026 그누보드7",
+            "description": "저작권 텍스트"
+          },
+          "version": {
+            "type": "string",
+            "required": false,
+            "description": "버전 정보"
+          },
+          "quickLinks": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "빠른 링크 목록 (QuickLink[])"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "PageHeader",
+        "type": "composite",
+        "description": "Page header with title and actions",
+        "path": "src/components/composite/PageHeader.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "페이지 제목"
+          },
+          "subtitle": {
+            "type": "string",
+            "required": false,
+            "description": "페이지 부제목"
+          },
+          "breadcrumbItems": {
+            "type": "array",
+            "required": false,
+            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[])"
+          },
+          "tabs": {
+            "type": "array",
+            "required": false,
+            "description": "탭 아이템 목록 (TabItem[])"
+          },
+          "onTabChange": {
+            "type": "function",
+            "required": false,
+            "description": "탭 변경 시 콜백"
+          },
+          "actions": {
+            "type": "array",
+            "required": false,
+            "description": "액션 버튼 목록 (ActionButton[])"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "TemplateCard",
+        "type": "composite",
+        "description": "Template card for template selection",
+        "path": "src/components/composite/TemplateCard.tsx",
+        "props": {
+          "image": {
+            "type": "string",
+            "required": false,
+            "description": "템플릿 미리보기 이미지 URL"
+          },
+          "imageAlt": {
+            "type": "string",
+            "required": false,
+            "description": "이미지 대체 텍스트"
+          },
+          "vendor": {
+            "type": "string",
+            "required": true,
+            "description": "벤더 이름"
+          },
+          "name": {
+            "type": "string",
+            "required": true,
+            "description": "템플릿 이름"
+          },
+          "version": {
+            "type": "string",
+            "required": true,
+            "description": "템플릿 버전"
+          },
+          "status": {
+            "type": "string",
+            "required": true,
+            "description": "템플릿 상태 (active | inactive | pending | error)"
+          },
+          "updateAvailable": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "업데이트 가능 여부"
+          },
+          "latestVersion": {
+            "type": "string",
+            "required": false,
+            "description": "최신 버전"
+          },
+          "dependencies": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "의존성 목록"
+          },
+          "showLayoutEditButton": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "레이아웃 편집 버튼 표시 여부"
+          },
+          "actions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "액션 메뉴 아이템 목록 (ActionMenuItem[])"
+          },
+          "onLayoutEditClick": {
+            "type": "function",
+            "required": false,
+            "description": "레이아웃 편집 버튼 클릭 시 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "SearchBar",
+        "type": "composite",
+        "description": "Search bar with suggestions",
+        "path": "src/components/composite/SearchBar.tsx",
+        "props": {
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "검색...",
+            "description": "입력 필드 플레이스홀더"
+          },
+          "value": {
+            "type": "string",
+            "required": false,
+            "description": "검색 입력 값 (제어 컴포넌트)"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "입력 값 변경 시 콜백"
+          },
+          "onSearch": {
+            "type": "function",
+            "required": false,
+            "description": "검색 실행 시 콜백"
+          },
+          "suggestions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "자동완성 제안 목록 (SearchSuggestion[])"
+          },
+          "onSuggestionClick": {
+            "type": "function",
+            "required": false,
+            "description": "제안 클릭 시 콜백"
+          },
+          "showSuggestions": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "제안 목록 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "ProductCard",
+        "type": "composite",
+        "description": "Product card with image, title, price, and action button",
+        "path": "src/components/composite/ProductCard.tsx",
+        "props": {
+          "imageUrl": {
+            "type": "string",
+            "required": false,
+            "description": "상품 이미지 URL"
+          },
+          "imageAlt": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "이미지 대체 텍스트"
+          },
+          "title": {
+            "type": "string",
+            "required": true,
+            "description": "상품 제목"
+          },
+          "subtitle": {
+            "type": "string",
+            "required": false,
+            "description": "상품 부제목"
+          },
+          "description": {
+            "type": "string",
+            "required": false,
+            "description": "상품 설명"
+          },
+          "price": {
+            "type": "number",
+            "required": true,
+            "description": "상품 가격"
+          },
+          "originalPrice": {
+            "type": "number",
+            "required": false,
+            "description": "원래 가격 (할인 전)"
+          },
+          "discountRate": {
+            "type": "number",
+            "required": false,
+            "description": "할인율 (%)"
+          },
+          "currency": {
+            "type": "string",
+            "required": false,
+            "default": "₩",
+            "description": "통화 기호"
+          },
+          "buttonText": {
+            "type": "string",
+            "required": false,
+            "default": "자세히 보기",
+            "description": "버튼 텍스트"
+          },
+          "onButtonClick": {
+            "type": "function",
+            "required": false,
+            "description": "버튼 클릭 시 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "FilterGroup",
+        "type": "composite",
+        "description": "Filter group with multiple filter types",
+        "path": "src/components/composite/FilterGroup.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": false,
+            "default": "필터",
+            "description": "필터 그룹 제목"
+          },
+          "filters": {
+            "type": "array",
+            "required": true,
+            "description": "필터 목록 (Filter[])"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "필터 값 변경 시 콜백"
+          },
+          "onReset": {
+            "type": "function",
+            "required": false,
+            "description": "필터 초기화 시 콜백"
+          },
+          "showResetButton": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "초기화 버튼 표시 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "StatCard",
+        "type": "composite",
+        "description": "Statistics card with value, label, and trend indicator",
+        "path": "src/components/composite/StatCard.tsx",
+        "props": {
+          "value": {
+            "type": "string|number",
+            "required": true,
+            "description": "통계 수치"
+          },
+          "label": {
+            "type": "string",
+            "required": true,
+            "description": "통계 라벨"
+          },
+          "change": {
+            "type": "number",
+            "required": false,
+            "description": "변화율 (%)"
+          },
+          "changeLabel": {
+            "type": "string",
+            "required": false,
+            "default": "전월 대비",
+            "description": "변화율 설명"
+          },
+          "iconName": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 이름"
+          },
+          "trend": {
+            "type": "string",
+            "required": false,
+            "default": "neutral",
+            "description": "추세 방향 (up | down | neutral)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "LayoutEditorHeader",
+        "type": "composite",
+        "description": "Layout editor header with back, preview, and save buttons",
+        "path": "src/components/composite/LayoutEditorHeader.tsx",
+        "props": {
+          "layoutName": {
+            "type": "string",
+            "required": true,
+            "description": "레이아웃 이름"
+          },
+          "onBack": {
+            "type": "function",
+            "required": true,
+            "description": "뒤로가기 버튼 클릭 시 콜백"
+          },
+          "onPreview": {
+            "type": "function",
+            "required": true,
+            "description": "미리보기 버튼 클릭 시 콜백"
+          },
+          "onSave": {
+            "type": "function",
+            "required": true,
+            "description": "저장 버튼 클릭 시 콜백"
+          },
+          "isSaving": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "저장 중 상태 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "LayoutFileList",
+        "type": "composite",
+        "description": "Layout file list component",
+        "path": "src/components/composite/LayoutFileList.tsx",
+        "props": {
+          "files": {
+            "type": "array",
+            "required": true,
+            "description": "파일 목록 (LayoutFileItem[])"
+          },
+          "selectedId": {
+            "type": "string|number",
+            "required": false,
+            "description": "선택된 파일 ID"
+          },
+          "onSelect": {
+            "type": "function",
+            "required": true,
+            "description": "파일 선택 시 콜백 (id: string | number) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "CodeEditor",
+        "type": "composite",
+        "description": "JSON code editor (Monaco Editor wrapper)",
+        "path": "src/components/composite/CodeEditor.tsx",
+        "props": {
+          "value": {
+            "type": "string",
+            "required": true,
+            "description": "에디터 내용"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "내용 변경 시 콜백 (value: string) => void"
+          },
+          "language": {
+            "type": "string",
+            "required": false,
+            "default": "json",
+            "description": "프로그래밍 언어"
+          },
+          "height": {
+            "type": "string",
+            "required": false,
+            "default": "100%",
+            "description": "에디터 높이"
+          },
+          "readOnly": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "읽기 전용 모드"
+          },
+          "theme": {
+            "type": "string",
+            "required": false,
+            "default": "vs-dark",
+            "description": "에디터 테마 (vs-dark | vs-light)"
+          }
+        }
+      },
+      {
+        "name": "LayoutHistoryPanel",
+        "type": "composite",
+        "description": "Layout history panel component",
+        "path": "src/components/composite/LayoutHistoryPanel.tsx",
+        "props": {
+          "layoutId": {
+            "type": "string|number",
+            "required": true,
+            "description": "레이아웃 ID"
+          },
+          "versions": {
+            "type": "array",
+            "required": true,
+            "description": "버전 목록 (VersionItem[])"
+          },
+          "onRestore": {
+            "type": "function",
+            "required": true,
+            "description": "버전 복원 콜백 (versionId: string | number) => void"
+          }
+        }
+      },
+      {
+        "name": "VersionList",
+        "type": "composite",
+        "description": "Version list item component",
+        "path": "src/components/composite/VersionList.tsx",
+        "props": {
+          "versions": {
+            "type": "array",
+            "required": true,
+            "description": "버전 목록 (VersionItem[])"
+          },
+          "selectedId": {
+            "type": "string|number",
+            "required": false,
+            "description": "선택된 버전 ID"
+          },
+          "onSelect": {
+            "type": "function",
+            "required": false,
+            "description": "버전 선택 시 콜백 (id: string | number) => void"
+          }
+        }
+      },
+      {
+        "name": "Alert",
+        "type": "composite",
+        "description": "Alert message component",
+        "path": "src/components/composite/Alert.tsx",
+        "props": {
+          "type": {
+            "type": "string",
+            "required": true,
+            "description": "알림 타입 (info | success | warning | error)"
+          },
+          "message": {
+            "type": "string",
+            "required": true,
+            "description": "알림 메시지"
+          },
+          "dismissible": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "닫기 버튼 표시 여부"
+          },
+          "onDismiss": {
+            "type": "function",
+            "required": false,
+            "description": "닫기 버튼 클릭 시 콜백 () => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "LoginForm",
+        "type": "composite",
+        "description": "Login form component with email/password validation",
+        "path": "src/components/composite/LoginForm.tsx",
+        "props": {
+          "submitButtonText": {
+            "type": "string",
+            "required": false,
+            "default": "로그인",
+            "description": "제출 버튼 텍스트"
+          },
+          "emailPlaceholder": {
+            "type": "string",
+            "required": false,
+            "default": "이메일",
+            "description": "이메일 입력 필드 플레이스홀더"
+          },
+          "passwordPlaceholder": {
+            "type": "string",
+            "required": false,
+            "default": "비밀번호",
+            "description": "비밀번호 입력 필드 플레이스홀더"
+          },
+          "forgotPasswordText": {
+            "type": "string",
+            "required": false,
+            "default": "비밀번호를 잊으셨나요?",
+            "description": "비밀번호 찾기 링크 텍스트"
+          },
+          "forgotPasswordUrl": {
+            "type": "string",
+            "required": false,
+            "description": "비밀번호 찾기 링크 URL"
+          },
+          "onSubmit": {
+            "type": "function",
+            "required": false,
+            "description": "폼 제출 시 콜백 (data: { email: string; password: string }) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "UserProfile",
+        "type": "composite",
+        "description": "사용자 프로필 표시 및 드롭다운 메뉴 제공",
+        "path": "src/components/composite/UserProfile.tsx",
+        "props": {
+          "user": {
+            "type": "object",
+            "required": true,
+            "description": "사용자 정보 (User)"
+          },
+          "profileText": {
+            "type": "string",
+            "required": false,
+            "default": "Profile Settings",
+            "description": "프로필 설정 텍스트"
+          },
+          "logoutText": {
+            "type": "string",
+            "required": false,
+            "default": "Logout",
+            "description": "로그아웃 텍스트"
+          },
+          "onProfileClick": {
+            "type": "function",
+            "required": false,
+            "description": "프로필 클릭 시 콜백"
+          },
+          "onLogoutClick": {
+            "type": "function",
+            "required": false,
+            "description": "로그아웃 클릭 시 콜백"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "NotificationCenter",
+        "type": "composite",
+        "description": "알림 센터 - 알림 목록 표시 및 관리",
+        "path": "src/components/composite/NotificationCenter.tsx",
+        "props": {
+          "notifications": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "알림 목록 (NotificationItem[])"
+          },
+          "titleText": {
+            "type": "string",
+            "required": false,
+            "default": "Notifications",
+            "description": "알림 제목 텍스트"
+          },
+          "emptyText": {
+            "type": "string",
+            "required": false,
+            "default": "No notifications",
+            "description": "알림 없음 텍스트"
+          },
+          "onNotificationClick": {
+            "type": "function",
+            "required": false,
+            "description": "알림 클릭 핸들러 (id: string | number) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "ThemeToggle",
+        "type": "composite",
+        "description": "테마 모드 전환 (다크/라이트/자동) 토글 컴포넌트",
+        "path": "src/components/composite/ThemeToggle.tsx",
+        "props": {
+          "onThemeChange": {
+            "type": "function",
+            "required": false,
+            "description": "테마 변경 시 콜백 (theme: ThemeMode) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "autoText": {
+            "type": "string",
+            "required": false,
+            "default": "System",
+            "description": "시스템 설정 자동 감지 텍스트"
+          },
+          "lightText": {
+            "type": "string",
+            "required": false,
+            "default": "Light",
+            "description": "라이트 모드 텍스트"
+          },
+          "darkText": {
+            "type": "string",
+            "required": false,
+            "default": "Dark",
+            "description": "다크 모드 텍스트"
+          }
+        }
+      },
+      {
+        "name": "ColumnSelector",
+        "type": "composite",
+        "description": "테이블 컬럼 표시/숨김을 선택하는 드롭다운 컴포넌트",
+        "path": "src/components/composite/ColumnSelector.tsx",
+        "props": {
+          "columns": {
+            "type": "array",
+            "required": true,
+            "description": "컬럼 정의 배열 (ColumnItem[])"
+          },
+          "visibleColumns": {
+            "type": "array",
+            "required": false,
+            "description": "표시할 컬럼 필드명 배열"
+          },
+          "onColumnVisibilityChange": {
+            "type": "function",
+            "required": false,
+            "description": "컬럼 표시 변경 시 콜백 (visibleFields: string[]) => void"
+          },
+          "triggerLabel": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "트리거 버튼 라벨"
+          },
+          "triggerIconName": {
+            "type": "string",
+            "required": false,
+            "default": "sliders",
+            "description": "트리거 버튼 아이콘"
+          },
+          "position": {
+            "type": "string",
+            "required": false,
+            "default": "right",
+            "description": "드롭다운 위치 (left | right)"
+          },
+          "requiredText": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "필수 컬럼 표시 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "dynamicColumns": {
+            "type": "array",
+            "required": false,
+            "description": "동적으로 병합될 컬럼 배열 (ColumnItem[])"
+          },
+          "dynamicColumnsInsertAfter": {
+            "type": "string",
+            "required": false,
+            "description": "동적 컬럼 삽입 위치 (해당 필드 뒤에 삽입)"
+          },
+          "defaultColumns": {
+            "type": "array",
+            "required": false,
+            "description": "기본 표시 컬럼 필드명 배열 (localStorage에 값이 없을 때 사용)"
+          },
+          "menuTitle": {
+            "type": "string",
+            "required": false,
+            "description": "드롭다운 메뉴 제목"
+          },
+          "menuDescription": {
+            "type": "string",
+            "required": false,
+            "description": "드롭다운 메뉴 설명"
+          },
+          "triggerClassName": {
+            "type": "string",
+            "required": false,
+            "description": "트리거 버튼 추가 클래스"
+          },
+          "labelClassName": {
+            "type": "string",
+            "required": false,
+            "description": "라벨 추가 클래스"
+          }
+        }
+      },
+      {
+        "name": "SlotContainer",
+        "type": "composite",
+        "description": "동적 슬롯에 등록된 컴포넌트들을 렌더링하는 컨테이너. slot 속성을 가진 컴포넌트들이 이 컨테이너에 수집되어 렌더링됩니다.",
+        "path": "src/components/composite/SlotContainer.tsx",
+        "props": {
+          "slotId": {
+            "type": "string",
+            "required": true,
+            "description": "슬롯 ID. 이 슬롯에 등록된 컴포넌트들을 렌더링합니다."
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "컨테이너 CSS 클래스"
+          },
+          "emptyContent": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "빈 슬롯일 때 표시할 내용"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "id": {
+            "type": "string",
+            "required": false,
+            "description": "컴포넌트 DOM ID"
+          }
+        }
+      },
+      {
+        "name": "FilterVisibilitySelector",
+        "type": "composite",
+        "description": "검색 필터 표시/숨김 설정을 localStorage에 저장하는 상태 관리 컴포넌트 (UI 렌더링 없음)",
+        "path": "src/components/composite/FilterVisibilitySelector.tsx",
+        "props": {
+          "id": {
+            "type": "string",
+            "required": true,
+            "description": "컴포넌트 고유 ID (localStorage 키 생성에 사용)"
+          },
+          "visibleFilters": {
+            "type": "array",
+            "required": false,
+            "description": "현재 표시된 필터 목록"
+          },
+          "defaultFilters": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "기본 표시 필터 (localStorage에 값이 없을 때 사용)"
+          },
+          "onFilterVisibilityChange": {
+            "type": "function",
+            "required": false,
+            "description": "필터 가시성 변경 시 콜백 (visibleFilters: string[]) => void"
+          }
+        }
+      },
+      {
+        "name": "PageTransitionIndicator",
+        "type": "composite",
+        "description": "페이지 전환 로딩 상태를 표시하는 컴포넌트",
+        "path": "src/components/composite/PageTransitionIndicator.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "Toggle",
+        "type": "composite",
+        "description": "Toggle switch component with Flowbite styling and light/dark mode support",
+        "path": "src/components/composite/Toggle.tsx",
+        "bindingType": "checked",
+        "props": {
+          "checked": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "체크 상태"
+          },
+          "value": {
+            "type": "boolean",
+            "required": false,
+            "description": "값 (checked의 대체)"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "체크 상태 변경 콜백 (checked: boolean) => void"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "라벨 텍스트"
+          },
+          "description": {
+            "type": "string",
+            "required": false,
+            "description": "설명 텍스트"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "토글 크기 (sm | md | lg)"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "name 속성"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "TagInput",
+        "type": "composite",
+        "description": "Tag input component with multi-select and creatable options",
+        "path": "src/components/composite/TagInput.tsx",
+        "props": {
+          "value": {
+            "type": "array",
+            "required": true,
+            "description": "선택된 값 배열"
+          },
+          "options": {
+            "type": "array",
+            "required": true,
+            "description": "선택 가능한 옵션 목록 (TagOption[])"
+          },
+          "onChange": {
+            "type": "function",
+            "required": true,
+            "description": "값 변경 콜백 (values: (string | number)[]) => void"
+          },
+          "creatable": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "새 항목 추가 가능 여부"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "검색 또는 입력...",
+            "description": "입력창 placeholder"
+          },
+          "noOptionsMessage": {
+            "type": "string",
+            "required": false,
+            "default": "검색 결과가 없습니다",
+            "description": "검색 결과 없을 때 메시지"
+          },
+          "formatCreateLabel": {
+            "type": "string|function",
+            "required": false,
+            "description": "새 항목 추가 라벨 (문자열 또는 생성 함수)"
+          },
+          "createLabelSuffix": {
+            "type": "string",
+            "required": false,
+            "default": "추가",
+            "description": "새 항목 추가 접미사"
+          },
+          "maxItems": {
+            "type": "number",
+            "required": false,
+            "description": "최대 선택 개수"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "onBeforeRemove": {
+            "type": "function",
+            "required": false,
+            "description": "삭제 전 확인 콜백 (option: TagOption) => boolean | string"
+          },
+          "onCreateOption": {
+            "type": "function",
+            "required": false,
+            "description": "새 옵션 생성 시 콜백"
+          },
+          "onInputChange": {
+            "type": "function",
+            "required": false,
+            "description": "검색 입력 변경 콜백 (비동기 검색용, 매 키 입력 시 호출)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 className"
+          }
+        }
+      },
+      {
+        "name": "MultilingualInput",
+        "type": "composite",
+        "description": "탭 방식으로 여러 언어의 텍스트를 입력받는 다국어 입력 컴포넌트",
+        "path": "src/components/composite/MultilingualInput.tsx",
+        "props": {
+          "value": {
+            "type": "object",
+            "required": true,
+            "description": "다국어 값 객체 { ko: '한국어', en: 'English' }"
+          },
+          "onChange": {
+            "type": "function",
+            "required": true,
+            "description": "값 변경 콜백 (event) => void"
+          },
+          "inputType": {
+            "type": "string",
+            "required": false,
+            "default": "text",
+            "description": "입력 타입 ('text' | 'textarea')"
+          },
+          "availableLocales": {
+            "type": "array",
+            "required": false,
+            "default": "[{code: 'ko', name: '한국어'}, {code: 'en', name: 'English'}]",
+            "description": "사용 가능한 언어 목록 (LocaleOption[])"
+          },
+          "defaultLocale": {
+            "type": "string",
+            "required": false,
+            "default": "ko",
+            "description": "기본 언어 코드"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "입력창 placeholder"
+          },
+          "required": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "필수 입력 여부 (기본 언어만 적용)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "maxLength": {
+            "type": "number",
+            "required": false,
+            "description": "최대 길이"
+          },
+          "rows": {
+            "type": "number",
+            "required": false,
+            "default": 4,
+            "description": "textarea 행 수 (inputType이 'textarea'일 때만 사용)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 className"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "default": "multilingual_input",
+            "description": "input name"
+          }
+        }
+      },
+      {
+        "name": "MultilingualTagInput",
+        "type": "composite",
+        "description": "다국어 태그 입력 컴포넌트. 각 태그가 다국어 값을 가지며 모달을 통해 편집합니다.",
+        "path": "src/components/composite/MultilingualTagInput.tsx",
+        "props": {
+          "value": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "다국어 태그 배열 [{ko: '빨강', en: 'Red'}, ...]"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 콜백 (event) => void"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "입력 후 Enter",
+            "description": "입력창 placeholder"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "creatable": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "새 항목 추가 가능 여부"
+          },
+          "delimiters": {
+            "type": "array",
+            "required": false,
+            "default": "[',']",
+            "description": "태그 구분자 배열"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 className"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 필드 이름"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "maxItems": {
+            "type": "number",
+            "required": false,
+            "description": "최대 태그 개수"
+          }
+        }
+      },
+      {
+        "name": "ExtensionBadge",
+        "type": "composite",
+        "description": "모듈 또는 플러그인에 의해 추가된 섹션임을 표시하는 배지 컴포넌트. identifier로 이름 자동 조회 지원",
+        "path": "src/components/composite/ExtensionBadge.tsx",
+        "props": {
+          "type": {
+            "type": "string",
+            "required": true,
+            "description": "확장 타입 (module | plugin)"
+          },
+          "identifier": {
+            "type": "string",
+            "required": false,
+            "description": "확장 식별자 (예: sirsoft-ecommerce) - installedModules/installedPlugins에서 이름 자동 조회"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "확장 이름 직접 지정 (identifier보다 우선)"
+          },
+          "installedModules": {
+            "type": "array",
+            "required": false,
+            "description": "설치된 모듈 목록 ({{_global.installedModules}})"
+          },
+          "installedPlugins": {
+            "type": "array",
+            "required": false,
+            "description": "설치된 플러그인 목록 ({{_global.installedPlugins}})"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "PermissionTree",
+        "type": "composite",
+        "description": "계층형 권한 트리를 렌더링하고 체크박스로 권한을 선택하는 컴포넌트",
+        "path": "src/components/composite/PermissionTree.tsx",
+        "props": {
+          "data": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "권한 트리 데이터 (PermissionNode[])"
+          },
+          "value": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택된 권한 ID 배열"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "선택 변경 콜백 (e: { target: { value: number[] } }) => void"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "desktopColumns": {
+            "type": "number",
+            "required": false,
+            "default": 2,
+            "description": "PC에서 권한 목록 열 수 (1 | 2 | 3)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 클래스명"
+          }
+        }
+      },
+      {
+        "name": "CategoryTree",
+        "type": "composite",
+        "description": "계층형 카테고리 트리를 렌더링하고 체크박스로 카테고리를 선택하는 컴포넌트",
+        "path": "src/components/composite/CategoryTree.tsx",
+        "props": {
+          "data": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "카테고리 트리 데이터 (CategoryNode[])"
+          },
+          "expandedIds": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "펼쳐진 노드 ID 배열"
+          },
+          "selectedIds": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택된 노드 ID 배열"
+          },
+          "searchKeyword": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "검색 키워드 (하이라이트용)"
+          },
+          "showProductCount": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "상품 수 표시 여부"
+          },
+          "selectable": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "체크박스 선택 기능 활성화"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 클래스명"
+          },
+          "onToggle": {
+            "type": "function",
+            "required": false,
+            "description": "펼치기/접기 콜백 (expandedIds: number[]) => void"
+          },
+          "onSelectionChange": {
+            "type": "function",
+            "required": false,
+            "description": "선택 변경 콜백 (selectedIds: number[]) => void"
+          }
+        }
+      },
+      {
+        "name": "HtmlContent",
+        "type": "composite",
+        "description": "HTML 콘텐츠를 안전하게 렌더링하는 컴포넌트 - DOMPurify를 사용한 XSS 방지, Tailwind Typography 스타일 적용",
+        "path": "src/components/composite/HtmlContent.tsx",
+        "props": {
+          "content": {
+            "type": "string",
+            "required": true,
+            "description": "렌더링할 HTML 콘텐츠 문자열"
+          },
+          "isHtml": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "HTML 렌더링 여부 - true: HTML 렌더링 (DOMPurify 적용), false: 일반 텍스트 렌더링 (줄바꿈 보존)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "purifyConfig": {
+            "type": "object",
+            "required": false,
+            "description": "DOMPurify 설정 객체 (DOMPurify.Config) - 허용 태그, 속성 커스터마이징"
+          },
+          "text": {
+            "type": "string",
+            "required": false,
+            "description": "레이아웃 JSON에서 text 속성으로 전달되는 콘텐츠 - content보다 우선순위가 높음"
+          }
+        }
+      },
+      {
+        "name": "HtmlEditor",
+        "type": "composite",
+        "description": "HTML과 일반 텍스트를 편집할 수 있는 범용 에디터 컴포넌트 - HTML 모드 체크박스, 편집/미리보기 토글 기능 제공",
+        "path": "src/components/composite/HtmlEditor.tsx",
+        "props": {
+          "content": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "콘텐츠 값"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "콘텐츠 변경 콜백 - (content: string) => void"
+          },
+          "isHtml": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "HTML 모드 여부"
+          },
+          "onHtmlModeChange": {
+            "type": "function",
+            "required": false,
+            "description": "HTML 모드 변경 콜백 - (isHtml: boolean) => void"
+          },
+          "previewMode": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "미리보기 모드 (isHtml=true일 때만 유효)"
+          },
+          "onPreviewModeChange": {
+            "type": "function",
+            "required": false,
+            "description": "미리보기 모드 변경 콜백 - (previewMode: boolean) => void"
+          },
+          "rows": {
+            "type": "number",
+            "required": false,
+            "default": 15,
+            "description": "Textarea 행 수"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "placeholder 텍스트"
+          },
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "라벨 텍스트"
+          },
+          "showHtmlModeToggle": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "HTML 모드 체크박스 표시 여부"
+          },
+          "contentClassName": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "HtmlContent 렌더링 시 적용할 클래스"
+          },
+          "purifyConfig": {
+            "type": "object",
+            "required": false,
+            "description": "DOMPurify 설정 (HTML 모드)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 className"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "default": "content",
+            "description": "name 속성"
+          },
+          "readOnly": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "읽기 전용 모드"
+          }
+        }
+      },
+      {
+        "name": "FileUploader",
+        "type": "composite",
+        "description": "파일 업로드 컴포넌트 - 드래그 앤 드롭, 이미지 압축, 순서 변경, 역할 기반 접근 제어 지원",
+        "path": "src/components/composite/FileUploader.tsx",
+        "props": {
+          "attachmentableType": {
+            "type": "string",
+            "required": false,
+            "description": "첨부 대상 모델 타입 (예: 'App\\Models\\Setting')"
+          },
+          "attachmentableId": {
+            "type": "number",
+            "required": false,
+            "description": "첨부 대상 ID"
+          },
+          "collection": {
+            "type": "string",
+            "required": false,
+            "default": "default",
+            "description": "컬렉션명 (예: 'site_logo', 'gallery')"
+          },
+          "maxFiles": {
+            "type": "number",
+            "required": false,
+            "default": 10,
+            "description": "최대 첨부 개수"
+          },
+          "maxSize": {
+            "type": "number",
+            "required": false,
+            "default": 10,
+            "description": "파일당 최대 크기 (MB)"
+          },
+          "maxConcurrentUploads": {
+            "type": "number",
+            "required": false,
+            "default": 3,
+            "description": "동시 업로드 수"
+          },
+          "accept": {
+            "type": "string",
+            "required": false,
+            "description": "허용 확장자 (예: '.jpg,.png,.pdf')"
+          },
+          "imageCompression": {
+            "type": "object",
+            "required": false,
+            "description": "이미지 압축 옵션 { maxSizeMB?: number, maxWidthOrHeight?: number }"
+          },
+          "roleIds": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "접근 가능 역할 ID 배열"
+          },
+          "initialFiles": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "초기 첨부파일 목록 (Attachment[])"
+          },
+          "onFilesChange": {
+            "type": "function",
+            "required": false,
+            "description": "파일 변경 콜백 (files: PendingFile[]) => void"
+          },
+          "onUploadComplete": {
+            "type": "function",
+            "required": false,
+            "description": "업로드 완료 콜백 (attachments: Attachment[]) => void"
+          },
+          "onUploadError": {
+            "type": "function",
+            "required": false,
+            "description": "업로드 에러 콜백 (error: string, file: File) => void"
+          },
+          "onRemove": {
+            "type": "function",
+            "required": false,
+            "description": "삭제 콜백 (id: number) => void"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "ImageGallery",
+        "type": "composite",
+        "description": "Lightbox image gallery with zoom, download, thumbnails",
+        "path": "src/components/composite/ImageGallery.tsx",
+        "props": {
+          "images": {
+            "type": "array",
+            "required": true,
+            "description": "갤러리에 표시할 이미지 배열 (GalleryImage[])"
+          },
+          "isOpen": {
+            "type": "boolean",
+            "required": true,
+            "description": "라이트박스 열기 여부"
+          },
+          "onClose": {
+            "type": "function",
+            "required": true,
+            "description": "라이트박스 닫기 콜백"
+          },
+          "startIndex": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "시작 인덱스"
+          },
+          "enableZoom": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "줌 기능 활성화"
+          },
+          "enableSlideshow": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "슬라이드쇼 기능 활성화"
+          },
+          "enableFullscreen": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "전체화면 기능 활성화"
+          },
+          "showCounter": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "이미지 카운터 표시"
+          },
+          "showDownload": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "다운로드 버튼 표시"
+          },
+          "showThumbnails": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "썸네일 네비게이션 표시"
+          },
+          "onDownload": {
+            "type": "function",
+            "required": false,
+            "description": "커스텀 다운로드 핸들러 (image, index) => void"
+          }
+        }
+      },
+      {
+        "name": "LanguageSelector",
+        "type": "composite",
+        "description": "Language selector dropdown with locale switching",
+        "path": "src/components/composite/LanguageSelector.tsx",
+        "props": {
+          "availableLocales": {
+            "type": "array",
+            "required": false,
+            "default": "[\"ko\", \"en\"]",
+            "description": "사용 가능한 언어 목록"
+          },
+          "languageText": {
+            "type": "string",
+            "required": false,
+            "default": "Language",
+            "description": "언어 설정 텍스트"
+          },
+          "apiEndpoint": {
+            "type": "string",
+            "required": false,
+            "default": "/api/admin/users/me/language",
+            "description": "언어 변경 API 엔드포인트"
+          },
+          "onLanguageChange": {
+            "type": "function",
+            "required": false,
+            "description": "언어 변경 후 콜백 (locale: string) => void"
+          },
+          "inline": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "인라인 모드 (드롭다운 메뉴 내에서 사용)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "RadioGroup",
+        "type": "composite",
+        "description": "Radio button group component",
+        "path": "src/components/composite/RadioGroup.tsx",
+        "props": {
+          "name": {
+            "type": "string",
+            "required": true,
+            "description": "그룹 이름 (form 전송 시 사용)"
+          },
+          "value": {
+            "type": "string",
+            "required": false,
+            "description": "현재 선택된 값"
+          },
+          "options": {
+            "type": "array",
+            "required": true,
+            "description": "라디오 옵션 배열 (RadioOption[])"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 콜백 (e: ChangeEvent) => void"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "inline": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "인라인 표시 여부"
+          },
+          "size": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "라디오 버튼 크기 (sm | md | lg)"
+          },
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "그룹 라벨"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "FormField",
+        "type": "composite",
+        "description": "Form field wrapper with label, error, and helper text",
+        "path": "src/components/composite/FormField.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "필드 레이블"
+          },
+          "required": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "필수 필드 표시 여부"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "에러 메시지"
+          },
+          "helperText": {
+            "type": "string",
+            "required": false,
+            "description": "도움말 텍스트"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          },
+          "labelClassName": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "레이블 CSS 클래스"
+          },
+          "horizontal": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "수평 레이아웃 여부"
+          },
+          "labelWidth": {
+            "type": "string",
+            "required": false,
+            "default": "w-1/3",
+            "description": "레이블 너비 (수평 레이아웃 시)"
+          }
+        }
+      },
+      {
+        "name": "SearchableDropdown",
+        "type": "composite",
+        "description": "Searchable dropdown with single/multi select",
+        "path": "src/components/composite/SearchableDropdown.tsx",
+        "props": {
+          "options": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "옵션 목록 (SearchableDropdownOption[])"
+          },
+          "value": {
+            "type": "string|number|array",
+            "required": false,
+            "description": "선택된 값 (단일: string|number, 다중: 배열)"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 핸들러"
+          },
+          "multiple": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "다중 선택 모드 활성화"
+          },
+          "searchPlaceholder": {
+            "type": "string",
+            "required": false,
+            "default": "Search...",
+            "description": "검색창 placeholder"
+          },
+          "onSearch": {
+            "type": "function",
+            "required": false,
+            "description": "외부 검색 핸들러 (백엔드 연동용)"
+          },
+          "noResultsText": {
+            "type": "string",
+            "required": false,
+            "default": "No results found",
+            "description": "결과 없음 메시지"
+          },
+          "initialText": {
+            "type": "string",
+            "required": false,
+            "default": "Type to search",
+            "description": "초기 안내 문구"
+          },
+          "triggerLabel": {
+            "type": "string",
+            "required": false,
+            "default": "Select",
+            "description": "트리거 버튼 텍스트"
+          },
+          "triggerIcon": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "트리거 버튼 아이콘"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "TagSelect",
+        "type": "composite",
+        "description": "Tag-based selection display component",
+        "path": "src/components/composite/TagSelect.tsx",
+        "props": {
+          "options": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택 가능한 옵션 목록 (라벨 매핑용)"
+          },
+          "value": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "선택된 값 배열"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 핸들러 (value: array) => void"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "default": "No items selected",
+            "description": "placeholder (선택된 항목 없을 때)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          }
+        }
+      },
+      {
+        "name": "LayoutWarnings",
+        "type": "composite",
+        "description": "레이아웃 경고 표시 컴포넌트 - 백엔드에서 전달받은 warnings 배열을 Alert 컴포넌트로 렌더링, 세션 스토리지 기반 dismiss 지원",
+        "path": "src/components/composite/LayoutWarnings.tsx",
+        "props": {
+          "warnings": {
+            "type": "array",
+            "required": false,
+            "description": "표시할 경고 목록 (LayoutWarning[])"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "DynamicFieldList",
+        "type": "composite",
+        "description": "동적 필드 목록 컴포넌트 - 드래그 앤 드롭 정렬, 항목 추가/삭제, 다양한 셀 타입 지원",
+        "path": "src/components/composite/DynamicFieldList/DynamicFieldList.tsx",
+        "props": {
+          "items": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "항목 배열"
+          },
+          "columns": {
+            "type": "array",
+            "required": true,
+            "description": "컬럼 정의 배열 (DynamicFieldColumn[])"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "항목 변경 시 콜백 (items: array) => void"
+          },
+          "onAddItem": {
+            "type": "function",
+            "required": false,
+            "description": "항목 추가 시 콜백 (외부 제어용)"
+          },
+          "onRemoveItem": {
+            "type": "function",
+            "required": false,
+            "description": "항목 삭제 시 콜백 (index: number, item: object) => void"
+          },
+          "onReorder": {
+            "type": "function",
+            "required": false,
+            "description": "순서 변경 시 콜백 (items: array) => void"
+          },
+          "addLabel": {
+            "type": "string",
+            "required": false,
+            "default": "항목 추가",
+            "description": "추가 버튼 라벨"
+          },
+          "enableDrag": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "드래그 앤 드롭 활성화"
+          },
+          "showIndex": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "순번 표시 여부"
+          },
+          "minItems": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "최소 항목 수"
+          },
+          "maxItems": {
+            "type": "number",
+            "required": false,
+            "description": "최대 항목 수"
+          },
+          "rowActions": {
+            "type": "array",
+            "required": false,
+            "description": "행별 커스텀 액션 버튼 (RowAction[])"
+          },
+          "emptyMessage": {
+            "type": "string",
+            "required": false,
+            "default": "항목이 없습니다.",
+            "description": "빈 상태 메시지"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "headerClassName": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "헤더 영역 클래스"
+          },
+          "rowClassName": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "행 영역 클래스"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 필드 이름"
+          },
+          "readOnly": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "읽기 전용 모드"
+          },
+          "createDefaultItem": {
+            "type": "function",
+            "required": false,
+            "description": "기본 항목 생성 함수 () => object"
+          },
+          "itemIdKey": {
+            "type": "string",
+            "required": false,
+            "default": "_id",
+            "description": "항목 고유 ID 키"
+          }
+        }
+      },
+      {
+        "name": "MultilingualTabPanel",
+        "type": "composite",
+        "description": "다국어 탭 패널 - DynamicFieldList 등 다국어 컬럼을 포함하는 컴포넌트에서 로케일 제어용",
+        "path": "src/components/composite/MultilingualTabPanel.tsx",
+        "props": {
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소 (DynamicFieldList 등)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "추가 CSS 클래스"
+          },
+          "style": {
+            "type": "object",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "default",
+            "description": "탭 스타일 variant (default | pills | underline)"
+          },
+          "defaultLocale": {
+            "type": "string",
+            "required": false,
+            "description": "기본 선택 로케일"
+          },
+          "onLocaleChange": {
+            "type": "function",
+            "required": false,
+            "description": "로케일 변경 시 콜백 (locale: string) => void"
+          }
+        }
+      }
+    ],
+    "layout": [
+      {
+        "name": "Container",
+        "type": "layout",
+        "description": "Flex or grid container for layout",
+        "path": "src/components/layout/Container.tsx",
+        "props": {
+          "mode": {
+            "type": "string",
+            "required": false,
+            "default": "flex",
+            "description": "레이아웃 모드 (flex|grid|stack)"
+          },
+          "direction": {
+            "type": "string",
+            "required": false,
+            "default": "row",
+            "description": "Flex 레이아웃 방향 (row|column)"
+          },
+          "justify": {
+            "type": "string",
+            "required": false,
+            "default": "start",
+            "description": "Flex justify-content (start|end|center|between|around|evenly)"
+          },
+          "align": {
+            "type": "string",
+            "required": false,
+            "default": "start",
+            "description": "Flex align-items (start|end|center|baseline|stretch)"
+          },
+          "wrap": {
+            "type": "string",
+            "required": false,
+            "default": "nowrap",
+            "description": "Flex wrap 설정 (wrap|nowrap|wrap-reverse)"
+          },
+          "gap": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "Gap 크기"
+          },
+          "cols": {
+            "type": "number",
+            "required": false,
+            "description": "Grid 열 개수"
+          },
+          "responsive": {
+            "type": "object",
+            "required": false,
+            "description": "반응형 열 개수 (브레이크포인트별: sm, md, lg, xl, 2xl)"
+          },
+          "padding": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "패딩 적용 여부"
+          },
+          "maxWidth": {
+            "type": "string",
+            "required": false,
+            "description": "최대 너비 제한 (sm|md|lg|xl|2xl|4xl|6xl|7xl|full)"
+          },
+          "centered": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "중앙 정렬 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 CSS 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 이벤트 핸들러"
+          }
+        }
+      },
+      {
+        "name": "Grid",
+        "type": "layout",
+        "description": "CSS Grid based responsive grid system",
+        "path": "src/components/layout/Grid.tsx",
+        "props": {
+          "cols": {
+            "type": "number",
+            "required": false,
+            "default": 1,
+            "description": "Grid 열 개수"
+          },
+          "responsive": {
+            "type": "object",
+            "required": false,
+            "description": "반응형 열 개수 (브레이크포인트별: sm, md, lg, xl, 2xl)"
+          },
+          "gap": {
+            "type": "number",
+            "required": false,
+            "description": "Gap 크기"
+          },
+          "rowGap": {
+            "type": "number",
+            "required": false,
+            "description": "Row gap (행 간격)"
+          },
+          "colGap": {
+            "type": "number",
+            "required": false,
+            "description": "Column gap (열 간격)"
+          },
+          "autoRows": {
+            "type": "string",
+            "required": false,
+            "description": "자동 행 크기 조정 (auto|min|max|fr)"
+          },
+          "autoCols": {
+            "type": "string",
+            "required": false,
+            "description": "자동 열 크기 조정 (auto|min|max|fr)"
+          },
+          "flow": {
+            "type": "string",
+            "required": false,
+            "default": "row",
+            "description": "Grid auto-flow 설정 (row|col|dense|row-dense|col-dense)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 CSS 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 이벤트 핸들러"
+          }
+        }
+      },
+      {
+        "name": "Flex",
+        "type": "layout",
+        "description": "Flexbox based flexible layout",
+        "path": "src/components/layout/Flex.tsx",
+        "props": {
+          "direction": {
+            "type": "string",
+            "required": false,
+            "default": "row",
+            "description": "Flex 방향 (row|row-reverse|col|col-reverse)"
+          },
+          "justify": {
+            "type": "string",
+            "required": false,
+            "default": "start",
+            "description": "Justify content 주축 정렬 (start|end|center|between|around|evenly)"
+          },
+          "align": {
+            "type": "string",
+            "required": false,
+            "default": "stretch",
+            "description": "Align items 교차축 정렬 (start|end|center|baseline|stretch)"
+          },
+          "wrap": {
+            "type": "string",
+            "required": false,
+            "default": "nowrap",
+            "description": "Flex wrap 설정 (wrap|nowrap|wrap-reverse)"
+          },
+          "gap": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "Gap 크기"
+          },
+          "grow": {
+            "type": "boolean|number",
+            "required": false,
+            "default": false,
+            "description": "Flex grow 자식 요소 확장"
+          },
+          "shrink": {
+            "type": "boolean|number",
+            "required": false,
+            "default": true,
+            "description": "Flex shrink 자식 요소 축소"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 CSS 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 이벤트 핸들러"
+          }
+        }
+      },
+      {
+        "name": "SectionLayout",
+        "type": "layout",
+        "description": "Section layout component with styling options",
+        "path": "src/components/layout/SectionLayout.tsx",
+        "props": {
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "섹션 제목"
+          },
+          "subtitle": {
+            "type": "string",
+            "required": false,
+            "description": "섹션 부제목"
+          },
+          "padding": {
+            "type": "string",
+            "required": false,
+            "default": "md",
+            "description": "패딩 적용 (none|sm|md|lg|xl)"
+          },
+          "background": {
+            "type": "string",
+            "required": false,
+            "default": "none",
+            "description": "배경색 (none|white|gray|primary|secondary)"
+          },
+          "maxWidth": {
+            "type": "string",
+            "required": false,
+            "description": "최대 너비 제한 (sm|md|lg|xl|2xl|4xl|6xl|7xl|full)"
+          },
+          "centered": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "중앙 정렬 여부"
+          },
+          "border": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "경계선 표시"
+          },
+          "shadow": {
+            "type": "string",
+            "required": false,
+            "default": "none",
+            "description": "그림자 효과 (none|sm|md|lg|xl)"
+          },
+          "rounded": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "둥근 모서리"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 CSS 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "자식 요소"
+          },
+          "onClick": {
+            "type": "function",
+            "required": false,
+            "description": "클릭 이벤트 핸들러"
+          }
+        }
+      },
+      {
+        "name": "ThreeColumnLayout",
+        "type": "layout",
+        "description": "Three column layout container with left, center, and right slots",
+        "path": "src/components/layout/ThreeColumnLayout.tsx",
+        "props": {
+          "leftWidth": {
+            "type": "string",
+            "required": false,
+            "default": "250px",
+            "description": "왼쪽 영역 너비"
+          },
+          "rightWidth": {
+            "type": "string",
+            "required": false,
+            "default": "300px",
+            "description": "오른쪽 영역 너비"
+          },
+          "leftSlot": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "왼쪽 슬롯 컨텐츠"
+          },
+          "centerSlot": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "가운데 슬롯 컨텐츠"
+          },
+          "rightSlot": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "오른쪽 슬롯 컨텐츠"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          }
+        }
+      },
+      {
+        "name": "RichSelect",
+        "type": "composite",
+        "description": "커스텀 항목 렌더링이 가능한 리치 셀렉트 컴포넌트",
+        "path": "src/components/composite/RichSelect.tsx",
+        "skipBindingKeys": ["children", "selectedChildren", "__componentLayoutDefs"],
+        "props": {
+          "options": {
+            "type": "array",
+            "required": false,
+            "description": "옵션 목록 (value, label, disabled 및 추가 데이터 포함)"
+          },
+          "value": {
+            "type": "string | number",
+            "required": false,
+            "description": "선택된 값"
+          },
+          "onChange": {
+            "type": "function",
+            "required": false,
+            "description": "값 변경 핸들러"
+          },
+          "placeholder": {
+            "type": "string",
+            "required": false,
+            "description": "트리거 버튼 placeholder"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "maxHeight": {
+            "type": "string",
+            "required": false,
+            "default": "320px",
+            "description": "드롭다운 최대 높이"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "각 옵션 항목 커스텀 렌더링 (itemContext로 item, index, isSelected 접근)"
+          },
+          "selectedChildren": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "선택된 항목 커스텀 렌더링 (트리거 버튼에 표시)"
+          }
+        }
+      },
+      {
+        "name": "DropdownButton",
+        "type": "composite",
+        "description": "Dropdown button with portal-based menu similar to ActionMenu",
+        "path": "src/components/composite/DropdownButton.tsx",
+        "skipBindingKeys": ["children"],
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "버튼 라벨"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 이름"
+          },
+          "iconPosition": {
+            "type": "string",
+            "required": false,
+            "default": "left",
+            "description": "아이콘 위치 (left | right)"
+          },
+          "position": {
+            "type": "string",
+            "required": false,
+            "default": "right",
+            "description": "드롭다운 메뉴 정렬 (left | right)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          },
+          "children": {
+            "type": "ReactNode",
+            "required": false,
+            "description": "드롭다운 메뉴 내용 (DropdownItem 사용)"
+          }
+        }
+      },
+      {
+        "name": "DropdownMenuItem",
+        "type": "composite",
+        "description": "Dropdown menu item for use with DropdownButton",
+        "path": "src/components/composite/DropdownMenuItem.tsx",
+        "props": {
+          "label": {
+            "type": "string",
+            "required": false,
+            "description": "아이템 라벨"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "아이콘 이름"
+          },
+          "variant": {
+            "type": "string",
+            "required": false,
+            "default": "default",
+            "description": "스타일 변형 (default | danger)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성화 여부"
+          },
+          "divider": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "구분선 여부"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": "",
+            "description": "사용자 정의 클래스"
+          }
+        }
+      }
+    ]
+  }
+}

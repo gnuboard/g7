@@ -1,0 +1,2320 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Coupon List - Filter Section with Slot System"
+  },
+  "id": "filter_card",
+  "type": "basic",
+  "name": "Div",
+  "dataKey": "filter",
+  "props": {
+    "className": "card"
+  },
+  "children": [
+    {
+      "id": "slot_registration_area",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "hidden",
+        "aria-hidden": "true"
+      },
+      "children": [
+        {
+          "id": "target_type_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('targetType') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 1,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('targetType')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('targetType') ? (_local.visibleFilters || []).filter(f => f !== 'targetType') : [...(_local.visibleFilters || []), 'targetType']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "targetType",
+                        "value": "all",
+                        "checked": "{{(_local.filter.targetType || 'all') === 'all'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.targetType": "all"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:common.all"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "targetType",
+                        "value": "product_amount",
+                        "checked": "{{_local.filter.targetType === 'product_amount'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.targetType": "product_amount"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.product_amount"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "targetType",
+                        "value": "order_amount",
+                        "checked": "{{_local.filter.targetType === 'order_amount'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.targetType": "order_amount"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.order_amount"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "targetType",
+                        "value": "shipping_fee",
+                        "checked": "{{_local.filter.targetType === 'shipping_fee'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.targetType": "shipping_fee"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_target_type.shipping_fee"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "issue_status_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('issueStatus') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 2,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('issueStatus')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('issueStatus') ? (_local.visibleFilters || []).filter(f => f !== 'issueStatus') : [...(_local.visibleFilters || []), 'issueStatus']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueStatus",
+                        "value": "all",
+                        "checked": "{{(_local.filter.issueStatus || 'all') === 'all'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueStatus": "all"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:common.all"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueStatus",
+                        "value": "issuing",
+                        "checked": "{{_local.filter.issueStatus === 'issuing'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueStatus": "issuing"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueStatus",
+                        "value": "stopped",
+                        "checked": "{{_local.filter.issueStatus === 'stopped'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueStatus": "stopped"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "created_date_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('createdAt') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 3,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('createdAt')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('createdAt') ? (_local.visibleFilters || []).filter(f => f !== 'createdAt') : [...(_local.visibleFilters || []), 'createdAt']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "calendar",
+                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "date",
+                        "name": "createdStartDate",
+                        "value": "{{_local.filter.createdStartDate || ''}}",
+                        "className": "input w-36"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.createdStartDate": "{{$event.target.value}}",
+                            "filter.createdDateQuick": ""
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-gray-400 dark:text-gray-500"
+                      },
+                      "text": "~"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "date",
+                        "name": "createdEndDate",
+                        "value": "{{_local.filter.createdEndDate || ''}}",
+                        "className": "input w-36"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.createdEndDate": "{{$event.target.value}}",
+                            "filter.createdDateQuick": ""
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-wrap items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.date.today",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "sirsoft-ecommerce.setDateRange",
+                              "params": {
+                                "preset": "today"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "_local",
+                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                "filter.createdEndDate": "{{$prev.endDate}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.date.week",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "sirsoft-ecommerce.setDateRange",
+                              "params": {
+                                "preset": "week"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "_local",
+                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                "filter.createdEndDate": "{{$prev.endDate}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.date.3months",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "sirsoft-ecommerce.setDateRange",
+                              "params": {
+                                "preset": "3months"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "_local",
+                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                "filter.createdEndDate": "{{$prev.endDate}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.date.6months",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "sirsoft-ecommerce.setDateRange",
+                              "params": {
+                                "preset": "6months"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "_local",
+                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                "filter.createdEndDate": "{{$prev.endDate}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                      },
+                      "text": "$t:sirsoft-ecommerce.common.date.1year",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "sirsoft-ecommerce.setDateRange",
+                              "params": {
+                                "preset": "1year"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "_local",
+                                "filter.createdDateQuick": "{{$prev.preset}}",
+                                "filter.createdStartDate": "{{$prev.startDate}}",
+                                "filter.createdEndDate": "{{$prev.endDate}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "benefit_amount_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('benefitAmount') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 4,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('benefitAmount')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('benefitAmount') ? (_local.visibleFilters || []).filter(f => f !== 'benefitAmount') : [...(_local.visibleFilters || []), 'benefitAmount']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "discountType",
+                    "className": "w-24",
+                    "value": "{{_local.filter.discountType || 'all'}}",
+                    "options": [
+                      { "value": "all", "label": "$t:common.all" },
+                      { "value": "fixed", "label": "$t:sirsoft-ecommerce.enums.coupon_discount_type.fixed" },
+                      { "value": "rate", "label": "$t:sirsoft-ecommerce.enums.coupon_discount_type.rate" }
+                    ]
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.discountType": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "minBenefitAmount",
+                    "className": "input w-28",
+                    "placeholder": "$t:sirsoft-ecommerce.common.min",
+                    "value": "{{_local.filter.minBenefitAmount || ''}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.minBenefitAmount": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "~"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "maxBenefitAmount",
+                    "className": "input w-28",
+                    "placeholder": "$t:sirsoft-ecommerce.common.max",
+                    "value": "{{_local.filter.maxBenefitAmount || ''}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.maxBenefitAmount": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "{{(_local.filter.discountType || 'all') === 'rate' ? '%' : '$t:sirsoft-ecommerce.common.currency.won'}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "issue_method_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('issueMethod') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 5,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('issueMethod')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('issueMethod') ? (_local.visibleFilters || []).filter(f => f !== 'issueMethod') : [...(_local.visibleFilters || []), 'issueMethod']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueMethod",
+                        "value": "all",
+                        "checked": "{{(_local.filter.issueMethod || 'all') === 'all'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueMethod": "all"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:common.all"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueMethod",
+                        "value": "direct",
+                        "checked": "{{_local.filter.issueMethod === 'direct'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueMethod": "direct"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.direct"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueMethod",
+                        "value": "download",
+                        "checked": "{{_local.filter.issueMethod === 'download'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueMethod": "download"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.download"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueMethod",
+                        "value": "auto",
+                        "checked": "{{_local.filter.issueMethod === 'auto'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueMethod": "auto"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_method.auto"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "issue_condition_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('issueCondition') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 6,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('issueCondition')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('issueCondition') ? (_local.visibleFilters || []).filter(f => f !== 'issueCondition') : [...(_local.visibleFilters || []), 'issueCondition']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueCondition",
+                        "value": "all",
+                        "checked": "{{(_local.filter.issueCondition || 'all') === 'all'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueCondition": "all"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:common.all"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueCondition",
+                        "value": "manual",
+                        "checked": "{{_local.filter.issueCondition === 'manual'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueCondition": "manual"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.manual"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueCondition",
+                        "value": "signup",
+                        "checked": "{{_local.filter.issueCondition === 'signup'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueCondition": "signup"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.signup"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueCondition",
+                        "value": "first_purchase",
+                        "checked": "{{_local.filter.issueCondition === 'first_purchase'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueCondition": "first_purchase"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.first_purchase"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-1 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "issueCondition",
+                        "value": "birthday",
+                        "checked": "{{_local.filter.issueCondition === 'birthday'}}",
+                        "className": "radio"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "filter.issueCondition": "birthday"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:sirsoft-ecommerce.enums.coupon_issue_condition.birthday"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "min_order_amount_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 7,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('minOrderAmount')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('minOrderAmount') ? (_local.visibleFilters || []).filter(f => f !== 'minOrderAmount') : [...(_local.visibleFilters || []), 'minOrderAmount']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "minOrderAmount",
+                    "className": "input w-36",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_placeholder",
+                    "value": "{{_local.filter.minOrderAmount || ''}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.minOrderAmount": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount_suffix"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "valid_period_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('validPeriod') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 8,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('validPeriod')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('validPeriod') ? (_local.visibleFilters || []).filter(f => f !== 'validPeriod') : [...(_local.visibleFilters || []), 'validPeriod']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "calendar",
+                    "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "date",
+                    "name": "validStartDate",
+                    "value": "{{_local.filter.validStartDate || ''}}",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.validStartDate": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "~"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "date",
+                    "name": "validEndDate",
+                    "value": "{{_local.filter.validEndDate || ''}}",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.validEndDate": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "issue_period_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('issuePeriod') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 9,
+          "props": {
+            "className": "filter-row"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('issuePeriod')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('issuePeriod') ? (_local.visibleFilters || []).filter(f => f !== 'issuePeriod') : [...(_local.visibleFilters || []), 'issuePeriod']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "calendar",
+                    "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "date",
+                    "name": "issueStartDate",
+                    "value": "{{_local.filter.issueStartDate || ''}}",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.issueStartDate": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "~"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "date",
+                    "name": "issueEndDate",
+                    "value": "{{_local.filter.issueEndDate || ''}}",
+                    "className": "input w-36"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "filter.issueEndDate": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "creator_filter_row",
+          "type": "basic",
+          "name": "Div",
+          "slot": "{{(_local.visibleFilters || []).includes('creator') ? 'basic_filters' : 'detail_filters'}}",
+          "slotOrder": 10,
+          "props": {
+            "className": "filter-row"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "filter-row flex-col items-start"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
+                "checked": "{{(_local.visibleFilters || []).includes('creator')}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "visibleFilters": "{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"
+                      }
+                    },
+                    {
+                      "handler": "saveToLocalStorage",
+                      "params": {
+                        "key": "g7_coupon_filter_visible_filters",
+                        "value": "{{(_local.visibleFilters || []).includes('creator') ? (_local.visibleFilters || []).filter(f => f !== 'creator') : [...(_local.visibleFilters || []), 'creator']}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "filter-label w-28"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "SearchableDropdown",
+                  "props": {
+                    "options": "{{_local.creatorSearchResults ?? []}}",
+                    "value": "{{_local.filter.createdBy || ''}}",
+                    "triggerLabel": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select",
+                    "searchPlaceholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_placeholder",
+                    "noResultsText": "$t:common.no_results",
+                    "initialText": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_search_initial",
+                    "className": "w-64"
+                  },
+                  "actions": [
+                    {
+                      "event": "onSearch",
+                      "handler": "apiCall",
+                      "debounce": 300,
+                      "auth_required": true,
+                      "target": "/api/admin/users/search",
+                      "params": {
+                        "method": "GET",
+                        "query": {
+                          "keyword": "{{$args[0]}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "creatorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "creatorSearchResults": []
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "event": "onChange",
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "filter.createdBy": "{{$args[0]}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{!!_local.filter.createdBy}}",
+                  "props": {
+                    "type": "button",
+                    "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "xmark",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "filter.createdBy": "",
+                        "creatorSearchResults": []
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search_row",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-wrap items-center gap-3 mb-4"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "flex flex-col gap-3 mb-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "search_row_line1",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-wrap items-center gap-2 flex-1"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "name": "searchField",
+                "className": "w-32",
+                "value": "{{_local.filter.searchField || 'all'}}",
+                "options": [
+                  { "value": "all", "label": "$t:common.all" },
+                  { "value": "name", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name" },
+                  { "value": "description", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.description" }
+                ]
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "w-24"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "filter.searchField": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "searchKeyword",
+                "className": "input flex-1 min-w-[200px]",
+                "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.search.placeholder",
+                "value": "{{_local.filter.searchKeyword || ''}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "input flex-1"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "filter.searchKeyword": "{{$event.target.value}}"
+                  }
+                },
+                {
+                  "type": "keypress",
+                  "key": "Enter",
+                  "actionRef": "searchCoupons"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "search_row_line2",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 ml-auto"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "grid grid-cols-2 gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "column_selector",
+              "type": "composite",
+              "name": "ColumnSelector",
+              "props": {
+                "id": "admin_coupon_list_columns",
+                "columns": [
+                  {"field": "target_type_label", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type"},
+                  {"field": "name", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name", "required": true},
+                  {"field": "benefit_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount"},
+                  {"field": "valid_period_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period"},
+                  {"field": "issue_period_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period"},
+                  {"field": "issue_count_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count"},
+                  {"field": "issue_method_label", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method"},
+                  {"field": "issue_condition_label", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition"},
+                  {"field": "issue_status_label", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status"},
+                  {"field": "created_at", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at"},
+                  {"field": "created_by_name", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by"}
+                ],
+                "visibleColumns": "{{_local.visibleColumns}}",
+                "triggerLabel": "$t:sirsoft-ecommerce.admin.promotion_coupon.search.column_select",
+                "menuTitle": "$t:common.column_selector_title",
+                "menuDescription": "$t:common.column_selector_description",
+                "position": "right",
+                "defaultColumns": ["target_type_label", "name", "benefit_formatted", "valid_period_formatted", "issue_period_formatted", "issue_count_formatted", "issue_method_label", "issue_condition_label", "issue_status_label", "created_at", "created_by_name"]
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "w-full",
+                    "triggerClassName": "w-full justify-center",
+                    "labelClassName": "inline"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "event": "onColumnVisibilityChange",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "visibleColumns": "{{$args[0]}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline flex items-center gap-2"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "btn btn-outline flex items-center justify-center gap-2 w-full"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.search.detail_search"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}",
+                    "className": "w-4 h-4"
+                  }
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "showDetailFilter": "{{!_local.showDetailFilter}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "basic_filters_section",
+      "type": "composite",
+      "name": "SlotContainer",
+      "props": {
+        "slotId": "basic_filters",
+        "className": "space-y-3"
+      }
+    },
+    {
+      "id": "detail_filters_section",
+      "type": "composite",
+      "name": "SlotContainer",
+      "if": "{{_local.showDetailFilter}}",
+      "props": {
+        "slotId": "detail_filters",
+        "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3"
+      }
+    },
+    {
+      "id": "filter_actions",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "filter_actions_row1",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "contents"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "edit_search_button_wrapper",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "hidden"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "edit_search_button_pc",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "{{_local.isEditMode ? 'btn btn-primary flex items-center gap-2' : 'btn btn-outline flex items-center gap-2'}}"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "sliders",
+                        "className": "w-4 h-4"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "isEditMode": "{{!_local.isEditMode}}",
+                            "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-center gap-2 flex-1"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "contents"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "search_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-primary"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "btn btn-primary flex-1"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "actionRef": "searchCoupons"
+                    }
+                  ]
+                },
+                {
+                  "id": "reset_button_pc",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-outline"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "hidden"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "creatorSearchResults": [],
+                            "filter": {
+                              "searchField": "all",
+                              "searchKeyword": "",
+                              "targetType": "all",
+                              "discountType": "all",
+                              "issueStatus": "all",
+                              "issueMethod": "all",
+                              "issueCondition": "all",
+                              "minBenefitAmount": "",
+                              "maxBenefitAmount": "",
+                              "minOrderAmount": "",
+                              "createdStartDate": "",
+                              "createdEndDate": "",
+                              "createdDateQuick": "",
+                              "validStartDate": "",
+                              "validEndDate": "",
+                              "issueStartDate": "",
+                              "issueEndDate": "",
+                              "createdBy": ""
+                            }
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/ecommerce/promotion-coupons",
+                            "replace": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "hidden"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "filter_actions_row2_mobile",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "hidden"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 w-full"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "edit_search_button_mobile",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.isEditMode ? 'btn btn-primary flex items-center justify-center gap-2 flex-1' : 'btn btn-outline flex items-center justify-center gap-2 flex-1'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "sliders",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit_search"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "isEditMode": "{{!_local.isEditMode}}",
+                        "showDetailFilter": "{{!_local.isEditMode ? true : _local.showDetailFilter}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "reset_button_mobile",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline flex-1"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.reset",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "creatorSearchResults": [],
+                        "filter": {
+                          "searchField": "all",
+                          "searchKeyword": "",
+                          "targetType": "all",
+                          "discountType": "all",
+                          "issueStatus": "all",
+                          "issueMethod": "all",
+                          "issueCondition": "all",
+                          "minBenefitAmount": "",
+                          "maxBenefitAmount": "",
+                          "minOrderAmount": "",
+                          "createdStartDate": "",
+                          "createdEndDate": "",
+                          "createdDateQuick": "",
+                          "validStartDate": "",
+                          "validEndDate": "",
+                          "issueStartDate": "",
+                          "issueEndDate": "",
+                          "createdBy": ""
+                        }
+                      }
+                    },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/ecommerce/promotion-coupons",
+                        "replace": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

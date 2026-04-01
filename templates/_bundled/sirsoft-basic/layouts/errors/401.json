@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "layout_name": "401",
+  "extends": "_user_base",
+  "meta": {
+    "title": "$t:error.401.title",
+    "description": "$t:error.401.description"
+  },
+  "slots": {
+    "content": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-[60vh] flex items-center justify-center"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "text-center px-4"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4"
+                },
+                "text": "401"
+              },
+              {
+                "type": "basic",
+                "name": "H1",
+                "props": {
+                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
+                },
+                "text": "$t:error.401.title"
+              },
+              {
+                "type": "basic",
+                "name": "P",
+                "props": {
+                  "className": "text-gray-600 dark:text-gray-400 mb-8"
+                },
+                "text": "$t:error.401.description"
+              },
+              {
+                "type": "basic",
+                "name": "Button",
+                "props": {
+                  "className": "inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer"
+                },
+                "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/" } }],
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "home",
+                      "className": "w-5 h-5"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:error.401.back_to_home"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

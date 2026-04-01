@@ -1,0 +1,142 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Set Default Confirm Modal (View Panel)"
+    },
+    "id": "modal_set_default_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSettingDefault}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isSettingDefault}}"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSettingDefault": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "{{'/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId}}",
+                                    "params": {
+                                        "method": "PUT",
+                                        "body": {
+                                            "name": "{{_global.selectedItem?.name}}",
+                                            "is_default": true
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSettingDefault": false,
+                                                "selectedItem": "{{response.data}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "commonInfos"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSettingDefault": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isSettingDefault}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "w-4 h-4 animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isSettingDefault ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.common_info.button.confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

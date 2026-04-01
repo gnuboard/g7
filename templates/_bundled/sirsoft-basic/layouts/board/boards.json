@@ -1,0 +1,185 @@
+{
+    "version": "1.0.0",
+    "layout_name": "board/boards",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "seo": {
+            "enabled": true,
+            "data_sources": ["boardList"],
+            "priority": 0.5,
+            "changefreq": "weekly",
+            "og": {
+                "type": "website"
+            },
+            "structured_data": {
+                "@type": "ItemList"
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "boardList",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-8"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "py-4"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "comment": "페이지 헤더",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mb-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "table-cells-large",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "name": "table-cells-large",
+                                                    "size": "lg",
+                                                    "className": "text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:board.all_boards.title",
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "$t:board.all_boards.description"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "게시판 그리드",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-2 gap-4"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "grid grid-cols-1 gap-3"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": {
+                                    "source": "{{boardList.data ?? []}}",
+                                    "item_var": "board",
+                                    "index_var": "index"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/board/boards/_board_card.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "게시판이 없을 때",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!boardList.data || boardList.data.length === 0}}",
+                        "props": {
+                            "className": "text-center py-12"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "inbox",
+                                    "size": "3x",
+                                    "className": "text-gray-400 dark:text-gray-500 mx-auto mb-4"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:board.all_boards.empty"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

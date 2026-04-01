@@ -1,0 +1,668 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Main Banner Detail View Partial"
+  },
+  "id": "banner_detail_section",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "card"
+  },
+  "children": [
+    {
+      "id": "detail_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "card-title"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.title"
+        }
+      ]
+    },
+    {
+      "id": "banner_preview_image",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "form-label mb-2"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.preview"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "relative rounded-lg overflow-hidden bg-gradient-to-r from-orange-400 to-red-400 aspect-[3/1]"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "absolute inset-0 flex flex-col justify-center p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-white text-xl font-bold"
+                  },
+                  "text": "Winter New Arrivals Up to 50% Off"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-white/80 text-sm mt-1"
+                  },
+                  "text": "Special benefits for a warm winter"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "language_tabs",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "globe",
+                "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.activeLanguageTab === 'ko' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.ko",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "activeLanguageTab": "ko"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.activeLanguageTab === 'en' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.en",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "activeLanguageTab": "en"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.activeLanguageTab === 'ja' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.ja",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "activeLanguageTab": "ja"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "{{_local.activeLanguageTab === 'zh' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.zh",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "activeLanguageTab": "zh"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-primary py-1"
+                  },
+                  "text": "Winter New Arrivals Up to 50% Off"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.banner_content"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-primary py-1"
+                  },
+                  "text": "Special benefits for a warm winter"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "style_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H4",
+          "props": {
+            "className": "text-heading mb-4"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.style_settings"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary w-12"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.title_style"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "badge badge-gray"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.show"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.color"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "w-6 h-6 rounded border border-gray-300 dark:border-gray-600 bg-black"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-primary"
+                  },
+                  "text": "#000000"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-primary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_center"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary w-12"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.content_style"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "badge badge-gray"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.hide"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.color"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "w-6 h-6 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-primary"
+                  },
+                  "text": "#ffffff"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-secondary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-primary"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.position_left"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "link_url_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H4",
+          "props": {
+            "className": "text-heading mb-2"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "globe",
+                "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-blue-600 dark:text-blue-400"
+              },
+              "text": "/promotion/winter-sale"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exposure_period_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H4",
+          "props": {
+            "className": "text-heading mb-2"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.exposure_period"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "calendar",
+                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-primary"
+                      },
+                      "text": "2025-01-01"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "calendar",
+                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-primary"
+                      },
+                      "text": "2025-12-31"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "status_created_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "badge badge-green"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status_active"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "calendar",
+                        "className": "w-4 h-4 text-gray-400 dark:text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-primary"
+                      },
+                      "text": "2025-01-01 10:00:00"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "detail_actions",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline flex-1"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.actions.edit",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "viewMode": "edit"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline text-red-600 dark:text-red-400 flex-1"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.actions.delete",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "openModal",
+              "target": "modal_delete_confirm"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

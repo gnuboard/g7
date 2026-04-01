@@ -1,0 +1,77 @@
+{
+  "title": "Personal Payment Management",
+  "description": "Create and manage individual payment links",
+  "add": "Add",
+  "search": {
+    "field": {
+      "payment_number": "Payment Number",
+      "member_name": "Member Name",
+      "member_id": "Member ID",
+      "product_name": "Product Name"
+    },
+    "placeholder": "Enter search term",
+    "reset": "Reset"
+  },
+  "filter": {
+    "status": "Payment Status",
+    "payment_method": "Payment Method",
+    "date_search": "Date Search",
+    "amount": "Amount",
+    "all": "All",
+    "pending": "Pending",
+    "completed": "Completed",
+    "expired": "Expired",
+    "card": "Credit Card",
+    "bank_transfer": "Bank Transfer",
+    "kakao_pay": "Kakao Pay",
+    "naver_pay": "Naver Pay",
+    "created_at": "Created Date",
+    "expired_at": "Expiry Date",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "min_amount": "Min Amount",
+    "max_amount": "Max Amount"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort": {
+      "created_at_desc": "Created Date (Latest)",
+      "created_at_asc": "Created Date (Oldest)",
+      "amount_desc": "Amount (High to Low)",
+      "amount_asc": "Amount (Low to High)"
+    },
+    "per_page": "{{count}} per page",
+    "columns": {
+      "no": "No",
+      "payment_number": "Payment Number",
+      "status": "Status",
+      "member_info": "Member Info",
+      "product_name": "Product Name",
+      "amount": "Amount",
+      "order_number": "Order Number",
+      "created_at": "Created Date",
+      "expired_at": "Expiry Date",
+      "payment_method": "Payment Method",
+      "paid_at": "Paid Date",
+      "actions": "Actions"
+    }
+  },
+  "dropdown": {
+    "search_by_member": "Search by Member Name",
+    "view_member_info": "View Member Info",
+    "view_order_detail": "View Order Detail",
+    "view_detail": "View Detail",
+    "edit": "Edit",
+    "copy_link": "Copy Link",
+    "delete": "Delete"
+  },
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "expired": "Expired"
+  },
+  "mobile": {
+    "created_at": "Created Date",
+    "expired_at": "Expiry Date"
+  }
+}

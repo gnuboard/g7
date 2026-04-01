@@ -1,0 +1,51 @@
+{
+  "create": "Create",
+  "edit": "Edit",
+  "delete": "Delete",
+  "copy": "Copy",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "save": "Save",
+  "saving": "Saving",
+  "refresh": "Refresh",
+  "created_at": "Created At",
+  "updated_at": "Updated At",
+  "active": "Active",
+  "inactive": "Inactive",
+  "list": "List",
+  "use": "Use",
+  "not_use": "Not Use",
+  "korean": "Korean",
+  "english": "English",
+  "validation_error": "Please check your input",
+  "locale": {
+    "ko": "Korean",
+    "en": "English"
+  },
+  "column_selector": "Column Selector",
+  "column_selector_title": "Select Columns to Display",
+  "column_selector_description": "Choose which columns to show or hide",
+  "loading": "Loading...",
+  "select_placeholder": "Please select",
+  "selected_count": "{{count}} selected",
+  "close": "Close",
+  "all": "All",
+  "min": "Min",
+  "max": "Max",
+  "processing": "Processing...",
+  "deleting": "Deleting...",
+  "date": {
+    "today": "Today",
+    "week": "1 Week",
+    "3months": "3 Months",
+    "6months": "6 Months",
+    "1year": "1 Year"
+  },
+  "error": {
+    "general": "An error occurred."
+  },
+  "currency": {
+    "won": "KRW"
+  },
+  "read_only_notice": "You have read-only access. Contact an administrator if you need to make changes."
+}

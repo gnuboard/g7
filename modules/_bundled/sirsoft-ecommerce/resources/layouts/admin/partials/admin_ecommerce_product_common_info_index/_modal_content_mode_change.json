@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Common Info Content Mode Change Confirm Modal"
+  },
+  "id": "modal_content_mode_change",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message"
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.common.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.confirm",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "setState",
+          "params": {
+            "target": "_local",
+            "contentMode": "text"
+          }
+        },
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

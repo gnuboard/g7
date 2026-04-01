@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Main Banner Edit Cancel Confirm Modal"
+  },
+  "id": "modal_edit_cancel",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.title",
+    "size": "sm",
+    "titleIcon": "alert-circle",
+    "titleIconColor": "warning"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.message"
+    },
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-gray-700 dark:text-gray-300 mt-1"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.sub_message"
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.main_banner.modal.edit_cancel.confirm",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

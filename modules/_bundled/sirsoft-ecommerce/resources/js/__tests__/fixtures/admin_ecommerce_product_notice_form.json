@@ -1,0 +1,221 @@
+{
+  "version": "1.0",
+  "layout_name": "admin_ecommerce_product_notice_form",
+  "meta": {
+    "title": "Product Notice Template Form Panel Test Fixture",
+    "description": "상품정보제공고시 편집/등록 폼 테스트용"
+  },
+  "initLocal": {
+    "form": {
+      "name": {
+        "ko": "의류",
+        "en": "Clothing"
+      },
+      "fields": [
+        {
+          "_id": "field_1",
+          "name": { "ko": "제조사", "en": "Manufacturer" },
+          "content": { "ko": "(주)테스트", "en": "Test Inc." }
+        },
+        {
+          "_id": "field_2",
+          "name": { "ko": "원산지", "en": "Country of Origin" },
+          "content": { "ko": "대한민국", "en": "Korea" }
+        }
+      ],
+      "is_active": true
+    },
+    "isSaving": false,
+    "errors": null
+  },
+  "initGlobal": {
+    "selectedTemplateId": 1,
+    "panelMode": "edit",
+    "selectedTemplate": {
+      "id": 1,
+      "name": {
+        "ko": "의류",
+        "en": "Clothing"
+      },
+      "fields": [
+        {
+          "name": { "ko": "제조사", "en": "Manufacturer" },
+          "content": { "ko": "(주)테스트", "en": "Test Inc." }
+        },
+        {
+          "name": { "ko": "원산지", "en": "Country of Origin" },
+          "content": { "ko": "대한민국", "en": "Korea" }
+        }
+      ],
+      "fields_count": 2,
+      "is_active": true
+    }
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "form_panel",
+        "type": "basic",
+        "name": "Div",
+        "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
+        "children": [
+          {
+            "id": "form_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "px-4 py-3 border-b",
+              "data-testid": "form-header"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H3",
+                "if": "{{_global.panelMode === 'create'}}",
+                "props": { "data-testid": "create-title" },
+                "text": "새 템플릿 추가"
+              },
+              {
+                "type": "basic",
+                "name": "H3",
+                "if": "{{_global.panelMode === 'edit'}}",
+                "props": { "data-testid": "edit-title" },
+                "text": "상품군 편집"
+              }
+            ]
+          },
+          {
+            "id": "template_form",
+            "type": "basic",
+            "name": "Form",
+            "dataKey": "form",
+            "props": {
+              "id": "template_form",
+              "data-testid": "template-form"
+            },
+            "children": [
+              {
+                "id": "form_name_section",
+                "type": "basic",
+                "name": "Div",
+                "props": { "data-testid": "name-section" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Label",
+                    "text": "상품군명"
+                  },
+                  {
+                    "id": "form_name_input",
+                    "type": "composite",
+                    "name": "MultilingualInput",
+                    "props": {
+                      "name": "name",
+                      "placeholder": "상품군명을 입력하세요",
+                      "layout": "tabs",
+                      "data-testid": "multilingual-name-input"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "form_fields_section",
+                "type": "basic",
+                "name": "Div",
+                "props": { "data-testid": "fields-section" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "flex items-center justify-between" },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "H4",
+                        "props": { "data-testid": "fields-title" },
+                        "text": "항목 목록"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "fields_tab_panel",
+                    "type": "composite",
+                    "name": "MultilingualTabPanel",
+                    "props": {
+                      "variant": "underline",
+                      "className": "mt-4",
+                      "data-testid": "fields-multilingual-tab-panel"
+                    },
+                    "children": [
+                      {
+                        "id": "fields_editor",
+                        "type": "composite",
+                        "name": "DynamicFieldList",
+                        "props": {
+                          "name": "fields",
+                          "items": "{{_local.form.fields ?? []}}",
+                          "columns": [
+                            {
+                              "key": "name",
+                              "type": "multilingual",
+                              "label": "항목명",
+                              "placeholder": "항목명 입력"
+                            },
+                            {
+                              "key": "content",
+                              "type": "multilingual",
+                              "label": "내용",
+                              "placeholder": "내용 입력"
+                            }
+                          ],
+                          "addLabel": "항목 추가",
+                          "enableDrag": true,
+                          "minItems": 1,
+                          "errors": "{{_local.errors}}",
+                          "data-testid": "dynamic-field-list"
+                        },
+                        "actions": [
+                          {
+                            "event": "onChange",
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "form.fields": "{{$args[0]}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "form_status_section",
+                "type": "basic",
+                "name": "Div",
+                "props": { "data-testid": "status-section" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "H4",
+                    "text": "상태"
+                  },
+                  {
+                    "id": "form_toggle",
+                    "type": "composite",
+                    "name": "Toggle",
+                    "props": {
+                      "label": "활성화",
+                      "name": "is_active",
+                      "data-testid": "is-active-toggle"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

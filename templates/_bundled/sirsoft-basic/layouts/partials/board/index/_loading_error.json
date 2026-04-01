@@ -1,0 +1,188 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 목록 로딩 스켈레톤 및 오류 페이지"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "로딩 페이지 - 스켈레톤 + 스피너 혼합 (오류 없을 때만)",
+            "type": "layout",
+            "name": "Container",
+            "if": "{{!posts?.data?.board && !_global.hasError}}",
+            "props": {
+                "className": "py-8"
+            },
+            "children": [
+                {
+                    "comment": "헤더 스켈레톤",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-between items-start mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "h-4 w-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "h-10 w-28 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "검색바 스켈레톤",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mb-8"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "h-10 w-64 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "스피너 + 메시지",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col items-center justify-center py-16"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-gray-900 dark:border-t-white mb-4"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-600 dark:text-gray-400 text-base font-medium"
+                            },
+                            "text": "$t:board.loading_posts"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "오류 발생 시 - 오류 메시지 및 재시도 버튼",
+            "type": "layout",
+            "name": "Container",
+            "if": "{{_global.hasError}}",
+            "props": {
+                "className": "py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col items-center justify-center py-16 text-center"
+                    },
+                    "children": [
+                        {
+                            "comment": "경고 아이콘",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-5xl rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-6 p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-amber-600 dark:text-amber-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "제목",
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-xl font-bold text-gray-900 dark:text-white mb-3"
+                            },
+                            "text": "$t:board.error_title"
+                        },
+                        {
+                            "comment": "설명",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-600 dark:text-gray-400 mb-8 max-w-md"
+                            },
+                            "text": "$t:board.error_description"
+                        },
+                        {
+                            "comment": "새로고침 버튼",
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "inline-flex items-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors cursor-pointer"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "refresh"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "sync",
+                                        "size": "lg"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:board.reload_page"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

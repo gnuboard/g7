@@ -1,0 +1,175 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_menu_list",
+    "permissions": [
+        "core.menus.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.menus.page_title",
+        "description": "$t:admin.menus.page_description"
+    },
+    "state": {
+        "selectedMenuId": null,
+        "selectedMenu": null,
+        "panelMode": "view",
+        "formData": {
+            "name": {
+                "ko": "",
+                "en": ""
+            },
+            "slug": "",
+            "url": "",
+            "icon": "fas fa-home",
+            "parent_id": null,
+            "extension_type": null,
+            "extension_identifier": null,
+            "custom_menu_key": null,
+            "is_active": true,
+            "roles": []
+        }
+    },
+    "data_sources": [
+        {
+            "id": "menus",
+            "type": "api",
+            "endpoint": "/api/admin/menus",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "params": {
+                "with_children": true,
+                "hierarchical": true
+            },
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "modules",
+            "type": "api",
+            "endpoint": "/api/admin/modules",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "params": {
+                "status": "active",
+                "with": [
+                    "custom_menus"
+                ]
+            },
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "menu_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.menus.title",
+                            "description": "$t:admin.menus.description"
+                        },
+                        "children": [
+                            {
+                                "id": "add_menu_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{menus?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedMenuId": null,
+                                            "selectedMenu": null,
+                                            "panelMode": "create",
+                                            "formData": {
+                                                "name": {
+                                                    "ko": "",
+                                                    "en": ""
+                                                },
+                                                "slug": "",
+                                                "url": "",
+                                                "icon": "fas fa-home",
+                                                "parent_id": null,
+                                                "extension_type": null,
+                                                "extension_identifier": null,
+                                                "custom_menu_key": null,
+                                                "is_active": true,
+                                                "roles": []
+                                            }
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "lg"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.menus.add_menu"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "main_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "className": "mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_menu_list/_panel_menu_list.json"
+                            },
+                            {
+                                "partial": "partials/admin_menu_list/_panel_detail.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_menu_list/_modal_delete.json"
+        }
+    ]
+}

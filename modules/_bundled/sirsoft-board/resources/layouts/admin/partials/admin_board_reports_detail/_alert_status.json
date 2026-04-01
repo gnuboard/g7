@@ -1,0 +1,416 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Status Stats Grid and Alert Box with Dynamic Actions for Admin Report Detail View"
+  },
+  "id": "status_wrapper",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{report_detail?.data}}",
+  "props": {
+    "className": "mb-6"
+  },
+  "children": [
+    {
+      "id": "status_alert",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-6 py-4 border rounded-lg {{report_detail?.data?.status === 'pending' || report_detail?.data?.status === 'review' || report_detail?.data?.status === 'rejected' || report_detail?.data?.status === 'suspended' || report_detail?.data?.status === 'deleted' ? 'flex flex-row items-end justify-between gap-4' : ''}} {{report_detail?.data?.status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-800' : report_detail?.data?.status === 'review' ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-800' : report_detail?.data?.status === 'rejected' ? 'bg-purple-50 dark:bg-purple-900 border-purple-200 dark:border-purple-700' : report_detail?.data?.status === 'deleted' ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600' : 'bg-red-50 dark:bg-red-900 border-red-300 dark:border-red-800'}}"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "px-6 py-4 border rounded-lg {{report_detail?.data?.status === 'pending' || report_detail?.data?.status === 'review' || report_detail?.data?.status === 'rejected' || report_detail?.data?.status === 'suspended' || report_detail?.data?.status === 'deleted' ? 'flex flex-col gap-3' : ''}} {{report_detail?.data?.status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-800' : report_detail?.data?.status === 'review' ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-800' : report_detail?.data?.status === 'rejected' ? 'bg-purple-50 dark:bg-purple-900 border-purple-200 dark:border-purple-700' : report_detail?.data?.status === 'deleted' ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600' : 'bg-red-50 dark:bg-red-900 border-red-300 dark:border-red-800'}}"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{report_detail?.data?.status === 'pending' || report_detail?.data?.status === 'review' || report_detail?.data?.status === 'rejected' || report_detail?.data?.status === 'suspended' ? 'flex items-start gap-3 flex-1' : 'flex items-start gap-3'}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 mb-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{report_detail?.data?.status === 'pending'}}",
+                      "props": {
+                        "name": "exclamation-circle",
+                        "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{report_detail?.data?.status === 'review'}}",
+                      "props": {
+                        "name": "clock",
+                        "className": "w-5 h-5 {{report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : ''}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{report_detail?.data?.status === 'rejected'}}",
+                      "props": {
+                        "name": "times-circle",
+                        "className": "w-5 h-5 text-purple-600 dark:text-purple-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{report_detail?.data?.status === 'suspended'}}",
+                      "props": {
+                        "name": "exclamation-triangle",
+                        "className": "w-5 h-5 {{report_detail?.data?.status === 'suspended' ? 'text-red-600 dark:text-red-400' : ''}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{report_detail?.data?.status === 'deleted'}}",
+                      "props": {
+                        "name": "ban",
+                        "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'text-yellow-700 dark:text-yellow-300' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-700 dark:text-yellow-300' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}"
+                          }
+                        }
+                      },
+                      "text": "$t:sirsoft-board.admin.reports.detail.alert_title_{{report_detail?.data?.status}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"
+                      }
+                    }
+                  },
+                  "text": "$t:sirsoft-board.admin.reports.detail.alert_message_{{report_detail?.data?.status}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{report_detail?.data?.available_actions?.length > 0}}",
+          "props": {
+            "className": "flex flex-wrap gap-2 items-end"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{report_detail?.data?.available_actions?.includes('pending') && report_detail?.data?.status !== 'rejected' && report_detail?.data?.status !== 'suspended'}}",
+              "props": {
+                "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
+                "className": "flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-xs font-medium transition-colors"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "actionType": "pending",
+                    "actionReason": ""
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "status_action_modal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "chevron-left",
+                    "className": "w-4 h-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "name": "chevron-left",
+                        "className": "w-3.5 h-3.5"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.reports.detail.actions.back_to_pending"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{report_detail?.data?.available_actions?.includes('review')}}",
+              "props": {
+                "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
+                "className": "flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "actionType": "review",
+                    "actionReason": ""
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "status_action_modal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}",
+                    "className": "w-4 h-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "name": "{{report_detail?.data?.status === 'pending' ? 'check-circle' : 'clock'}}",
+                        "className": "w-3.5 h-3.5"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{report_detail?.data?.status === 'pending' ? '$t:sirsoft-board.admin.reports.detail.actions.start_review' : '$t:sirsoft-board.admin.reports.detail.actions.re_review'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{report_detail?.data?.available_actions?.includes('rejected')}}",
+              "props": {
+                "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
+                "className": "flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-medium transition-colors"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "actionType": "rejected",
+                    "actionReason": ""
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "status_action_modal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "times-circle",
+                    "className": "w-4 h-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "name": "times-circle",
+                        "className": "w-3.5 h-3.5"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.reports.detail.actions.reject"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{report_detail?.data?.available_actions?.includes('suspended')}}",
+              "props": {
+                "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
+                "className": "flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium transition-colors"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "actionType": "suspended",
+                    "actionReason": ""
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "status_action_modal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "exclamation-triangle",
+                    "className": "w-4 h-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "name": "exclamation-triangle",
+                        "className": "w-3.5 h-3.5"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.reports.detail.actions.suspend"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{report_detail?.data?.available_actions?.includes('deleted')}}",
+              "props": {
+                "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
+                "className": "flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium transition-colors"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "actionType": "deleted",
+                    "actionReason": ""
+                  }
+                },
+                {
+                  "type": "click",
+                  "handler": "openModal",
+                  "target": "status_action_modal"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "trash",
+                    "className": "w-4 h-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "name": "trash",
+                        "className": "w-3.5 h-3.5"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.reports.detail.actions.delete"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

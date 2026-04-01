@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "layout_name": "auth/login",
+  "extends": "_user_base",
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Flex",
+        "blur_until_loaded": "{{_global?.currentUser?.uuid}}",
+        "props": {
+          "justify": "center",
+          "align": "start",
+          "className": "min-h-[60vh] py-12"
+        },
+        "children": [
+          {
+            "partial": "partials/auth/_redirect_if_logged_in.json"
+          },
+          {
+            "comment": "로그인 폼",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H2",
+                "props": {
+                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                },
+                "text": "$t:auth.login"
+              },
+              {
+                "partial": "partials/auth/_login_form.json"
+              },
+              {
+                "comment": "하단 링크 영역",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "mt-4 flex items-center justify-between text-sm"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/forgot-password"
+                        }
+                      }
+                    ],
+                    "text": "$t:auth.forgot_password_link"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/register"
+                        }
+                      }
+                    ],
+                    "text": "$t:auth.register_link"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

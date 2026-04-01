@@ -1,0 +1,29 @@
+{
+  "report_status": {
+    "pending": "접수",
+    "review": "검토",
+    "rejected": "반려",
+    "suspended": "게시중단",
+    "deleted": "영구 삭제"
+  },
+  "trigger_type": {
+    "report": "신고",
+    "admin": "관리자",
+    "system": "시스템"
+  },
+  "report_type": {
+    "post": "게시글",
+    "comment": "댓글"
+  },
+  "report_reason_type": {
+    "abuse": "욕설/비방",
+    "hate_speech": "혐오 발언",
+    "spam": "스팸/광고",
+    "copyright": "저작권 침해",
+    "privacy": "개인정보 노출",
+    "misinformation": "허위정보/가짜뉴스",
+    "sexual": "성적인 콘텐츠",
+    "violence": "폭력적인 콘텐츠",
+    "other": "기타"
+  }
+}

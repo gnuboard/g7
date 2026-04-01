@@ -1,0 +1,133 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 기본정보 섹션 (정책명, 사용여부, 기본정책)"
+    },
+    "id": "basic_info_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic"
+        },
+        {
+            "id": "basic_info_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "id": "field_name",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-red-500 dark:text-red-400 ml-1"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "name": "name",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder",
+                                "maxLength": 200,
+                                "required": true,
+                                "layout": "tabs",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.name}}",
+                            "props": {
+                                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "field_row_status",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                    },
+                    "children": [
+                        {
+                            "id": "field_is_active",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active",
+                                        "name": "is_active",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_is_default",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default",
+                                        "name": "is_default",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

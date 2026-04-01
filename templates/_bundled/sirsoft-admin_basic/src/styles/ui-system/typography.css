@@ -1,0 +1,66 @@
+/**
+ * G7 Admin Template - Design Guide
+ * Typography - 타이포그래피 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * FORM TYPOGRAPHY
+   * ======================================== */
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700;
+    @apply dark:text-gray-300;
+  }
+  .form-hint {
+    @apply text-xs text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * CARD TYPOGRAPHY
+   * ======================================== */
+
+  .card-title {
+    @apply text-base font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .card-description {
+    @apply text-sm text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * PAGE HEADER TYPOGRAPHY
+   * ======================================== */
+
+  .page-title {
+    @apply text-xl font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .page-description {
+    @apply text-sm text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * MODAL TYPOGRAPHY
+   * ======================================== */
+
+  .modal-title {
+    @apply text-lg font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+  .modal-description {
+    @apply text-sm text-gray-500 mt-1;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * TOAST TYPOGRAPHY
+   * ======================================== */
+
+  .toast-message {
+    @apply text-sm;
+  }
+}

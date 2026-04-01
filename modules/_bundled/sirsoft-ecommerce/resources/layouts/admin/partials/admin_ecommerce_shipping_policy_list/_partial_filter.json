@@ -1,0 +1,1286 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Shipping Policy List Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none",
+                                "value": "{{_local.filter.searchType || 'name'}}",
+                                "options": [
+                                    { "value": "name", "label": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name" }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "search",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.search.placeholder",
+                                        "className": "input w-full pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keypress",
+                                            "key": "Enter",
+                                            "actionRef": "searchShippingPolicies"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col"
+            },
+            "children": [
+                {
+                    "id": "shipping_method_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.shipping_method"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.shipping_methods || _local.filter.shipping_methods.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": []
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('parcel')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'parcel'), 'parcel'] : (_local.filter.shipping_methods || []).filter(m => m !== 'parcel')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.parcel"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('collect')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'collect'), 'collect'] : (_local.filter.shipping_methods || []).filter(m => m !== 'collect')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.collect"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('quick')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'quick'), 'quick'] : (_local.filter.shipping_methods || []).filter(m => m !== 'quick')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.quick"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('direct')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'direct'), 'direct'] : (_local.filter.shipping_methods || []).filter(m => m !== 'direct')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.direct"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('pickup')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'pickup'), 'pickup'] : (_local.filter.shipping_methods || []).filter(m => m !== 'pickup')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.pickup"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.shipping_methods || []).includes('other')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.shipping_methods": "{{$event.target.checked ? [...(_local.filter.shipping_methods || []).filter(m => m !== 'other'), 'other'] : (_local.filter.shipping_methods || []).filter(m => m !== 'other')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.shipping_method.other"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "charge_policy_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.charge_policy"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.charge_policies || _local.filter.charge_policies.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": []
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('free')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'free'), 'free'] : (_local.filter.charge_policies || []).filter(p => p !== 'free')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.free"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('fixed')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'fixed'), 'fixed'] : (_local.filter.charge_policies || []).filter(p => p !== 'fixed')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.fixed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('conditional_free')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'conditional_free'), 'conditional_free'] : (_local.filter.charge_policies || []).filter(p => p !== 'conditional_free')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.conditional_free"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('range_amount')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_amount'), 'range_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_amount')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_amount"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('range_quantity')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_quantity'), 'range_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_quantity')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_quantity"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('range_weight')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_weight'), 'range_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_weight')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_weight"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('range_volume')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume'), 'range_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_volume"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('api')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'api'), 'api'] : (_local.filter.charge_policies || []).filter(p => p !== 'api')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.api"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('range_volume_weight')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight'), 'range_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'range_volume_weight')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.range_volume_weight"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('per_quantity')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_quantity'), 'per_quantity'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_quantity')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_quantity"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('per_weight')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_weight'), 'per_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_weight')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_weight"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('per_volume')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume'), 'per_volume'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_volume"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('per_volume_weight')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight'), 'per_volume_weight'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_volume_weight')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_volume_weight"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.charge_policies || []).includes('per_amount')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.charge_policies": "{{$event.target.checked ? [...(_local.filter.charge_policies || []).filter(p => p !== 'per_amount'), 'per_amount'] : (_local.filter.charge_policies || []).filter(p => p !== 'per_amount')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.enums.charge_policy.per_amount"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "country_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(shipping_available_countries?.data?.data ?? []).length > 0}}",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.country"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.countries || _local.filter.countries.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.countries": []
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "shipping_available_countries?.data?.data ?? []",
+                                        "item_var": "acountry"
+                                    },
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.countries || []).includes(acountry.code)}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.countries": "{{$event.target.checked ? [...(_local.filter.countries || []).filter(c => c !== acountry.code), acountry.code] : (_local.filter.countries || []).filter(c => c !== acountry.code)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "fi fi-{{acountry.code?.toLowerCase()}} fis rounded"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{acountry.code}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "is_active_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "is_active_filter",
+                                                "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                "checked": "{{!_local.filter.is_active || _local.filter.is_active === ''}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.is_active": ""
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "is_active_filter",
+                                                "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                "checked": "{{_local.filter.is_active === 'true'}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.is_active": "true"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.active"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "is_active_filter",
+                                                "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                "checked": "{{_local.filter.is_active === 'false'}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.is_active": "false"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.inactive"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_buttons",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.search",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchShippingPolicies"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.reset",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter": {
+                                            "searchType": "name",
+                                            "search": "",
+                                            "shipping_methods": [],
+                                            "charge_policies": [],
+                                            "countries": [],
+                                            "is_active": ""
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/shipping-policies"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

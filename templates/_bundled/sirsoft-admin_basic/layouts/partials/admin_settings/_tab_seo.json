@@ -1,0 +1,700 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 SEO 탭 콘텐츠"
+  },
+  "id": "tab_content_seo",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "card_meta_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.meta_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.meta_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "field_meta_title_suffix",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_title_suffix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.meta_title_suffix",
+                    "placeholder": " | 그누보드7",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_title_suffix_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_meta_description",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_description"
+                },
+                {
+                  "type": "basic",
+                  "name": "Textarea",
+                  "props": {
+                    "name": "seo.meta_description",
+                    "rows": 3,
+                    "maxLength": 160,
+                    "placeholder": "$t:admin.settings.seo.meta_description_placeholder",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed resize-none"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_description_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_meta_keywords",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_keywords"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.meta_keywords",
+                    "placeholder": "CMS, 그누보드7, 오픈소스",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.meta_keywords_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_analytics_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.analytics_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.analytics_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "field_google_analytics_id",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.google_analytics_id"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.google_analytics_id",
+                    "placeholder": "G-XXXXXXXXXX",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.google_analytics_id_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_verification_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.verification_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.verification_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "id": "field_google_site_verification",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.google_site_verification"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.google_site_verification",
+                    "placeholder": "google-site-verification=XXXX...",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_naver_site_verification",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.naver_site_verification"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.naver_site_verification",
+                    "placeholder": "naver-site-verification=XXXX...",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_bot_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.bot_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.bot_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_bot_detection_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.seo.bot_detection_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.seo.bot_detection_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "seo.bot_detection_enabled",
+                    "size": "md"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_bot_user_agents",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.bot_user_agents"
+                },
+                {
+                  "type": "composite",
+                  "name": "TagInput",
+                  "props": {
+                    "name": "seo.bot_user_agents",
+                    "creatable": true,
+                    "placeholder": "$t:admin.settings.seo.bot_user_agents_placeholder",
+                    "className": "w-full",
+                    "defaultVariant": "blue"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.bot_user_agents_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_seo_cache_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.seo_cache_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.seo_cache_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_seo_cache_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.seo.cache_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.seo.cache_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "seo.cache_enabled",
+                    "size": "md"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_seo_cache_ttl",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.cache_ttl"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "seo.cache_ttl",
+                    "min": 60,
+                    "max": 86400,
+                    "placeholder": "7200",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.cache_ttl_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_sitemap_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.sitemap_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.sitemap_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_sitemap_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.seo.sitemap_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.seo.sitemap_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "seo.sitemap_enabled",
+                    "size": "md"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_sitemap_schedule",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_schedule"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "seo.sitemap_schedule",
+                    "className": "w-full",
+                    "options": [
+                      { "value": "hourly", "label": "$t:admin.settings.seo.sitemap_schedule_hourly" },
+                      { "value": "daily", "label": "$t:admin.settings.seo.sitemap_schedule_daily" },
+                      { "value": "weekly", "label": "$t:admin.settings.seo.sitemap_schedule_weekly" }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_sitemap_schedule_time",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_schedule_time"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.sitemap_schedule_time",
+                    "placeholder": "02:00",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_schedule_time_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_sitemap_cache_ttl",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_cache_ttl"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "seo.sitemap_cache_ttl",
+                    "min": 3600,
+                    "max": 604800,
+                    "placeholder": "86400",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_cache_ttl_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

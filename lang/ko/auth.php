@@ -1,0 +1,47 @@
+<?php
+
+return [
+    // 인증 관련 메시지
+    'login_success' => '로그인이 성공했습니다.',
+    'login_failed' => '인증에 실패했습니다.',
+    'register_success' => '회원가입이 성공했습니다.',
+    'register_failed' => '회원가입에 실패했습니다.',
+    'logout_success' => '로그아웃이 성공했습니다.',
+    'logout_all_devices_success' => '모든 디바이스에서 로그아웃되었습니다.',
+    'password_reset_success' => '비밀번호가 성공적으로 재설정되었습니다.',
+    'password_reset_failed' => '비밀번호 재설정에 실패했습니다.',
+    'invalid_credentials' => '잘못된 인증 정보입니다.',
+    'admin_login_success' => '관리자 로그인이 성공했습니다.',
+    'admin_required' => '관리자 권한이 필요합니다.',
+    'unauthenticated' => '인증이 필요합니다.',
+    'permission_denied' => '해당 권한이 없습니다.',
+    'layout_permission_denied' => '레이아웃 접근 권한이 없습니다. (필요 권한: :required_permissions)',
+    'layout_guest_permission_denied' => '로그인이 필요한 레이아웃입니다. (필요 권한: :required_permissions)',
+    'invalid_permission_type' => '유효하지 않은 권한 타입입니다.',
+    'role_denied' => '해당 역할이 없습니다.',
+    'email_not_registered' => '등록되지 않은 이메일입니다.',
+    'guest_permission_denied' => '비회원은 해당 작업을 수행할 수 없습니다. 로그인이 필요합니다.',
+    'scope_denied' => '이 리소스에 대한 접근 권한이 없습니다.',
+    'scope_type_all' => '전체',
+    'scope_type_self' => '본인만',
+    'scope_type_role' => '소유역할',
+    'invalid_token' => '유효하지 않은 인증 토큰입니다.',
+    'token_expired' => '인증 토큰이 만료되었습니다. 다시 로그인해주세요.',
+    'user_not_found' => '사용자를 찾을 수 없습니다.',
+    'account_inactive' => '비활성화된 계정입니다. 관리자에게 문의해주세요.',
+    'account_blocked' => '차단된 계정입니다. 관리자에게 문의해주세요.',
+    'account_withdrawn' => '탈퇴한 계정입니다.',
+
+    // 비밀번호 재설정
+    'reset_token_invalid' => '유효하지 않은 비밀번호 재설정 토큰입니다.',
+    'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
+    'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
+    'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+
+    // 메일 템플릿 관련 메시지 (템플릿 본문은 DB 관리)
+    'mail_template_not_found' => '메일 템플릿을 찾을 수 없습니다: :type',
+    'mail_template_updated' => '메일 템플릿이 수정되었습니다.',
+    'mail_template_toggled' => '메일 템플릿 활성 상태가 변경되었습니다.',
+    'mail_template_reset' => '메일 템플릿이 기본값으로 복원되었습니다.',
+    'mail_template_reset_not_found' => '기본 템플릿 데이터를 찾을 수 없습니다: :type',
+];

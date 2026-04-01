@@ -1,0 +1,210 @@
+{
+  "target_layout": "admin_user_form",
+  "injections": [
+    {
+      "target_id": "extension_slot",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "section_notification_settings",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between mb-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "bell",
+                        "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "H3",
+                      "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "ExtensionBadge",
+                  "props": {
+                    "type": "module",
+                    "identifier": "sirsoft-board",
+                    "installedModules": "{{_global.installedModules}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_notify_post_complete",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "name": "notify_post_complete",
+                            "checked": "{{_local.form?.notify_post_complete ?? false}}",
+                            "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "field_notify_post_reply",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "name": "notify_post_reply",
+                            "checked": "{{_local.form?.notify_post_reply ?? false}}",
+                            "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "field_notify_comment",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "name": "notify_comment",
+                            "checked": "{{_local.form?.notify_comment ?? false}}",
+                            "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "field_notify_reply_comment",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "name": "notify_reply_comment",
+                            "checked": "{{_local.form?.notify_reply_comment ?? false}}",
+                            "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 300
+}

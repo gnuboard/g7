@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 라이선스 전문 모달"
+  },
+  "id": "template_extension_license_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.license.license_text",
+    "size": "large"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-col max-h-[70vh]"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-1 overflow-y-auto min-h-0 px-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Pre",
+              "props": {
+                "className": "whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono leading-relaxed"
+              },
+              "text": "{{_global.extensionLicenseContent ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              },
+              "actions": [{ "type": "click", "handler": "closeModal" }],
+              "children": [{ "type": "basic", "name": "Span", "text": "$t:common.close" }]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

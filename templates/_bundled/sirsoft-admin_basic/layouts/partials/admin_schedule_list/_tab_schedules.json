@@ -1,0 +1,1512 @@
+{
+  "layout_name": "tab_schedules",
+  "id": "tab_schedules",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeScheduleTab || 'schedules') === 'schedules'}}",
+  "children": [
+    {
+      "id": "statistics_cards",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "$t:admin.schedules.stats.total"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "clock", "className": "w-5 h-5 text-gray-400 dark:text-gray-500" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "mt-2 text-2xl font-bold text-gray-900 dark:text-white" },
+              "text": "{{schedules?.data?.statistics?.total ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "$t:admin.schedules.stats.active"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "check-circle", "className": "w-5 h-5 text-green-500" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "mt-2 text-2xl font-bold text-green-600 dark:text-green-400" },
+              "text": "{{schedules?.data?.statistics?.active ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "$t:admin.schedules.stats.success"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "check", "className": "w-5 h-5 text-blue-500" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400" },
+              "text": "{{schedules?.data?.statistics?.success ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "$t:admin.schedules.stats.failed"
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "x-circle", "className": "w-5 h-5 text-red-500" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "mt-2 text-2xl font-bold text-red-600 dark:text-red-400" },
+              "text": "{{schedules?.data?.statistics?.failed ?? 0}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search_filter_area",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6"
+      },
+      "children": [
+        {
+          "id": "search_header_row",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-wrap gap-3 items-center mb-4"
+          },
+          "children": [
+            {
+              "id": "search_type_select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "search_type",
+                "className": "w-28",
+                "value": "{{_local.searchType || ''}}",
+                "options": [
+                  { "label": "$t:admin.schedules.search_fields.all", "value": "" },
+                  { "label": "$t:admin.schedules.search_fields.name", "value": "name" },
+                  { "label": "$t:admin.schedules.search_fields.command", "value": "command" },
+                  { "label": "$t:admin.schedules.search_fields.description", "value": "description" }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "searchType": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "search_input",
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "search",
+                "placeholder": "$t:admin.schedules.search_input_placeholder",
+                "value": "{{_local.searchQuery || ''}}",
+                "className": "flex-1 min-w-[200px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "searchQuery": "{{$event.target.value}}"
+                  }
+                },
+                {
+                  "type": "keypress",
+                  "key": "Enter",
+                  "actionRef": "searchSchedules"
+                }
+              ]
+            },
+            {
+              "id": "advanced_search_toggle",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "filter", "className": "w-4 h-4" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.schedules.advanced_search"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "basic_filters",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "type_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.type"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "type_filter",
+                    "value": "{{query.type || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.type.artisan", "value": "artisan" },
+                      { "label": "$t:admin.schedules.type.shell", "value": "shell" },
+                      { "label": "$t:admin.schedules.type.url", "value": "url" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "type": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "frequency_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.frequency"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "frequency_filter",
+                    "value": "{{query.frequency || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.frequency.everyMinute", "value": "everyMinute" },
+                      { "label": "$t:admin.schedules.frequency.hourly", "value": "hourly" },
+                      { "label": "$t:admin.schedules.frequency.daily", "value": "daily" },
+                      { "label": "$t:admin.schedules.frequency.weekly", "value": "weekly" },
+                      { "label": "$t:admin.schedules.frequency.monthly", "value": "monthly" },
+                      { "label": "$t:admin.schedules.frequency.custom", "value": "custom" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "frequency": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "created_at_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.created_at"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": { "name": "calendar", "className": "w-4 h-4 text-gray-500" }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "date",
+                        "value": "{{query.created_from || ''}}",
+                        "className": "w-36 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{$event.target.value}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-gray-500 dark:text-gray-400" },
+                      "text": "~"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": { "name": "calendar", "className": "w-4 h-4 text-gray-500" }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "date",
+                        "value": "{{query.created_to || ''}}",
+                        "className": "w-36 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_to": "{{$event.target.value}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "date_presets",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex gap-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.today",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date().toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.week",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.month",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.3months",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.6months",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.schedules.filters.preset.year",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/schedules",
+                            "mergeQuery": true,
+                            "query": {
+                              "created_from": "{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}}",
+                              "created_to": "{{new Date().toISOString().split('T')[0]}}",
+                              "page": 1
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "status_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.status"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "status_filter",
+                    "value": "{{query.status || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.status.active", "value": "active" },
+                      { "label": "$t:admin.schedules.status.inactive", "value": "inactive" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "status": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "advanced_search_panel",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.showAdvancedSearch}}",
+          "props": {
+            "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4"
+          },
+          "children": [
+            {
+              "id": "last_result_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.last_result"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "last_result_filter",
+                    "value": "{{query.last_result || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.result.success", "value": "success" },
+                      { "label": "$t:admin.schedules.result.failed", "value": "failed" },
+                      { "label": "$t:admin.schedules.result.running", "value": "running" },
+                      { "label": "$t:admin.schedules.result.never", "value": "never" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "last_result": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "without_overlapping_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.without_overlapping"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "without_overlapping_filter",
+                    "value": "{{query.without_overlapping || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.filters.use", "value": "1" },
+                      { "label": "$t:admin.schedules.filters.not_use", "value": "0" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "without_overlapping": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "run_in_maintenance_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.run_in_maintenance"
+                },
+                {
+                  "type": "composite",
+                  "name": "RadioGroup",
+                  "props": {
+                    "name": "run_in_maintenance_filter",
+                    "value": "{{query.run_in_maintenance || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" },
+                      { "label": "$t:admin.schedules.filters.allow", "value": "1" },
+                      { "label": "$t:admin.schedules.filters.disallow", "value": "0" }
+                    ],
+                    "inline": true
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "run_in_maintenance": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "module_filter_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]" },
+                  "text": "$t:admin.schedules.filters.module"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "module_filter",
+                    "className": "w-48",
+                    "value": "{{query.module || ''}}",
+                    "options": [
+                      { "label": "$t:admin.schedules.filters.all", "value": "" }
+                    ]
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "mergeQuery": true,
+                        "query": {
+                          "module": "{{$event.target.value}}",
+                          "page": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "search_buttons",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2"
+          },
+          "children": [
+            {
+              "id": "search_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "actionRef": "searchSchedules"
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "search", "className": "w-4 h-4" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:common.search"
+                }
+              ]
+            },
+            {
+              "id": "refresh_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "refetchDataSource",
+                  "params": { "dataSourceId": "schedules" }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "refresh-cw", "className": "w-4 h-4" }
+                }
+              ]
+            },
+            {
+              "id": "reset_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "searchQuery": "",
+                        "searchType": "",
+                        "showAdvancedSearch": false
+                      }
+                    },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/schedules",
+                        "query": {}
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.schedules.reset_filters"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bulk_actions_area",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+      },
+      "children": [
+        {
+          "id": "bulk_actions_left",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+              "text": "$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}"
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "bulk_status",
+                "className": "w-32",
+                "placeholder": "$t:admin.schedules.bulk.status_change",
+                "value": "",
+                "options": [
+                  { "label": "$t:admin.schedules.status.active", "value": "active" },
+                  { "label": "$t:admin.schedules.status.inactive", "value": "inactive" }
+                ],
+                "disabled": "{{!_global.selectedScheduleIds?.length}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "bulkStatusAction": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "bulk_action",
+                "className": "w-32",
+                "placeholder": "$t:admin.schedules.bulk.action_run",
+                "value": "",
+                "options": [
+                  { "label": "$t:admin.schedules.actions.run", "value": "run" }
+                ],
+                "disabled": "{{!_global.selectedScheduleIds?.length}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "bulkAction": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!_global.selectedScheduleIds?.length}}"
+              },
+              "text": "$t:admin.schedules.bulk.apply",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "if",
+                  "condition": "{{_global.bulkStatusAction}}",
+                  "then": {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/admin/schedules/bulk-status",
+                    "params": {
+                      "method": "PATCH",
+                      "body": {
+                        "ids": "{{_global.selectedScheduleIds}}",
+                        "is_active": "{{_global.bulkStatusAction === 'active'}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "success",
+                          "message": "$t:admin.schedules.messages.bulk_status_updated"
+                        }
+                      },
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "selectedScheduleIds": [],
+                          "bulkStatusAction": ""
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": { "dataSourceId": "schedules" }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "error",
+                          "message": "{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "list_info_right",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+              "text": "$t:admin.schedules.total_count|count={{schedules?.data?.total ?? 0}}"
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "sort_by",
+                "className": "w-40",
+                "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}",
+                "options": [
+                  { "label": "$t:admin.schedules.sort.created_at_desc", "value": "created_at_desc" },
+                  { "label": "$t:admin.schedules.sort.created_at_asc", "value": "created_at_asc" },
+                  { "label": "$t:admin.schedules.sort.name_asc", "value": "name_asc" },
+                  { "label": "$t:admin.schedules.sort.name_desc", "value": "name_desc" },
+                  { "label": "$t:admin.schedules.sort.next_run_at_asc", "value": "next_run_at_asc" },
+                  { "label": "$t:admin.schedules.sort.next_run_at_desc", "value": "next_run_at_desc" }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/schedules",
+                    "mergeQuery": true,
+                    "query": {
+                      "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                      "sort_order": "{{$event.target.value.split('_').pop()}}",
+                      "page": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "per_page",
+                "className": "w-20",
+                "value": "{{query.per_page || '10'}}",
+                "options": [
+                  { "label": "$t:admin.schedules.per_page.10", "value": "10" },
+                  { "label": "$t:admin.schedules.per_page.20", "value": "20" },
+                  { "label": "$t:admin.schedules.per_page.50", "value": "50" },
+                  { "label": "$t:admin.schedules.per_page.100", "value": "100" }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/schedules",
+                    "mergeQuery": true,
+                    "query": {
+                      "per_page": "{{$event.target.value}}",
+                      "page": 1
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "schedules_data_grid",
+      "type": "composite",
+      "name": "DataGrid",
+      "blur_until_loaded": true,
+      "props": {
+        "columns": [
+          {
+            "field": "name",
+            "header": "$t:admin.schedules.columns.name",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": { "className": "font-medium text-gray-900 dark:text-white" },
+                    "text": "{{row.name}}"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Code",
+                    "props": { "className": "block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate" },
+                    "text": "{{row.command}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "field": "type",
+            "header": "$t:admin.schedules.columns.type",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.type === 'artisan'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
+                "text": "$t:admin.schedules.type.artisan"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.type === 'shell'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" },
+                "text": "$t:admin.schedules.type.shell"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.type === 'url'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+                "text": "$t:admin.schedules.type.url"
+              }
+            ]
+          },
+          {
+            "field": "frequency",
+            "header": "$t:admin.schedules.columns.frequency",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": { "className": "text-sm text-gray-900 dark:text-white" },
+                    "text": "{{row.frequency_label}}"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{row.frequency_detail}}",
+                    "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                    "text": "{{row.frequency_detail}}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "field": "next_run_at",
+            "header": "$t:admin.schedules.columns.next_run",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.is_active && row.next_run_at}}",
+                "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                "text": "{{row.next_run_at}}"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{!row.is_active}}",
+                "props": { "className": "text-sm text-gray-400 dark:text-gray-500" },
+                "text": "-"
+              }
+            ]
+          },
+          {
+            "field": "last_run_at",
+            "header": "$t:admin.schedules.columns.last_run",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "if": "{{row.last_run_at}}",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                    "text": "{{row.last_run_at}}"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{row.last_duration}}",
+                    "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                    "text": "$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{!row.last_run_at}}",
+                "props": { "className": "text-sm text-gray-400 dark:text-gray-500" },
+                "text": "-"
+              }
+            ]
+          },
+          {
+            "field": "last_result",
+            "header": "$t:admin.schedules.columns.last_result",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.last_result === 'success'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+                "text": "$t:admin.schedules.result.success"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.last_result === 'failed'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
+                "text": "$t:admin.schedules.result.failed"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.last_result === 'running'}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+                "text": "$t:admin.schedules.result.running"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{row.last_result === 'never' || !row.last_result}}",
+                "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400" },
+                "text": "$t:admin.schedules.result.never"
+              }
+            ]
+          },
+          {
+            "field": "is_active",
+            "header": "$t:admin.schedules.columns.status",
+            "sortable": false,
+            "cellChildren": [
+              {
+                "type": "composite",
+                "name": "Toggle",
+                "props": {
+                  "checked": "{{row.is_active}}",
+                  "size": "sm"
+                },
+                "actions": [
+                  {
+                    "type": "change",
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/admin/schedules/bulk-status",
+                    "params": {
+                      "method": "PATCH",
+                      "body": {
+                        "ids": ["{{row.id}}"],
+                        "is_active": "{{$event.target.checked}}"
+                      }
+                    },
+                    "onSuccess": [
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "success",
+                          "message": "$t:admin.schedules.messages.status_updated"
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": { "dataSourceId": "schedules" }
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "error",
+                          "message": "{{error.message ?? '$t:admin.schedules.errors.status_update_failed'}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "data": "{{schedules?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{schedules?.data?.current_page ?? 1}}",
+        "serverTotalPages": "{{schedules?.data?.last_page ?? 1}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": true,
+        "showColumnSelector": true,
+        "responsiveBreakpoint": 768,
+        "rowActions": [
+          {
+            "id": "run",
+            "label": "$t:admin.schedules.actions.run",
+            "iconName": "play",
+            "disabledField": "abilities.can_run"
+          },
+          {
+            "id": "history",
+            "label": "$t:admin.schedules.actions.history",
+            "iconName": "clock"
+          },
+          {
+            "id": "edit",
+            "label": "$t:common.edit",
+            "iconName": "pencil",
+            "disabledField": "abilities.can_update"
+          },
+          {
+            "id": "duplicate",
+            "label": "$t:admin.schedules.actions.duplicate",
+            "iconName": "copy",
+            "disabledField": "abilities.can_create"
+          },
+          {
+            "id": "delete",
+            "label": "$t:common.delete",
+            "iconName": "trash",
+            "variant": "danger",
+            "disabledField": "abilities.can_delete"
+          }
+        ],
+        "actionsColumnHeader": "$t:common.actions"
+      },
+      "actions": [
+        {
+          "event": "onPageChange",
+          "type": "change",
+          "handler": "navigate",
+          "params": {
+            "path": "/admin/schedules",
+            "replace": true,
+            "mergeQuery": true,
+            "query": {
+              "page": "{{$args[0]}}"
+            }
+          }
+        },
+        {
+          "event": "onSelectionChange",
+          "type": "action",
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "selectedScheduleIds": "{{$args[0]}}"
+          }
+        },
+        {
+          "event": "onRowAction",
+          "type": "action",
+          "handler": "switch",
+          "cases": {
+            "run": {
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedSchedule": "{{$args[1]}}"
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "schedule_run_modal"
+                }
+              ]
+            },
+            "history": {
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedSchedule": "{{$args[1]}}"
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "schedule_history_modal"
+                }
+              ]
+            },
+            "edit": {
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedSchedule": "{{$args[1]}}",
+                    "isEditMode": true
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "schedule_form_modal"
+                }
+              ]
+            },
+            "duplicate": {
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "selectedSchedule": "{{$args[1]}}"
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "schedule_duplicate_modal"
+                }
+              ]
+            },
+            "delete": {
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "deleteTargetId": "{{$args[1].id}}",
+                    "deleteTargetName": "{{$args[1].name}}"
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "schedule_delete_modal"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

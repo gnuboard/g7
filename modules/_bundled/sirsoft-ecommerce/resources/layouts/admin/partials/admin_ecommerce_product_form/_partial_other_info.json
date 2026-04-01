@@ -1,0 +1,757 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Other Info Section"
+  },
+  "id": "section_other_info",
+  "type": "basic",
+  "name": "Section",
+  "props": {
+    "id": "other",
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "other_info_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
+        {
+          "id": "other_info_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": { "target": "local", "ui.otherInfoExpanded": "{{!_local.ui.otherInfoExpanded}}" }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "ellipsis-h",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.other_info"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "other_info_body",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.ui.otherInfoExpanded !== false}}",
+          "props": {
+            "className": "card-accordion-body p-6 space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_labels",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "id": "labels_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label mb-0"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.labels.title"
+                    }
+                  ]
+                },
+                {
+                  "id": "labels_chips",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-wrap gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "contents"
+                      },
+                      "iteration": {
+                        "source": "{{product_labels?.data?.data ?? []}}",
+                        "item_var": "label",
+                        "index_var": "labelIdx"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "ChipCheckbox",
+                          "props": {
+                            "value": "{{String(label.id)}}",
+                            "checked": "{{(_local.form.label_assignments ?? []).some(a => a.label_id === label.id)}}",
+                            "label": "{{$localized(label.name) + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.started_at ? ' (' + (_local.form.label_assignments ?? []).find(a => a.label_id === label.id).started_at.substring(5) + '~' + ((_local.form.label_assignments ?? []).find(a => a.label_id === label.id)?.ended_at?.substring(5) ?? '') + ')' : '')}}",
+                            "customColor": "{{label.color ?? '#3B82F6'}}",
+                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sirsoft-ecommerce.toggleLabelAssignment",
+                              "params": {
+                                "labelId": "{{label.id}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "no_labels_available",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{!(product_labels?.data?.data ?? []).length}}",
+                      "props": {
+                        "className": "w-full text-center text-sm text-gray-500 dark:text-gray-400 py-2"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.labels.no_available"
+                    }
+                  ]
+                },
+                {
+                  "id": "selected_label_preview",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.ui.lastClickedLabelId && (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}",
+                  "props": {
+                    "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-3"
+                  },
+                  "children": [
+                    {
+                      "id": "label_info_row",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex flex-col gap-3"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "px-2 py-0.5 rounded text-xs font-medium",
+                                "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}"
+                              },
+                              "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name) ?? ''}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}",
+                              "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}} ~ {{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}",
+                              "props": {
+                                "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.no_period"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-3 text-sm"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                              "props": {
+                                "type": "button",
+                                "className": "text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.edit",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sequence",
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "editingLabelId": "{{_local.ui.lastClickedLabelId}}",
+                                        "labelFormData": {
+                                          "label_id": "{{_local.ui.lastClickedLabelId}}",
+                                          "name": "{{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name ?? { ko: '', en: '' }}}",
+                                          "color": "{{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}",
+                                          "started_at": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? null}}",
+                                          "ended_at": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? null}}"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "modal_label_form"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{!route.itemCode || product?.data?.abilities?.can_update === true}}",
+                              "props": {
+                                "type": "button",
+                                "className": "text-red-600 hover:text-red-700 dark:text-red-400 font-medium"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.remove",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sequence",
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "labelToDeleteId": "{{_local.ui.lastClickedLabelId}}"
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "modal_label_delete_confirm"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "inline_period_section",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3"
+                      },
+                      "children": [
+                        {
+                          "id": "period_preset_buttons",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex flex-wrap gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sirsoft-ecommerce.setLabelDatePresetInline",
+                                  "params": { "preset": "7d" }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sirsoft-ecommerce.setLabelDatePresetInline",
+                                  "params": { "preset": "14d" }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sirsoft-ecommerce.setLabelDatePresetInline",
+                                  "params": { "preset": "30d" }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_permanent",
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sirsoft-ecommerce.setLabelDatePresetInline",
+                                  "params": { "preset": "permanent" }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "period_date_inputs",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2"
+                          },
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex flex-col gap-2"
+                              }
+                            }
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "date",
+                                "className": "input input-sm",
+                                "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "sirsoft-ecommerce.updateLabelPeriodInline",
+                                  "params": {
+                                    "labelId": "{{_local.ui.lastClickedLabelId}}",
+                                    "field": "started_at",
+                                    "value": "{{$event}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "~"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "date",
+                                "className": "input input-sm",
+                                "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
+                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "sirsoft-ecommerce.updateLabelPeriodInline",
+                                  "params": {
+                                    "labelId": "{{_local.ui.lastClickedLabelId}}",
+                                    "field": "ended_at",
+                                    "value": "{{$event}}"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_min_purchase_qty",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.fields.min_purchase_qty"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Input",
+                      "props": {
+                        "name": "min_purchase_qty",
+                        "value": "{{_local.form.min_purchase_qty ?? 1}}",
+                        "type": "number",
+                        "min": 1,
+                        "className": "{{_local.errors?.min_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "form.min_purchase_qty": "{{parseInt($event) || 1}}" }
+                        },
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "{{_local.form.min_purchase_qty ?? 1}}$t:sirsoft-ecommerce.admin.product.purchase.min_suffix"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.min_purchase_qty}}",
+                      "props": { "className": "text-red-500 dark:text-red-400 text-xs" },
+                      "text": "{{_local.errors?.min_purchase_qty?.[0]}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_max_purchase_qty",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.fields.max_purchase_qty"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Input",
+                      "props": {
+                        "name": "max_purchase_qty",
+                        "value": "{{_local.form.max_purchase_qty ?? 0}}",
+                        "type": "number",
+                        "min": 0,
+                        "className": "{{_local.errors?.max_purchase_qty ? 'input input-error w-24' : 'input w-24'}}",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "form.max_purchase_qty": "{{parseInt($event) || 0}}" }
+                        },
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.purchase.unlimited_hint"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.max_purchase_qty}}",
+                      "props": { "className": "text-red-500 dark:text-red-400 text-xs" },
+                      "text": "{{_local.errors?.max_purchase_qty?.[0]}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_purchase_restriction",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.fields.purchase_restriction"
+                },
+                {
+                  "id": "restriction_radio_group",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-6"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex flex-col gap-3"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "purchase_restriction",
+                            "value": "none",
+                            "checked": "{{(_local.form.purchase_restriction ?? 'none') === 'none'}}",
+                            "autoBinding": false,
+                            "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400",
+                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.purchase_restriction": "none",
+                                "form.allowed_roles": [],
+                                "hasChanges": "{{!!route?.itemCode}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.product.restriction.none"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "radio",
+                            "name": "purchase_restriction",
+                            "value": "restricted",
+                            "checked": "{{_local.form.purchase_restriction === 'restricted'}}",
+                            "autoBinding": false,
+                            "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400",
+                            "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.purchase_restriction": "restricted",
+                                "hasChanges": "{{!!route?.itemCode}}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.product.restriction.restricted"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "allowed_roles_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.form.purchase_restriction === 'restricted'}}",
+                  "props": {
+                    "className": "mt-4 space-y-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.fields.allowed_roles"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "TagInput",
+                      "props": {
+                        "name": "allowed_roles",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.search_roles",
+                        "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: r.display_name ?? r.name, group: r.is_system ? $t('sirsoft-ecommerce.admin.product.roles.system') : $t('sirsoft-ecommerce.admin.product.roles.custom'), description: r.description ?? '' }))}}",
+                        "value": "{{_local.form.allowed_roles ?? []}}",
+                        "isMulti": true,
+                        "isSearchable": true,
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "form.allowed_roles": "{{$event.target.value}}" }
+                        },
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": { "target": "local", "hasChanges": "{{!!route?.itemCode}}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

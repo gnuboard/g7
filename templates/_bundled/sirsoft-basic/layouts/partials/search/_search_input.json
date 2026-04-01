@@ -1,0 +1,60 @@
+{
+  "meta": { "is_partial": true, "description": "검색 입력 영역" },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "flex gap-2 mb-6" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex-1 relative" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "search", "size": "sm", "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" }
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "q",
+            "value": "{{query?.q ?? ''}}",
+            "placeholder": "$t:search.placeholder",
+            "className": "w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": { "target": "local", "q": "{{$event.target.value}}" }
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "handler": "navigate",
+              "params": { "path": "/search", "query": { "q": "{{$event.target.value}}" } }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": { "className": "px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer" },
+      "text": "$t:search.button",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            { "handler": "setState", "params": { "target": "global", "searchPage": 1 } },
+            { "handler": "navigate", "params": { "path": "/search", "query": { "q": "{{_local.q ?? ''}}" } } }
+          ]
+        }
+      ]
+    }
+  ]
+}

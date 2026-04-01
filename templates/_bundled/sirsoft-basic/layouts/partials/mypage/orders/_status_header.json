@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "주문 상세 - 주문 상태 헤더"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg p-4" }
+    }
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-4" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex items-center gap-3" }
+        }
+      },
+      "children": [
+        {
+          "comment": "상태 아이콘",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-12 h-12 rounded-full flex items-center justify-center {{order.data.order_status_variant === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/30' : order.data.order_status_variant === 'success' ? 'bg-green-100 dark:bg-green-900/30' : order.data.order_status_variant === 'danger' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}}"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "w-10 h-10 rounded-full flex items-center justify-center {{order.data.order_status_variant === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/30' : order.data.order_status_variant === 'success' ? 'bg-green-100 dark:bg-green-900/30' : order.data.order_status_variant === 'danger' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}}"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "{{order.data.order_status_variant === 'warning' ? 'clock' : order.data.order_status_variant === 'success' ? 'check-circle' : order.data.order_status_variant === 'danger' ? 'x-circle' : order.data.order_status === 'shipping' ? 'truck' : 'credit-card'}}",
+                "className": "w-6 h-6 {{order.data.order_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : order.data.order_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : order.data.order_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "name": "{{order.data.order_status_variant === 'warning' ? 'clock' : order.data.order_status_variant === 'success' ? 'check-circle' : order.data.order_status_variant === 'danger' ? 'x-circle' : order.data.order_status === 'shipping' ? 'truck' : 'credit-card'}}",
+                    "className": "w-5 h-5 {{order.data.order_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : order.data.order_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : order.data.order_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "상태 텍스트 및 주문번호",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": {
+                "className": "text-xl font-bold {{order.data.order_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : order.data.order_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : order.data.order_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+              },
+              "text": "{{order.data.order_status_label ?? ''}}",
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "text-lg font-bold {{order.data.order_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : order.data.order_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : order.data.order_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+                  }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.order_detail.order_number"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": ": "
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "font-medium" },
+                  "text": "{{order.data.order_number ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

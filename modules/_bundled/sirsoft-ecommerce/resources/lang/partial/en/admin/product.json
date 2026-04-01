@@ -1,0 +1,1181 @@
+{
+  "title": "Product Management",
+  "add": "Add Product",
+  "preset": {
+    "label": "Search Preset",
+    "out_of_stock": "Out of Stock",
+    "new_product": "New Product",
+    "display_stopped": "Display Stopped",
+    "applied": "Preset '{{name}}' has been applied."
+  },
+  "search": {
+    "placeholder": "Enter search keyword...",
+    "field": {
+      "all": "All",
+      "product_name": "Product Name",
+      "description": "Description",
+      "product_code": "Product Code",
+      "sku": "SKU",
+      "barcode": "Barcode"
+    },
+    "column_select": "Column Select",
+    "detail_search": "Detail Search"
+  },
+  "filter": {
+    "detail_title": "Detail Search",
+    "category": "Category",
+    "no_category": "No Category",
+    "date": "Date",
+    "date_type": {
+      "created_at": "Created Date",
+      "updated_at": "Updated Date"
+    },
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "date_quick": {
+      "today": "Today",
+      "3days": "3 Days",
+      "week": "Week",
+      "month": "1 Month",
+      "3months": "3 Months",
+      "all": "All"
+    },
+    "sales_status": "Sales Status",
+    "sales_status_options": {
+      "all": "All",
+      "on_sale": "On Sale",
+      "out_of_stock": "Out of Stock",
+      "restocking": "Restocking",
+      "stopped": "Stopped"
+    },
+    "display_status": "Display Status",
+    "display_status_options": {
+      "all": "All",
+      "displayed": "Displayed",
+      "hidden": "Hidden"
+    },
+    "brand": "Brand",
+    "no_brand": "No Brand",
+    "tax_status": "Tax Status",
+    "tax_status_options": {
+      "all": "All",
+      "taxable": "Taxable",
+      "tax_free": "Tax Free"
+    },
+    "price": "Price",
+    "price_type": {
+      "selling_price": "Selling Price",
+      "supply_price": "Supply Price",
+      "original_price": "Original Price"
+    },
+    "min_price": "Min Price",
+    "max_price": "Max Price",
+    "min": "Min",
+    "max": "Max",
+    "stock": "Stock",
+    "stock_unit": "units",
+    "shipping_policy": "Shipping Policy",
+    "shipping_policy_options": {
+      "all": "All"
+    },
+    "detail_filter_label": "Detail Search Filter"
+  },
+  "action": {
+    "edit": "Edit",
+    "copy": "Copy",
+    "delete": "Delete",
+    "edit_search": "Edit Search",
+    "search": "Search",
+    "reset": "Reset",
+    "save_preset": "Save Preset"
+  },
+  "bulk_apply": "Apply",
+  "bulk_success": "Selected products have been changed.",
+  "bulk": {
+    "no_selection": "No items selected.",
+    "update_success": "{{products}} products and {{options}} options have been updated.",
+    "update_error": "Bulk update failed.",
+    "option_update_success": "{{count}} options have been updated.",
+    "option_update_error": "Option bulk update failed."
+  },
+  "stock_options_hint": "Products with options manage stock per option",
+  "stock_mismatch_warning": "Stock mismatch with option totals",
+  "selected_count": "{count} selected",
+  "total_count": "Total {count}",
+  "excel_download": "Excel Download",
+  "sort": {
+    "latest": "Latest",
+    "oldest": "Oldest",
+    "name_asc": "Name A-Z",
+    "name_desc": "Name Z-A",
+    "price_asc": "Price Low to High",
+    "price_desc": "Price High to Low",
+    "stock_asc": "Stock Low to High",
+    "stock_desc": "Stock High to Low"
+  },
+  "table": {
+    "selected_count": "{{count}} selected",
+    "total_count": "Total {{count}}",
+    "bulk_action": {
+      "sales_status": "Change Sales Status",
+      "display_status": "Change Display Status",
+      "price": "Change Price",
+      "price_bulk": "Bulk Change Price",
+      "stock_bulk": "Bulk Change Stock",
+      "apply": "Apply Changes"
+    },
+    "sort": {
+      "label": "Sort",
+      "latest": "Latest",
+      "oldest": "Oldest",
+      "name_asc": "Name A-Z",
+      "name_desc": "Name Z-A",
+      "price_asc": "Price Low to High",
+      "price_desc": "Price High to Low"
+    },
+    "per_page": "{{count}} items",
+    "excel_download": "Excel Download",
+    "column": {
+      "image": "Image",
+      "product_name": "Product Name",
+      "original_price": "Original Price",
+      "selling_price": "Selling Price",
+      "stock": "Stock",
+      "safety_stock": "Safety Stock",
+      "sales_status": "Sales Status",
+      "display_status": "Display Status",
+      "shipping_policy": "Shipping Policy",
+      "created_at": "Created At",
+      "updated_at": "Updated At",
+      "actions": "Actions",
+      "default": "Default",
+      "usd": "USD ($)",
+      "jpy": "JPY (¥)",
+      "cny": "CNY (¥)",
+      "sku": "SKU",
+      "use_status": "Status",
+      "color": "Color",
+      "category": "Category",
+      "brand": "Brand",
+      "min_purchase_qty": "Min Qty",
+      "max_purchase_qty": "Max Qty"
+    },
+    "status": {
+      "on_sale": "On Sale",
+      "out_of_stock": "Out of Stock",
+      "restocking": "Restocking",
+      "stopped": "Stopped",
+      "discontinued": "Discontinued",
+      "displayed": "Displayed",
+      "hidden": "Hidden"
+    },
+    "options": {
+      "title": "Options",
+      "color": "Color",
+      "size": "Size",
+      "show_detail": "Show Details",
+      "hide_detail": "Hide Details",
+      "column": {
+        "name": "Option Name",
+        "is_default": "Default",
+        "color": "Color",
+        "size": "Size",
+        "list_price": "List Price",
+        "selling_price": "Selling Price",
+        "price": "Price",
+        "sku": "SKU",
+        "stock": "Stock",
+        "safe_stock": "Safety Stock",
+        "active": "Active"
+      },
+      "no_options": "No options registered"
+    },
+    "shipping": {
+      "free": "Free Shipping",
+      "conditional_free": "Conditional Free",
+      "standard": "Standard Shipping"
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "showing": "Showing {{from}} - {{to}} of {{total}}"
+    },
+    "empty": {
+      "title": "No products found",
+      "description": "Add a new product to get started"
+    },
+    "mobile": {
+      "price_label": "Price",
+      "selling_price_label": "Selling Price",
+      "stock_label": "Stock",
+      "stock": "Stock:",
+      "safety_stock_label": "Safety Stock",
+      "status_label": "Status",
+      "shipping_label": "Shipping",
+      "created_at_label": "Created",
+      "updated_at_label": "Updated",
+      "unit": "units",
+      "options": "Options"
+    },
+    "no_data": "No products found"
+  },
+  "validation": {
+    "selling_price_exceeds_list_price": "Selling price cannot exceed list price"
+  },
+  "index": {
+    "title": "Product Management",
+    "description": "Manage product list",
+    "add_product": "Add Product",
+    "empty_title": "No products found",
+    "empty_description": "Add a new product to get started"
+  },
+  "create": {
+    "title": "Create Product",
+    "title_edit": "Edit Product",
+    "description": {
+      "title": "Description",
+      "placeholder": "Enter detailed description",
+      "mode_text": "Text",
+      "mode_html": "HTML",
+      "languages": {
+        "ko": "Korean",
+        "en": "English"
+      },
+      "add_language": "Add Language"
+    },
+    "description_edit": "Edit product information",
+    "basic_info": {
+      "title": "Basic Information",
+      "category": {
+        "title": "Select Category",
+        "required": "*",
+        "max_count": "(Max 5)",
+        "manage": "Manage Categories",
+        "selected": "Selected Categories",
+        "selected_count": "({{current}}/{{max}})",
+        "step": "Step {{n}}"
+      },
+      "brand": {
+        "title": "Brand",
+        "manage": "Manage Brands"
+      },
+      "product_name": {
+        "title": "Product Name",
+        "required": "*",
+        "placeholder": "Enter product name"
+      },
+      "languages": {
+        "ko": "한국어",
+        "en": "English"
+      }
+    },
+    "sales_info": {
+      "title": "Sales Information",
+      "base_currency": "Base Currency",
+      "original_price": "Original Price",
+      "sale_price": "Sale Price",
+      "sale_price_hint": "Automatically set based on the sale price of default options",
+      "stock": "Stock",
+      "stock_sync_hint": "Synced with latest stock",
+      "tax_status": "Tax Status",
+      "tax_status_options": {
+        "taxable": "Taxable",
+        "tax_free": "Tax Free"
+      },
+      "sales_status": "Sales Status",
+      "sales_status_options": {
+        "on_sale": "On Sale",
+        "out_of_stock": "Out of Stock",
+        "stopped": "Stopped"
+      },
+      "display_status": "Display Status",
+      "display_status_options": {
+        "displayed": "Displayed",
+        "hidden": "Hidden"
+      }
+    },
+    "product_options": {
+      "title": "Product Options",
+      "bulk_create": {
+        "title": "Bulk Option Generation (Max 3)",
+        "helper": "This feature generates product options. Enter option name and values, then click 'Generate Options' to create combined options. (Default items will be reset)",
+        "option_name_placeholder": "Option Name",
+        "add_option": "Add Option",
+        "generate": "Generate Options"
+      },
+      "table": {
+        "title": "Product Options Settings",
+        "multi_currency_auto": "Auto-fill Multi-currency Prices",
+        "add_row": "+ Add Row",
+        "columns": {
+          "default": "Default",
+          "size": "Size",
+          "color": "Color",
+          "regular_price": "Regular Price",
+          "sale_price": "Sale Price *",
+          "usd": "USD($)",
+          "jpy": "JPY(¥)",
+          "cny": "CNY(¥)",
+          "sku": "SKU",
+          "stock": "Stock *",
+          "safety_stock": "Safety Stock",
+          "weight": "Weight(g)",
+          "volume": "Volume(cm³)",
+          "mileage": "Mileage",
+          "active": "Active",
+          "delete": "Delete"
+        }
+      },
+      "additional": {
+        "title": "Additional Options",
+        "helper": "Additional options where customers can enter custom text. Up to 5 options can be added. (e.g., Personal message, Gift message, etc.)",
+        "used": "Enabled",
+        "unused": "Disabled",
+        "option_name": "Option Name",
+        "option_name_placeholder": "Enter option name",
+        "required": "Required",
+        "add_option": "Add Additional Option"
+      }
+    },
+    "image": {
+      "title": "Images",
+      "upload_title": "Upload Images (Max 10)",
+      "upload_hint": "Recommended: 1000x1000px, Max 5MB",
+      "drag_hint": "Drag to reorder (Main image always first)",
+      "thumbnail_hint": "Thumbnails are auto-generated for the main image",
+      "main_badge": "Main",
+      "set_main_button": "Main"
+    },
+    "product_notice": {
+      "title": "Product Information Notice",
+      "category_label": "Product Category",
+      "category_placeholder": "Select product category",
+      "manage_link": "Manage Product Information Notice",
+      "languages": {
+        "ko": "Korean",
+        "en": "English",
+        "zh": "Chinese",
+        "ja": "Japanese"
+      },
+      "items_header": "Item List",
+      "items_count": "{{count}} items",
+      "batch_change": "Set all items to 'See Details'",
+      "table": {
+        "order": "Order",
+        "name": "Item Name",
+        "value": "Content"
+      },
+      "add_item": "Add Item",
+      "category_options": {
+        "clothing": "Clothing",
+        "food": "Food",
+        "electronics": "Electronics",
+        "cosmetics": "Cosmetics"
+      }
+    },
+    "shipping": {
+      "title": "Shipping",
+      "policy_label": "Shipping Policy",
+      "manage_link": "Manage Shipping",
+      "use_default": "Use Default Shipping",
+      "policy_types": {
+        "default": "Default",
+        "free_shipping": "Free Shipping",
+        "conditional_free": "Conditional Free",
+        "collect_3000": "Collect 3000 KRW",
+        "quantity_based": "Quantity Based"
+      },
+      "detail": {
+        "delivery_method": "Delivery Method",
+        "carrier": "Carrier",
+        "fee": "Shipping Fee",
+        "delivery_days": "Delivery Days",
+        "condition": "Shipping Condition",
+        "return_exchange_fee": "Return/Exchange Fee",
+        "additional_info": "Additional Info"
+      }
+    },
+    "common_info": {
+      "title": "Product Common Info",
+      "label": "Product Common Info",
+      "manage_link": "Manage Common Info",
+      "use_default": "Use Default Product Common Info",
+      "types": {
+        "none": "Not Used",
+        "general": "General Product Info"
+      },
+      "badge_default": "Default"
+    },
+    "other_info": {
+      "title": "Other Info",
+      "product_label": {
+        "title": "Product Label",
+        "hit": "HIT",
+        "etc": "ETC",
+        "best": "BEST",
+        "sale": "SALE",
+        "edit": "Edit",
+        "remove": "Remove"
+      },
+      "min_qty": {
+        "title": "Min Purchase Qty",
+        "hint": "1 or more"
+      },
+      "max_qty": {
+        "title": "Max Purchase Qty",
+        "hint": "0 means no limit"
+      },
+      "purchase_limit": {
+        "title": "Purchase Restriction",
+        "no_limit": "No Limit",
+        "restricted": "Restrict Purchase Target"
+      },
+      "allowed_roles": {
+        "title": "Allowed Roles"
+      }
+    },
+    "seo_settings": {
+      "title": "SEO Settings",
+      "seo_tags": {
+        "label": "SEO Tags",
+        "placeholder": "Enter tag and press Enter"
+      }
+    },
+    "identification_codes": {
+      "title": "Identification Codes",
+      "product_code": {
+        "label": "Product Code (Internal)",
+        "placeholder": "Enter product code"
+      },
+      "barcode": {
+        "label": "Barcode",
+        "placeholder": "Enter barcode"
+      },
+      "hs_code": {
+        "label": "HS Code",
+        "placeholder": "Enter HS code"
+      }
+    },
+    "shopping_integration": {
+      "title": "Shopping Integration",
+      "integration_status": "Integration Status",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "naver": {
+        "name": "Naver Shopping Integration",
+        "plugin": "Naver Shopping Plugin"
+      },
+      "daum": {
+        "name": "Daum Shopping Integration",
+        "plugin": "Daum Shopping Plugin"
+      },
+      "facebook": {
+        "name": "Facebook Shopping Integration",
+        "plugin": "Facebook Shopping Plugin"
+      },
+      "google": {
+        "name": "Google Shopping Integration",
+        "plugin": "Google Shopping Plugin"
+      }
+    },
+    "activity_log": {
+      "title": "Activity Log",
+      "sort": {
+        "label": "Sort:",
+        "latest": "Latest First",
+        "oldest": "Oldest First"
+      },
+      "per_page": {
+        "label": "Per Page:"
+      },
+      "columns": {
+        "datetime": "Date/Time",
+        "actor": "Actor",
+        "event": "Event"
+      }
+    },
+    "modal": {
+      "add_language": {
+        "title": "Add Language",
+        "description": "Select a language to add."
+      },
+      "label_period": {
+        "title": "Label Period Settings",
+        "description": "Set the display period for the label.",
+        "start_date": "Start Date",
+        "end_date": "End Date (Optional)",
+        "labels": {
+          "featured": "Featured",
+          "new": "New",
+          "best": "Best",
+          "sale": "Sale"
+        }
+      },
+      "copy_product": {
+        "title": "Copy Product",
+        "description": "Would you like to copy the selected product to create a new product?",
+        "note": "All information from the original product will be copied and can be edited before saving.",
+        "copy": "Copy"
+      },
+      "confirm": {
+        "title": "Confirm Regenerate Options",
+        "regenerate_options": "Existing options will be reset. Do you want to regenerate with new option combinations?",
+        "regenerate_options_note": "Options with the same name will retain their existing price and stock information."
+      }
+    }
+  },
+  "edit": {
+    "title": "Edit Product"
+  },
+  "form": {
+    "title": "Product Information",
+    "description": "Enter product information",
+    "placeholder": "Product form will be displayed here"
+  },
+  "modal": {
+    "preset_manage": {
+      "title": "Preset Management",
+      "description": "Manage search presets.",
+      "add_new": "Add New Preset",
+      "empty": "No saved presets."
+    },
+    "preset_save": {
+      "title": "Save Preset",
+      "description": "Save current search as preset.",
+      "placeholder": "Enter preset name",
+      "save": "Save"
+    },
+    "preset_edit": {
+      "title": "Edit Preset"
+    },
+    "preset_delete": {
+      "title": "Delete Preset",
+      "confirm": "Are you sure you want to delete the preset '{{name}}'?"
+    },
+    "bulk_price": {
+      "title": "Bulk Price Change",
+      "description": "Change price of {{count}} selected products.",
+      "method": "Change Method",
+      "method_increase": "Increase",
+      "method_decrease": "Decrease",
+      "method_fixed": "Set to",
+      "value": "Amount/Rate",
+      "unit_won": "KRW",
+      "unit_percent": "%",
+      "preview_increase": "Increase price by {{value}}{{unit}}.",
+      "preview_decrease": "Decrease price by {{value}}{{unit}}.",
+      "preview_fixed": "Set price to {{value}}{{unit}}."
+    },
+    "bulk_stock": {
+      "title": "Bulk Stock Change",
+      "description": "Change stock of {{count}} selected products.",
+      "method": "Change Method",
+      "method_increase": "Increase",
+      "method_decrease": "Decrease",
+      "method_set": "Set to",
+      "value": "Quantity",
+      "preview_increase": "Increase stock by {{value}}.",
+      "preview_decrease": "Decrease stock by {{value}}.",
+      "preview_set": "Set stock to {{value}}."
+    },
+    "bulk_confirm": {
+      "title": "Confirm Bulk Change",
+      "description": "The following items will be changed.",
+      "bulk_changes_section": "Bulk Change Conditions",
+      "products_section": "Products to change ({{count}})",
+      "options_section": "Options to change ({{count}})",
+      "sales_status": "Change sales status to {{value}}.",
+      "display_status": "Change display status to {{value}}.",
+      "price": "Change price by {{value}}.",
+      "stock": "Change stock by {{value}}.",
+      "price_change": "Bulk price change",
+      "stock_change": "Bulk stock change",
+      "no_changes": "No items to change."
+    },
+    "bulk_placeholder": {
+      "sales_status": "Select Sales Status",
+      "display_status": "Select Display Status"
+    },
+    "excel_download": {
+      "title": "Excel Download",
+      "description": "Select download range.",
+      "option_search": "Download by search condition",
+      "option_search_desc": "{{count}} products will be downloaded.",
+      "option_selected": "Download selected only",
+      "option_selected_desc": "Only {{count}} products will be downloaded.",
+      "download": "Download"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "change": "Change",
+      "apply": "Apply",
+      "confirm": "Confirm"
+    },
+    "copy": {
+      "title": "Copy Product",
+      "no_name": "(No name)",
+      "options_label": "Copy Options",
+      "option_images": "Product Images",
+      "option_product_options": "Product Options",
+      "option_categories": "Categories",
+      "option_sales_info": "Sales Information",
+      "option_description": "Product Description",
+      "option_notice": "Product Notice",
+      "option_common_info": "Common Information",
+      "option_other_info": "Other Information",
+      "option_shipping": "Shipping Policy",
+      "option_seo": "SEO Settings",
+      "option_identification": "Identification Codes",
+      "note": "Selected options will be pre-filled on the product registration page.",
+      "submit": "Copy Product"
+    },
+    "delete": {
+      "title": "Delete Product",
+      "confirm_question": "Are you sure you want to delete this product?",
+      "cannot_delete_title": "Cannot Delete",
+      "related_data_notice": "The following data will also be deleted:",
+      "warning_message": "Deleted products cannot be recovered.",
+      "permanent_warning": "This action cannot be undone. All data related to this product (images, options, inventory, etc.) will be permanently deleted.",
+      "confirm_button": "Delete"
+    },
+    "mode_change": {
+      "title": "Change Description Mode",
+      "confirm_question": "Do you want to change the description editing mode?",
+      "description": "Changing the mode may affect the format of the content you are currently writing.",
+      "current_mode": "Current Mode",
+      "new_mode": "New Mode",
+      "warning_title": "Warning",
+      "warning_message": "Some formatting may be lost when changing modes. It is recommended to save your content before changing.",
+      "confirm_button": "Change Mode"
+    },
+    "save_template": {
+      "title": "Save Product Notice Template",
+      "description": "Save the current product notice as a template. Saved templates can be loaded and used for other products.",
+      "template_name": "Template Name",
+      "template_name_placeholder": "e.g., Clothing Basic Template",
+      "category": "Category",
+      "category_placeholder": "Select category (optional)",
+      "set_as_default": "Set as default template",
+      "preview": "Content Preview",
+      "fields_count": "fields",
+      "more_fields": "more fields",
+      "info": "Templates can be quickly loaded when entering product notice information.",
+      "save_button": "Save Template"
+    }
+  },
+  "description": {
+    "mode_html": "HTML",
+    "mode_editor": "Editor",
+    "pc_tab": "PC",
+    "mobile_tab": "Mobile",
+    "pc_hint": "Description shown on PC",
+    "mobile_hint": "Description shown on mobile",
+    "copy_from_pc": "Copy from PC",
+    "text_mode": "Text",
+    "html_mode": "HTML Edit"
+  },
+  "messages": {
+    "deleted_success": "Product has been deleted.",
+    "deleted_error": "An error occurred while deleting the product.",
+    "code_generate_error": "Failed to generate product code.",
+    "label_period_saved": "Label period has been saved.",
+    "label_period_removed": "Label period has been removed.",
+    "copy_code_required": "Please enter new product code.",
+    "copy_source_not_found": "Source product not found.",
+    "copy_success": "Product has been copied.",
+    "copy_error": "An error occurred while copying the product.",
+    "copy_failed": "Failed to copy product.",
+    "bulk_summary_sales_status": "Sales Status: {status}",
+    "bulk_summary_display_status": "Display Status: {status}",
+    "bulk_summary_name_changed": "Name changed",
+    "bulk_summary_list_price": "List Price: {price}",
+    "bulk_summary_selling_price": "Selling Price: {price}",
+    "bulk_summary_inline_modified": "Inline modified",
+    "bulk_summary_bulk_applied": "Bulk changes applied",
+    "bulk_summary_price_adjustment": "Price Adjustment: {method} {value}",
+    "bulk_summary_price_adjustment_inline": "Price Adjustment: {value}",
+    "bulk_summary_stock": "Stock: {method} {value}",
+    "bulk_summary_stock_inline": "Stock: {value}",
+    "bulk_summary_option_name": "Option Name: {name}",
+    "bulk_summary_sku": "SKU: {sku}",
+    "bulk_summary_selected": "Selected"
+  },
+  "buttons": {
+    "auto_generate": "Auto Generate",
+    "generate_code": "Generate Code",
+    "manage_category": "Manage Categories",
+    "manage_brand": "Manage Brands",
+    "manage_labels": "Manage Labels",
+    "manage_shipping": "Manage Shipping Policies",
+    "manage_common_info": "Manage Common Info",
+    "manage_notice_template": "Manage Product Notices",
+    "create_shipping_policy": "Create Shipping Policy"
+  },
+  "image_delete_confirm": "Do you want to delete this image?",
+  "title_create": "Add Product",
+  "title_edit": "Edit Product",
+  "description_create": "Register a new product",
+  "description_edit": "Edit product information",
+  "uncategorized": "Uncategorized",
+  "tabs": {
+    "basic": "Basic Info",
+    "sales": "Sales Info",
+    "options": "Options",
+    "images": "Images",
+    "description": "Description",
+    "notice": "Product Notice",
+    "shipping": "Shipping",
+    "common_info": "Common Info",
+    "other": "Other Info",
+    "seo": "SEO",
+    "identification": "Identification",
+    "additional_options": "Additional Options",
+    "shopping": "Shopping Integration",
+    "activity_log": "Activity Log"
+  },
+  "sections": {
+    "basic_info": "Basic Information",
+    "sales_info": "Sales Information",
+    "product_options": "Product Options",
+    "images": "Images",
+    "description": "Description",
+    "notice": "Product Notice",
+    "shipping": "Shipping",
+    "common_info": "Common Information",
+    "other_info": "Other Information",
+    "seo": "SEO Settings",
+    "identification": "Identification Codes",
+    "additional_options": "Additional Options",
+    "shopping_integration": "Shopping Integration",
+    "activity_log": "Activity Log",
+    "product_code_info": "Product Code Info"
+  },
+  "fields": {
+    "base_currency": "Base Currency",
+    "name": "Product Name",
+    "alternative_name": "English Name",
+    "category": "Category",
+    "brand": "Brand",
+    "price": "Price",
+    "stock": "Stock",
+    "sales_status": "Sales Status",
+    "display_status": "Display Status",
+    "tax_status": "Tax Status",
+    "product_code": "Product Code",
+    "sales_product_code": "Sales Product Code",
+    "sku": "SKU",
+    "barcode": "Barcode",
+    "hs_code": "HS Code",
+    "description": "Description",
+    "short_description": "Short Description",
+    "short_description_hint": "A brief description shown in product lists",
+    "summary_description": "Summary Description",
+    "characteristics": "Characteristics",
+    "labels": "Labels",
+    "purchase_qty": "Purchase Quantity",
+    "min_purchase_qty": "Min Purchase Quantity",
+    "max_purchase_qty": "Max Purchase Quantity",
+    "purchase_restriction": "Purchase Restriction",
+    "purchase_start_limit": "Purchase Start Limit",
+    "benefit_price_qty": "Benefit Price Quantity",
+    "allowed_roles": "Allowed Roles",
+    "shipping_policy": "Shipping Policy",
+    "notice_template": "Notice Template",
+    "common_info": "Common Info",
+    "meta_title": "SEO Title",
+    "meta_description": "SEO Description",
+    "meta_keywords": "SEO Keywords",
+    "use_main_image_for_og": "Use main image for OG image",
+    "created_at": "Created At",
+    "updated_at": "Updated At"
+  },
+  "placeholders": {
+    "name": "Enter product name",
+    "alternative_name": "Enter English product name",
+    "alternative_name_en": "Enter product name in English",
+    "brand": "Select brand",
+    "product_code": "Enter product code",
+    "sku": "Enter SKU",
+    "barcode": "Enter barcode",
+    "hs_code": "Enter HS code",
+    "description": "Enter description",
+    "description_en": "Enter detailed description",
+    "description_mobile": "Enter mobile description",
+    "description_mobile_en": "Enter mobile description",
+    "short_description": "Enter short description",
+    "summary_description": "Enter summary description",
+    "common_info": "Select common info",
+    "notice_template": "Select notice template",
+    "meta_title": "Enter SEO title",
+    "meta_description": "Enter SEO description",
+    "meta_keywords": "Enter SEO keywords",
+    "select_roles": "Select allowed roles",
+    "search_roles": "Search roles..."
+  },
+  "options": {
+    "use_options": "Use Options",
+    "required_notice": "At least one option is required for product registration. Please add options.",
+    "option_table_title": "Option List",
+    "add_option_group": "Add Option Group",
+    "add_row": "Add Row",
+    "generate_options": "Generate Options",
+    "bulk_create_title": "Bulk Create Options",
+    "bulk_create_hint": "Enter option name and values, then click 'Generate Options'",
+    "option_name_placeholder": "Option name (e.g., Color)",
+    "option_values_placeholder": "Enter option values separated by comma",
+    "additional_title": "Product Additional Options",
+    "additional_hint": "Additional options for customers to enter text directly. Up to 5 options can be added. (e.g., engraving text, gift message)",
+    "add_additional": "Add Additional Option",
+    "additional_name_label": "Option Name",
+    "additional_name_placeholder": "Engraving text",
+    "no_additional": "No additional options registered",
+    "auto_currency": "Auto-calculate multi-currency prices",
+    "items_count": "{{count}} options",
+    "required": "Required",
+    "columns": {
+      "default": "Default",
+      "option": "Option",
+      "option_id": "Option ID",
+      "category": "Category",
+      "list_price": "List Price",
+      "selling_price": "Selling Price",
+      "price": "Price",
+      "price_type": "Price Type",
+      "sku": "SKU",
+      "stock": "Stock",
+      "safe_stock": "Safe Stock",
+      "weight": "Weight(g)",
+      "volume": "Volume(cm³)",
+      "mileage": "Mileage",
+      "shipping": "Shipping",
+      "active": "Active",
+      "required": "Required"
+    },
+    "mileage_type": {
+      "fixed": "KRW",
+      "percent": "%"
+    },
+    "option_count": "({count} options)",
+    "price_type": {
+      "fixed": "Fixed Price",
+      "additional": "Additional Amount"
+    },
+    "shipping": {
+      "available": "Available",
+      "unavailable": "Unavailable"
+    },
+    "messages": {
+      "input_max_3": "You can add up to 3 option inputs.",
+      "name_value_required": "Please enter option name and values.",
+      "generated": "{count} options have been generated.",
+      "name_required": "Please enter option name.",
+      "add_tool_applied": "Option add tool has been applied.",
+      "additional_max_5": "You can add up to 5 additional options."
+    }
+  },
+  "notice": {
+    "tab_existing_template": "Select Template",
+    "tab_new_registration": "Manual Input",
+    "items_list": "Items List",
+    "items_count_suffix": " items",
+    "col_number": "No.",
+    "col_name": "Item Name",
+    "col_value": "Content",
+    "add_item": "Add Item",
+    "item_name_placeholder": "Enter item name",
+    "input_placeholder": "Enter content",
+    "bulk_input": "Bulk Input",
+    "preview": "Preview",
+    "save_as_template": "Save as Template",
+    "new_template_name": "New Template Name",
+    "template_name_ko_placeholder": "Korean template name",
+    "template_name_en_placeholder": "English template name",
+    "empty_message": "No items registered",
+    "empty_hint": "Add items or select a template",
+    "fill_detail_ref": "Fill all with 'See details'",
+    "confirm_change_title": "Confirm Template Change",
+    "confirm_change_warning": "There are existing items.",
+    "confirm_change_description": "Changing the template will replace existing items with the new template's items. Values with matching item names will be preserved.",
+    "confirm_change_button": "Change",
+    "modals": {
+      "bulk_change": {
+        "title": "Change All Items",
+        "message": "Do you want to change all item contents to 'See detail description'?",
+        "preview_label": "Content after change",
+        "preview_value": "See detail description",
+        "notice": "This operation will overwrite all currently entered values.",
+        "confirm": "Change"
+      }
+    },
+    "messages": {
+      "no_items_to_change": "No items to change.",
+      "all_items_changed_to_detail_ref": "All items have been changed to 'See detail description'.",
+      "template_name_required": "Please enter template name.",
+      "no_items": "No items to save.",
+      "template_saved": "Template has been saved.",
+      "template_save_error": "Failed to save template.",
+      "info_empty": "No notice information to save.",
+      "filled": "Empty items have been filled."
+    }
+  },
+  "shopping_integration": {
+    "description": "Product integration settings with external shopping platforms",
+    "naver": {
+      "title": "Naver Shopping"
+    },
+    "google": {
+      "title": "Google Shopping"
+    },
+    "facebook": {
+      "title": "Facebook Shopping"
+    },
+    "sync_interval": "Sync Interval",
+    "intervals": {
+      "realtime": "Realtime",
+      "1h": "1 hour",
+      "6h": "6 hours",
+      "1d": "1 day",
+      "manual": "Manual"
+    },
+    "last_synced": "Last Synced",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "manage": "Manage Integration",
+    "note": "The corresponding plugin must be installed for integration"
+  },
+  "activity_log": {
+    "columns": {
+      "datetime": "Date/Time",
+      "actor": "Actor",
+      "action": "Action",
+      "description": "Description"
+    },
+    "sort_order": "Sort",
+    "sort": {
+      "latest": "Latest",
+      "oldest": "Oldest"
+    },
+    "per_page": "Per Page",
+    "total_count": "Total {{count}} items",
+    "empty": "No activity history",
+    "system": "System",
+    "actor_action": {
+      "view_member": "View Member"
+    },
+    "changes": {
+      "title": "Changes",
+      "field": "Field",
+      "before": "Before",
+      "after": "After",
+      "bulk_model_id": "ID: {{id}}"
+    }
+  },
+  "shipping": {
+    "use_default": "Use default shipping policy",
+    "default_badge": "Default",
+    "empty_message": "No shipping policy",
+    "detail": {
+      "shipping_method": "Shipping Method",
+      "carrier": "Carrier",
+      "charge_policy": "Charge Policy",
+      "fee": "Shipping Fee",
+      "countries": "Shipping Countries",
+      "currency": "Currency",
+      "extra_fee": "Extra Fee",
+      "condition": "Condition",
+      "return_exchange_fee": "Return/Exchange Fee"
+    }
+  },
+  "price": {
+    "base_currency": "Base Currency",
+    "currency": "Currency",
+    "list_price": "List Price",
+    "selling_price": "Selling Price",
+    "selling_price_hint": "Actual selling price",
+    "option_price_hint": "Auto-set based on default option's selling price",
+    "auto_calculate": "Auto Calculate"
+  },
+  "stock": {
+    "current": "Current Stock",
+    "safe_stock": "Safe Stock",
+    "from_options": "Total Option Stock",
+    "from_options_hint": "Sum of all option stocks",
+    "total_option_stock": "Total Option Stock",
+    "auto_calculated_hint": "Auto-calculated from option stocks",
+    "option_total_hint": "Total of option stocks"
+  },
+  "description_editor": {
+    "pc_tab": "PC",
+    "mobile_tab": "Mobile",
+    "pc_hint": "Description shown on PC",
+    "mobile_hint": "Description shown on mobile",
+    "copy_from_pc": "Copy from PC",
+    "text_mode": "Text",
+    "html_mode": "HTML",
+    "messages": {
+      "default_locale_cannot_delete": "Default locale cannot be deleted.",
+      "locale_removed": "{locale} locale has been removed.",
+      "locale_already_added": "Locale already added.",
+      "locale_unsupported": "Unsupported locale.",
+      "locale_added": "{locale} locale has been added."
+    }
+  },
+  "common_info": {
+    "use_default": "Use default product common info",
+    "badge_default": "Default",
+    "none": "None",
+    "empty": "No common info",
+    "preview": "Preview",
+    "add_template": "Add Template"
+  },
+  "seo": {
+    "title_hint": "Title shown in search engines",
+    "keywords_hint": "Separate with commas",
+    "preview": "Search Result Preview",
+    "untitled": "Untitled",
+    "no_description": "No description",
+    "sync_title": "Set same as product name",
+    "sync_description": "Set same as product description"
+  },
+  "additional_options": {
+    "enable_label": "Enable Additional Options",
+    "description": "Options that customers can fill in when ordering",
+    "add_option": "Add Option",
+    "option_name": "Option Name",
+    "option_name_placeholder": "Enter option name",
+    "input_type": "Input Type",
+    "type_text": "Text",
+    "type_textarea": "Multiline Text",
+    "type_number": "Number",
+    "type_date": "Date",
+    "required": "Required"
+  },
+  "images": {
+    "drag_hint": "Drag to reorder",
+    "thumbnail_hint": "First image will be the main image",
+    "format_hint": "Supports JPG, PNG, GIF formats",
+    "upload_complete": "Upload Complete",
+    "deleted": "Image has been deleted.",
+    "messages": {
+      "max_count": "You can add up to {max} images.",
+      "unsupported_format": "{name}: Unsupported format.",
+      "size_exceeded": "{name}: Exceeds 10MB limit.",
+      "upload_failed": "{name}: Upload failed"
+    }
+  },
+  "category": {
+    "select_prev": "Select parent category first",
+    "no_subcategory": "No subcategories",
+    "selected": "Selected",
+    "max_count": "Up to {{count}} categories",
+    "max_5": "Max 5",
+    "add_selected": "Add Selected Categories",
+    "step_1": "Step 1",
+    "step_2": "Step 2",
+    "step_3": "Step 3",
+    "step_4": "Step 4",
+    "messages": {
+      "max_5": "You can select up to 5 categories.",
+      "already_selected": "Category already selected."
+    }
+  },
+  "characteristics": {
+    "hint": "Set product characteristics",
+    "never_sold_out": "Never Sold Out",
+    "notify_on_restock": "Notify on Restock",
+    "allow_guest_order": "Allow Guest Order"
+  },
+  "purchase": {
+    "min": "Min",
+    "max": "Max",
+    "unit": "pcs",
+    "min_suffix": " or more",
+    "unlimited_hint": "0 means no limit"
+  },
+  "restriction": {
+    "none": "No Restriction",
+    "members": "Members Only",
+    "roles": "Specific Roles",
+    "restricted": "Purchase Restricted"
+  },
+  "sales_status": {
+    "on_sale": "On Sale",
+    "sold_out": "Sold Out",
+    "suspended": "Suspended",
+    "coming_soon": "Coming Soon"
+  },
+  "display_status": {
+    "visible": "Visible",
+    "hidden": "Hidden"
+  },
+  "tax": {
+    "taxable": "Taxable",
+    "tax_free": "Tax Free"
+  },
+  "labels": {
+    "title": "Labels",
+    "no_available": "No labels available.",
+    "edit": "Edit",
+    "remove": "Delete",
+    "no_period": "No period set",
+    "modal_title": "Label Settings",
+    "modal_description": "Set the label name, color, and display period.",
+    "name": "Label Name",
+    "color": "Color",
+    "color_reset": "Reset Color",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "end_date_hint": "Leave empty for indefinite",
+    "date_preset": "Date Preset",
+    "preset_7d": "7 Days",
+    "preset_14d": "14 Days",
+    "preset_30d": "30 Days",
+    "preset_permanent": "Permanent",
+    "save_success": "Label has been saved.",
+    "save_error": "Failed to save label.",
+    "delete_success": "Label has been deleted.",
+    "delete_error": "Failed to delete label.",
+    "preview": "Preview",
+    "delete_modal": {
+      "title": "Delete Label",
+      "message": "Are you sure you want to delete this label?",
+      "description": "This label will be removed from all products.",
+      "deleting": "Deleting..."
+    },
+    "uncheck_modal": {
+      "title": "Confirm Label Removal",
+      "message": "Unchecking will delete the configured start/end dates.",
+      "confirm": "Remove"
+    },
+    "inline_period": {
+      "preset_7d": "7 Days",
+      "preset_14d": "14 Days",
+      "preset_30d": "30 Days",
+      "preset_permanent": "Permanent"
+    }
+  },
+  "roles": {
+    "system": "System Roles",
+    "custom": "Custom Roles"
+  },
+  "copy_section": {
+    "title": "Copy Section",
+    "help": "Copy content of this section from another product"
+  },
+  "copy_mode": {
+    "title": "Product Copy Mode",
+    "view_original": "View Original Product"
+  },
+  "buttons_form": {
+    "generate_code": "Generate Code",
+    "manage_category": "Manage Categories",
+    "manage_brand": "Manage Brands",
+    "manage_labels": "Manage Labels",
+    "manage_shipping": "Manage Shipping Policies",
+    "manage_common_info": "Manage Common Info",
+    "manage_notice_template": "Manage Product Notices",
+    "create_shipping_policy": "Create Shipping Policy"
+  }
+}

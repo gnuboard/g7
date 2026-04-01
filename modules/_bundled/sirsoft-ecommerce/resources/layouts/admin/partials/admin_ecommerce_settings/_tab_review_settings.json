@@ -1,0 +1,245 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쇼핑몰 설정 리뷰설정 탭 콘텐츠"
+  },
+  "id": "tab_content_review_settings",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'review_settings'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "review_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "comment": "리뷰 작성 가능 기간",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.write_deadline_days_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "min": "1",
+                    "max": "365",
+                    "className": "input w-20",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "value": "{{_local.form?.review_settings?.write_deadline_days ?? 30}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.review_settings.write_deadline_days": "{{Number($event.target.value)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.days_unit"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "w-full form-hint"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.write_deadline_days_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border-t border-gray-100 dark:border-gray-700 my-2"
+              }
+            },
+            {
+              "comment": "최대 이미지 수",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "min": "0",
+                    "max": "10",
+                    "className": "input w-20",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "value": "{{_local.form?.review_settings?.max_images ?? 5}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.review_settings.max_images": "{{Number($event.target.value)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.images_unit"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "w-full form-hint"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border-t border-gray-100 dark:border-gray-700 my-2"
+              }
+            },
+            {
+              "comment": "이미지 최대 용량",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300 w-48 shrink-0"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "min": "1",
+                    "max": "20",
+                    "step": "0.5",
+                    "className": "input w-20",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "value": "{{_local.form?.review_settings?.max_image_size_mb ?? 5}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.review_settings.max_image_size_mb": "{{Number($event.target.value)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "MB"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "w-full form-hint"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

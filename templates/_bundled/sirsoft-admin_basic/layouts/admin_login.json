@@ -1,0 +1,468 @@
+{
+  "version": "1.0.0",
+  "layout_name": "admin_login",
+  "meta": {
+    "title": "$t:auth.login.title",
+    "description": "그누보드7 관리자 로그인 페이지",
+    "auth_required": false
+  },
+  "data_sources": [],
+  "init_actions": [
+    {
+      "handler": "initTheme",
+      "target": "{{query.theme}}"
+    },
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "isLoggingIn": false,
+        "loginError": null,
+        "loginErrors": null,
+        "loginForm": {
+          "email": "",
+          "password": ""
+        }
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "login_page_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8"
+      },
+      "children": [
+        {
+          "id": "login_card_container",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "max-w-md w-full space-y-8"
+          },
+          "children": [
+            {
+              "id": "login_header",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-center"
+              },
+              "children": [
+                {
+                  "id": "logo_image_wrapper",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_global.settings?.general?.site_logo_url}}",
+                  "props": {
+                    "className": "mb-4"
+                  },
+                  "children": [
+                    {
+                      "id": "logo_image",
+                      "type": "basic",
+                      "name": "Img",
+                      "props": {
+                        "src": "{{_global.settings?.general?.site_logo_url}}",
+                        "alt": "{{_global.settings?.general?.site_name ?? '그누보드7'}}",
+                        "className": "h-16 w-auto max-w-[200px] mx-auto object-contain"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "logo",
+                  "type": "basic",
+                  "name": "H1",
+                  "if": "{{!_global.settings?.general?.site_logo_url}}",
+                  "props": {
+                    "className": "text-4xl font-bold text-gray-900 dark:text-white mb-2"
+                  },
+                  "children": [
+                    {
+                      "id": "logo_text",
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_global.settings?.general?.site_name ?? '그누보드7'}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "subtitle",
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "text": "$t:auth.login.subtitle"
+                }
+              ]
+            },
+            {
+              "id": "login_form_component",
+              "type": "basic",
+              "name": "Form",
+              "dataKey": "loginForm",
+              "props": {
+                "className": "space-y-6 relative"
+              },
+              "children": [
+                {
+                  "comment": "API 에러 메시지 표시",
+                  "id": "login_error_message",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.loginError}}",
+                  "props": {
+                    "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  },
+                  "children": [
+                    {
+                      "id": "login_error_text",
+                      "type": "basic",
+                      "name": "P",
+                      "props": { "className": "text-sm text-red-600 dark:text-red-400" },
+                      "text": "{{_local.loginError}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "이메일 입력 필드",
+                  "id": "login_email_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "id": "login_email_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "htmlFor": "email",
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:auth.login.email"
+                    },
+                    {
+                      "id": "login_email_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "id": "email",
+                        "type": "email",
+                        "name": "email",
+                        "placeholder": "$t:auth.login.email",
+                        "className": "{{_local.loginErrors?.email ? 'w-full px-4 py-3 rounded-lg border border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+                        "required": true,
+                        "disabled": "{{_local.isLoggingIn}}"
+                      }
+                    },
+                    {
+                      "comment": "이메일 필드 에러 메시지",
+                      "id": "login_email_error",
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{_local.loginErrors?.email}}",
+                      "props": {
+                        "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                      },
+                      "text": "{{Array.isArray(_local.loginErrors?.email) ? _local.loginErrors.email[0] : _local.loginErrors?.email}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "비밀번호 입력 필드",
+                  "id": "login_password_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "id": "login_password_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "htmlFor": "password",
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:auth.login.password"
+                    },
+                    {
+                      "id": "login_password_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "id": "password",
+                        "type": "password",
+                        "name": "password",
+                        "placeholder": "$t:auth.login.password",
+                        "className": "{{_local.loginErrors?.password ? 'w-full px-4 py-3 rounded-lg border border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+                        "required": true,
+                        "disabled": "{{_local.isLoggingIn}}"
+                      }
+                    },
+                    {
+                      "comment": "비밀번호 필드 에러 메시지",
+                      "id": "login_password_error",
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{_local.loginErrors?.password}}",
+                      "props": {
+                        "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+                      },
+                      "text": "{{Array.isArray(_local.loginErrors?.password) ? _local.loginErrors.password[0] : _local.loginErrors?.password}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "비밀번호 찾기 링크",
+                  "id": "login_forgot_password",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-end" },
+                  "children": [
+                    {
+                      "id": "login_forgot_link",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": {
+                            "path": "/admin/forgot-password"
+                          }
+                        }
+                      ],
+                      "text": "$t:auth.login.forgot"
+                    }
+                  ]
+                },
+                {
+                  "comment": "로그인 버튼",
+                  "id": "login_submit_button",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "submit",
+                    "className": "w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2",
+                    "disabled": "{{_local.isLoggingIn}}"
+                  },
+                  "children": [
+                    {
+                      "id": "login_submit_spinner",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.isLoggingIn}}",
+                      "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
+                    },
+                    {
+                      "id": "login_submit_text",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_local.isLoggingIn}}",
+                      "text": "$t:auth.login.submit"
+                    },
+                    {
+                      "id": "login_submit_processing",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.isLoggingIn}}",
+                      "text": "$t:auth.login.processing"
+                    }
+                  ]
+                }
+              ],
+              "actions": [
+                {
+                  "type": "submit",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isLoggingIn": true,
+                        "loginError": null,
+                        "loginErrors": null
+                      }
+                    },
+                    {
+                      "handler": "login",
+                      "target": "admin",
+                      "params": {
+                        "body": {
+                          "email": "{{_local.loginForm.email}}",
+                          "password": "{{_local.loginForm.password}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isLoggingIn": false
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "target": "{{query.redirect || '/admin'}}"
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isLoggingIn": false,
+                            "loginError": "{{error.message}}",
+                            "loginErrors": "{{error.errors}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "language_selector_container",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mt-6"
+              },
+              "children": [
+                {
+                  "id": "language_selector",
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "className": "block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm",
+                    "value": "{{$locale}}",
+                    "options": "{{$locales}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setLocale",
+                      "target": "{{event.target.value}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "theme_selector_container",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "mt-4 flex justify-center"
+              },
+              "children": [
+                {
+                  "id": "theme_segmented_control",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "inline-flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1"
+                  },
+                  "children": [
+                    {
+                      "id": "theme_light_button",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "{{_global.theme === 'light' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                        "title": "$t:admin.theme.light"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setTheme",
+                          "target": "light"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "theme_light_icon",
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "sun",
+                            "size": "sm"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "theme_dark_button",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "{{_global.theme === 'dark' ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                        "title": "$t:admin.theme.dark"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setTheme",
+                          "target": "dark"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "theme_dark_icon",
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "moon",
+                            "size": "sm"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "theme_auto_button",
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "{{_global.theme === 'auto' || !_global.theme ? 'p-2 rounded-md bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400 transition-all duration-200' : 'p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200'}}",
+                        "title": "$t:admin.theme.auto"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setTheme",
+                          "target": "auto"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "theme_auto_icon",
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "desktop",
+                            "size": "sm"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

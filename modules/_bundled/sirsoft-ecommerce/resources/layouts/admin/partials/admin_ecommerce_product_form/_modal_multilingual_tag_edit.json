@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "MultilingualTagInput 다국어 태그 편집 모달"
+  },
+  "id": "multilingual_tag_edit_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "{{_global.multilingualTagEdit?.editingIndex !== null ? '$t:common.edit' : '$t:common.add'}}",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4 p-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{_global.multilingualTagEdit?.supportedLocales ?? []}}",
+            "item_var": "localeItem",
+            "index_var": "localeIdx"
+          },
+          "props": { "className": "space-y-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "text": "{{localeItem.label}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                  "text": "({{localeItem.code | uppercase}})"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "value": "{{_global.multilingualTagEdit?.values[localeItem.code] ?? ''}}",
+                "placeholder": "$t:common.enter_value",
+                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "updateMultilingualTagValue",
+                  "params": { "locale": "{{localeItem.code}}" }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4 pb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [{ "type": "click", "handler": "cancelMultilingualTag" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          },
+          "actions": [{ "type": "click", "handler": "saveMultilingualTag" }],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.multilingualTagEdit?.editingIndex !== null ? '$t:common.save' : '$t:common.add'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

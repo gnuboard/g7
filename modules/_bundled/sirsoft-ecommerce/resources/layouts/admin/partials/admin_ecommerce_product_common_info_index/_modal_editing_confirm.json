@@ -1,0 +1,128 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Editing In Progress Confirm Modal"
+    },
+    "id": "editing_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.editing.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation",
+                                "className": "w-6 h-6 text-yellow-600 dark:text-yellow-400"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 mb-2 text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.editing.message"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.editing.confirm_message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.modal.editing.continue",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.modal.editing.discard",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedId": "{{_global.pendingItemId}}",
+                                        "panelMode": "view"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form": {
+                                            "name": {},
+                                            "content": {},
+                                            "content_mode": "text",
+                                            "is_default": false,
+                                            "is_active": true
+                                        },
+                                        "errors": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingItemId": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

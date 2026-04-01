@@ -1,0 +1,371 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_promotion_coupon_list",
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
+    },
+    "state": {
+        "visibleFilters": [
+            "searchField",
+            "searchKeyword",
+            "targetType",
+            "issueStatus",
+            "createdAt"
+        ],
+        "showDetailFilter": false,
+        "isEditMode": false,
+        "filter": {
+            "searchField": "all",
+            "searchKeyword": "",
+            "targetType": "all",
+            "discountType": "all",
+            "issueStatus": "all",
+            "issueMethod": "all",
+            "issueCondition": "all",
+            "minBenefitAmount": "",
+            "maxBenefitAmount": "",
+            "minOrderAmount": "",
+            "createdStartDate": "",
+            "createdEndDate": "",
+            "createdDateQuick": "",
+            "validStartDate": "",
+            "validEndDate": "",
+            "issueStartDate": "",
+            "issueEndDate": "",
+            "createdBy": ""
+        },
+        "creatorSearchResults": [],
+        "selectedItems": [],
+        "selectAll": false,
+        "visibleColumns": [
+            "target_type_label",
+            "name",
+            "benefit_formatted",
+            "valid_period_formatted",
+            "issue_period_formatted",
+            "issue_count_formatted",
+            "issue_method_label",
+            "issue_condition_label",
+            "issue_status_label",
+            "created_at",
+            "created_by_name"
+        ],
+        "sortBy": "created_at_desc",
+        "perPage": "10"
+    },
+    "computed": {
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterTargetType": "{{_local.filter.targetType ?? query.target_type ?? 'all'}}",
+        "filterDiscountType": "{{_local.filter.discountType ?? query.discount_type ?? 'all'}}",
+        "filterIssueStatus": "{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}",
+        "filterIssueMethod": "{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}",
+        "filterIssueCondition": "{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}",
+        "filterMinBenefitAmount": "{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}",
+        "filterMaxBenefitAmount": "{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}",
+        "filterMinOrderAmount": "{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}",
+        "filterCreatedStartDate": "{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}",
+        "filterCreatedEndDate": "{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}",
+        "filterValidStartDate": "{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}",
+        "filterValidEndDate": "{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}",
+        "filterIssueStartDate": "{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}",
+        "filterIssueEndDate": "{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}",
+        "filterCreatedBy": "{{_local.filter.createdBy ?? query.created_by ?? ''}}"
+    },
+    "data_sources": [
+        {
+            "id": "coupons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "target_type": "{{query.target_type}}",
+                "discount_type": "{{query.discount_type}}",
+                "issue_status": "{{query.issue_status}}",
+                "issue_method": "{{query.issue_method}}",
+                "issue_condition": "{{query.issue_condition}}",
+                "min_benefit_amount": "{{query.min_benefit_amount}}",
+                "max_benefit_amount": "{{query.max_benefit_amount}}",
+                "min_order_amount": "{{query.min_order_amount}}",
+                "created_start_date": "{{query.created_start_date}}",
+                "created_end_date": "{{query.created_end_date}}",
+                "valid_start_date": "{{query.valid_start_date}}",
+                "valid_end_date": "{{query.valid_end_date}}",
+                "issue_start_date": "{{query.issue_start_date}}",
+                "issue_end_date": "{{query.issue_end_date}}",
+                "created_by": "{{query.created_by}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": { "target": "content" }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": { "target": "content" }
+                }
+            }
+        },
+        {
+            "id": "couponIssues",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "depends_on": [
+                "_global.issueHistoryCoupon"
+            ],
+            "fetch_condition": "{{!!_global.issueHistoryCoupon?.id}}",
+            "params": {
+                "page": "{{_global.issueHistoryPage || 1}}",
+                "per_page": "{{_global.issueHistoryPerPage || 10}}",
+                "user_id": "{{_global.issueHistoryFilterUser?.uuid}}"
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "sirsoft-ecommerce.loadVisibleFilters",
+            "params": {
+                "id": "admin_ecommerce_promotion_coupon_filters",
+                "defaultFilters": [
+                    "searchField",
+                    "searchKeyword",
+                    "targetType",
+                    "issueStatus",
+                    "createdAt"
+                ]
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "visibleFilters"
+            }
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "filter": {
+                        "searchField": "{{query.search_field || 'all'}}",
+                        "searchKeyword": "{{query.search_keyword || ''}}",
+                        "targetType": "{{query.target_type || 'all'}}",
+                        "discountType": "{{query.discount_type || 'all'}}",
+                        "issueStatus": "{{query.issue_status || 'all'}}",
+                        "issueMethod": "{{query.issue_method || 'all'}}",
+                        "issueCondition": "{{query.issue_condition || 'all'}}",
+                        "minBenefitAmount": "{{query.min_benefit_amount || ''}}",
+                        "maxBenefitAmount": "{{query.max_benefit_amount || ''}}",
+                        "minOrderAmount": "{{query.min_order_amount || ''}}",
+                        "createdStartDate": "{{query.created_start_date || ''}}",
+                        "createdEndDate": "{{query.created_end_date || ''}}",
+                        "validStartDate": "{{query.valid_start_date || ''}}",
+                        "validEndDate": "{{query.valid_end_date || ''}}",
+                        "issueStartDate": "{{query.issue_start_date || ''}}",
+                        "issueEndDate": "{{query.issue_end_date || ''}}",
+                        "createdBy": "{{query.created_by || ''}}"
+                    }
+                }
+            }
+        },
+        {
+            "handler": "apiCall",
+            "if": "{{!!query.created_by}}",
+            "auth_required": true,
+            "target": "/api/admin/users/search",
+            "params": {
+                "method": "GET",
+                "query": {
+                    "uuid": "{{query.created_by}}"
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "creatorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                    }
+                }
+            ]
+        }
+    ],
+    "named_actions": {
+        "searchCoupons": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/promotion-coupons",
+                "replace": true,
+                "query": {
+                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}",
+                    "search_keyword": "{{_local.filter.searchKeyword}}",
+                    "target_type": "{{_local.filter.targetType !== 'all' ? _local.filter.targetType : ''}}",
+                    "discount_type": "{{_local.filter.discountType !== 'all' ? _local.filter.discountType : ''}}",
+                    "issue_status": "{{_local.filter.issueStatus !== 'all' ? _local.filter.issueStatus : ''}}",
+                    "issue_method": "{{_local.filter.issueMethod !== 'all' ? _local.filter.issueMethod : ''}}",
+                    "issue_condition": "{{_local.filter.issueCondition !== 'all' ? _local.filter.issueCondition : ''}}",
+                    "min_benefit_amount": "{{_local.filter.minBenefitAmount}}",
+                    "max_benefit_amount": "{{_local.filter.maxBenefitAmount}}",
+                    "min_order_amount": "{{_local.filter.minOrderAmount}}",
+                    "created_start_date": "{{_local.filter.createdStartDate}}",
+                    "created_end_date": "{{_local.filter.createdEndDate}}",
+                    "valid_start_date": "{{_local.filter.validStartDate}}",
+                    "valid_end_date": "{{_local.filter.validEndDate}}",
+                    "issue_start_date": "{{_local.filter.issueStartDate}}",
+                    "issue_end_date": "{{_local.filter.issueEndDate}}",
+                    "created_by": "{{_local.filter.createdBy}}",
+                    "page": 1
+                }
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "coupon_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "filter_visibility_selector",
+                        "type": "composite",
+                        "name": "FilterVisibilitySelector",
+                        "props": {
+                            "id": "admin_ecommerce_promotion_coupon_filters",
+                            "visibleFilters": "{{_local.visibleFilters}}",
+                            "defaultFilters": [
+                                "searchField",
+                                "searchKeyword",
+                                "targetType",
+                                "issueStatus",
+                                "createdAt"
+                            ]
+                        },
+                        "actions": [
+                            {
+                                "event": "onFilterVisibilityChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{coupons?.data?.abilities?.can_create !== true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "className": "w-4 h-4 mr-2"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create"
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/promotion-coupon-create"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_promotion_coupon_list/_partial_filter_section.json"
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_status_change_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_issue_history.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_delete_confirm.json"
+        }
+    ],
+    "initGlobal": {
+        "bulkSelectedItems": [],
+        "bulkIssueStatus": "",
+        "isChangingStatus": false,
+        "deleteTarget": null,
+        "isDeleting": false,
+        "issueHistoryCoupon": null,
+        "issueHistoryPage": 1,
+        "issueHistoryPerPage": 10,
+        "issueHistoryFilterUser": null
+    }
+}

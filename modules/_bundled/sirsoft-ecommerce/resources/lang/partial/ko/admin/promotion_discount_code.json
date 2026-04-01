@@ -1,0 +1,172 @@
+{
+  "title": "할인코드 관리",
+  "description": "할인코드를 생성하고 관리합니다.",
+  "actions": {
+    "create": "할인코드 등록",
+    "edit_search": "검색 편집",
+    "search": "검색",
+    "reset": "초기화",
+    "bulk_change": "일괄변경"
+  },
+  "search": {
+    "field": {
+      "all": "전체",
+      "discount_code_name": "할인코드명",
+      "discount_code": "코드"
+    },
+    "placeholder": "검색어를 입력하세요...",
+    "column_select": "컬럼 선택",
+    "detail_search": "검색 편집"
+  },
+  "filter": {
+    "benefit_type": "혜택구분",
+    "code_type": "코드유형",
+    "benefit_amount": "혜택금액",
+    "created_at": "등록일",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "min": "최소",
+    "max": "최대",
+    "amount_suffix": "원",
+    "date_quick": {
+      "today": "오늘",
+      "3_days": "3일간",
+      "1_week": "일주일",
+      "1_month": "1개월",
+      "3_months": "3개월",
+      "all": "전체"
+    }
+  },
+  "benefit_type": {
+    "all": "전체",
+    "product": "상품",
+    "shipping_fee": "배송비"
+  },
+  "code_type": {
+    "all": "전체",
+    "public_code": "공용코드",
+    "one_time_code": "1회용코드"
+  },
+  "benefit_category": {
+    "fixed": "정액",
+    "rate": "정률"
+  },
+  "status": {
+    "active": "활성",
+    "inactive": "비활성"
+  },
+  "batch": {
+    "selected_count": "{{count}}개 선택됨",
+    "status_change": "상태 변경"
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "sort": {
+      "created_at_desc": "등록일시 최근순",
+      "created_at_asc": "등록일시 오래된순",
+      "discount_code_name_asc": "할인코드명 오름차순",
+      "discount_code_name_desc": "할인코드명 내림차순"
+    },
+    "per_page": "{{count}}개",
+    "columns": {
+      "checkbox": "선택",
+      "no": "번호",
+      "benefit_type": "혜택구분",
+      "code_type": "코드유형",
+      "discount_code_name": "할인코드명",
+      "code_info": "코드정보",
+      "benefit": "혜택",
+      "validity_period": "유효기간",
+      "history": "내역",
+      "created_at": "등록일",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "benefit_max": "최대 {{amount}}원"
+  },
+  "mobile": {
+    "code_label": "코드",
+    "validity_period_label": "유효기간",
+    "history_label": "내역",
+    "status_label": "상태",
+    "issued_count": "발급 {{count}}건",
+    "used_count": "사용 {{count}}건",
+    "view_history": "조회"
+  },
+  "modal": {
+    "status_change": {
+      "title": "상태를 변경하시겠습니까?",
+      "description": "선택된 {{count}}개 할인코드의 상태가 {{status}}으로 변경됩니다.",
+      "cancel": "취소",
+      "confirm": "확인"
+    },
+    "delete": {
+      "title": "할인코드를 삭제하시겠습니까?",
+      "description": "이 작업은 되돌릴 수 없습니다. 할인코드가 영구적으로 삭제됩니다.",
+      "cancel": "취소",
+      "confirm": "삭제"
+    }
+  },
+  "create": {
+    "title": "할인코드 등록",
+    "description": "새로운 할인코드를 등록합니다.",
+    "section": {
+      "status": "할인 코드 현황",
+      "basic_info": "기본 정보",
+      "benefit_settings": "혜택 설정",
+      "code_issue": "할인 코드 발급",
+      "usage_limit": "할인 코드 사용 제한"
+    },
+    "field": {
+      "issue_status": "발급현황",
+      "is_visible": "노출 여부",
+      "benefit_type": "혜택 구분",
+      "code_type": "할인 코드 유형",
+      "discount_code_name": "할인 코드명",
+      "discount_code_description": "할인 코드 설명",
+      "benefit": "혜택",
+      "min_order_amount": "최소 주문 금액",
+      "validity_period": "유효기간",
+      "code_generation_method": "코드 생성 방법",
+      "discount_code": "할인 코드",
+      "limit_type": "선착순 제한",
+      "apply_target": "적용 대상"
+    },
+    "option": {
+      "product": "상품",
+      "order": "주문",
+      "shipping_fee": "배송비",
+      "public_code": "공용 코드",
+      "one_time_code": "1회용 코드",
+      "auto_generate": "자동 생성",
+      "manual_generate": "직접 생성",
+      "unlimited": "제한 없음",
+      "limited": "인원",
+      "no_limit": "제한 없음",
+      "specific_product": "특정 상품",
+      "specific_category": "특정 카테고리"
+    },
+    "placeholder": {
+      "discount_code_name": "할인 코드명을 입력하세요",
+      "discount_code_description": "할인 코드 설명을 입력하세요",
+      "amount_input": "금액 입력",
+      "min_order": "최소주문금액",
+      "max_discount": "최대금액",
+      "start_date": "시작일",
+      "end_date": "종료일",
+      "limit_count": "인원"
+    },
+    "hint": {
+      "issued_used": "발급 {{issued}}건 / 사용 {{used}}건",
+      "min_order_suffix": "원 이상 구매 시 사용 가능",
+      "max_discount_suffix": "원 할인",
+      "code_length_suffix": "자리의 할인 코드 1개 생성",
+      "limit_suffix": "명까지 사용 가능"
+    },
+    "button": {
+      "view_history": "조회",
+      "select_product": "상품 선택",
+      "select_category": "카테고리 선택"
+    }
+  }
+}

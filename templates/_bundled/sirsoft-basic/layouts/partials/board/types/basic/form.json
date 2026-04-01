@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "basic 유형 게시글 작성/수정 폼. 헤더(뒤로 버튼+제목+작성자 배지) + 답글 원글 + 폼 본문"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "arrow-left"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H1",
+                      "props": {
+                        "className": "text-xl font-bold"
+                      },
+                      "text": "{{route.id ? '$t:board.edit' : '$t:board.write'}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{form_meta?.data?.board?.name}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "인라인 배지 스타일",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{route.id && form_meta?.data?.author}}",
+          "props": {
+            "className": "mt-3 flex items-center gap-2 text-sm"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "user",
+                    "size": "xs",
+                    "className": "text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-700 dark:text-gray-300 font-medium"
+                  },
+                  "text": "{{form_meta?.data?.author?.name}}"
+                },
+                {
+                  "comment": "비회원 표시 배지",
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{form_meta?.data?.is_guest_post}}",
+                  "props": {
+                    "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "($t:userinfo.guest_badge)"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "clock",
+                    "size": "xs",
+                    "className": "text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-600 dark:text-gray-400"
+                  },
+                  "text": "{{form_meta?.data?.created_at}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partial": "partials/board/form/_parent_post.json"
+    },
+    {
+      "partial": "partials/board/form/_post_form.json"
+    }
+  ]
+}

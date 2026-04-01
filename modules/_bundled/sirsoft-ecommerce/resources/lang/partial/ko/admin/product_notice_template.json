@@ -1,0 +1,111 @@
+{
+  "title": "상품정보제공고시 관리",
+  "description": "상품군별 정보제공고시 템플릿을 관리합니다",
+  "list": {
+    "title": "상품군",
+    "count": "{{count}}개",
+    "add": "추가",
+    "search_placeholder": "상품군 검색...",
+    "empty": "등록된 상품군이 없습니다",
+    "fields_count": "{{count}}"
+  },
+  "info": {
+    "title": "상품군 정보"
+  },
+  "fields": {
+    "order": "순번",
+    "name": "항목명",
+    "content": "내용"
+  },
+  "empty": {
+    "title": "상품군을 선택하세요",
+    "description": "좌측 목록에서 상품군을 선택하거나 새로 추가해주세요"
+  },
+  "actions": {
+    "copy": "복사"
+  },
+  "view": {
+    "title": "상품군 정보",
+    "fields_count": "{{count}}개 항목",
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "table": {
+      "order": "순번",
+      "name": "항목명",
+      "content": "내용"
+    },
+    "copy": "복사",
+    "edit": "편집",
+    "delete": "삭제"
+  },
+  "form": {
+    "create_title": "상품군 추가",
+    "edit_title": "상품군 편집",
+    "name": "상품군명",
+    "name_label": "상품군명",
+    "name_placeholder": "예: 전자책",
+    "name_required": "상품군명은 필수입니다",
+    "status_title": "상태 설정",
+    "is_active": "활성화",
+    "is_active_label": "활성화",
+    "fill_detail_ref": "모든 항목 '상세설명참조'로 변경",
+    "fill_all_detail_ref": "모든 항목 '상세설명참조'로 변경",
+    "detail_reference": "상세설명참조",
+    "fields_title": "항목 목록",
+    "field_name_placeholder": "항목명 입력",
+    "field_content_placeholder": "내용 입력",
+    "empty_fields": "항목이 없습니다. 항목을 추가해주세요.",
+    "field": {
+      "name_label": "항목명",
+      "name_placeholder": "항목명 입력",
+      "content_label": "내용",
+      "content_placeholder": "내용 입력"
+    },
+    "add_field": "항목 추가",
+    "cancel": "취소",
+    "save": "저장"
+  },
+  "empty_selection": {
+    "title": "상품군을 선택하세요",
+    "description": "좌측 목록에서 상품군을 선택하거나 새로 추가해주세요"
+  },
+  "messages": {
+    "created": "상품군이 생성되었습니다",
+    "updated": "상품군이 수정되었습니다",
+    "deleted": "상품군이 삭제되었습니다",
+    "copied": "상품군이 복사되었습니다",
+    "create_error": "상품군 생성에 실패했습니다",
+    "update_error": "상품군 수정에 실패했습니다",
+    "delete_error": "상품군 삭제에 실패했습니다",
+    "no_fields_to_change": "변경할 항목이 없습니다.",
+    "all_fields_changed_to_detail_ref": "모든 항목이 '상세설명참조'로 변경되었습니다."
+  },
+  "modals": {
+    "delete": {
+      "title": "상품군 삭제",
+      "message": "다음 상품군을 삭제하시겠습니까?",
+      "message_suffix": " 상품군을 정말 삭제하시겠습니까?",
+      "warning": "이 작업은 되돌릴 수 없습니다."
+    },
+    "editing": {
+      "title": "수정 중입니다",
+      "message": "수정 중인 내용이 저장되지 않습니다.",
+      "confirm_message": "정말로 취소하고 다른 항목을 선택하시겠습니까?",
+      "continue": "계속 수정",
+      "discard": "취소하고 이동"
+    },
+    "bulk_change": {
+      "title": "모든 항목 일괄 변경",
+      "message": "현재 템플릿의 모든 항목 내용을 '상세설명참조'로 변경하시겠습니까?",
+      "preview_label": "변경될 내용:",
+      "notice": "※현재 선택된 언어의 내용만 변경됩니다.",
+      "confirm": "변경"
+    }
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}

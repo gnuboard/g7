@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Create - Add Language Modal"
+  },
+  "id": "modal_add_language",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.title",
+    "description": "$t:sirsoft-ecommerce.admin.product.create.modal.add_language.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "grid grid-cols-2 gap-3"
+      },
+      "children": [
+        {
+          "id": "lang_btn_ko",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-blue-600 text-white"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-base font-medium"
+              },
+              "text": "한국어"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm opacity-80 mt-0.5"
+              },
+              "text": "KO"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "lang_btn_en",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-base font-medium"
+              },
+              "text": "English"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+              },
+              "text": "EN"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "lang_btn_ja",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-base font-medium"
+              },
+              "text": "日本語"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+              },
+              "text": "JP"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "lang_btn_zh_cn",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-base font-medium"
+              },
+              "text": "中文(简体)"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+              },
+              "text": "CN"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "id": "lang_btn_zh_tw",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex flex-col items-center justify-center py-4 px-6 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-base font-medium"
+              },
+              "text": "中文(繁體)"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+              },
+              "text": "TW"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

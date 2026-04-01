@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 Include 테스트 - Level 2 정보 카드"
+  },
+  "type": "composite",
+  "name": "Card",
+  "props": {
+    "title": "✨ Composite 컴포넌트 Include 테스트",
+    "content": "이 Card는 includes/_info_card.json에서 include되었습니다.\n\n📌 Include 시스템 특징:\n• 모듈과 템플릿 모두 지원\n• 무제한 중첩 깊이 (depth 제한 10)\n• 순환 참조 자동 감지\n• Basic과 Composite 컴포넌트 모두 사용 가능",
+    "className": "mt-4"
+  }
+}

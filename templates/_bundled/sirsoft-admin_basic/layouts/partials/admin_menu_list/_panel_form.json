@@ -1,0 +1,962 @@
+{
+  "layout_name": "panel_form",
+  "id": "form_panel",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
+  "children": [
+    {
+      "id": "form_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "if": "{{_global.panelMode === 'create'}}",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:admin.menus.new_menu_title"
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "if": "{{_global.panelMode === 'edit'}}",
+          "props": {
+            "className": "text-sm font-medium text-gray-900 dark:text-white"
+          },
+          "text": "$t:admin.menus.edit_menu_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "panelMode": "view",
+                    "selectedMenuId": null,
+                    "selectedMenu": null,
+                    "formErrors": null
+                  }
+                }
+              ],
+              "text": "$t:common.cancel"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "submit",
+                "form": "menu_form",
+                "disabled": "{{_global.isSaving}}",
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{!_global.isSaving}}",
+                  "props": {
+                    "name": "save",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.isSaving}}",
+                  "props": {
+                    "name": "spinner",
+                    "size": "sm",
+                    "spin": true
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_global.isSaving}}",
+                  "text": "$t:common.save"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_global.isSaving}}",
+                  "text": "$t:common.saving"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "validation_error",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.formErrors}}",
+      "props": {
+        "className": "mx-4 mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "size": "lg",
+                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                  },
+                  "text": "$t:admin.menus.form.validation_error"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{typeof _global.formErrors === 'string'}}",
+                  "props": {
+                    "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                  },
+                  "text": "{{_global.formErrors}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "if": "{{typeof _global.formErrors === 'object' && Object.keys(_global.formErrors).length > 0}}",
+                  "props": {
+                    "className": "mt-2 list-disc list-inside space-y-1"
+                  },
+                  "iteration": {
+                    "source": "Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                    "item_var": "message"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "props": {
+                        "className": "text-sm text-red-700 dark:text-red-300"
+                      },
+                      "text": "{{message}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "menu_form",
+      "blur_until_loaded": "{{_global.isSaving}}",
+      "type": "basic",
+      "name": "Form",
+      "dataKey": "_global.formData",
+      "trackChanges": true,
+      "props": {
+        "id": "menu_form",
+        "className": "p-4 space-y-6"
+      },
+          "actions": [
+            {
+              "type": "submit",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isSaving": true,
+                    "formErrors": null
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "{{_global.panelMode === 'create' ? '/api/admin/menus' : '/api/admin/menus/' + _global.selectedMenuId}}",
+                  "params": {
+                    "method": "{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}",
+                    "body": {
+                      "name": "{{_global.formData.name}}",
+                      "slug": "{{_global.formData.slug}}",
+                      "url": "{{_global.formData.url}}",
+                      "icon": "{{_global.formData.icon}}",
+                      "parent_id": "{{_global.formData.parent_id}}",
+                      "extension_type": "{{_global.formData.extension_type}}",
+                      "extension_identifier": "{{_global.formData.extension_identifier}}",
+                      "is_active": "{{_global.formData.is_active}}",
+                      "roles": "{{_global.formData.roles}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "{{_global.panelMode === 'create' ? $t:admin.menus.messages.created : $t:admin.menus.messages.updated}}"
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "menus"
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "admin_menu",
+                            "sync": true
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "isSaving": false,
+                            "panelMode": "view",
+                            "selectedMenuId": "{{result.data.id}}",
+                            "selectedMenu": "{{result.data}}",
+                            "formErrors": null
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isSaving": false,
+                        "formErrors": "{{error.errors}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "id": "form_basic_section",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_basic_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.basic"
+                },
+                {
+                  "id": "form_name_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_name_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.menus.form.name"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "form_name_input",
+                      "type": "composite",
+                      "name": "MultilingualInput",
+                      "props": {
+                        "name": "name",
+                        "placeholder": "$t:admin.menus.form.name_placeholder",
+                        "maxLength": 100,
+                        "required": true,
+                        "layout": "tabs"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.formErrors?.name}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                      },
+                      "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "form_slug_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_slug_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.menus.form.slug"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "form_slug_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "slug",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.formErrors?.slug}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                      },
+                      "text": "{{_global.formErrors?.slug?.[0] ?? ''}}"
+                    },
+                    {
+                      "id": "form_slug_hint",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_global.formErrors?.slug}}",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.menus.form.slug_hint"
+                    }
+                  ]
+                },
+                {
+                  "id": "form_url_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_url_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.menus.form.url"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "form_url_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "url",
+                        "placeholder": "$t:admin.menus.form.url_placeholder",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.formErrors?.url}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                      },
+                      "text": "{{_global.formErrors?.url?.[0] ?? ''}}"
+                    },
+                    {
+                      "id": "form_url_hint",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!_global.formErrors?.url}}",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.menus.form.url_hint"
+                    }
+                  ]
+                },
+                {
+                  "id": "form_icon_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_icon_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.menus.form.icon"
+                    },
+                    {
+                      "id": "form_icon_select",
+                      "type": "composite",
+                      "name": "IconSelect",
+                      "props": {
+                        "name": "icon",
+                        "placeholder": "$t:admin.menus.form.icon_placeholder",
+                        "searchPlaceholder": "$t:admin.menus.form.icon_search_placeholder",
+                        "noResultsText": "$t:admin.menus.form.icon_no_results"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "form_hierarchy_section",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_hierarchy_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.hierarchy"
+                },
+                {
+                  "id": "form_parent_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_parent_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.menus.form.parent"
+                    },
+                    {
+                      "id": "form_parent_select",
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "name": "parent_id",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      },
+                      "children": [
+                        {
+                          "id": "form_parent_option_top",
+                          "type": "basic",
+                          "name": "Option",
+                          "props": {
+                            "value": ""
+                          },
+                          "text": "$t:admin.menus.form.parent_top_level"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "iteration": {
+                            "source": "(menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)",
+                            "item_var": "parentMenu"
+                          },
+                          "props": {
+                            "value": "{{parentMenu.id}}"
+                          },
+                          "text": "{{$localized(parentMenu.name)}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_global.formErrors?.parent_id}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1"
+                      },
+                      "text": "{{_global.formErrors?.parent_id?.[0] ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "form_custom_menu_section",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.panelMode === 'create'}}",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_custom_menu_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_custom_menu_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.menus.form.custom_menu"
+                    },
+                    {
+                      "id": "form_custom_menu_select",
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "name": "custom_menu_key",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "formData": "{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "id": "form_custom_menu_option_none",
+                          "type": "basic",
+                          "name": "Option",
+                          "props": {
+                            "value": ""
+                          },
+                          "text": "$t:admin.menus.form.custom_menu_none"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Optgroup",
+                          "iteration": {
+                            "source": "Object.entries(modules?.data?.custom_menus ?? {}).map(([id, val]) => ({ id, name: val.module_name, custom_menus: val.menus ?? [] })).filter(m => m.custom_menus.length > 0)",
+                            "item_var": "moduleItem"
+                          },
+                          "props": {
+                            "label": "{{moduleItem.name}}"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Option",
+                              "iteration": {
+                                "source": "{{moduleItem.custom_menus ?? []}}",
+                                "item_var": "customMenu"
+                              },
+                              "props": {
+                                "value": "{{customMenu.key}}",
+                                "data-module-id": "{{moduleItem.id}}",
+                                "data-url": "{{customMenu.url}}"
+                              },
+                              "text": "{{customMenu.name}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "form_affiliation_section",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.panelMode === 'edit' && _global.selectedMenu?.extension_type != null && _global.selectedMenu?.extension_type !== 'core'}}",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_affiliation_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.affiliation"
+                },
+                {
+                  "id": "form_module_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_module_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.menus.info.module"
+                    },
+                    {
+                      "id": "form_module_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "value": "{{_global.selectedMenu?.module?.name}}",
+                        "disabled": true,
+                        "className": "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "form_module_hint",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.menus.form.module_readonly_hint"
+                }
+              ]
+            },
+            {
+              "id": "form_roles_section",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_roles_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.access_permission"
+                },
+                {
+                  "id": "form_roles_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "id": "form_roles_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.menus.form.roles"
+                    },
+                    {
+                      "id": "form_roles_input",
+                      "type": "composite",
+                      "name": "TagInput",
+                      "props": {
+                        "name": "roles",
+                        "placeholder": "$t:admin.menus.form.roles_placeholder",
+                        "noOptionsMessage": "$t:admin.menus.form.roles_no_options",
+                        "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"
+                      }
+                    },
+                    {
+                      "id": "form_roles_hint",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.menus.form.roles_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "form_status_section",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_status_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.status"
+                },
+                {
+                  "id": "form_toggle",
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "label": "$t:admin.menus.form.is_active",
+                    "name": "is_active"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "form_meta_section",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.panelMode === 'edit'}}",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "form_meta_title",
+                  "type": "basic",
+                  "name": "H4",
+                  "props": {
+                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  },
+                  "text": "$t:admin.menus.info.meta"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-2 text-sm"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400 w-20"
+                          },
+                          "text": "$t:admin.menus.info.creator"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-gray-900 dark:text-white font-medium"
+                              },
+                              "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_global.selectedMenu?.creator?.email}}",
+                              "props": {
+                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "{{_global.selectedMenu?.creator?.email}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400 w-20"
+                          },
+                          "text": "$t:admin.menus.info.created_at"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-1.5 text-gray-900 dark:text-white"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "calendar",
+                                "size": "sm",
+                                "className": "text-gray-400"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{_global.selectedMenu?.created_at}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400 w-20"
+                          },
+                          "text": "$t:admin.menus.info.updated_at"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-1.5 text-gray-900 dark:text-white"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "clock",
+                                "size": "sm",
+                                "className": "text-gray-400"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{_global.selectedMenu?.updated_at}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+    }
+  ]
+}

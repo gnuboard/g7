@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "커뮤니티 가이드 카드"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H3",
+      "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "building", "className": "w-5 h-5 text-purple-500" } },
+        { "type": "basic", "name": "Span", "text": "$t:home.community_guide" }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Ul",
+      "props": { "className": "space-y-2 text-sm text-gray-600 dark:text-gray-400" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Li",
+          "props": { "className": "flex items-start gap-2" },
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-green-500 mt-0.5" }, "text": "•" },
+            { "type": "basic", "name": "Span", "text": "$t:home.guide_rule_1" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Li",
+          "props": { "className": "flex items-start gap-2" },
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-red-500 mt-0.5" }, "text": "•" },
+            { "type": "basic", "name": "Span", "text": "$t:home.guide_rule_2" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Li",
+          "props": { "className": "flex items-start gap-2" },
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-red-500 mt-0.5" }, "text": "•" },
+            { "type": "basic", "name": "Span", "text": "$t:home.guide_rule_3" }
+          ]
+        }
+      ]
+    }
+  ]
+}

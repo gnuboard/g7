@@ -1,0 +1,1011 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 주문내역 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "orders"
+  },
+  "props": { "className": "mt-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "mt-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "주문상태별 통계 섹션",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm" }
+        }
+      },
+      "children": [
+        {
+          "comment": "PC: 가로 배치 / Mobile: 3열 그리드",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "grid grid-cols-3 gap-4" }
+            }
+          },
+          "children": [
+            {
+              "comment": "입금대기",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "pending_payment", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "pending_payment", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "pending_payment": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "pending_payment": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "pending_payment": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "pending_payment": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.pending_payment ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "pending_payment": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.pending_payment"
+                }
+              ]
+            },
+            {
+              "comment": "화살표 1",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center" },
+              "responsive": { "portable": { "props": { "className": "hidden" } } },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
+                }
+              ]
+            },
+            {
+              "comment": "결제완료",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "payment_complete", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "payment_complete", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "payment_complete": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "payment_complete": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "payment_complete": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "payment_complete": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.payment_complete ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "payment_complete": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
+                }
+              ]
+            },
+            {
+              "comment": "화살표 2",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center" },
+              "responsive": { "portable": { "props": { "className": "hidden" } } },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
+                }
+              ]
+            },
+            {
+              "comment": "배송준비중",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "preparing", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "preparing", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "preparing": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "preparing": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "preparing": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "preparing": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.preparing ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "preparing": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.preparing"
+                }
+              ]
+            },
+            {
+              "comment": "화살표 3",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center" },
+              "responsive": { "portable": { "props": { "className": "hidden" } } },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
+                }
+              ]
+            },
+            {
+              "comment": "배송중",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "shipping", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "shipping", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "shipping": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "shipping": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "shipping": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "shipping": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.shipping ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "shipping": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.shipping"
+                }
+              ]
+            },
+            {
+              "comment": "화살표 4",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center" },
+              "responsive": { "portable": { "props": { "className": "hidden" } } },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
+                }
+              ]
+            },
+            {
+              "comment": "배송완료",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "delivered", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "delivered", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "delivered": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "delivered": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "delivered": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "delivered": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.delivered ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "delivered": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.delivered"
+                }
+              ]
+            },
+            {
+              "comment": "화살표 5",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center" },
+              "responsive": { "portable": { "props": { "className": "hidden" } } },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
+                }
+              ]
+            },
+            {
+              "comment": "구매확정",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center cursor-pointer group" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "confirmed", "ordersPage": 1 } },
+                    { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "confirmed", "page": "1" } } }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "classMap": {
+                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
+                    "variants": { "confirmed": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "classMap": {
+                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
+                        "variants": { "confirmed": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "text-xl font-bold",
+                        "variants": { "confirmed": "text-primary-600 dark:text-primary-400" },
+                        "key": "{{_local.ordersStatus ?? ''}}",
+                        "default": "text-gray-600 dark:text-gray-300"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "classMap": {
+                            "base": "text-lg font-bold",
+                            "variants": { "confirmed": "text-primary-600 dark:text-primary-400" },
+                            "key": "{{_local.ordersStatus ?? ''}}",
+                            "default": "text-gray-600 dark:text-gray-300"
+                          }
+                        }
+                      },
+                      "text": "{{orders.data.statistics.confirmed ?? 0}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "classMap": {
+                    "base": "text-xs mt-2 text-center",
+                    "variants": { "confirmed": "text-primary-600 dark:text-primary-400 font-semibold" },
+                    "key": "{{_local.ordersStatus ?? ''}}",
+                    "default": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "상태 필터 (셀렉트박스)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end mb-4" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex justify-end mb-3" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "value": "{{_local.ordersStatus || ''}}",
+            "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "value": "{{_local.ordersStatus || ''}}",
+                "className": "min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              }
+            }
+          },
+          "children": [
+            { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:mypage.orders.filter.all" },
+            { "type": "basic", "name": "Option", "props": { "value": "pending_payment" }, "text": "$t:mypage.orders.filter.pending" },
+            { "type": "basic", "name": "Option", "props": { "value": "payment_complete" }, "text": "$t:mypage.orders.filter.paid" },
+            { "type": "basic", "name": "Option", "props": { "value": "preparing" }, "text": "$t:mypage.orders.filter.preparing" },
+            { "type": "basic", "name": "Option", "props": { "value": "shipping" }, "text": "$t:mypage.orders.filter.shipped" },
+            { "type": "basic", "name": "Option", "props": { "value": "delivered" }, "text": "$t:mypage.orders.filter.delivered" },
+            { "type": "basic", "name": "Option", "props": { "value": "confirmed" }, "text": "$t:mypage.orders.filter.confirmed" },
+            { "type": "basic", "name": "Option", "props": { "value": "cancelled" }, "text": "$t:mypage.orders.filter.cancelled" }
+          ],
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "ordersStatus": "{{$event.target.value}}", "ordersPage": 1 } },
+                { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "query": { "status": "{{$event.target.value}}", "page": "1" } } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "주문 목록 컨테이너",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "space-y-3" }
+        }
+      },
+      "children": [
+        {
+          "comment": "주문 카드 반복",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{orders.data.data && orders.data.data.length > 0}}",
+          "iteration": { "source": "{{orders.data.data ?? []}}", "item_var": "order" },
+          "children": [
+            {
+              "comment": "주문 카드",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" }
+                }
+              },
+              "children": [
+                {
+                  "comment": "주문 헤더 (날짜/번호 + 상태)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-start justify-between mb-3" },
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "flex items-start justify-between mb-2" }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                          "responsive": {
+                            "portable": {
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }
+                            }
+                          },
+                          "text": "{{order.ordered_at_formatted ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+                          "responsive": {
+                            "portable": {
+                              "props": { "className": "text-xs font-medium text-gray-900 dark:text-white" }
+                            }
+                          },
+                          "text": "{{order.order_number}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "주문상태 배지",
+                      "type": "basic",
+                      "name": "Span",
+                      "classMap": {
+                        "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                        "key": "{{order.status}}",
+                        "variants": {
+                          "pending_payment": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                          "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                          "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                          "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                          "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                          "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                          "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                          "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                        },
+                        "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{order.status_label}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "주문 상품 목록",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-3" },
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "space-y-2" }
+                    }
+                  },
+                  "iteration": { "source": "{{order.items ?? []}}", "item_var": "item" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex gap-3" },
+                      "children": [
+                        {
+                          "comment": "상품 이미지",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" },
+                          "responsive": {
+                            "portable": {
+                              "props": { "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" }
+                            }
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Img",
+                              "if": "{{item.thumbnail_url}}",
+                              "props": { "src": "{{item.thumbnail_url}}", "alt": "{{item.product_name}}", "className": "w-full h-full object-cover" }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "if": "{{!item.thumbnail_url}}",
+                              "props": { "className": "w-full h-full flex items-center justify-center" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": { "name": "image", "size": "lg", "className": "text-gray-400 dark:text-gray-500" }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "상품 정보",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex-1 min-w-0" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white truncate" },
+                              "responsive": {
+                                "portable": {
+                                  "props": { "className": "text-xs font-medium text-gray-900 dark:text-white truncate" }
+                                }
+                              },
+                              "text": "{{item.product_name}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                              "text": "{{item.product_option_name}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
+                              "responsive": {
+                                "portable": {
+                                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" }
+                                }
+                              },
+                              "text": "{{item.mc_unit_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit"
+                            },
+                            {
+                              "comment": "옵션 소계",
+                              "type": "basic",
+                              "name": "P",
+                              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mt-0.5" },
+                              "responsive": {
+                                "portable": {
+                                  "props": { "className": "text-xs font-medium text-gray-900 dark:text-white mt-0.5" }
+                                }
+                              },
+                              "text": "{{item.mc_subtotal_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.subtotal_price_formatted}}"
+                            },
+                            {
+                              "comment": "보조 통화들 (선택된 통화 제외)",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
+                              "iteration": {
+                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                                "item_var": "currency"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                  "text": "{{currency[1]?.formatted}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "배송비 + 결제금액 + 상세보기",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700" },
+                  "responsive": {
+                    "portable": {
+                      "props": { "className": "flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700" }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "comment": "배송비",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex items-center gap-2 mb-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                              "text": "$t:mypage.orders.shipping_fee"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{order.total_shipping_amount > 0}}",
+                              "props": { "className": "text-xs text-gray-600 dark:text-gray-300" },
+                              "text": "+{{order.mc_total_shipping_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.total_shipping_amount_formatted}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{!order.total_shipping_amount || order.total_shipping_amount == 0}}",
+                              "props": { "className": "text-xs text-green-600 dark:text-green-400" },
+                              "text": "$t:mypage.orders.free_shipping"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "$t:mypage.orders.total_amount"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" },
+                          "responsive": {
+                            "portable": {
+                              "props": { "className": "text-base font-bold text-gray-900 dark:text-white" }
+                            }
+                          },
+                          "text": "{{order.mc_total_amount?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? order.total_amount_formatted}}"
+                        },
+                        {
+                          "comment": "보조 통화들 (선택된 통화 제외)",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex flex-wrap gap-x-2" },
+                          "iteration": {
+                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                            "item_var": "currency"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                              "text": "{{currency[1]?.formatted}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "type": "button",
+                            "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                          }
+                        }
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "navigate",
+                          "params": { "path": "/mypage/orders/{{order.order_number}}" }
+                        }
+                      ],
+                      "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:mypage.orders.view_detail" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "주문 없음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!orders.data.data || orders.data.data.length === 0}}",
+          "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "package", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" },
+              "responsive": {
+                "portable": {
+                  "props": { "name": "package", "size": "2x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2" }
+                }
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-gray-500 dark:text-gray-400" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }
+                }
+              },
+              "text": "$t:mypage.orders.empty"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": { "path": "{{_global.shopBase}}/products" }
+                }
+              ],
+              "text": "$t:mypage.orders.go_shopping"
+            }
+          ]
+        },
+        {
+          "comment": "페이지네이션",
+          "type": "composite",
+          "name": "Pagination",
+          "if": "{{orders.data.pagination.last_page > 1}}",
+          "props": {
+            "currentPage": "{{orders.data.pagination.current_page}}",
+            "totalPages": "{{orders.data.pagination.last_page}}",
+            "className": "mt-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "currentPage": "{{orders.data.pagination.current_page}}",
+                "totalPages": "{{orders.data.pagination.last_page}}",
+                "className": "mt-3"
+              }
+            }
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "ordersPage": "{{$args[0]}}" } },
+                { "handler": "navigate", "params": { "path": "/mypage/orders", "replace": true, "mergeQuery": true, "query": { "page": "{{$args[0]}}" } } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

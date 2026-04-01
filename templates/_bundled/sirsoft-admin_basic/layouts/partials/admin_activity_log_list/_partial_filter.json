@@ -1,0 +1,783 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Activity Log List Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "Select",
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500",
+                                "value": "{{_local.filter.searchType || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.activity_log.filter.search_type_all"
+                                    },
+                                    {
+                                        "value": "action",
+                                        "label": "$t:admin.activity_log.filter.search_type_action"
+                                    },
+                                    {
+                                        "value": "description",
+                                        "label": "$t:admin.activity_log.filter.search_type_description"
+                                    },
+                                    {
+                                        "value": "ip_address",
+                                        "label": "$t:admin.activity_log.filter.search_type_ip_address"
+                                    }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.activity_log.filter.search_placeholder",
+                                        "className": "input w-full pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchActivityLogs"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col"
+            },
+            "children": [
+                {
+                    "id": "log_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.log_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{[]}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('admin')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'admin'), 'admin'] : (_local.filter.logTypes || []).filter(t => t !== 'admin')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_admin"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('user')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'user'), 'user'] : (_local.filter.logTypes || []).filter(t => t !== 'user')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_user"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('system')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'system'), 'system'] : (_local.filter.logTypes || []).filter(t => t !== 'system')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_system"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "actor_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.actor_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "SearchableDropdown",
+                                    "props": {
+                                        "options": "{{_local.actorSearchResults ?? []}}",
+                                        "value": "{{_local.filter.createdBy || ''}}",
+                                        "triggerLabel": "$t:admin.activity_log.filter.actor_select",
+                                        "searchPlaceholder": "$t:admin.activity_log.filter.actor_search_placeholder",
+                                        "noResultsText": "$t:common.no_results",
+                                        "initialText": "$t:admin.activity_log.filter.actor_search_initial",
+                                        "className": "w-64"
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onSearch",
+                                            "handler": "apiCall",
+                                            "debounce": 300,
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/search",
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "keyword": "{{$args[0]}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "actorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "actorSearchResults": []
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onChange",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdBy": "{{$args[0]}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!!_local.filter.createdBy}}",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "xmark",
+                                                "className": "w-4 h-4"
+                                            }
+                                        }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdBy": "",
+                                                "actorSearchResults": []
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "date_range_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.date_range_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "name": "dateFrom",
+                                        "type": "datetime-local",
+                                        "step": "1",
+                                        "className": "input w-56",
+                                        "value": "{{_local.filter.dateFrom || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateFrom": "{{$event.target.value}}",
+                                                "filter.dateQuick": ""
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-400"
+                                    },
+                                    "text": "~"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "name": "dateTo",
+                                        "type": "datetime-local",
+                                        "step": "1",
+                                        "className": "input w-56",
+                                        "value": "{{_local.filter.dateTo || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateTo": "{{$event.target.value}}",
+                                                "filter.dateQuick": ""
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.today",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "today"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.week",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "week"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.month",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "month"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.three_months",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "3months"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.six_months",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "6months"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.one_year",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "params": {
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setDateRange",
+                                                                "params": {
+                                                                    "preset": "1year"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "filter.dateQuick": "{{$prev.preset}}",
+                                                                    "filter.dateFrom": "{{$prev.startDate}}",
+                                                                    "filter.dateTo": "{{$prev.endDate}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.activity_log.filter.search_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchActivityLogs"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.activity_log.filter.reset_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter": {
+                                            "searchType": "all",
+                                            "search": "",
+                                            "logTypes": [],
+                                            "createdBy": "",
+                                            "dateQuick": "",
+                                            "dateFrom": "",
+                                            "dateTo": ""
+                                        },
+                                        "actorSearchResults": []
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/activity-logs"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

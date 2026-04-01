@@ -1,0 +1,386 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Excel Download - Download History Modal"
+  },
+  "id": "download_history_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.title",
+    "description": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.description",
+    "size": "lg"
+  },
+  "children": [
+    {
+      "id": "file_info_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.file_content"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-right"
+              },
+              "text": "{{_local.selectedItem.file_content}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.category"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-right"
+              },
+              "text": "{{_local.selectedItem.category_name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.status"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-right"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "condition": "{{_local.selectedItem.status === 'completed'}}",
+                  "props": {
+                    "className": "badge-status badge-status-success"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "check-circle",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.excel_download.status.completed"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "condition": "{{_local.selectedItem.status === 'processing'}}",
+                  "props": {
+                    "className": "badge-status badge-status-processing"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "loader",
+                        "className": "w-3 h-3 animate-spin"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.excel_download.status.processing"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "condition": "{{_local.selectedItem.status === 'failed'}}",
+                  "props": {
+                    "className": "badge-status badge-status-error"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "alert-circle",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.excel_download.status.failed"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "condition": "{{_local.selectedItem.status === 'expired'}}",
+                  "props": {
+                    "className": "badge-status badge-status-expired"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "file-text",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.excel_download.status.expired"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.created_date"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-right"
+              },
+              "text": "{{_local.selectedItem.created_date}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.expire_date"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-right"
+              },
+              "text": "{{_local.selectedItem.expire_date}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label-subtle"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.total_download"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary text-right font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem.download_count}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "history_list_section",
+      "type": "basic",
+      "name": "Div",
+      "condition": "{{_local.selectedItem}}",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-heading"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_title"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-secondary"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_count|count={{_local.selectedItem?.download_history?.length ?? 0}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-3 max-h-64 overflow-y-auto"
+          },
+          "children": [
+            {
+              "id": "history_item",
+              "type": "basic",
+              "name": "Div",
+              "iteration": "{{_local.selectedItem?.download_history ?? []}}",
+              "props": {
+                "className": "flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "avatar"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "user",
+                            "className": "w-4 h-4"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-primary font-medium"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{item.user_name}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-secondary ml-1"
+                              },
+                              "text": "({{item.user_id}})"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-1 text-tertiary"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "calendar",
+                                "className": "w-3 h-3"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "{{item.downloaded_at}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-secondary font-medium"
+                  },
+                  "text": "#{{item.sequence}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modal_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.confirm",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Discount Code Status Change Modal"
+  },
+  "id": "modal_status_change",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-secondary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.description"
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.confirm",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

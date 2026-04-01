@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시글 작성/수정 유형별 렌더러. 비밀번호 확인 조건 + 유형별 폼(basic/gallery/card)을 렌더링한다. 새 유형 추가: 1) types/새유형/form.json 생성, 2) 아래 유형 블록 추가, 3) basic 블록 !includes 배열에 새 유형 추가"
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{!form_meta?.data?.requires_password || _local.passwordVerified || form_meta?.data?.board?.user_abilities?.can_manage}}",
+  "children": [
+    {
+      "comment": "basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.type === 'basic' || !['gallery','card'].includes(form_meta?.data?.board?.type ?? 'basic')}}",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/form.json"
+        }
+      ]
+    },
+    {
+      "comment": "gallery 유형 (전용 폼 파일 생성 전까지 basic 공유)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.type === 'gallery'}}",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/form.json"
+        }
+      ]
+    },
+    {
+      "comment": "card 유형 (전용 폼 파일 생성 전까지 basic 공유)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.type === 'card'}}",
+      "children": [
+        {
+          "partial": "partials/board/types/basic/form.json"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "title": "카테고리 관리",
+  "description": "이커머스 상품 카테고리를 관리합니다.",
+  "tree": {
+    "title": "카테고리 목록",
+    "add": "카테고리 추가",
+    "empty": "등록된 카테고리가 없습니다"
+  },
+  "empty": {
+    "title": "카테고리를 선택하세요",
+    "description": "좌측에서 카테고리를 선택하거나 새로 추가하세요"
+  },
+  "form": {
+    "new_category_title": "새 카테고리",
+    "edit_category_title": "카테고리 수정",
+    "name": "카테고리명",
+    "name_placeholder": "카테고리 이름을 입력하세요",
+    "slug": "슬러그",
+    "slug_placeholder": "category-slug",
+    "slug_hint": "슬러그는 영문 소문자로 시작해야 하며, 영문 소문자/숫자/하이픈(-)만 사용 가능합니다.",
+    "description": "설명",
+    "description_placeholder": "카테고리 설명을 입력하세요",
+    "parent_category": "상위 카테고리",
+    "parent_category_placeholder": "상위 카테고리를 검색하세요",
+    "parent_category_hint": "상위 카테고리를 선택하거나 '최상위 카테고리'를 선택하세요.",
+    "parent_top_level": "최상위 카테고리",
+    "sort_order": "정렬 순서",
+    "sort_order_hint": "같은 레벨 내에서 정렬 순서 (숫자가 작을수록 먼저 표시)",
+    "is_active": "활성화",
+    "image": "카테고리 이미지",
+    "meta_title": "SEO 메타 제목",
+    "meta_description": "SEO 메타 설명",
+    "confirm_remove_image_title": "이미지 삭제",
+    "confirm_remove_image_message": "이미지가 즉시 삭제됩니다. 카테고리 저장과 관계없이 되돌릴 수 없습니다."
+  },
+  "info": {
+    "title": "카테고리 정보",
+    "basic": "기본 정보",
+    "name": "카테고리명",
+    "slug": "슬러그",
+    "depth": "계층 깊이",
+    "order": "순서",
+    "path": "경로",
+    "status": "상태",
+    "description": "설명",
+    "image": "이미지",
+    "image_click_to_enlarge": "이미지를 클릭하면 크게 볼 수 있습니다.",
+    "no_image": "이미지가 존재하지 않습니다.",
+    "products_count": "등록 상품",
+    "hierarchy_info": "계층 정보",
+    "parent_category": "상위 카테고리",
+    "top_level": "최상위",
+    "child_categories": "하위 카테고리",
+    "no_children": "하위 카테고리 없음",
+    "children_count": "{{count}}개",
+    "seo": "SEO 정보",
+    "system": "시스템 정보",
+    "statistics": "통계",
+    "product_count": "상품 수",
+    "subcategory_count": "하위 카테고리 수"
+  },
+  "delete_modal": {
+    "title": "카테고리 삭제",
+    "message_can_delete": " 카테고리를 정말 삭제하시겠습니까?",
+    "message_cannot_delete": " 카테고리는 삭제할 수 없습니다.",
+    "message_suffix": " 카테고리를 정말 삭제하시겠습니까?",
+    "cannot_delete_title": "삭제할 수 없습니다",
+    "has_children_cannot_delete": "하위 카테고리가 {count}개 있습니다. 먼저 하위 카테고리를 삭제해주세요.",
+    "has_products_cannot_delete": "연결된 상품이 {count}개 있습니다. 먼저 상품의 카테고리를 변경해주세요.",
+    "irreversible_warning": "이 작업은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?"
+  },
+  "modal": {
+    "image_preview": {
+      "title": "이미지 미리보기",
+      "close": "닫기"
+    }
+  },
+  "messages": {
+    "created": "카테고리가 등록되었습니다.",
+    "updated": "카테고리가 수정되었습니다.",
+    "deleted": "카테고리가 삭제되었습니다.",
+    "order_updated": "카테고리 순서가 변경되었습니다.",
+    "order_update_failed": "카테고리 순서 변경에 실패했습니다.",
+    "status_changed": "카테고리 상태가 변경되었습니다.",
+    "image_delete_failed": "이미지 삭제에 실패했습니다."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "default_shipping": "Default Shipping",
+  "order_number": "Order Number",
+  "order_date": "Order Date",
+  "total_amount": "Total Amount",
+  "status": "Order Status",
+  "statuses": {
+    "pending": "Pending",
+    "paid": "Paid",
+    "preparing": "Preparing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "refunded": "Refunded"
+  }
+}

@@ -1,0 +1,326 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Mail Send Log List DataGrid"
+    },
+    "id": "mail_send_log_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "props": {
+        "data": "{{mailSendLogs?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{mailSendLogs?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{mailSendLogs?.data?.pagination?.last_page ?? 1}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": "{{mailSendLogs?.data?.abilities?.can_delete === true}}",
+        "selectedIds": "{{_global.selectedIds_admin_mail_send_logs || []}}",
+        "loading": "{{mailSendLogs?.loading}}",
+        "expandable": true,
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-3"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.error_message}}",
+                        "props": {
+                            "className": "flex items-start gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-medium text-red-600 dark:text-red-400 shrink-0"
+                                },
+                                "text": "$t:admin.mail_send_log.detail.error_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-red-500 dark:text-red-300"
+                                },
+                                "text": "{{row.error_message}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
+                                },
+                                "text": "$t:admin.mail_send_log.detail.source_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "{{row.source ?? '-'}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                },
+                                "text": "$t:admin.mail_send_log.detail.body_label"
+                            },
+                            {
+                                "type": "composite",
+                                "name": "HtmlContent",
+                                "if": "{{row.body}}",
+                                "props": {
+                                    "content": "{{row.body}}",
+                                    "isHtml": true,
+                                    "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto text-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.body}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                },
+                                "text": "$t:admin.mail_send_log.detail.no_body"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.mail_send_log.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
+        "actionsColumnHeader": "$t:common.actions",
+        "columns": [
+            {
+                "field": "sender",
+                "header": "$t:admin.mail_send_log.table.column.sender",
+                "width": "180px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                },
+                                "text": "{{row.sender_email ?? '-'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.sender_name}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "{{row.sender_name}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "recipient",
+                "header": "$t:admin.mail_send_log.table.column.recipient",
+                "width": "200px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                },
+                                "text": "{{row.recipient_email}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.recipient_name}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "{{row.recipient_name}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "subject",
+                "header": "$t:admin.mail_send_log.table.column.subject",
+                "width": "250px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-1"
+                        },
+                        "text": "{{row.subject ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "template_type",
+                "header": "$t:admin.mail_send_log.table.column.template_type",
+                "width": "120px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                        },
+                        "text": "{{row.template_type ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "extension_type",
+                "header": "$t:admin.mail_send_log.table.column.extension_type",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        },
+                        "text": "{{row.extension_type ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "extension_identifier",
+                "header": "$t:admin.mail_send_log.table.column.extension_identifier",
+                "width": "140px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                        },
+                        "text": "{{row.extension_identifier ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "status",
+                "header": "$t:admin.mail_send_log.table.column.status",
+                "sortable": true,
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "{{row.status === 'sent' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : row.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}}"
+                        },
+                        "text": "{{row.status === 'sent' ? '$t:admin.mail_send_log.status.sent' : row.status === 'failed' ? '$t:admin.mail_send_log.status.failed' : '$t:admin.mail_send_log.status.skipped'}}"
+                    }
+                ]
+            },
+            {
+                "field": "sent_at",
+                "header": "$t:admin.mail_send_log.table.column.sent_at",
+                "sortable": true,
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "{{row.sent_at ?? '-'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "actions": [
+        {
+            "event": "onPageChange",
+            "type": "change",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/mail-send-logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "event": "onSelectionChange",
+            "type": "action",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_mail_send_logs": "{{$args[0]}}"
+            }
+        },
+        {
+            "event": "onRowAction",
+            "type": "action",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "openModal",
+                            "target": "delete_confirm_modal"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

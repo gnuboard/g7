@@ -1,0 +1,132 @@
+{
+  "post": {
+    "title": {
+      "required": "Title is required.",
+      "min": "Title must be at least :min characters.",
+      "max": "Title can be up to :max characters."
+    },
+    "content": {
+      "required": "Content is required.",
+      "min": "Content must be at least :min characters.",
+      "max": "Content can be up to :max characters."
+    },
+    "category": {
+      "max": "Category can be up to :max characters."
+    },
+    "status": {
+      "in": "Invalid status."
+    },
+    "author_name": {
+      "max": "Author name can be up to :max characters."
+    },
+    "password": {
+      "min": "Password must be at least :min characters."
+    },
+    "parent_id": {
+      "not_found": "Original post not found.",
+      "blinded": "You cannot reply to a blinded post.",
+      "deleted": "You cannot reply to a deleted post.",
+      "exists": "The specified post does not exist."
+    },
+    "files": {
+      "array": "Files must be an array.",
+      "max": "You can upload up to :max files.",
+      "file": "Must be a valid file.",
+      "file_max": "File size cannot exceed :maxKB.",
+      "mimes": "File extension not allowed."
+    }
+  },
+  "comment": {
+    "content": {
+      "required": "Comment content is required.",
+      "min": "Comment must be at least :min characters.",
+      "max": "Comment can be up to :max characters."
+    },
+    "post_id": {
+      "not_found": "Post not found.",
+      "blinded": "You cannot comment on a blinded post.",
+      "deleted": "You cannot comment on a deleted post."
+    },
+    "parent_id": {
+      "integer": "Parent comment ID must be an integer.",
+      "not_found": "Parent comment not found.",
+      "blinded": "You cannot reply to a blinded comment.",
+      "deleted": "You cannot reply to a deleted comment."
+    },
+    "user_id": {
+      "exists": "User does not exist."
+    },
+    "author_name": {
+      "max": "Author name can be up to :max characters."
+    },
+    "password": {
+      "min": "Password must be at least :min characters."
+    },
+    "ip_address": {
+      "required": "IP address is required."
+    }
+  },
+  "board": {
+    "not_found": "Board not found."
+  },
+  "board_type": {
+    "slug_required": "Slug is required.",
+    "slug_format": "Slug must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens.",
+    "slug_unique": "This slug is already in use.",
+    "name_required": "Type name is required.",
+    "name_ko_required": "Korean type name is required."
+  },
+  "report": {
+    "status": {
+      "required": "Status is required.",
+      "in": "Invalid status."
+    },
+    "process_note": {
+      "max": "Reason can be up to 1000 characters."
+    },
+    "invalid_status_transition": "Cannot change to this status from current status."
+  },
+  "max_reply_depth": {
+    "min": "Max reply depth must be at least :min.",
+    "max": "Max reply depth can be up to :max."
+  },
+  "max_comment_depth": {
+    "min": "Max comment depth must be at least :min.",
+    "max": "Max comment depth can be up to :max."
+  },
+  "notify_author_channels": {
+    "array": "Author notification channels must be an array.",
+    "item_max": "Channel name can be up to :max characters."
+  },
+  "notify_admin_on_post_channels": {
+    "array": "Admin notification channels must be an array.",
+    "item_max": "Channel name can be up to :max characters."
+  },
+  "settings": {
+    "category": {
+      "required": "Category is required.",
+      "in": "Invalid category."
+    }
+  },
+  "bulk_apply": {
+    "fields": {
+      "required": "Please select fields to apply.",
+      "min": "Please select at least one field."
+    },
+    "fields_item": {
+      "in": "Invalid field."
+    },
+    "apply_all": {
+      "required": "Apply all option is required.",
+      "boolean": "Apply all must be true or false."
+    },
+    "board_ids": {
+      "required_if": "Please select boards when not applying to all.",
+      "array": "Board IDs must be an array."
+    },
+    "board_ids_item": {
+      "integer": "Board ID must be an integer.",
+      "exists": "Board does not exist."
+    }
+  }
+}

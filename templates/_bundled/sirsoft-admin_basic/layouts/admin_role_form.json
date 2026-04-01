@@ -1,0 +1,821 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_role_form",
+    "permissions": [
+        "core.permissions.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}",
+        "description": "{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"
+    },
+    "data_sources": [
+        {
+            "id": "role",
+            "type": "api",
+            "endpoint": "/api/admin/roles/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "blocking",
+            "if": "{{route?.id}}",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_update === false}}",
+                "errorCode": 403
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "role_check",
+            "type": "api",
+            "endpoint": "/api/admin/roles",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "if": "{{!route?.id}}",
+            "params": {
+                "per_page": 1
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_create === false}}",
+                "errorCode": 403
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "clone_source",
+            "type": "api",
+            "endpoint": "/api/admin/roles/{{query.clone_from}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "if": "{{!!query?.clone_from && !route?.id}}",
+            "initLocal": "form",
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "permissions",
+            "type": "api",
+            "endpoint": "/api/admin/permissions",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "state": {
+        "form": {
+            "is_active": true
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "role_form_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen pb-24"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "{{route?.id ? $t:admin.roles.form.edit_title : $t:admin.roles.form.create_title}}",
+                            "description": "{{route?.id ? $t:admin.roles.form.edit_description : $t:admin.roles.form.create_description}}"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles"
+                                        }
+                                    }
+                                ],
+                                "text": "$t:common.cancel"
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "submit",
+                                    "form": "role_form",
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isSaving}}",
+                                        "props": {
+                                            "name": "save",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "spin": true
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_global.formErrors}}",
+                        "props": {
+                            "className": "mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "size": "lg",
+                                            "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
+                                                "text": "$t:common.validation_error"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Ul",
+                                                "if": "{{typeof _global.formErrors === 'object'}}",
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
+                                                },
+                                                "iteration": {
+                                                    "source": "Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                    "item_var": "message"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Li",
+                                                        "props": {
+                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                        },
+                                                        "text": "{{message}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "role_form",
+                        "type": "basic",
+                        "name": "Form",
+                        "dataKey": "form",
+                        "trackChanges": true,
+                        "blur_until_loaded": "{{_global.isSaving}}",
+                        "props": {
+                            "id": "role_form",
+                            "className": "mt-6 space-y-6"
+                        },
+                        "actions": [
+                            {
+                                "type": "submit",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isSaving": true,
+                                            "formErrors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_mode": "required",
+                                        "target": "{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}",
+                                        "params": {
+                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                            "body": {
+                                                "identifier": "{{!route?.id ? (_local.form.identifier ?? '') : undefined}}",
+                                                "name": "{{_local.form.name_raw ?? form.name}}",
+                                                "description": "{{_local.form.description_raw ?? form.description}}",
+                                                "is_active": "{{_local.form.is_active === true}}",
+                                                "permissions": "{{_local.form.permission_values ?? []}}"
+                                            }
+                                        },
+                                        "errorHandling": {
+                                            "403": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:auth.permission_denied"
+                                                }
+                                            },
+                                            "500": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:errors.server_error"
+                                                }
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/roles"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isSaving": false,
+                                                    "formErrors": "{{error.errors}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:common.validation_error"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "children": [
+                            {
+                                "id": "basic_info_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2 mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "info-circle",
+                                                    "size": "lg",
+                                                    "className": "text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                },
+                                                "text": "$t:admin.roles.form.basic_info"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "name_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.roles.form.name"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "MultilingualInput",
+                                                "props": {
+                                                    "name": "name_raw",
+                                                    "placeholder": "$t:admin.roles.form.name_placeholder",
+                                                    "maxLength": 100,
+                                                    "required": true,
+                                                    "layout": "tabs",
+                                                    "error": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "identifier_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.roles.form.identifier"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "name": "identifier",
+                                                    "type": "text",
+                                                    "placeholder": "$t:admin.roles.form.identifier_placeholder",
+                                                    "maxLength": 100,
+                                                    "disabled": "{{!!route?.id}}",
+                                                    "error": "{{_global.formErrors?.identifier}}",
+                                                    "className": "{{route?.id ? 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm' : _global.formErrors?.identifier ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_global.formErrors?.identifier}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_global.formErrors?.identifier?.[0] ?? ''}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!route?.id}}",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 text-xs mt-1"
+                                                },
+                                                "text": "$t:admin.roles.form.identifier_hint"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!route?.id}}",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 text-xs mt-1"
+                                                },
+                                                "text": "$t:admin.roles.form.identifier_readonly_hint"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "description_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "text": "$t:admin.roles.form.description"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "MultilingualInput",
+                                                "props": {
+                                                    "name": "description_raw",
+                                                    "placeholder": "$t:admin.roles.form.description_placeholder",
+                                                    "maxLength": 500,
+                                                    "multiline": true,
+                                                    "rows": 3,
+                                                    "layout": "tabs",
+                                                    "error": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "is_active_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between py-3 border-t border-gray-200 dark:border-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "$t:admin.roles.form.is_active"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block text-sm text-gray-500 dark:text-gray-400 mt-0.5"
+                                                        },
+                                                        "text": "$t:admin.roles.form.is_active_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Toggle",
+                                                "props": {
+                                                    "name": "is_active"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "permissions_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "shield",
+                                                            "size": "lg",
+                                                            "className": "text-gray-400"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "$t:admin.roles.form.permissions_section"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                },
+                                                "text": "{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                                        },
+                                        "text": "$t:admin.roles.form.permissions_hint"
+                                    },
+                                    {
+                                        "id": "permission_tabs",
+                                        "type": "composite",
+                                        "name": "TabNavigation",
+                                        "props": {
+                                            "tabs": "{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}",
+                                            "activeTabId": "{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}",
+                                            "variant": "underline"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onTabChange",
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "activePermissionTab": "{{$args[0]}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "permission_tab_contents",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mt-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "iteration": {
+                                                    "source": "{{permissions?.data?.data?.types ?? []}}",
+                                                    "item_var": "permType",
+                                                    "index_var": "typeIndex"
+                                                },
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{(_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin') === permType}}",
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "PermissionTree",
+                                                                "props": {
+                                                                    "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
+                                                                    "value": "{{_local.form.permission_values ?? []}}",
+                                                                    "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
+                                                                    "className": "max-h-[500px] overflow-y-auto",
+                                                                    "installedModules": "{{_global.installedModules}}",
+                                                                    "installedPlugins": "{{_global.installedPlugins}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form": {
+                                                                                "permission_values": "{{$event.target.value}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{(permissions?.data?.data?.permissions?.[permType]?.permissions ?? []).length === 0}}",
+                                                                "props": {
+                                                                    "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.roles.form.no_permissions_in_type"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "mobile_bottom_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "hidden"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 flex gap-3 z-50"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles"
+                                        }
+                                    }
+                                ],
+                                "text": "$t:common.cancel"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "submit",
+                                    "form": "role_form",
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "spin": true
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

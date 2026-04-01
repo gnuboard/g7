@@ -1,0 +1,634 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 환경설정 신고 정책 탭 콘텐츠"
+  },
+  "id": "tab_content_report_policy",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "comment": "========== 카드 1: 자동 블라인드 처리 ==========",
+      "id": "section_auto_hide",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-4 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.auto_hide"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 block mb-6"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.auto_hide_description"
+        },
+        {
+          "id": "field_auto_hide_threshold",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_threshold"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "report_policy.auto_hide_threshold",
+                "min": 1,
+                "max": 100,
+                "className": "{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['report_policy.auto_hide_threshold']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['report_policy.auto_hide_threshold']) ? _local.errors['report_policy.auto_hide_threshold'][0] : _local.errors?.['report_policy.auto_hide_threshold']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_threshold_hint"
+            }
+          ]
+        },
+        {
+          "id": "field_auto_hide_target",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_target"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "report_policy.auto_hide_target",
+                "options": [
+                  {
+                    "value": "post",
+                    "label": "$t:sirsoft-board.admin.settings.options.auto_hide_target.post"
+                  },
+                  {
+                    "value": "comment",
+                    "label": "$t:sirsoft-board.admin.settings.options.auto_hide_target.comment"
+                  },
+                  {
+                    "value": "both",
+                    "label": "$t:sirsoft-board.admin.settings.options.auto_hide_target.both"
+                  }
+                ],
+                "className": "w-full text-sm",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_target_hint"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "========== 카드 2: 신고 남발 방지 ==========",
+      "id": "section_report_abuse_prevention",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-4 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_abuse_prevention"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 block mb-6"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_abuse_prevention_description"
+        },
+        {
+          "id": "field_daily_report_limit",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.daily_report_limit"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "report_policy.daily_report_limit",
+                "min": 0,
+                "max": 100,
+                "className": "{{(_local.errors?.['report_policy.daily_report_limit']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['report_policy.daily_report_limit']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['report_policy.daily_report_limit']) ? _local.errors['report_policy.daily_report_limit'][0] : _local.errors?.['report_policy.daily_report_limit']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.daily_report_limit_hint"
+            }
+          ]
+        },
+        {
+          "id": "field_rejection_limit",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_count"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_count"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "report_policy.rejection_limit_count",
+                        "min": 0,
+                        "max": 50,
+                        "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['report_policy.rejection_limit_count']}}",
+                      "props": {
+                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                      },
+                      "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_days"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "report_policy.rejection_limit_days",
+                        "min": 1,
+                        "max": 365,
+                        "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['report_policy.rejection_limit_days']}}",
+                      "props": {
+                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                      },
+                      "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_hint"
+            }
+          ]
+        },
+        {
+          "id": "field_report_cooldown_seconds",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "spam_security.report_cooldown_seconds",
+                "min": 0,
+                "max": 3600,
+                "className": "{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['spam_security.report_cooldown_seconds']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['spam_security.report_cooldown_seconds']) ? _local.errors['spam_security.report_cooldown_seconds'][0] : _local.errors?.['spam_security.report_cooldown_seconds']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds_hint"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "========== 카드 3: 신고 관리 권한 ==========",
+      "id": "section_report_permissions",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-4 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_permissions"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 block mb-6"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_permissions_description"
+        },
+        {
+          "id": "field_report_view_roles",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-2 mb-6" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200" },
+              "text": "$t:sirsoft-board.admin.settings.fields.report_view_roles"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1.5" },
+              "text": "$t:sirsoft-board.admin.settings.fields.report_view_roles_description"
+            },
+            {
+              "type": "composite",
+              "name": "TagInput",
+              "props": {
+                "name": "report_permissions.view_roles",
+                "options": "{{_computed.roleOptions ?? []}}",
+                "className": "w-full",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "field_report_manage_roles",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200" },
+              "text": "$t:sirsoft-board.admin.settings.fields.report_manage_roles"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1.5" },
+              "text": "$t:sirsoft-board.admin.settings.fields.report_manage_roles_description"
+            },
+            {
+              "type": "composite",
+              "name": "TagInput",
+              "props": {
+                "name": "report_permissions.manage_roles",
+                "options": "{{_computed.roleOptions ?? []}}",
+                "className": "w-full",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "========== 카드 4: 신고 처리 알림 ==========",
+      "id": "section_report_notification",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-4 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_notification"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 block mb-4" },
+          "text": "$t:sirsoft-board.admin.settings.sections.report_notification_description"
+        },
+        {
+          "comment": "--- 신고 접수 관리자 알림 ---",
+          "id": "field_notify_admin_on_report",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg mb-4" },
+          "children": [
+            {
+              "comment": "토글 헤더 행",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-start gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-700/50" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-1 min-w-0" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-sm font-medium text-gray-900 dark:text-white" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report" },
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_description" }
+                  ]
+                },
+                { "type": "composite", "name": "Toggle", "props": { "name": "report_policy.notify_admin_on_report", "className": "flex-shrink-0 mt-0.5" } }
+              ]
+            },
+            {
+              "comment": "하위 옵션 (토글 ON 시에만 표시)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.report_policy?.notify_admin_on_report === true}}",
+              "props": { "className": "px-4 py-4 space-y-4 border-t border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "id": "field_notify_admin_on_report_scope",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1.5" },
+                  "children": [
+                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope" },
+                    {
+                      "type": "composite",
+                      "name": "RadioGroup",
+                      "props": {
+                        "name": "report_policy.notify_admin_on_report_scope",
+                        "options": [
+                          { "value": "per_case", "label": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_case" },
+                          { "value": "per_report", "label": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_report" }
+                        ],
+                        "inline": true,
+                        "size": "md",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "field_notify_admin_on_report_channels",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1.5" },
+                  "children": [
+                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
+                    { "type": "composite", "name": "TagInput", "props": { "name": "report_policy.notify_admin_on_report_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-full" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "--- 신고 처리 결과 작성자 알림 ---",
+          "id": "field_notify_author_on_report_action",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg" },
+          "children": [
+            {
+              "comment": "토글 헤더 행",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-start gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-700/50" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-1 min-w-0" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-sm font-medium text-gray-900 dark:text-white" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action" },
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_description" }
+                  ]
+                },
+                { "type": "composite", "name": "Toggle", "props": { "name": "report_policy.notify_author_on_report_action", "className": "flex-shrink-0 mt-0.5" } }
+              ]
+            },
+            {
+              "comment": "하위 옵션 (토글 ON 시에만 표시)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.report_policy?.notify_author_on_report_action === true}}",
+              "props": { "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "id": "field_notify_author_on_report_action_channels",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1.5" },
+                  "children": [
+                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
+                    { "type": "composite", "name": "TagInput", "props": { "name": "report_policy.notify_author_on_report_action_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-full" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

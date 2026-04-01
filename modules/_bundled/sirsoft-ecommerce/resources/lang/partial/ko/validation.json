@@ -1,0 +1,238 @@
+{
+  "attributes": {
+    "name": "상품명",
+    "product_code": "상품코드",
+    "list_price": "정가",
+    "selling_price": "판매가",
+    "stock": "재고",
+    "cancel_code": "취소 코드",
+    "cancel_message": "취소 사유"
+  },
+  "settings": {
+    "key_required": "설정 키는 필수입니다.",
+    "value_present": "설정 값은 필수입니다."
+  },
+  "product": {
+    "name": {
+      "required": "상품명은 필수입니다."
+    },
+    "name_ko": {
+      "required": "한국어 상품명은 필수입니다."
+    },
+    "product_code": {
+      "required": "상품코드는 필수입니다.",
+      "unique": "이미 사용 중인 상품코드입니다."
+    },
+    "list_price": {
+      "required": "정가는 필수입니다."
+    },
+    "selling_price": {
+      "required": "판매가는 필수입니다."
+    },
+    "invalid_sales_status": "유효하지 않은 판매 상태입니다.",
+    "invalid_display_status": "유효하지 않은 전시 상태입니다."
+  },
+  "preset": {
+    "name_required": "프리셋 이름은 필수입니다.",
+    "name_exists": "이미 사용 중인 프리셋 이름입니다.",
+    "conditions_required": "검색 조건은 필수입니다."
+  },
+  "bulk": {
+    "ids_required": "선택한 상품이 없습니다.",
+    "method_required": "변경 방식은 필수입니다.",
+    "value_required": "변경 값은 필수입니다."
+  },
+  "bulk_option_price": {
+    "product_ids": {
+      "required": "선택한 상품이 없습니다.",
+      "min": "최소 1개 이상의 상품을 선택해야 합니다."
+    },
+    "method": {
+      "required": "변경 방식은 필수입니다.",
+      "in": "유효하지 않은 변경 방식입니다."
+    },
+    "value": {
+      "required": "변경 값은 필수입니다.",
+      "integer": "변경 값은 정수여야 합니다.",
+      "min": "변경 값은 0 이상이어야 합니다."
+    },
+    "unit": {
+      "required": "단위는 필수입니다.",
+      "in": "유효하지 않은 단위입니다."
+    }
+  },
+  "bulk_option_stock": {
+    "product_ids": {
+      "required": "선택한 상품이 없습니다.",
+      "min": "최소 1개 이상의 상품을 선택해야 합니다."
+    },
+    "method": {
+      "required": "변경 방식은 필수입니다.",
+      "in": "유효하지 않은 변경 방식입니다."
+    },
+    "value": {
+      "required": "변경 수량은 필수입니다.",
+      "integer": "변경 수량은 정수여야 합니다.",
+      "min": "변경 수량은 0 이상이어야 합니다."
+    }
+  },
+  "custom": {
+    "language_currency": {
+      "currencies": {
+        "duplicate_code": "중복된 통화 코드가 있습니다.",
+        "name_required": "통화명은 필수입니다."
+      }
+    },
+    "basic_info": {
+      "shop_name": {
+        "required": "쇼핑몰 이름은 필수입니다."
+      },
+      "route_path": {
+        "required": "라우트 경로는 필수입니다."
+      },
+      "privacy_officer_email": {
+        "email": "유효한 이메일 형식이 아닙니다."
+      }
+    }
+  },
+  "shipping_policy": {
+    "name": {
+      "required": "배송정책명은 필수입니다."
+    },
+    "is_active": {
+      "required": "사용여부는 필수입니다."
+    },
+    "country_settings": {
+      "required": "국가별 설정이 1개 이상 필요합니다.",
+      "min": "국가별 설정이 1개 이상 필요합니다.",
+      "country_code": {
+        "required": "국가를 선택하세요.",
+        "distinct": "중복 국가가 있습니다.",
+        "max": "국가코드는 최대 10자입니다."
+      },
+      "shipping_method": {
+        "required": "배송방법은 필수입니다.",
+        "in": "유효하지 않은 배송방법입니다."
+      },
+      "carrier": {
+        "in": "유효하지 않은 운송사입니다."
+      },
+      "currency_code": {
+        "required": "기준 통화는 필수입니다.",
+        "max": "통화코드는 최대 10자입니다."
+      },
+      "charge_policy": {
+        "required": "배송비 부과 정책은 필수입니다.",
+        "in": "유효하지 않은 부과 정책입니다."
+      },
+      "base_fee": {
+        "numeric": "배송비는 숫자여야 합니다.",
+        "min": "배송비는 0 이상이어야 합니다."
+      },
+      "free_threshold": {
+        "numeric": "무료배송 기준금액은 숫자여야 합니다.",
+        "min": "무료배송 기준금액은 0 이상이어야 합니다."
+      },
+      "api_endpoint": {
+        "url": "유효한 URL을 입력해주세요.",
+        "max": "API 엔드포인트는 최대 500자입니다."
+      },
+      "extra_fee_enabled": {
+        "required": "도서산간 추가배송비 사용여부는 필수입니다."
+      },
+      "is_active": {
+        "required": "사용여부는 필수입니다."
+      }
+    },
+    "ranges": {
+      "first_min_zero": "첫 구간의 시작값은 0이어야 합니다.",
+      "last_max_unlimited": "마지막 구간의 종료값은 비워야 합니다.",
+      "continuity": "구간이 연속적이지 않습니다.",
+      "min_less_than_max": "시작값이 종료값보다 작아야 합니다.",
+      "fee_non_negative": "배송비는 0 이상이어야 합니다."
+    }
+  },
+  "list": {
+    "search": {
+      "string": "검색어는 문자열이어야 합니다.",
+      "max": "검색어는 최대 200자입니다."
+    },
+    "shipping_methods": {
+      "array": "배송방법은 배열이어야 합니다.",
+      "string": "배송방법은 문자열이어야 합니다.",
+      "in": "유효하지 않은 배송방법입니다."
+    },
+    "carriers": {
+      "array": "운송사는 배열이어야 합니다.",
+      "string": "운송사는 문자열이어야 합니다.",
+      "in": "유효하지 않은 운송사입니다."
+    },
+    "charge_policies": {
+      "array": "부과정책은 배열이어야 합니다.",
+      "string": "부과정책은 문자열이어야 합니다.",
+      "in": "유효하지 않은 부과정책입니다."
+    },
+    "countries": {
+      "array": "배송국가는 배열이어야 합니다.",
+      "string": "국가코드는 문자열이어야 합니다.",
+      "max": "국가코드는 최대 10자입니다."
+    },
+    "is_active": {
+      "in": "유효하지 않은 사용여부 값입니다."
+    },
+    "sort_by": {
+      "in": "유효하지 않은 정렬 기준입니다."
+    },
+    "sort_order": {
+      "in": "유효하지 않은 정렬 순서입니다."
+    },
+    "per_page": {
+      "integer": "페이지당 개수는 정수여야 합니다.",
+      "min": "페이지당 최소 10개입니다.",
+      "max": "페이지당 최대 100개입니다."
+    },
+    "page": {
+      "integer": "페이지 번호는 정수여야 합니다.",
+      "min": "페이지 번호는 1 이상이어야 합니다."
+    }
+  },
+  "extra_fee_template": {
+    "zipcode_required": "우편번호는 필수입니다.",
+    "zipcode_unique": "이미 등록된 우편번호입니다.",
+    "zipcode_max": "우편번호는 최대 20자입니다.",
+    "zipcode_format": "우편번호는 숫자와 하이픈(-)만 입력 가능합니다. (예: 12345 또는 12345-12399)",
+    "fee_required": "배송비는 필수입니다.",
+    "fee_numeric": "배송비는 숫자여야 합니다.",
+    "fee_min": "배송비는 0 이상이어야 합니다.",
+    "items_required": "등록할 항목이 필요합니다.",
+    "items_array": "항목 형식이 올바르지 않습니다.",
+    "items_min": "최소 1개 이상의 항목이 필요합니다.",
+    "items_max": "한번에 최대 1,000개까지 등록 가능합니다.",
+    "item_zipcode_required": "우편번호는 필수입니다.",
+    "item_fee_required": "배송비는 필수입니다.",
+    "ids_required": "선택된 항목이 없습니다.",
+    "ids_array": "항목 형식이 올바르지 않습니다.",
+    "ids_min": "최소 1개 이상의 항목을 선택해야 합니다.",
+    "id_not_found": "존재하지 않는 항목이 포함되어 있습니다.",
+    "is_active_required": "활성 상태는 필수입니다.",
+    "is_active_boolean": "활성 상태는 참/거짓이어야 합니다."
+  },
+  "product_notice_template": {
+    "name_required": "상품군명은 필수입니다.",
+    "name_max": "상품군명은 100자를 초과할 수 없습니다.",
+    "fields_required": "최소 1개 이상의 항목이 필요합니다.",
+    "fields_min": "최소 1개 이상의 항목이 필요합니다.",
+    "field_name_required": "항목명은 필수입니다.",
+    "field_name_min": "항목명은 1자 이상이어야 합니다.",
+    "field_name_max": "항목명은 200자를 초과할 수 없습니다.",
+    "field_content_required": "항목내용은 필수입니다.",
+    "field_content_min": "항목내용은 1자 이상이어야 합니다.",
+    "field_content_max": "항목내용은 2000자를 초과할 수 없습니다."
+  },
+  "review_image": {
+    "image_required": "이미지 파일은 필수입니다.",
+    "image_file": "올바른 파일을 업로드해주세요.",
+    "image_image": "이미지 파일만 업로드 가능합니다.",
+    "image_max": "이미지 파일 크기는 10MB를 초과할 수 없습니다."
+  }
+}

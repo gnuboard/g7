@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Label Uncheck Confirmation Modal (engine-v1.16.0: $parent 바인딩 사용)"
+  },
+  "id": "modal_label_uncheck_confirm",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center flex-shrink-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "exclamation-triangle", "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-gray-900 dark:text-white font-medium mb-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "px-2 py-0.5 rounded text-xs font-medium",
+                        "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.color ?? '#6B7280'}}"
+                      },
+                      "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToUncheckId)?.name) ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.message"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at || ($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at}}",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium" },
+                  "text": "{{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.started_at ?? ''}} ~ {{($parent._local.form.label_assignments ?? []).find(a => a.label_id === _global.labelToUncheckId)?.ended_at ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "type": "button", "className": "btn btn-outline" },
+              "text": "$t:sirsoft-ecommerce.common.cancel",
+              "actions": [{ "type": "click", "handler": "closeModal" }]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "type": "button", "className": "btn btn-warning" },
+              "text": "$t:sirsoft-ecommerce.admin.product.labels.uncheck_modal.confirm",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.confirmUncheckLabel"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

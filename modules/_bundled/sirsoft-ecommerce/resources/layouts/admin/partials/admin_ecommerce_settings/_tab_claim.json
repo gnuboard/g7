@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쇼핑몰 설정 클래임 탭 콘텐츠"
+  },
+  "id": "tab_content_claim",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'claim'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "partial": "_refund_reason_section.json"
+    }
+  ]
+}

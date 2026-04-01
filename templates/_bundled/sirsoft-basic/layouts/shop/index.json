@@ -1,0 +1,267 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/index",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "seo": {
+            "enabled": true,
+            "data_sources": ["products", "categories"],
+            "page_type": "category",
+            "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_category",
+            "vars": {
+                "commerce_name": "$module_settings:sirsoft-ecommerce:basic_info.shop_name",
+                "site_name": "$core_settings:general.site_name",
+                "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
+            },
+            "priority": 0.7,
+            "changefreq": "daily",
+            "og": {
+                "type": "website"
+            },
+            "structured_data": {
+                "@type": "ItemList",
+                "name": "$t:user.shop.index_title"
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "loadFromLocalStorage",
+            "params": {
+                "key": "recentProductIds",
+                "defaultValue": []
+            },
+            "resultTo": {
+                "target": "_global",
+                "key": "recentProductIds"
+            }
+        }
+    ],
+    "errorHandling": {
+        "401": {
+            "comment": "비회원 상품 조회 권한 없음 — 토스트 대신 상태 플래그로 안내 배너 표시",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "productAccessDenied": true
+            }
+        },
+        "403": {
+            "comment": "인증된 사용자 상품 조회 권한 없음",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "productAccessDenied": true
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/categories",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "products",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products",
+            "method": "GET",
+            "auth_mode": "optional",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": 12,
+                "category_id": "{{query.category ?? ''}}",
+                "sort": "{{query.sort ?? 'latest'}}",
+                "search": "{{query.keyword ?? ''}}"
+            },
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": [],
+                "meta": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 12,
+                    "total": 0
+                }
+            }
+        },
+        {
+            "id": "recentProducts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/recent",
+            "method": "GET",
+            "auth_mode": "optional",
+            "params": {
+                "ids": "{{(_global.recentProductIds ?? []).join(',')}}"
+            },
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "popularProducts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
+            "method": "GET",
+            "auth_mode": "optional",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "newProducts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/new?limit=8",
+            "method": "GET",
+            "auth_mode": "optional",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-8"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "shopping-cart",
+                                            "className": "w-6 h-6"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:shop.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-gray-600 dark:text-gray-400 mt-1"
+                                },
+                                "text": "$t:shop.description"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "상품 조회 권한 없음 안내 배너",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.productAccessDenied === true}}",
+                        "props": {
+                            "className": "mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg flex items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "text-yellow-600 dark:text-yellow-400"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-yellow-800 dark:text-yellow-200 text-sm"
+                                },
+                                "text": "$t:sirsoft-ecommerce.shop.product_access_denied"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "최상위 카테고리 버튼 (전체 + 1단계 카테고리)",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": { "className": "flex flex-wrap gap-2 mb-4" },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium"
+                                },
+                                "text": "$t:shop.category.all",
+                                "actions": [
+                                    { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": {} } }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": { "source": "{{categories?.data ?? []}}", "item_var": "cat" },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        },
+                                        "text": "{{cat?.name_localized}}",
+                                        "actions": [
+                                            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/category/{{cat?.slug}}" } }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/shop/list/_search_filter_bar.json"
+                    },
+                    {
+                        "partial": "partials/shop/list/_product_grid.json"
+                    },
+                    {
+                        "partial": "partials/shop/list/_recent_products.json"
+                    },
+                    {
+                        "partial": "partials/shop/list/_popular_products.json"
+                    },
+                    {
+                        "partial": "partials/shop/list/_new_products.json"
+                    }
+                ]
+            }
+        ]
+    }
+}

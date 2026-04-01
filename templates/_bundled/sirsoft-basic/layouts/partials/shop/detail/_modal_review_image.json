@@ -1,0 +1,202 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "리뷰 이미지 미리보기 모달 (슬라이더 + 리뷰 정보)"
+  },
+  "id": "review_image_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:shop.product.review_image_preview",
+    "width": "90vw",
+    "closeOnBackdropClick": true
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "p-4 flex flex-col gap-4" },
+      "children": [
+        {
+          "comment": "리뷰 정보 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex flex-col gap-2 pb-3 border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "comment": "작성자 + 별점 + 날짜",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between" },
+              "children": [
+                {
+                  "comment": "아바타 + 이름",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Avatar",
+                      "props": {
+                        "name": "{{_global.reviewForModal?.userName ?? '?'}}",
+                        "avatar": "{{_global.reviewForModal?.userAvatar ?? null}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "font-medium text-sm text-gray-900 dark:text-white" },
+                      "text": "{{_global.reviewForModal?.userName ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    {
+                      "comment": "별점 아이콘",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-0.5" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "iteration": { "source": "{{[1,2,3,4,5]}}", "item_var": "star" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "star",
+                                "size": "sm",
+                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                      "text": "{{_global.reviewForModal?.createdAt ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "옵션 배지 (있을 때만)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_global.reviewForModal?.optionValues ?? []).length > 0}}",
+              "props": { "className": "flex flex-wrap gap-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "iteration": { "source": "{{_global.reviewForModal?.optionValues ?? []}}", "item_var": "opt" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
+                      "props": { "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" },
+                      "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "리뷰 내용 (2줄 말줄임)",
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-2" },
+              "text": "{{_global.reviewForModal?.content ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "이미지 슬라이더 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex flex-col items-center gap-3" },
+          "children": [
+            {
+              "comment": "이미지 + 좌우 버튼",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "relative flex items-center justify-center w-full px-16" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Img",
+                  "props": {
+                    "src": "{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}",
+                    "alt": "",
+                    "className": "w-full max-w-full max-h-[55vh] object-contain rounded-lg"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
+                    "disabled": "{{Number(_global.reviewImageIndex) <= 0}}"
+                  },
+                  "text": "❮",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "reviewImageIndex": "{{Number(_global.reviewImageIndex) - 1}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed",
+                    "disabled": "{{Number(_global.reviewImageIndex) >= (_global.reviewForModal?.images?.length ?? 1) - 1}}"
+                  },
+                  "text": "❯",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "reviewImageIndex": "{{Number(_global.reviewImageIndex) + 1}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "이미지 카운터 (이미지 2장 이상일 때만)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(_global.reviewForModal?.images?.length ?? 0) > 1}}",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

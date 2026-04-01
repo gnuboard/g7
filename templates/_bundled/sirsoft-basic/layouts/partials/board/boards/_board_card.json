@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 카드 (전체 게시판 목록용)"
+  },
+  "type": "basic",
+  "name": "Button",
+  "props": {
+    "className": "block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer"
+  },
+  "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{board.slug}}" } }],
+  "responsive": {
+    "portable": {
+      "props": {
+        "className": "block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer"
+      }
+    }
+  },
+  "children": [
+    {
+      "comment": "헤더 (아이콘 + 제목 + 게시글 수)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-start justify-between mb-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "file-text", "size": "lg", "className": "text-gray-600 dark:text-gray-400 flex-shrink-0" }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": { "className": "font-semibold text-gray-900 dark:text-white" },
+              "text": "{{board.name}}"
+            }
+          ]
+        },
+        {
+          "comment": "게시글 수 배지",
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded" },
+          "text": "{{board.posts_count ?? 0}}개"
+        }
+      ]
+    },
+    {
+      "comment": "설명",
+      "type": "basic",
+      "name": "P",
+      "props": { "className": "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3" },
+      "text": "{{board.description ?? ''}}"
+    },
+    {
+      "comment": "게시판으로 이동 버튼",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-end gap-2 text-sm font-medium text-blue-600 dark:text-blue-400" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:board.view_board"
+        },
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "arrow-right", "size": "sm" }
+        }
+      ]
+    }
+  ]
+}

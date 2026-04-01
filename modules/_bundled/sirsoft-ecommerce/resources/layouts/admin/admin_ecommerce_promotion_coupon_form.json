@@ -1,0 +1,403 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_promotion_coupon_form",
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
+    },
+    "state": {
+        "form": {
+            "target_type": "product_amount",
+            "issue_method": "direct",
+            "issue_condition": "manual",
+            "name": { "ko": "", "en": "" },
+            "description": { "ko": "", "en": "" },
+            "discount_type": "fixed",
+            "discount_value": null,
+            "discount_max_amount": null,
+            "min_order_amount": null,
+            "valid_type": "period",
+            "valid_from": null,
+            "valid_to": null,
+            "valid_days": null,
+            "total_quantity": null,
+            "issue_from": null,
+            "issue_to": null,
+            "per_user_limit": 0,
+            "is_combinable": true,
+            "target_scope": "all",
+            "issue_status": "issuing",
+            "products": [],
+            "categories": []
+        },
+        "isSaving": false,
+        "errors": null,
+        "issue_quantity_type": "unlimited",
+        "issue_period_type": "unlimited",
+        "reissue_type": "unlimited",
+        "productSearchOpen": false,
+        "productSearchField": "all",
+        "productSearchKeyword": "",
+        "productSearchResults": [],
+        "productSearchPage": 1,
+        "productSearchLastPage": 1,
+        "productSearchTotal": 0,
+        "productSearchSelected": [],
+        "productSearchIsLoadingMore": false,
+        "categorySearchOpen": false,
+        "categorySearchKeyword": "",
+        "categoryExpandedIds": [],
+        "categorySearchSelected": [],
+        "selectedProductIds": [],
+        "selectedCategoryIds": []
+    },
+    "data_sources": [
+        {
+            "id": "coupon",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{route.id}}",
+            "method": "GET",
+            "if": "{{!!route.id}}",
+            "initLocal": {
+                "form": "{{data}}",
+                "form.products": "{{(data.included_products ?? []).map(p => ({...p, type: 'include'})).concat((data.excluded_products ?? []).map(p => ({...p, type: 'exclude'})))}}",
+                "form.categories": "{{(data.included_categories ?? []).map(c => ({...c, type: 'include'})).concat((data.excluded_categories ?? []).map(c => ({...c, type: 'exclude'})))}}",
+                "issue_quantity_type": "{{data.total_quantity != null ? 'limited' : 'unlimited'}}",
+                "issue_period_type": "{{(data.issue_from != null || data.issue_to != null) ? 'limited' : 'unlimited'}}",
+                "reissue_type": "{{data.per_user_limit > 0 ? 'limited' : 'unlimited'}}"
+            },
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "blocking",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": { "target": "content" }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": { "target": "content" }
+                }
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "errorCode": 403
+            }
+        },
+        {
+            "id": "categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories/tree",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "progressive"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "coupon_form_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "sticky_header_container",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 -mx-6 -mt-6 pt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "page-header px-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "back_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "arrow-left",
+                                                            "size": "sm"
+                                                        }
+                                                    }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/promotion-coupons"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H1",
+                                                        "props": {
+                                                            "className": "page-title"
+                                                        },
+                                                        "text": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!route.id}}",
+                                                        "props": {
+                                                            "className": "page-description"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!route.id}}",
+                                                        "props": {
+                                                            "className": "page-description"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_create"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "page-actions"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "cancel_button_top",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/promotion-coupons"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "save_button_top",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "disabled": "{{_local.isSaving || (route.id && coupon?.data?.abilities?.can_update !== true)}}",
+                                                    "className": "btn btn-primary flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{_local.isSaving}}",
+                                                        "props": {
+                                                            "name": "spinner",
+                                                            "className": "animate-spin"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "{{_local.isSaving ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.saving' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.save'}}"
+                                                    }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "isSaving": true,
+                                                                        "errors": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "auth_mode": "required",
+                                                                    "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}",
+                                                                    "params": {
+                                                                        "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                                        "body": "{{_local.form}}"
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "isSaving": false
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "success",
+                                                                                "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/admin/ecommerce/promotion-coupons"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "isSaving": false,
+                                                                                "errors": "{{error.errors}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message || '$t:common.validation_error'}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors}}",
+                        "props": {
+                            "className": "mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "size": "sm",
+                                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                        },
+                                        "text": "$t:common.validation_error"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "if": "{{typeof _local.errors === 'object'}}",
+                                        "props": {
+                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                        },
+                                        "iteration": {
+                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                            "item_var": "message"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "props": {
+                                                    "className": "text-sm text-red-700 dark:text-red-300"
+                                                },
+                                                "text": "{{message}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "form_sections",
+                        "type": "basic",
+                        "name": "Div",
+                        "dataKey": "form",
+                        "debounce": 300,
+                        "props": {
+                            "className": "space-y-6"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_promotion_coupon_form/_partial_basic_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_promotion_coupon_form/_partial_usage_conditions.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

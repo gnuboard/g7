@@ -1,0 +1,70 @@
+{
+  "common": {
+    "system": "시스템"
+  },
+  "boards": {
+    "menu_added_success": "관리자 메뉴에 추가되었습니다.",
+    "menu_add_failed": "메뉴 추가에 실패했습니다.",
+    "menu_already_exists": "이미 추가된 메뉴입니다.",
+    "module_not_found": "게시판 모듈을 찾을 수 없습니다."
+  },
+  "post": {
+    "notice": "공지",
+    "reply": "답변",
+    "action": {
+      "blind": "블라인드 처리",
+      "delete": "삭제 처리",
+      "restore": "복원 처리"
+    },
+    "deleted_post_title": "삭제된 게시글입니다",
+    "deleted_post_content": "이 게시글은 삭제되었습니다.",
+    "blinded_post_title": "블라인드 처리된 게시글입니다",
+    "blinded_post_content": "이 게시글은 블라인드 처리되었습니다."
+  },
+  "comment": {
+    "create_success": "댓글이 등록되었습니다.",
+    "update_success": "댓글이 수정되었습니다.",
+    "delete_success": "댓글이 삭제되었습니다.",
+    "blind_success": "댓글이 블라인드 처리되었습니다.",
+    "restore_success": "댓글이 복원되었습니다.",
+    "not_found": "댓글을 찾을 수 없습니다.",
+    "not_guest_comment": "비회원 댓글이 아닙니다.",
+    "invalid_password": "비밀번호가 일치하지 않습니다.",
+    "password_verified": "비밀번호가 확인되었습니다.",
+    "verify_password_failed": "비밀번호 확인에 실패했습니다.",
+    "deleted_comment_content": "삭제된 댓글입니다",
+    "blinded_comment_content": "블라인드 처리된 댓글입니다",
+    "view_original": "원문 보기",
+    "hide_original": "원문 숨기기",
+    "post_blinded": "블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.",
+    "post_deleted": "삭제된 게시글에는 댓글을 작성할 수 없습니다."
+  },
+  "reports": {
+    "create_success": "신고가 접수되었습니다.",
+    "create_failed": "신고 접수에 실패했습니다.",
+    "duplicate_report": "이미 신고한 대상입니다.",
+    "report_disabled": "이 게시판에서는 신고 기능이 비활성화되어 있습니다.",
+    "target_not_reportable": "신고할 수 없는 대상입니다."
+  },
+  "board_type": {
+    "list": "게시판 유형 목록을 조회했습니다.",
+    "created": "게시판 유형이 생성되었습니다.",
+    "updated": "게시판 유형이 수정되었습니다.",
+    "deleted": "게시판 유형이 삭제되었습니다.",
+    "default_set": "기본 게시판 유형이 설정되었습니다.",
+    "not_found": "게시판 유형을 찾을 수 없습니다.",
+    "in_use": "사용 중인 게시판 유형은 삭제할 수 없습니다.",
+    "delete_in_use": ":count개 게시판에서 사용 중인 유형은 삭제할 수 없습니다."
+  },
+  "settings": {
+    "fetch_success": "설정을 조회했습니다.",
+    "fetch_failed": "설정 조회에 실패했습니다.",
+    "save_success": "설정이 저장되었습니다.",
+    "save_failed": "설정 저장에 실패했습니다.",
+    "save_error": "설정 저장 중 오류가 발생했습니다.",
+    "bulk_apply_success": ":count개 게시판에 설정이 일괄 적용되었습니다.",
+    "bulk_apply_failed": "설정 일괄 적용에 실패했습니다.",
+    "clear_cache_success": "설정 캐시가 초기화되었습니다.",
+    "clear_cache_error": "설정 캐시 초기화 중 오류가 발생했습니다."
+  }
+}

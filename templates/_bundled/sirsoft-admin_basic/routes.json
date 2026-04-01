@@ -1,0 +1,196 @@
+{
+  "version": "1.0.0",
+  "routes": [
+    {
+      "path": "*/admin",
+      "redirect": "/admin/dashboard",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자"
+      }
+    },
+    {
+      "path": "*/admin/login",
+      "layout": "admin_login",
+      "auth_required": false,
+      "meta": {
+        "title": "관리자 로그인"
+      }
+    },
+    {
+      "path": "*/admin/forgot-password",
+      "layout": "admin_forgot_password",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:auth.forgot_password.title"
+      }
+    },
+    {
+      "path": "*/admin/reset-password",
+      "layout": "admin_reset_password",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:auth.reset_password.title"
+      }
+    },
+    {
+      "path": "*/admin/dashboard",
+      "layout": "admin_dashboard",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자 대시보드"
+      }
+    },
+    {
+      "path": "*/admin/users",
+      "layout": "admin_user_list",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자 - 사용자 관리"
+      }
+    },
+    {
+      "path": "*/admin/users/create",
+      "layout": "admin_user_form",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자 - 사용자 등록"
+      }
+    },
+    {
+      "path": "*/admin/users/:id",
+      "layout": "admin_user_detail",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자 - 사용자 상세보기"
+      }
+    },
+    {
+      "path": "*/admin/users/:id/edit",
+      "layout": "admin_user_form",
+      "auth_required": true,
+      "meta": {
+        "title": "관리자 - 사용자 정보 수정"
+      }
+    },
+    {
+      "path": "*/admin/modules",
+      "layout": "admin_module_list",
+      "auth_required": true,
+      "meta": {
+        "title": "모듈 관리"
+      }
+    },
+    {
+      "path": "*/admin/plugins",
+      "layout": "admin_plugin_list",
+      "auth_required": true,
+      "meta": {
+        "title": "플러그인 관리"
+      }
+    },
+    {
+      "path": "*/admin/menus",
+      "layout": "admin_menu_list",
+      "auth_required": true,
+      "meta": {
+        "title": "메뉴 관리"
+      }
+    },
+    {
+      "path": "*/admin/templates",
+      "redirect": "/admin/templates/user",
+      "auth_required": true,
+      "meta": {
+        "title": "템플릿 관리"
+      }
+    },
+    {
+      "path": "*/admin/templates/:identifier/edit",
+      "layout": "admin_template_layout_edit",
+      "auth_required": true,
+      "meta": {
+        "title": "레이아웃 편집"
+      }
+    },
+    {
+      "path": "*/admin/templates/:type",
+      "layout": "admin_template_list",
+      "auth_required": true,
+      "meta": {
+        "title": "템플릿 관리"
+      }
+    },
+    {
+      "path": "*/admin/template/partial",
+      "layout": "template_partial_test",
+      "auth_required": true,
+      "meta": {
+        "title": "템플릿 Partial 시스템 테스트"
+      }
+    },
+    {
+      "path": "*/admin/activity-logs",
+      "layout": "admin_activity_log_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.activity_log.page_title",
+        "permission": "core.activities.read"
+      }
+    },
+    {
+      "path": "*/admin/mail-send-logs",
+      "layout": "admin_mail_send_log_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.mail_send_log.page_title",
+        "permission": "core.mail-send-logs.read"
+      }
+    },
+    {
+      "path": "*/admin/settings",
+      "layout": "admin_settings",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.settings.page_title",
+        "permission": "core.settings.read"
+      }
+    },
+    {
+      "path": "*/admin/roles",
+      "layout": "admin_role_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.roles.page_title",
+        "permission": "core.permissions.read"
+      }
+    },
+    {
+      "path": "*/admin/roles/create",
+      "layout": "admin_role_form",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.roles.form.create_title",
+        "permission": "core.permissions.create"
+      }
+    },
+    {
+      "path": "*/admin/roles/:id/edit",
+      "layout": "admin_role_form",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.roles.form.edit_title",
+        "permission": "core.permissions.update"
+      }
+    },
+    {
+      "path": "*/admin/schedules",
+      "layout": "admin_schedule_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "permission": "core.schedules.read"
+      }
+    }
+  ]
+}

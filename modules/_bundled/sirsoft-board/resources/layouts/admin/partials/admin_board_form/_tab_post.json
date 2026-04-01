@@ -1,0 +1,1041 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Board Form - Post Tab Content"
+  },
+  "id": "tab_content_post",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "id": "tab_content_post"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_post_card",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "background": "white",
+        "border": true,
+        "shadow": "md",
+        "rounded": true,
+        "padding": "xl",
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "id": "section_post",
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.form.tabs.post"
+        },
+        {
+          "id": "post_input_limits_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 pb-2"
+          },
+          "children": [
+            {
+              "id": "post_input_limits_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4",
+                "children": "$t:sirsoft-board.admin.form.sections.input_limits.title"
+              }
+            },
+            {
+              "id": "post_title_length_group",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "min_title_length_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "min_title_length_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.min_title_length.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "min_title_length_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "min_title_length",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "min_title_length_hint",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.min_title_length}}",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                      },
+                      "text": "{{_local.errors?.min_title_length?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "max_title_length_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "max_title_length_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.max_title_length.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "max_title_length_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "max_title_length",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "max_title_length_hint",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.max_title_length}}",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                      },
+                      "text": "{{_local.errors?.max_title_length?.[0] ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "post_content_length_group",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "min_content_length_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "min_content_length_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.min_content_length.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "min_content_length_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "min_content_length",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "min_content_length_hint",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.min_content_length}}",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                      },
+                      "text": "{{_local.errors?.min_content_length?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "max_content_length_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "max_content_length_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.max_content_length.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "max_content_length_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "max_content_length",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "max_content_length_hint",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.max_content_length}}",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                      },
+                      "text": "{{_local.errors?.max_content_length?.[0] ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "blocked_keywords_field",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": ""
+              },
+              "children": [
+                {
+                  "id": "blocked_keywords_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.label"
+                    }
+                  ]
+                },
+                {
+                  "id": "blocked_keywords_textarea",
+                  "type": "basic",
+                  "name": "Textarea",
+                  "props": {
+                    "name": "blocked_keywords",
+                    "placeholder": "$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder",
+                    "rows": 4,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-vertical"
+                  }
+                },
+                {
+                  "id": "blocked_keywords_description",
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-2 text-sm text-gray-500 dark:text-gray-400",
+                    "children": "$t:sirsoft-board.admin.form.fields.blocked_keywords.description"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.blocked_keywords}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.blocked_keywords?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "id": "new_display_hours_field",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": ""
+              },
+              "children": [
+                {
+                  "id": "new_display_hours_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.label"
+                    }
+                  ]
+                },
+                {
+                  "id": "new_display_hours_input",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "new_display_hours",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  }
+                },
+                {
+                  "id": "new_display_hours_hint",
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.new_display_hours}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.new_display_hours?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "post_reply_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 py-4 mt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "id": "use_reply_toggle",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between items-start"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.use_reply"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.descriptions.use_reply"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "use_reply",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "flex-shrink-0 ml-4"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "max_reply_depth_field",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form.use_reply}}",
+              "props": {
+                "className": ""
+              },
+              "children": [
+                {
+                  "id": "max_reply_depth_label",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.label"
+                    }
+                  ]
+                },
+                {
+                  "id": "max_reply_depth_input",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "max_reply_depth",
+                    "min": 1,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  }
+                },
+                {
+                  "id": "max_reply_depth_hint",
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.max_reply_depth}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.max_reply_depth?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "post_comment_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 py-4 mt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "id": "use_comment_toggle",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between items-start"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.use_comment"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.descriptions.use_comment"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "use_comment",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "flex-shrink-0 ml-4"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "comment_sub_fields",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form.use_comment}}",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "post_comment_length_group",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "id": "min_comment_length_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": ""
+                      },
+                      "children": [
+                        {
+                          "id": "min_comment_length_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.label"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "min_comment_length_input",
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "min_comment_length",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          }
+                        },
+                        {
+                          "id": "min_comment_length_hint",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.min_comment_length}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                          },
+                          "text": "{{_local.errors?.min_comment_length?.[0] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "max_comment_length_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": ""
+                      },
+                      "children": [
+                        {
+                          "id": "max_comment_length_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.label"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "max_comment_length_input",
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "max_comment_length",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          }
+                        },
+                        {
+                          "id": "max_comment_length_hint",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.max_comment_length}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                          },
+                          "text": "{{_local.errors?.max_comment_length?.[0] ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "max_comment_depth_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "max_comment_depth_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "max_comment_depth_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "max_comment_depth",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "max_comment_depth_hint",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.max_comment_depth}}",
+                      "props": {
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                      },
+                      "text": "{{_local.errors?.max_comment_depth?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "post_comment_order_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "comment_order_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": ""
+                      },
+                      "children": [
+                        {
+                          "id": "comment_order_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.form.fields.comment_order.label"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "comment_order_select",
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "comment_order",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full",
+                            "options": [
+                              {
+                                "value": "ASC",
+                                "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.asc"
+                              },
+                              {
+                                "value": "DESC",
+                                "label": "$t:sirsoft-board.admin.form.fields.comment_order.options.desc"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "post_file_upload_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4 py-4 mt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "id": "use_file_upload_toggle",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-between items-start"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      },
+                      "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.description"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "use_file_upload",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "flex-shrink-0 ml-4"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "file_sub_fields",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form.use_file_upload}}",
+              "props": {
+                "className": "space-y-4"
+              },
+              "children": [
+                {
+                  "id": "file_settings_group",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid mt-4 grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "id": "max_file_count_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": ""
+                      },
+                      "children": [
+                        {
+                          "id": "max_file_count_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.form.fields.max_file_count.label"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "max_file_count_input",
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "max_file_count",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          }
+                        },
+                        {
+                          "id": "max_file_count_hint",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.max_file_count}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                          },
+                          "text": "{{_local.errors?.max_file_count?.[0] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "max_file_size_field",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": ""
+                      },
+                      "children": [
+                        {
+                          "id": "max_file_size_label",
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.form.fields.max_file_size.label"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "max_file_size_input",
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "max_file_size",
+                            "placeholder": "$t:sirsoft-board.admin.form.fields.max_file_size.placeholder",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          }
+                        },
+                        {
+                          "id": "max_file_size_hint",
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.max_file_size}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                          },
+                          "text": "{{_local.errors?.max_file_size?.[0] ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "allowed_extensions_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": ""
+                  },
+                  "children": [
+                    {
+                      "id": "allowed_extensions_label",
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.label"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "allowed_extensions_input",
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "allowed_extensions",
+                        "placeholder": "$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }
+                    },
+                    {
+                      "id": "allowed_extensions_description",
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-2 text-sm text-gray-500 dark:text-gray-400",
+                        "children": "$t:sirsoft-board.admin.form.fields.allowed_extensions.description"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

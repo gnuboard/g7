@@ -1,0 +1,407 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "플러그인 강제 비활성화 확인 모달"
+  },
+  "id": "plugin_force_deactivate_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.plugins.modals.deactivate_warning_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "warning",
+                "className": "w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                  },
+                  "text": "$t:admin.plugins.modals.deactivate_warning_message"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.deactivateWarningData?.dependent_templates?.length > 0}}",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.plugins.modals.dependent_templates"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_global.deactivateWarningData?.dependent_templates ?? []",
+                    "item_var": "template"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "layer-group",
+                        "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{template.name}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded"
+                      },
+                      "text": "{{template.type === 'admin' ? '$t:admin.templates.type.admin' : '$t:admin.templates.type.user'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.deactivateWarningData?.dependent_modules?.length > 0}}",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.plugins.modals.dependent_modules"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_global.deactivateWarningData?.dependent_modules ?? []",
+                    "item_var": "module"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "cube",
+                        "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{module.name}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded"
+                      },
+                      "text": "v{{module.version}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.deactivateWarningData?.dependent_plugins?.length > 0}}",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.plugins.modals.dependent_plugins"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_global.deactivateWarningData?.dependent_plugins ?? []",
+                    "item_var": "plugin"
+                  },
+                  "props": {
+                    "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "plug",
+                        "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{plugin.name}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded"
+                      },
+                      "text": "v{{plugin.version}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-4 text-sm text-gray-600 dark:text-gray-400"
+          },
+          "text": "$t:admin.plugins.modals.force_deactivate_description"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isForceDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "deactivateWarningData": null
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "plugins"
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isForceDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isForceDeactivating": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/plugins/deactivate",
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "plugin_name": "{{_global.selectedPlugin.identifier}}",
+                      "force": true
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isForceDeactivating": false,
+                        "deactivateWarningData": null
+                      }
+                    },
+                    {
+                      "handler": "parallel",
+                      "actions": [
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "plugins"
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "admin_menu"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.plugins.deactivate_success"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isForceDeactivating": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isForceDeactivating}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isForceDeactivating ? '$t:admin.plugins.deactivating' : '$t:admin.plugins.modals.confirm_deactivate'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

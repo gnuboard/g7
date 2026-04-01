@@ -1,0 +1,77 @@
+{
+  "title": "개인결제 관리",
+  "description": "개인별 결제 링크를 생성하고 관리합니다",
+  "add": "추가",
+  "search": {
+    "field": {
+      "payment_number": "결제번호",
+      "member_name": "회원명",
+      "member_id": "회원 ID",
+      "product_name": "상품명"
+    },
+    "placeholder": "검색어를 입력하세요",
+    "reset": "초기화"
+  },
+  "filter": {
+    "status": "결제상태",
+    "payment_method": "결제수단",
+    "date_search": "날짜 검색",
+    "amount": "결제금액",
+    "all": "전체",
+    "pending": "대기중",
+    "completed": "완료",
+    "expired": "만료",
+    "card": "신용카드",
+    "bank_transfer": "계좌이체",
+    "kakao_pay": "카카오페이",
+    "naver_pay": "네이버페이",
+    "created_at": "생성일",
+    "expired_at": "만료일",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "min_amount": "최소금액",
+    "max_amount": "최대금액"
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "sort": {
+      "created_at_desc": "생성일 (최신순)",
+      "created_at_asc": "생성일 (오래된순)",
+      "amount_desc": "금액 (높은순)",
+      "amount_asc": "금액 (낮은순)"
+    },
+    "per_page": "{{count}}개씩 보기",
+    "columns": {
+      "no": "순번",
+      "payment_number": "결제번호",
+      "status": "상태",
+      "member_info": "회원정보",
+      "product_name": "상품명",
+      "amount": "결제금액",
+      "order_number": "주문번호",
+      "created_at": "생성일시",
+      "expired_at": "만료일시",
+      "payment_method": "결제수단",
+      "paid_at": "결제일시",
+      "actions": "관리"
+    }
+  },
+  "dropdown": {
+    "search_by_member": "회원명으로 검색",
+    "view_member_info": "회원 정보 보기",
+    "view_order_detail": "주문 상세 보기",
+    "view_detail": "상세보기",
+    "edit": "수정",
+    "copy_link": "링크 복사",
+    "delete": "삭제"
+  },
+  "status": {
+    "pending": "대기중",
+    "completed": "완료",
+    "expired": "만료"
+  },
+  "mobile": {
+    "created_at": "생성일시",
+    "expired_at": "만료일시"
+  }
+}

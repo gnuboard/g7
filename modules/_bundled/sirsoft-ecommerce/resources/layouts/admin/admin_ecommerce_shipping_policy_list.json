@@ -1,0 +1,486 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_shipping_policy_list",
+    "permissions": [
+        "sirsoft-ecommerce.shipping-policies.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
+    },
+    "state": {
+        "filter": {
+            "searchType": "name",
+            "search": "",
+            "shipping_methods": [],
+            "charge_policies": [],
+            "countries": [],
+            "is_active": ""
+        },
+        "selectedItems": [],
+        "selectAll": false,
+        "sortBy": "created_at_desc",
+        "perPage": "20",
+        "bulkToggleValue": "",
+        "currentPage": 1,
+        "totalPages": 1
+    },
+    "global_state": {
+        "targetPolicy": null,
+        "targetDefaultPolicy": null,
+        "isDeleting": false,
+        "isBulkDeleting": false,
+        "isBulkToggling": false,
+        "isSettingDefault": false,
+        "bulkSelectedItems": [],
+        "bulkToggleValue": ""
+    },
+    "data_sources": [
+        {
+            "id": "shipping_policies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "shipping_methods": "{{query['shipping_methods[]']}}",
+                "charge_policies": "{{query['charge_policies[]']}}",
+                "countries": "{{query['countries[]']}}",
+                "is_active": "{{query.is_active}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
+            },
+            "initLocal": {
+                "_merge": "deep",
+                "currentPage": "pagination.current_page",
+                "totalPages": "pagination.last_page"
+            },
+            "errorHandling": {
+                "403": { "handler": "showErrorPage", "params": { "target": "content" } },
+                "default": { "handler": "showErrorPage", "params": { "target": "content" } }
+            }
+        },
+        {
+            "id": "shipping_available_countries",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "transform": "{{response.data?.shipping?.available_countries ?? []}}"
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "filter": {
+                        "search": "{{query.search || ''}}",
+                        "shipping_methods": "{{query['shipping_methods[]'] || []}}",
+                        "charge_policies": "{{query['charge_policies[]'] || []}}",
+                        "countries": "{{query['countries[]'] || []}}",
+                        "is_active": "{{query.is_active || ''}}"
+                    }
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchShippingPolicies": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/shipping-policies",
+                "replace": true,
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "shipping_methods[]": "{{_local.filter.shipping_methods?.length > 0 ? _local.filter.shipping_methods : undefined}}",
+                    "charge_policies[]": "{{_local.filter.charge_policies?.length > 0 ? _local.filter.charge_policies : undefined}}",
+                    "countries[]": "{{_local.filter.countries?.length > 0 ? _local.filter.countries : undefined}}",
+                    "is_active": "{{_local.filter.is_active || undefined}}"
+                }
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "shipping_policy_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{shipping_policies?.data?.abilities?.can_create !== true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.add"
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/shipping-policies/create"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_filter.json"
+                    },
+                    {
+                        "id": "data_table_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_bulk_actions.json",
+                                "if": "{{shipping_policies?.data?.data?.length > 0}}"
+                            },
+                            {
+                                "id": "table_header_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{shipping_policies?.data?.data?.length > 0}}",
+                                "props": {
+                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "sortBy",
+                                                    "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "created_at_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "created_at_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "name_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_asc"
+                                                        },
+                                                        {
+                                                            "value": "name_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.name_desc"
+                                                        },
+                                                        {
+                                                            "value": "sort_order_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.shipping_policy.sort.sort_order_asc"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "perPage",
+                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.per_page || '20'}}",
+                                                    "options": [
+                                                        { "value": "10", "label": "10" },
+                                                        { "value": "20", "label": "20" },
+                                                        { "value": "50", "label": "50" },
+                                                        { "value": "100", "label": "100" }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json",
+                                "if": "{{shipping_policies?.data?.data?.length > 0}}"
+                            },
+                            {
+                                "id": "pagination_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{shipping_policies?.data?.data?.length > 0}}",
+                                "props": {
+                                    "className": "flex justify-center mt-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Pagination",
+                                        "props": {
+                                            "currentPage": "{{_local.currentPage ?? 1}}",
+                                            "totalPages": "{{_local.totalPages ?? 1}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onPageChange",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "currentPage": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/shipping-policies",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "page": "{{$args[0]}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "empty_state",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!shipping_policies?.loading && (!shipping_policies?.data?.data || shipping_policies?.data?.data?.length === 0)}}",
+                                "props": {
+                                    "className": "flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "truck",
+                                            "className": "w-16 h-16 text-gray-300 dark:text-gray-600 mb-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "if": "{{!query.search && !query['shipping_methods[]'] && !query['charge_policies[]'] && !query['countries[]'] && !query.is_active}}",
+                                        "props": {
+                                            "className": "text-lg font-medium text-gray-900 dark:text-white mb-2"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!query.search && !query['shipping_methods[]'] && !query['charge_policies[]'] && !query['countries[]'] && !query.is_active}}",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.message"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "if": "{{query.search || query['shipping_methods[]'] || query['charge_policies[]'] || query['countries[]'] || query.is_active}}",
+                                        "props": {
+                                            "className": "text-lg font-medium text-gray-900 dark:text-white mb-2"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.no_results"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{query.search || query['shipping_methods[]'] || query['charge_policies[]'] || query['countries[]'] || query.is_active}}",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.no_results_message"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{!query.search && !query['shipping_methods[]'] && !query['charge_policies[]'] && !query['countries[]'] && !query.is_active}}",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "plus",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.button"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/shipping-policies/create"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{query.search || query['shipping_methods[]'] || query['charge_policies[]'] || query['countries[]'] || query.is_active}}",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.reset_filter",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/shipping-policies"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_delete.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_copy.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_delete.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_bulk_toggle.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_shipping_policy_list/_modal_set_default.json"
+        }
+    ]
+}

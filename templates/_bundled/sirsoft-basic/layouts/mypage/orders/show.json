@@ -1,0 +1,309 @@
+{
+    "version": "1.0.0",
+    "layout_name": "mypage/orders/show",
+    "permissions": [],
+    "extends": "_user_base",
+    "initLocal": {
+        "changeAddressMode": "saved",
+        "selectedAddressId": null,
+        "manualAddress": {
+            "recipient_name": "",
+            "recipient_phone": "",
+            "zipcode": "",
+            "address": "",
+            "address_detail": ""
+        },
+        "selectedItemIds": [],
+        "selectAllItems": false,
+        "showCancelModal": false,
+        "cancelItems": [],
+        "cancelSelectAll": false,
+        "cancelReason": "",
+        "refundEstimate": null,
+        "refundLoading": false,
+        "isCancelling": false,
+        "cancelError": null,
+        "confirmTarget": null,
+        "isConfirming": false,
+        "reviewTarget": null,
+        "reviewRating": 5,
+        "reviewContent": "",
+        "reviewImages": [],
+        "isSubmittingReview": false,
+        "reviewError": null
+    },
+    "data_sources": [
+        {
+            "id": "order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/orders/{{route.order_number}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive"
+        },
+        {
+            "id": "userAddresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive"
+        },
+        {
+            "id": "refundReasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/claim-reasons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "type": "refund"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "comment": "뒤로가기 헤더",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 mb-4"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/mypage/orders"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chevron-left",
+                                                    "className": "w-5 h-5"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-base font-medium"
+                                                },
+                                                "text": "$t:mypage.order_detail.back"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "주문 상세 카드 컨테이너",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "max-w-3xl mx-auto space-y-4"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "space-y-3"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/mypage/orders/_status_header.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_items.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_shipping.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_payment.json"
+                                    },
+                                    {
+                                        "partial": "partials/mypage/orders/_history.json"
+                                    },
+                                    {
+                                        "comment": "액션 버튼 영역",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-row gap-4"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-3"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "{{_global.shopBase}}/products"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "shopping-bag",
+                                                            "className": "w-5 h-5"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:mypage.order_detail.continue_shopping"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "리뷰 작성 버튼 - 배송완료 시만 표시",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{order.data.order_status === 'delivered' || order.data.order_status === 'confirmed'}}",
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/mypage/reviews/write?order_id={{order.data.id ?? ''}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "pen-to-square",
+                                                            "className": "w-5 h-5"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:mypage.order_detail.write_review"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "재주문 버튼 - 취소된 주문만 표시",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{order.data.order_status === 'cancelled'}}",
+                                                "props": {
+                                                    "className": "flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "refresh-cw",
+                                                            "className": "w-5 h-5"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:mypage.order_detail.reorder"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/mypage/orders/_modal_cancel.json"
+        },
+        {
+            "partial": "partials/mypage/orders/_modal_change_address.json"
+        },
+        {
+            "partial": "partials/mypage/orders/_modal_confirm_purchase.json"
+        },
+        {
+            "partial": "partials/mypage/orders/_modal_write_review.json"
+        },
+        {
+            "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json"
+        }
+    ]
+}

@@ -1,0 +1,404 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/checkout",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "주문서 작성",
+        "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
+    },
+    "_comment_initLocal": "정적 기본값 설정 (데이터소스 initLocal 병합 전 기본값)",
+    "initLocal": {
+        "checkout": {
+            "item_coupons": {},
+            "order_coupon_issue_id": null,
+            "shipping_coupon_issue_id": null,
+            "use_points": 0,
+            "discount_code": null,
+            "zipcode": null,
+            "country_code": "KR"
+        },
+        "downloadableCoupons": null,
+        "downloadableCouponsLoading": false,
+        "downloadableCouponsPage": 1,
+        "isSubmittingOrder": false,
+        "errors": null,
+        "orderError": null,
+        "selectedDbank": null,
+        "addressModalMode": "list",
+        "selectedAddressId": null,
+        "selectedAddressObj": null,
+        "saveShippingAddress": false,
+        "editingAddress": null,
+        "unavailableModal": {
+            "visible": false,
+            "items": [],
+            "hasStockIssue": false
+        }
+    },
+    "init_actions": [
+        {
+            "comment": "결제 콜백 에러 쿼리 파라미터 감지 — PG 결제 실패 후 리다이렉트 시 에러 코드 저장 + toast + URL 정리",
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{!!query.error}}",
+                    "then": {
+                        "handler": "sequence",
+                        "params": {
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "orderError": "{{query.error}}",
+                                        "orderErrorMessage": "{{query.message ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "$t:shop.checkout.payment_generic_error"
+                                    }
+                                },
+                                {
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "path": "/shop/checkout"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "computed": {
+        "_comment": "orderer 기본값 - _local.orderer가 없으면 _global.currentUser에서 가져옴 (새로고침 시 타이밍 문제 해결)",
+        "ordererDefaults": "{{ { name: _local.orderer?.name || _global.currentUser?.name || '', phone: _local.orderer?.phone || _global.currentUser?.phone || '', email: _local.orderer?.email || _global.currentUser?.email || '' } }}",
+        "_comment_payment": "선택된 결제수단 - _local에 없으면 첫 번째 활성 결제수단을 기본값으로 사용",
+        "selectedPaymentMethod": "{{_local.paymentMethod ?? (paymentSettings.data?.order_settings?.payment_methods ?? []).find(m => m.is_active)?.id ?? 'dbank'}}"
+    },
+    "data_sources": [
+        {
+            "id": "checkoutData",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/checkout",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원",
+            "initLocal": {
+                "_merge": "deep",
+                "checkout": {
+                    "item_coupons": "promotions.item_coupons",
+                    "order_coupon_issue_id": "promotions.order_coupon_issue_id",
+                    "shipping_coupon_issue_id": "promotions.shipping_coupon_issue_id",
+                    "use_points": "use_points"
+                },
+                "unavailableModal": {
+                    "items": "unavailable_items",
+                    "hasStockIssue": "has_stock_issue"
+                }
+            },
+            "onSuccess": {
+                "comment": "구매불가 상품이 있으면 setState로 데이터 설정 후 모달 표시 (initLocal 머지는 모달 표현식 캐시를 갱신하지 않으므로 setState 필수)",
+                "handler": "conditions",
+                "conditions": [
+                    {
+                        "if": "{{(response.data.data.unavailable_items?.length ?? 0) > 0}}",
+                        "then": {
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "target": "local",
+                                        "params": {
+                                            "unavailableModal": {
+                                                "visible": true,
+                                                "items": "{{response.data.data.unavailable_items ?? []}}",
+                                                "hasStockIssue": "{{response.data.data.has_stock_issue ?? false}}"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "cart_unavailable_modal"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "errorHandling": {
+                "404": {
+                    "handler": "openModal",
+                    "target": "tempOrderNotFoundModal"
+                }
+            }
+        },
+        {
+            "id": "userAddresses",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/addresses",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "comment": "사용자 저장 배송지 목록"
+        },
+        {
+            "id": "paymentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/payment",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "comment": "결제 설정 (활성 결제 수단, 은행 목록, 입금 계좌)"
+        },
+        {
+            "id": "shippingSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/settings/shipping",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "comment": "배송 설정 (국내/해외 배송 가능 여부 등)"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "blur_until_loaded": "{{_local.isSubmittingOrder}}",
+                "props": {
+                    "className": "py-8"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "py-4"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "comment": "에러 요약 (페이지 상단)",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.orderError}}",
+                        "props": {
+                            "className": "mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": { "className": "flex items-start gap-3" },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": { "name": "exclamation-circle", "className": "w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" },
+                                                "text": "{{_local.orderError === 'confirm_failed' ? '$t:shop.checkout.payment_confirm_failed' : _local.orderError === 'amount_mismatch' ? '$t:shop.checkout.payment_amount_mismatch' : _local.orderError === 'order_not_found' ? '$t:shop.checkout.payment_order_not_found' : '$t:shop.checkout.payment_generic_error'}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{_local.orderErrorMessage}}",
+                                                "props": { "className": "text-xs text-red-600 dark:text-red-400 mt-1" },
+                                                "text": "{{_local.orderErrorMessage}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "뒤로가기 + 페이지 제목",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mb-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "chevron-left",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:shop.checkout.back"
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{_global.shopBase}}/cart"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                        }
+                                    }
+                                },
+                                "text": "$t:shop.checkout.title"
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "PC: 3컬럼 그리드 (좌측 폼 2칸, 우측 결제금액 1칸)",
+                        "type": "layout",
+                        "name": "Grid",
+                        "props": {
+                            "cols": 3,
+                            "gap": 6
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "cols": 1,
+                                    "gap": 4
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "comment": "좌측 영역 - 폼 섹션들",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-2 space-y-6"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "col-span-1 space-y-4"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/shop/_checkout_items.json"
+                                    },
+                                    {
+                                        "partial": "partials/shop/_checkout_discount.json"
+                                    },
+                                    {
+                                        "partial": "partials/shop/_checkout_mileage.json"
+                                    },
+                                    {
+                                        "partial": "partials/shop/_checkout_orderer.json"
+                                    },
+                                    {
+                                        "partial": "partials/shop/_checkout_shipping.json"
+                                    },
+                                    {
+                                        "partial": "partials/shop/_checkout_payment.json"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "우측 영역 - 결제 금액 (sticky)",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-1"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/shop/_checkout_summary.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "extension_point",
+                        "name": "shop_checkout_extensions",
+                        "default": []
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        { "partial": "partials/shop/_modal_temp_order_not_found.json" },
+        { "partial": "partials/shop/_modal_exclusive_coupon_confirm.json" },
+        { "partial": "partials/shop/_modal_address_manage.json" },
+        { "partial": "partials/mypage/addresses/_modal_confirm_overwrite.json" },
+        { "partial": "partials/shop/_modal_cart_unavailable.json" },
+        { "partial": "partials/shop/_modal_coupon_download.json" }
+    ],
+    "actions": [
+        {
+            "id": "selectDbank",
+            "comment": "무통장입금 계좌 선택",
+            "handler": "setState",
+            "params": {
+                "target": "_local.selectedDbank",
+                "value": "{{$params.bank}}"
+            }
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "name": "plugins/sirsoft-marketing",
+    "description": "Marketing consent and subscription management plugin for Gnuboard7 platform",
+    "type": "library",
+    "version": "1.0.0-beta.1",
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Marketing\\": ["src/", "./"]
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

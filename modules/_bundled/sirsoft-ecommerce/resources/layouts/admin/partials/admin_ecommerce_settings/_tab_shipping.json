@@ -1,0 +1,599 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쇼핑몰 설정 배송설정 탭 콘텐츠"
+  },
+  "id": "tab_content_shipping",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'shipping'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "shipping_basic_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 sm:grid-cols-2 gap-6"
+          },
+          "children": [
+            {
+              "id": "default_country_field",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{_local.form?.shipping?.default_country ?? 'KR'}}",
+                    "className": "w-full",
+                    "options": "{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: $localized(c.name)}))}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.default_country": "{{$event.target.value}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "international_shipping_field",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Toggle",
+                      "props": {
+                        "checked": "{{_local.form?.shipping?.international_shipping_enabled ?? false}}",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "if": "{{$event.target.checked}}",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.shipping.international_shipping_enabled": true,
+                            "hasChanges": true
+                          }
+                        },
+                        {
+                          "type": "change",
+                          "if": "{{!$event.target.checked}}",
+                          "handler": "conditions",
+                          "conditions": [
+                            {
+                              "if": "{{(_local.form?.shipping?.available_countries ?? []).some(c => c.code !== (_local.form?.shipping?.default_country ?? 'KR') && c.is_active)}}",
+                              "then": {
+                                "handler": "sequence",
+                                "actions": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "local",
+                                      "form.shipping.international_shipping_enabled": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "openModal",
+                                    "target": "disable_international_shipping_modal"
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "then": {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "form.shipping.international_shipping_enabled": false,
+                                  "hasChanges": true
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping_description"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "available_countries_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header flex items-center justify-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "card-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "card-description"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.description"
+                }
+              ]
+            },
+            {
+              "id": "add_country_button",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
+              "props": {
+                "type": "button",
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingCountry": true,
+                    "newCountry": {
+                      "code": "",
+                      "name": {
+                        "ko": "",
+                        "en": ""
+                      },
+                      "is_active": true
+                    }
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "text-xs"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.add"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "partial": "_shipping_country_table.json"
+        },
+        {
+          "id": "add_country_form",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
+          "props": {
+            "className": "border-t border-gray-200 dark:border-gray-700 p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-end gap-3 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "value": "{{_local.newCountry?.code ?? ''}}",
+                        "className": "w-20",
+                        "placeholder": "KR",
+                        "maxLength": 10,
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "newCountry.code": "{{$event.target.value.toUpperCase()}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_ko"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "value": "{{_local.newCountry?.name?.ko ?? ''}}",
+                        "className": "w-40",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.name_ko_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "newCountry.name.ko": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name_en"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "value": "{{_local.newCountry?.name?.en ?? ''}}",
+                        "className": "w-40",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.name_en_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "newCountry.name.en": "{{$event.target.value}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || !_local.newCountry?.code || !_local.newCountry?.name?.ko}}",
+                        "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.available_countries": "{{[...(_local.form?.shipping?.available_countries ?? []), { code: _local.newCountry.code, name: _local.newCountry.name, is_active: true }]}}",
+                                "isAddingCountry": false,
+                                "newCountry": null,
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:common.add"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isAddingCountry": false,
+                            "newCountry": null
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:common.cancel"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remote_area_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "shipping.remote_area_enabled",
+                    "value": "{{_local.form?.shipping?.remote_area_enabled ?? false}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.enable"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.shipping?.remote_area_enabled}}",
+              "props": {
+                "className": "grid grid-cols-1 sm:grid-cols-2 gap-4 pl-12"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.remote_extra_fee"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "shipping.remote_area_extra_fee",
+                        "value": "{{_local.form?.shipping?.remote_area_extra_fee ?? 0}}",
+                        "className": "input w-40",
+                        "min": 0,
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.island_extra_fee"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "shipping.island_extra_fee",
+                        "value": "{{_local.form?.shipping?.island_extra_fee ?? 0}}",
+                        "className": "input w-40",
+                        "min": 0,
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partial": "_shipping_carrier_section.json"
+    }
+  ]
+}

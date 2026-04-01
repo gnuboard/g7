@@ -1,0 +1,85 @@
+{
+  "product_created": "Product has been created",
+  "product_updated": "Product has been updated",
+  "products": {
+    "fetch_success": "Products fetched successfully.",
+    "fetch_failed": "Failed to fetch products.",
+    "created": "Product created successfully.",
+    "create_failed": "Failed to create product.",
+    "updated": "Product updated successfully.",
+    "update_failed": "Failed to update product.",
+    "deleted": "Product deleted successfully.",
+    "delete_failed": "Failed to delete product.",
+    "bulk_updated": ":count products updated successfully.",
+    "bulk_update_failed": "Failed to bulk update products.",
+    "bulk_price_updated": "Price updated for :count products.",
+    "bulk_price_update_failed": "Failed to bulk update product prices.",
+    "bulk_stock_updated": "Stock updated for :count products.",
+    "bulk_stock_update_failed": "Failed to bulk update product stock.",
+    "bulk": {
+      "no_selection": "No items selected.",
+      "update_success": "{products} products and {options} options have been updated.",
+      "update_error": "Bulk update failed.",
+      "option_update_success": "{count} options have been updated.",
+      "option_update_error": "Option bulk update failed.",
+      "overwrite_warning": "When bulk change options (sales status, display status, price change, stock change) are selected, individual modifications will be ignored."
+    }
+  },
+  "options": {
+    "bulk_price_updated": "Price updated for :count options.",
+    "bulk_price_update_failed": "Failed to bulk update option prices.",
+    "bulk_stock_updated": "Stock updated for :count options.",
+    "bulk_stock_update_failed": "Failed to bulk update option stock.",
+    "bulk_update_success": "{count} options have been updated.",
+    "bulk_update_error": "Option bulk update failed.",
+    "has_order_history": "Options with order history cannot be deleted."
+  },
+  "presets": {
+    "created": "Preset saved successfully.",
+    "updated": "Preset updated successfully.",
+    "deleted": "Preset deleted successfully."
+  },
+  "notice_templates": {
+    "fetch_success": "Product notice templates fetched successfully.",
+    "created": "Product notice template has been created.",
+    "updated": "Product notice template has been updated.",
+    "deleted": "Product notice template has been deleted.",
+    "copied": "Product notice template has been copied.",
+    "not_found": "Product notice template not found."
+  },
+  "common_infos": {
+    "fetch_success": "Common info list fetched successfully.",
+    "created": "Common info has been created.",
+    "updated": "Common info has been updated.",
+    "deleted": "Common info has been deleted.",
+    "not_found": "Common info not found.",
+    "activated": "Common info has been activated.",
+    "deactivated": "Common info has been deactivated."
+  },
+  "categories": {
+    "list_retrieved": "Categories retrieved successfully.",
+    "fetch_success": "Category fetched successfully.",
+    "fetch_failed": "Failed to fetch categories.",
+    "not_found": "Category not found.",
+    "created": "Category created successfully.",
+    "retrieved": "Category retrieved successfully.",
+    "updated": "Category updated successfully.",
+    "deleted": "Category deleted successfully.",
+    "status_changed": "Category status changed.",
+    "reorder_data_required": "Reorder data is required.",
+    "order_updated": "Category order updated successfully."
+  },
+  "extra_fee_template": {
+    "list_retrieved": "Extra fee templates fetched successfully.",
+    "retrieved": "Extra fee template fetched successfully.",
+    "not_found": "Extra fee template not found.",
+    "created": "Extra fee template has been created.",
+    "updated": "Extra fee template has been updated.",
+    "deleted": "Extra fee template has been deleted.",
+    "toggled": "Status has been changed.",
+    "bulk_deleted": "Selected templates have been deleted.",
+    "bulk_toggled": "Selected templates status has been changed.",
+    "bulk_created": "Templates have been bulk created.",
+    "settings_retrieved": "Extra fee settings fetched successfully."
+  }
+}

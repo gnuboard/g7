@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 > 첨부파일 탭"
+  },
+  "id": "attachment",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_attachment",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-2 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.attachment"
+        },
+        {
+          "id": "field_use_file_upload",
+          "type": "basic", "name": "Div",
+          "props": { "className": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic", "name": "Div", "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_file_upload') : [...(_local.bulkApplyFields ?? []), 'use_file_upload']}}" } }],
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}" } },
+                    { "type": "basic", "name": "Div", "children": [
+                      { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.use_file_upload" },
+                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_file_upload" }
+                    ]}
+                  ]
+                },
+                { "type": "composite", "name": "Toggle", "props": { "name": "basic_defaults.use_file_upload", "className": "flex-shrink-0", "disabled": "{{_computed.isReadOnly}}" } }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_max_file_size",
+          "type": "basic", "name": "Div",
+          "props": { "className": "{{(_local.bulkApplyFields ?? []).includes('max_file_size') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic", "name": "Div", "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_size') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_size') : [...(_local.bulkApplyFields ?? []), 'max_file_size']}}" } }],
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}" } },
+                    { "type": "basic", "name": "Div", "children": [
+                      { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.max_file_size" },
+                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_size" }
+                    ]}
+                  ]
+                },
+                { "type": "basic", "name": "Div", "props": { "className": "flex-shrink-0" }, "children": [
+                  { "type": "basic", "name": "Input", "props": { "type": "number", "name": "basic_defaults.max_file_size", "min": 1, "className": "{{(_local.errors?.['basic_defaults.max_file_size']) ? 'w-32 px-3 py-2 text-sm border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-32 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}", "disabled": "{{_computed.isReadOnly}}" } },
+                  { "type": "basic", "name": "Span", "if": "{{_local.errors?.['basic_defaults.max_file_size']}}", "props": { "className": "text-xs text-red-600 dark:text-red-400 block mt-1" }, "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}" }
+                ]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_max_file_count",
+          "type": "basic", "name": "Div",
+          "props": { "className": "{{(_local.bulkApplyFields ?? []).includes('max_file_count') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic", "name": "Div", "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_count') : [...(_local.bulkApplyFields ?? []), 'max_file_count']}}" } }],
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}" } },
+                    { "type": "basic", "name": "Div", "children": [
+                      { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.max_file_count" },
+                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_count" }
+                    ]}
+                  ]
+                },
+                { "type": "basic", "name": "Div", "props": { "className": "flex-shrink-0" }, "children": [
+                  { "type": "basic", "name": "Input", "props": { "type": "number", "name": "basic_defaults.max_file_count", "min": 1, "max": 20, "className": "{{(_local.errors?.['basic_defaults.max_file_count']) ? 'w-32 px-3 py-2 text-sm border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-32 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}", "disabled": "{{_computed.isReadOnly}}" } },
+                  { "type": "basic", "name": "Span", "if": "{{_local.errors?.['basic_defaults.max_file_count']}}", "props": { "className": "text-xs text-red-600 dark:text-red-400 block mt-1" }, "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}" }
+                ]}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_allowed_extensions",
+          "type": "basic", "name": "Div",
+          "props": { "className": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors" },
+          "children": [
+            {
+              "type": "basic", "name": "Div", "props": { "className": "px-3 py-2" },
+              "children": [
+                {
+                  "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer mb-2" },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'allowed_extensions') : [...(_local.bulkApplyFields ?? []), 'allowed_extensions']}}" } }],
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}" } },
+                    { "type": "basic", "name": "Div", "children": [
+                      { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.allowed_extensions" },
+                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions" }
+                    ]}
+                  ]
+                },
+                {
+                  "type": "composite", "name": "TagInput",
+                  "props": {
+                    "name": "basic_defaults.allowed_extensions",
+                    "placeholder": "$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder",
+                    "creatable": true,
+                    "className": "w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

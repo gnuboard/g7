@@ -1,0 +1,369 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 환경설정 스팸/보안 탭 콘텐츠"
+  },
+  "id": "tab_content_spam_security",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'spam_security'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "comment": "========== 섹션: 쿨다운 ==========",
+      "id": "section_cooldown",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-6 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.spam_security"
+        },
+        {
+          "id": "field_post_cooldown_seconds",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "spam_security.post_cooldown_seconds",
+                "min": 0,
+                "max": 3600,
+                "className": "{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['spam_security.post_cooldown_seconds']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['spam_security.post_cooldown_seconds']) ? _local.errors['spam_security.post_cooldown_seconds'][0] : _local.errors?.['spam_security.post_cooldown_seconds']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds_hint"
+            }
+          ]
+        },
+        {
+          "id": "field_comment_cooldown_seconds",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2 mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "spam_security.comment_cooldown_seconds",
+                "min": 0,
+                "max": 3600,
+                "className": "{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['spam_security.comment_cooldown_seconds']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['spam_security.comment_cooldown_seconds']) ? _local.errors['spam_security.comment_cooldown_seconds'][0] : _local.errors?.['spam_security.comment_cooldown_seconds']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds_hint"
+            }
+          ]
+        },
+        {
+          "id": "field_view_count_cache_ttl",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "spam_security.view_count_cache_ttl",
+                "min": 60,
+                "max": 604800,
+                "className": "{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['spam_security.view_count_cache_ttl']}}",
+              "props": {
+                "className": "text-xs text-red-600 dark:text-red-400 block"
+              },
+              "text": "{{(Array.isArray(_local.errors?.['spam_security.view_count_cache_ttl']) ? _local.errors['spam_security.view_count_cache_ttl'][0] : _local.errors?.['spam_security.view_count_cache_ttl']) ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 block"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl_hint"
+            }
+          ]
+        },
+        {
+          "id": "spam_security_identifier_info",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-info",
+                    "className": "text-blue-600 dark:text-blue-400 flex-shrink-0",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "========== 섹션: 캐시 초기화 ==========",
+      "id": "section_cache",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.fields.clear_cache"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.fields.clear_cache_description"
+                }
+              ]
+            },
+            {
+              "id": "clear_cache_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "disabled": "{{_computed.isReadOnly || _local.isClearingCache}}",
+                "className": "flex items-center gap-1.5 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isClearingCache": true
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/modules/sirsoft-board/admin/settings/clear-cache",
+                      "params": {
+                        "method": "POST"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isClearingCache": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:sirsoft-board.admin.settings.fields.clear_cache_success"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isClearingCache": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "$t:sirsoft-board.admin.settings.fields.clear_cache_error"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isClearingCache}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "animate-spin",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{!_local.isClearingCache}}",
+                  "props": {
+                    "name": "trash-can",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.settings.fields.clear_cache"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

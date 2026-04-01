@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쿠폰 다운로드 확인 모달 - 상품 상세에서 개별 쿠폰 다운로드 확인"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "coupon_download_confirm_modal",
+  "props": {
+    "title": "$t:shop.coupon_download.confirm_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "py-2" },
+      "children": [
+        {
+          "comment": "쿠폰 정보 카드",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4" },
+          "children": [
+            {
+              "comment": "할인 혜택",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-center mb-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-2xl font-bold text-blue-600 dark:text-blue-400" },
+                  "text": "{{$parent._local.selectedCouponForDownload?.benefit_formatted ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-center text-gray-700 dark:text-gray-300 font-medium" },
+              "text": "{{$parent._local.selectedCouponForDownload?.localized_name ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400 text-center mb-4" },
+          "text": "$t:shop.coupon_download.confirm_message"
+        },
+        {
+          "comment": "버튼 그룹",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-center gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                { "type": "click", "handler": "closeModal" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!_local.isDownloading}}",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              },
+              "text": "$t:shop.coupon_download.download_btn",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isDownloading": true
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "target": "/api/modules/sirsoft-ecommerce/user/coupons/{{$parent._local.selectedCouponForDownload?.coupon_id}}/download",
+                      "auth_mode": "required",
+                      "params": { "method": "POST" },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": { "target": "local", "isDownloading": false }
+                        },
+                        {
+                          "comment": "데이터소스 갱신 - 다운로드 상태 반영",
+                          "handler": "refetchDataSource",
+                          "params": { "dataSourceId": "productDownloadableCoupons" }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:shop.coupon_download.download_success"
+                          }
+                        },
+                        { "handler": "closeModal" }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": { "target": "local", "isDownloading": false }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message ?? '$t:shop.coupon_download.download_failed'}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "다운로드 중 버튼",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{_local.isDownloading}}",
+              "props": {
+                "type": "button",
+                "disabled": true,
+                "className": "px-4 py-2 text-sm bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed"
+              },
+              "text": "$t:shop.coupon_download.downloading"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

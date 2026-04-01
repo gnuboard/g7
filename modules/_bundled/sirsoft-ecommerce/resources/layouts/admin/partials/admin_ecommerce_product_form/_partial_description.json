@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Description Section"
+  },
+  "id": "section_description",
+  "type": "basic",
+  "name": "Section",
+  "props": {
+    "id": "description",
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "description_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
+        {
+          "id": "description_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "file-lines",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.description"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "description_body",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.ui.descriptionExpanded !== false}}",
+          "props": {
+            "className": "card-accordion-body p-6"
+          },
+          "children": [
+            {
+              "id": "description_editor_wrapper",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}"
+              },
+              "children": [
+                {
+                  "id": "description_editor",
+                  "type": "composite",
+                  "name": "HtmlEditor",
+                  "props": {
+                    "name": "description",
+                    "multilingual": true,
+                    "value": "{{_local.form.description}}",
+                    "rows": 15,
+                    "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                    "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.description": "{{$event.target.value}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.description || _local.errors?.['description.ko']}}",
+              "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+              "text": "{{_local.errors?.description?.[0] ?? _local.errors?.['description.ko']?.[0]}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

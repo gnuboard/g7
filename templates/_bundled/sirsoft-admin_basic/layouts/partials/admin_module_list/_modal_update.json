@@ -1,0 +1,431 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "모듈 업데이트 확인 모달"
+  },
+  "id": "module_update_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.modules.modals.update_title",
+    "size": "medium"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.moduleUpdateError}}",
+      "props": {
+        "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "exclamation-circle",
+                "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm text-red-700 dark:text-red-300 break-all"
+              },
+              "text": "{{_global.moduleUpdateError}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.modules.modals.field_version"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.modules.modals.field_vendor"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "{{_global.selectedModule.vendor ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.modules.modals.field_update_source"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "{{_global.selectedModule.update_source === 'github' ? '$t:admin.modules.modals.update_source_github' : (_global.selectedModule.update_source === 'pending' ? '$t:admin.modules.modals.update_source_pending' : '$t:admin.modules.modals.update_source_bundled')}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.updateChangelog && _global.updateChangelog.length > 0}}",
+          "props": {
+            "className": "mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm font-medium text-blue-800 dark:text-blue-300 mb-2"
+              },
+              "text": "$t:admin.modules.modals.update_changelog_title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "max-h-48 overflow-y-auto"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_global.updateChangelog",
+                    "item_var": "entry",
+                    "index_var": "entryIdx"
+                  },
+                  "props": {
+                    "className": "pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2 mb-1.5"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300"
+                          },
+                          "text": "v{{entry.version}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{entry.date}}",
+                          "props": {
+                            "className": "text-xs text-gray-400 dark:text-gray-500"
+                          },
+                          "text": "{{entry.date}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "space-y-1"
+                      },
+                      "iteration": {
+                        "source": "entry.categories",
+                        "item_var": "category",
+                        "index_var": "catIdx"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-xs font-medium text-gray-600 dark:text-gray-400"
+                              },
+                              "text": "{{category.name}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "ml-3 space-y-0.5"
+                              },
+                              "iteration": {
+                                "source": "category.items",
+                                "item_var": "changeItem",
+                                "index_var": "itemIdx"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-xs text-gray-600 dark:text-gray-400"
+                                  },
+                                  "text": "• {{changeItem}}"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.selectedModule.github_changelog_url}}",
+          "props": {
+            "className": "mt-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "{{_global.selectedModule.github_changelog_url}}",
+                "target": "_blank",
+                "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "external-link",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.modules.modals.view_changelog"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isModuleUpdating}}",
+            "type": "button"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isModuleUpdating}}",
+            "type": "button"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isModuleUpdating": true,
+                    "moduleUpdateError": null
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/modules/{{_global.selectedModule.identifier}}/update",
+                  "params": {
+                    "method": "POST"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isModuleUpdating": false
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedModule": null
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.modules.update_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "modules"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isModuleUpdating": false,
+                        "moduleUpdateError": "{{error.message}}"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isModuleUpdating}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isModuleUpdating ? '$t:admin.modules.updating' : '$t:admin.modules.actions.update'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

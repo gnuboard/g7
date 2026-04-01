@@ -1,0 +1,443 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "장바구니 주문 요약"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-24" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H3",
+      "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4" },
+      "text": "$t:shop.cart.order_summary"
+    },
+    {
+      "comment": "선택 상품 수",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-between text-sm pb-3 border-b border-gray-200 dark:border-gray-700 mb-3" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-gray-600 dark:text-gray-400" },
+          "text": "$t:shop.cart.selected_items"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "text": "{{_local.selectedItems?.length ?? 0}} / {{cartItems.data.item_count ?? 0}}$t:common.unit.item"
+        }
+      ]
+    },
+    {
+      "comment": "로딩 상태",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.isCalculating}}",
+      "props": { "className": "flex items-center justify-center py-8" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "spinner", "spin": true, "className": "text-gray-400", "size": "lg" } }
+      ]
+    },
+    {
+      "comment": "선택 없음 안내",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
+      "props": { "className": "py-8 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "shopping-cart", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-500 dark:text-gray-400" },
+          "text": "$t:shop.cart.select_items_message"
+        }
+      ]
+    },
+    {
+      "comment": "금액 정보 (선택된 상품이 있을 때만)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!_local.isCalculating && _local.selectedItems?.length > 0}}",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-3 pb-4 border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "comment": "상품 금액 (클릭하면 세금 상세 토글)",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "target": "local",
+                      "params": { "showTaxDetails": "{{!_local.showTaxDetails}}" }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:shop.cart.product_amount" },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}",
+                            "className": "w-4 h-4"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "font-medium text-gray-900 dark:text-white" },
+                      "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "세금 상세 (접이식)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.showTaxDetails}}",
+                  "props": { "className": "ml-4 mt-2 space-y-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.taxable_amount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.taxable_amount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.taxable_amount_formatted ?? '-'}}" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.tax_free_amount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.tax_free_amount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.tax_free_amount_formatted ?? '-'}}" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "할인 섹션 (할인이 있을 때만)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(cartItems.data.calculation?.summary?.total_discount ?? 0) > 0}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex justify-between text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.discount_total" },
+                    { "type": "basic", "name": "Span", "props": { "className": "font-medium text-red-600 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}" }
+                  ]
+                },
+                {
+                  "comment": "할인 상세 (항상 펼침)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "ml-4 mt-1 space-y-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.product_coupon_discount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.product_coupon_discount_formatted ?? '-'}}" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.code_discount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.code_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.code_discount_formatted ?? '-'}}" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.order_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.order_coupon_discount_formatted ?? '-'}}" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "배송비 섹션",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex justify-between text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.shipping_fee" },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}" },
+                      "text": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "배송비 상세 (항상 펼침, 배송비가 있을 때만)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) > 0 || (cartItems.data.calculation?.summary?.shipping_discount ?? 0) > 0}}",
+                  "props": { "className": "ml-4 mt-1 space-y-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.base_shipping_total ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.base_shipping" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.base_shipping_total_formatted ?? '-'}}" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.extra_shipping_total ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.extra_shipping" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.extra_shipping_total_formatted ?? '-'}}" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(cartItems.data.calculation?.summary?.shipping_discount ?? 0) > 0}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:shop.cart.shipping_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400" }, "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.shipping_discount_formatted ?? '-'}}" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "결제 예정금액",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex justify-between text-sm pt-2" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.payment_amount" },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}" }
+              ]
+            },
+            {
+              "comment": "적립 예정 마일리지",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(cartItems.data.calculation?.summary?.points_earning ?? 0) > 0}}",
+              "props": { "className": "flex justify-between text-sm" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:shop.cart.expected_mileage" },
+                { "type": "basic", "name": "Span", "props": { "className": "font-medium text-blue-600 dark:text-blue-400" }, "text": "+{{cartItems.data.calculation?.summary?.mileage_formatted}}" }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "합계",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "py-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex justify-between items-center" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" }, "text": "$t:shop.cart.total" },
+                { "type": "basic", "name": "Span", "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" }, "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? 'KRW']?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}" }
+              ]
+            },
+            {
+              "comment": "보조 통화들",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-wrap gap-x-2 justify-end mt-1" },
+              "iteration": {
+                "source": "{{Object.entries(cartItems.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                "item_var": "currency"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                  "text": "{{currency[1]?.final_amount_formatted}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+        "disabled": "{{_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_local.isOrdering}}",
+              "props": { "name": "spinner", "spin": true, "className": "w-5 h-5" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!_local.isOrdering}}",
+              "text": "$t:shop.cart.checkout"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.isOrdering}}",
+              "text": "$t:shop.cart.ordering"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "target": "local",
+              "params": { "isOrdering": true }
+            },
+            {
+              "handler": "apiCall",
+              "target": "/api/modules/sirsoft-ecommerce/checkout",
+              "auth_mode": "optional",
+              "params": {
+                "method": "POST",
+                "body": { "item_ids": "{{_local.selectedItems}}" },
+                "headers": { "X-Cart-Key": "{{_global.cartKey}}" }
+              },
+              "onSuccess": [
+                { "handler": "navigate", "params": { "path": "{{_global.shopBase}}/checkout" } }
+              ],
+              "onError": [
+                {
+                  "comment": "구매불가 상품 에러 처리",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "target": "local",
+                        "params": { "isOrdering": false }
+                      },
+                      {
+                        "handler": "setState",
+                        "target": "local",
+                        "params": {
+                          "unavailableModal": {
+                            "visible": true,
+                            "items": "{{error.errors?.unavailable_items ?? []}}",
+                            "hasStockIssue": "{{error.errors?.has_stock_issue ?? false}}"
+                          }
+                        }
+                      },
+                      {
+                        "handler": "openModal",
+                        "target": "cart_unavailable_modal"
+                      }
+                    ]
+                  },
+                  "if": "{{error.errors?.code === 'cart_unavailable'}}"
+                },
+                {
+                  "comment": "기타 에러 처리",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "target": "local",
+                        "params": { "isOrdering": false }
+                      },
+                      {
+                        "handler": "toast",
+                        "params": { "type": "error", "message": "{{error.message}}" }
+                      }
+                    ]
+                  },
+                  "if": "{{error.errors?.code !== 'cart_unavailable'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": { "className": "block w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mt-3 cursor-pointer" },
+      "text": "$t:shop.cart.continue_shopping",
+      "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products" } }]
+    }
+  ]
+}

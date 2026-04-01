@@ -1,0 +1,112 @@
+{
+  "meta": { "is_partial": true, "description": "검색 결과 표시" },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{query?.q && searchResults?.data}}",
+  "children": [
+    {
+      "comment": "전체 탭: 섹션별 그룹핑",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_global.searchActiveTab ?? 'all') === 'all' && (searchResults?.data?.total ?? 0) > 0}}",
+      "props": { "className": "space-y-6" },
+      "children": [
+        { "partial": "partials/search/posts/_section.json" },
+        { "partial": "partials/search/products/_section.json" },
+        { "partial": "partials/search/pages/_section.json" }
+      ]
+    },
+    {
+      "comment": "게시글 탭 - 결과 있을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) > 0}}",
+      "children": [
+        { "partial": "partials/search/posts/_list.json" }
+      ]
+    },
+    {
+      "comment": "게시글 탭 - 결과 없을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'posts' && (searchResults?.data?.posts_count ?? 0) === 0}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "file-text", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.empty.posts" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.empty.suggestion" }
+      ]
+    },
+    {
+      "comment": "상품 탭 - 결과 있을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'products' && (searchResults?.data?.products_count ?? 0) > 0}}",
+      "props": { "className": "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "{{searchResults.data.products ?? []}}", "item_var": "product" },
+          "children": [
+            { "partial": "partials/search/products/_item_card.json" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "상품 탭 - 결과 없을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'products' && (searchResults?.data?.products_count ?? 0) === 0}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.empty.products" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.empty.suggestion" }
+      ]
+    },
+    {
+      "comment": "페이지 탭 - 결과 있을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) > 0}}",
+      "children": [
+        { "partial": "partials/search/pages/_section.json" }
+      ]
+    },
+    {
+      "comment": "페이지 탭 - 결과 없을 때",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.searchActiveTab === 'pages' && (searchResults?.data?.pages_count ?? 0) === 0}}",
+      "props": { "className": "py-16 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "file-alt", "size": "4x" } }
+          ]
+        },
+        { "type": "basic", "name": "H3", "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" }, "text": "$t:search.empty.pages" },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:search.empty.suggestion" }
+      ]
+    }
+  ]
+}

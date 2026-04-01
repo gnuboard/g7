@@ -1,0 +1,364 @@
+{
+  "title": "Coupon Management",
+  "description": "Create and manage coupons.",
+  "actions": {
+    "create": "Create Coupon",
+    "edit_search": "Edit Search",
+    "search": "Search",
+    "reset": "Reset",
+    "bulk_change": "Bulk Change",
+    "view_member": "View Member Info",
+    "search_by_creator": "Search by Creator"
+  },
+  "action": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "edit_search": "Edit Search",
+    "search": "Search",
+    "reset": "Reset",
+    "view_member": "View Member Info",
+    "search_by_creator": "Search by Creator"
+  },
+  "search": {
+    "field": {
+      "all": "All",
+      "coupon_name": "Coupon Name",
+      "coupon_code": "Coupon Code"
+    },
+    "placeholder": "Enter search keyword...",
+    "column_select": "Column Select",
+    "detail_search": "Advanced Search"
+  },
+  "filter": {
+    "target_type": "Target Type",
+    "benefit_amount": "Benefit Amount",
+    "created_at": "Created Date",
+    "issue_status": "Issue Status",
+    "issue_method": "Issue Method",
+    "issue_condition": "Issue Condition",
+    "min_order_amount": "Min Order Amount",
+    "min_order_amount_placeholder": "Enter amount",
+    "min_order_amount_suffix": "or more to use",
+    "validity_period": "Validity Period",
+    "valid_period": "Valid Period",
+    "validity_range": "Start ~ End Date",
+    "validity_from_issue": "From issue date",
+    "validity_days_suffix": "days",
+    "issue_period": "Issue Period",
+    "creator": "Creator",
+    "creator_select": "Select Creator",
+    "creator_search_placeholder": "Search by name",
+    "creator_search_initial": "Enter creator name",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "min": "Min",
+    "max": "Max",
+    "date_quick": {
+      "today": "Today",
+      "1_week": "1 Week",
+      "1_month": "1 Month",
+      "3_months": "3 Months",
+      "6_months": "6 Months",
+      "1_year": "1 Year"
+    }
+  },
+  "target_type": {
+    "all": "All",
+    "product_amount": "Product Amount",
+    "order_amount": "Order Amount",
+    "shipping_fee": "Shipping Fee"
+  },
+  "benefit_type": {
+    "fixed": "Fixed",
+    "rate": "Rate"
+  },
+  "issue_status": {
+    "all": "All",
+    "issuing": "Issuing",
+    "stopped": "Stopped"
+  },
+  "issue_method": {
+    "all": "All",
+    "direct": "Direct Issue",
+    "download": "Download",
+    "auto": "Auto Issue"
+  },
+  "issue_condition": {
+    "all": "All",
+    "manual": "Manual",
+    "signup": "Sign Up",
+    "first_purchase": "First Purchase",
+    "birthday": "Birthday"
+  },
+  "batch": {
+    "selected_count": "{{count}} selected",
+    "status_change": "Change Status"
+  },
+  "bulk": {
+    "apply": "Apply",
+    "select_status": "Select status to change"
+  },
+  "toast": {
+    "status_changed": "Issue status has been changed.",
+    "deleted": "Coupon has been deleted."
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "selected_count": "{{count}} selected",
+    "empty": "No coupons registered.",
+    "sort": {
+      "created_at_desc": "Created Date (Latest)",
+      "created_at_asc": "Created Date (Oldest)",
+      "coupon_name_asc": "Coupon Name (A-Z)",
+      "coupon_name_desc": "Coupon Name (Z-A)",
+      "name_asc": "Name (A-Z)",
+      "name_desc": "Name (Z-A)",
+      "valid_to_asc": "Valid Date (Earliest)",
+      "valid_to_desc": "Valid Date (Latest)"
+    },
+    "per_page": "{{count}} items",
+    "columns": {
+      "checkbox": "Select",
+      "target_type": "Target Type",
+      "coupon_name": "Coupon Name",
+      "name": "Coupon Name",
+      "description": "Description",
+      "benefit_amount": "Benefit Amount",
+      "validity_period": "Validity Period",
+      "valid_period": "Valid Period",
+      "issue_period": "Issue Period",
+      "issue_count": "Issue Count",
+      "issue_method": "Issue Method",
+      "issue_condition": "Issue Condition",
+      "issue_status": "Issue Status",
+      "created_at": "Created Date",
+      "creator": "Creator",
+      "created_by": "Created By",
+      "actions": "Actions"
+    }
+  },
+  "mobile": {
+    "benefit_label": "Benefit",
+    "target_type_label": "Target Type",
+    "issue_label": "Issue",
+    "validity_period_label": "Validity Period",
+    "issue_period_label": "Issue Period",
+    "issue_count_label": "Issue Count",
+    "status_label": "Status",
+    "creator_label": "Creator",
+    "target_type:": "Target:",
+    "issue:": "Issue:",
+    "valid_period: ": "Valid Period: ",
+    "issue_period: ": "Issue Period: ",
+    "issue_count: ": "Issue Count: ",
+    "status:": "Status:"
+  },
+  "modal": {
+    "status_change": {
+      "title": "Change issue status?",
+      "message": "The issue status of {{count}} selected coupons will be changed to {{status}}."
+    },
+    "delete": {
+      "title": "Delete coupon?",
+      "message": "This action cannot be undone. The coupon and all related posts will be permanently deleted.",
+      "warning": "Deleted coupons cannot be recovered.",
+      "delete": "Delete"
+    },
+    "issue_history": {
+      "title": "Coupon Issue History",
+      "subtitle": "Total {{count}} issue records",
+      "total": "Total {{count}}",
+      "empty": "No issue history.",
+      "description": "List of users who received this coupon. (Total: 12)",
+      "total_count": "Total 12",
+      "columns": {
+        "issued_at": "Issued At",
+        "user": "Member",
+        "status": "Status",
+        "member_info": "Member Info",
+        "usage_status": "Usage Status",
+        "used_at": "Used At"
+      },
+      "action": {
+        "filter_by_user": "Filter by this user"
+      },
+      "status": {
+        "used": "Used",
+        "unused": "Unused"
+      }
+    }
+  },
+  "messages": {
+    "created": "Coupon has been created.",
+    "updated": "Coupon has been updated."
+  },
+  "create": {
+    "title": "Create Coupon",
+    "description": "Register a new coupon.",
+    "section": {
+      "basic_info": "Basic Info",
+      "benefit_settings": "Benefit Settings",
+      "issue_settings": "Issue Settings",
+      "usage_conditions": "Usage Conditions"
+    },
+    "field": {
+      "target_type": "Target Type",
+      "issue_method": "Issue Method",
+      "issue_condition": "Issue Condition",
+      "coupon_name": "Coupon Name",
+      "coupon_description": "Coupon Description",
+      "benefit_amount": "Benefit Amount",
+      "min_order_amount": "Min Order Amount",
+      "validity_period": "Validity Period",
+      "issue_quantity": "Issue Quantity",
+      "issue_period": "Issue Period",
+      "reissue": "Reissue (Duplicate Download)",
+      "coupon_overlap": "Coupon Stacking",
+      "apply_target": "Apply Target"
+    },
+    "option": {
+      "product_amount": "Product Amount",
+      "order_amount": "Order Amount",
+      "shipping_fee": "Shipping Fee",
+      "direct_issue": "Direct Issue",
+      "download": "Download",
+      "auto_issue": "Auto Issue",
+      "manual_issue": "Manual Issue",
+      "unlimited": "Unlimited",
+      "quantity_limit": "Limited",
+      "period_setting": "Period Setting",
+      "limit_per_member": "Limit per member",
+      "possible": "Allowed",
+      "impossible": "Not Allowed",
+      "no_limit": "No Limit",
+      "specific_product": "Specific Products",
+      "specific_category": "Specific Categories"
+    },
+    "placeholder": {
+      "coupon_name": "Enter coupon name",
+      "coupon_description": "Enter coupon description",
+      "amount_input": "Enter amount",
+      "max_discount": "Max discount",
+      "min_order": "Min order amount",
+      "quantity": "Quantity",
+      "days": "Days"
+    },
+    "hint": {
+      "min_order_suffix": "or more to apply",
+      "max_discount_suffix": "discount",
+      "quantity_suffix": "coupons",
+      "days_suffix": "days",
+      "times_suffix": "times"
+    },
+    "table": {
+      "product_code": "Product Code",
+      "product_name": "Product Name",
+      "sale_price": "Sale Price",
+      "category_name": "Category Name",
+      "product_count": "Product Count"
+    },
+    "button": {
+      "select_product": "Select Product",
+      "select_category": "Select Category",
+      "delete_selected": "Delete Selected"
+    }
+  },
+  "form": {
+    "title_create": "Create Coupon",
+    "title_edit": "Edit Coupon",
+    "description_create": "Register a new coupon.",
+    "description_edit": "Edit coupon #{id}.",
+    "section": {
+      "basic_info": "Basic Info",
+      "benefit_settings": "Benefit Settings",
+      "issue_settings": "Issue Settings",
+      "usage_conditions": "Usage Conditions"
+    },
+    "field": {
+      "target_type": "Target Type",
+      "issue_method": "Issue Method",
+      "issue_condition": "Issue Condition",
+      "coupon_name": "Coupon Name",
+      "coupon_description": "Coupon Description",
+      "benefit_amount": "Benefit Amount",
+      "max_discount": "Max Discount",
+      "min_order_amount": "Min Order Amount",
+      "validity_period": "Validity Period",
+      "issue_quantity": "Issue Quantity",
+      "issue_period": "Issue Period",
+      "reissue": "Reissue (Duplicate Download)",
+      "coupon_overlap": "Coupon Stacking",
+      "apply_target": "Apply Target"
+    },
+    "option": {
+      "target_type_product_amount": "Product Amount",
+      "target_type_order_amount": "Order Amount",
+      "target_type_shipping_fee": "Shipping Fee",
+      "issue_method_direct": "Direct Issue",
+      "issue_method_download": "Download",
+      "issue_method_auto": "Auto Issue",
+      "issue_condition_manual": "Manual Issue",
+      "issue_condition_signup": "Sign Up",
+      "issue_condition_first_purchase": "First Purchase",
+      "issue_condition_birthday": "Birthday",
+      "discount_type_fixed": "KRW",
+      "discount_type_rate": "%",
+      "valid_type_fixed_period": "Fixed Period",
+      "valid_type_days_from_issue": "Days from Issue",
+      "unlimited": "Unlimited",
+      "issue_quantity_limited": "Limited",
+      "issue_period_limited": "Period Setting",
+      "reissue_limited": "Limited",
+      "combinable_yes": "Allowed",
+      "combinable_no": "Not Allowed",
+      "target_scope_all": "No Limit",
+      "target_scope_products": "Specific Products",
+      "target_scope_categories": "Specific Categories"
+    },
+    "placeholder": {
+      "coupon_name": "Enter coupon name",
+      "coupon_description": "Enter coupon description"
+    },
+    "hint": {
+      "min_order_suffix": "or more to use",
+      "max_prefix": "Max",
+      "currency_won_discount": "KRW discount",
+      "from_issue_date": "From issue date",
+      "unit_days": "days valid",
+      "unit_quantity": "coupons",
+      "per_user": "Per user",
+      "unit_times": "times"
+    },
+    "search": {
+      "products": "Product Search",
+      "categories": "Category Search",
+      "field_all": "All",
+      "field_code": "Product Code",
+      "field_name": "Product Name",
+      "field_sku": "SKU",
+      "keyword_placeholder": "Enter search keyword",
+      "results": "Search Results",
+      "no_results": "No results found.",
+      "add_selected": "Add Selected",
+      "selected_products": "Selected Products",
+      "selected_categories": "Selected Categories",
+      "no_selected": "No items selected.",
+      "delete_selected": "Delete Selected",
+      "category_placeholder": "Enter category name",
+      "category_tree": "Category Tree",
+      "load_more": "Load More ({{current}} / {{total}})"
+    },
+    "table": {
+      "product_code": "Product Code",
+      "product_name": "Product Name",
+      "price": "Price",
+      "category_name": "Category Name",
+      "product_count": "Product Count"
+    },
+    "button": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    }
+  }
+}

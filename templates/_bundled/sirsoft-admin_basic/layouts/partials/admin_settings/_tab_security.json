@@ -1,0 +1,434 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 보안 탭 콘텐츠"
+  },
+  "id": "tab_content_security",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "card_security_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.security.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.security.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "toggle_force_https",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.security.force_https"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.security.force_https_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['security.force_https']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['security.force_https']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "security.force_https",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "toggle_login_attempt",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.security.login_attempt_limit"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.security.login_attempt_limit_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['security.login_attempt_enabled']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['security.login_attempt_enabled']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "security.login_attempt_enabled",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_auth_token_lifetime",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.security.auth_token_lifetime"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "security.auth_token_lifetime",
+                    "placeholder": "30",
+                    "min": 0,
+                    "max": 3600,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['security.auth_token_lifetime'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['security.auth_token_lifetime']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['security.auth_token_lifetime']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                  },
+                  "text": "$t:admin.settings.security.zero_means_unlimited"
+                }
+              ]
+            },
+            {
+              "id": "field_max_login_attempts",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.security.max_login_attempts"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "security.max_login_attempts",
+                    "placeholder": "5",
+                    "min": 0,
+                    "max": 100,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['security.max_login_attempts'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['security.max_login_attempts']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['security.max_login_attempts']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                  },
+                  "text": "$t:admin.settings.security.zero_means_unlimited"
+                }
+              ]
+            },
+            {
+              "id": "field_login_lockout_time",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.security.login_lockout_time_full"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "security.login_lockout_time",
+                    "placeholder": "5",
+                    "min": 0,
+                    "max": 1440,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['security.login_lockout_time'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['security.login_lockout_time']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                  },
+                  "text": "$t:admin.settings.security.zero_means_unlimited"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_app_key",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.security.app_key"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.security.app_key_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.settings.security.current_app_key"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-3"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex flex-col gap-3"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{appKey?.data?.app_key ?? ''}}",
+                    "disabled": true,
+                    "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm font-mono"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm transition-colors whitespace-nowrap"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "w-full px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm transition-colors"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "openModal",
+                      "target": "settings_password_confirm_modal"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.security.regenerate_key"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:admin.settings.security.app_key_warning"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

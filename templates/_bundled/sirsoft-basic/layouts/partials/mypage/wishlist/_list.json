@@ -1,0 +1,159 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 찜목록 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "wishlist"
+  },
+  "props": { "className": "space-y-6" },
+  "responsive": {
+    "portable": {
+      "props": {
+        "className": "space-y-4"
+      }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 헤더 - 찜목록 + 총 개수 (카드 외부, profile 패턴)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-xl font-semibold text-gray-900 dark:text-white"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+              }
+            }
+          },
+          "text": "$t:mypage.wishlist.title"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:mypage.wishlist.count|count={{wishlist.data.pagination.total ?? 0}}"
+        }
+      ]
+    },
+    {
+      "comment": "찜 목록 카드",
+      "type": "basic",
+      "name": "Div",
+      "props": {},
+      "children": [
+        {
+          "comment": "찜 목록 그리드",
+          "type": "layout",
+          "name": "Grid",
+          "if": "{{wishlist.data.data && wishlist.data.data.length > 0}}",
+          "props": { "cols": 5, "gap": 4, "className": "p-6" },
+          "responsive": {
+            "portable": {
+              "props": { "cols": 2, "gap": 3, "className": "p-4" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": { "source": "{{wishlist.data.data ?? []}}", "item_var": "item" },
+              "props": { "className": "relative group" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "ProductCard",
+                  "props": { "product": "{{item.product}}", "shopBase": "{{_global.shopBase ?? '/shop'}}" }
+                },
+                {
+                  "comment": "찜 해제 버튼 (카드 우상단 오버레이)",
+                  "type": "basic",
+                  "name": "Button",
+                  "props": { "className": "absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:scale-110 transition-all cursor-pointer" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "heart", "iconStyle": "solid", "size": "lg" } }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "auth_mode": "required",
+                      "target": "/api/modules/sirsoft-ecommerce/wishlist/{{item.id}}",
+                      "params": { "method": "DELETE" },
+                      "onSuccess": [
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "wishlist" } },
+                        { "handler": "toast", "params": { "type": "success", "message": "$t:mypage.wishlist.removed" } }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "찜 목록 없음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!wishlist.data.data || wishlist.data.data.length === 0}}",
+          "props": { "className": "p-8 text-center" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "p-6 text-center" }
+            }
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "heart", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
+            { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.wishlist.empty" },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer" },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": { "path": "{{_global.shopBase}}/products" }
+                }
+              ],
+              "text": "$t:mypage.wishlist.go_shopping"
+            }
+          ]
+        },
+        {
+          "comment": "페이지네이션",
+          "type": "composite",
+          "name": "Pagination",
+          "if": "{{wishlist.data.pagination.last_page > 1}}",
+          "props": {
+            "currentPage": "{{wishlist.data.pagination.current_page}}",
+            "totalPages": "{{wishlist.data.pagination.last_page}}",
+            "className": "pt-4 flex justify-center"
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "wishlistPage": "{{$args[0]}}" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "wishlist" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

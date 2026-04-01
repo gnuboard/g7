@@ -1,0 +1,17 @@
+{
+    "name": "@g7/sirsoft-marketing",
+    "version": "1.0.0-beta.1",
+    "description": "G7 마케팅 동의 플러그인 프론트엔드 에셋",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "vitest",
+        "test:run": "vitest run"
+    },
+    "devDependencies": {
+        "jsdom": "^27.4.0",
+        "typescript": "^5.3.3",
+        "vite": "^5.4.14",
+        "vitest": "^2.1.8"
+    }
+}

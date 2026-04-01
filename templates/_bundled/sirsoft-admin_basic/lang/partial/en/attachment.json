@@ -1,0 +1,16 @@
+{
+  "upload_success": "File has been uploaded.",
+  "upload_failed": "File upload failed.",
+  "deleted": "File has been deleted.",
+  "delete_confirm_title": "Delete File",
+  "delete_confirm_message": "Are you sure you want to delete this file?",
+  "deleting": "Deleting...",
+  "drop_or_click": "Drag and drop files or click to upload",
+  "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
+  "attached_count": "{{count}}/{{max}} attached",
+  "max_size": "Max {{size}}MB",
+  "drag_to_reorder": "Drag to reorder",
+  "reorder_failed": "Failed to reorder.",
+  "primary_image": "Primary image",
+  "set_as_primary": "Set as primary image"
+}

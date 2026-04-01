@@ -1,0 +1,62 @@
+{
+  "common": {
+    "$partial": "partial/ko/common.json"
+  },
+  "attachment": {
+    "$partial": "partial/ko/attachment.json"
+  },
+  "user": {
+    "$partial": "partial/ko/user.json"
+  },
+  "nav": {
+    "$partial": "partial/ko/nav.json"
+  },
+  "auth": {
+    "$partial": "partial/ko/auth.json"
+  },
+  "home": {
+    "$partial": "partial/ko/home.json"
+  },
+  "board": {
+    "$partial": "partial/ko/board.json"
+  },
+  "shop": {
+    "$partial": "partial/ko/shop.json"
+  },
+  "mypage": {
+    "$partial": "partial/ko/mypage.json"
+  },
+  "search": {
+    "$partial": "partial/ko/search.json"
+  },
+  "policy": {
+    "$partial": "partial/ko/policy.json"
+  },
+  "error": {
+    "$partial": "partial/ko/error.json"
+  },
+  "upload": {
+    "$partial": "partial/ko/upload.json"
+  },
+  "footer": {
+    "$partial": "partial/ko/footer.json"
+  },
+  "sirsoft-basic": {
+    "$partial": "partial/ko/sirsoft-basic.json"
+  },
+  "userinfo": {
+    "$partial": "partial/ko/userinfo.json"
+  },
+  "editor": {
+    "$partial": "partial/ko/editor.json"
+  },
+  "countries": {
+    "$partial": "partial/ko/countries.json"
+  },
+  "languages": {
+    "$partial": "partial/ko/languages.json"
+  },
+  "timezones": {
+    "$partial": "partial/ko/timezones.json"
+  }
+}

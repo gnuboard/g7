@@ -1,0 +1,266 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "스케줄 실행 이력 모달"
+  },
+  "id": "schedule_history_modal",
+  "type": "composite",
+  "name": "Modal",
+  "data_sources": [
+    {
+      "id": "schedule_history",
+      "type": "api",
+      "endpoint": "/api/admin/schedules/{{_global.selectedSchedule?.id}}/history",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "params": {
+        "page": "{{_global.historyPage ?? 1}}",
+        "per_page": 10
+      }
+    }
+  ],
+  "props": {
+    "title": "$t:admin.schedules.modals.history_title",
+    "size": "large"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "text": "{{_global.selectedSchedule?.name}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!schedule_history?.data?.data || schedule_history?.data?.data?.length === 0}}",
+      "props": { "className": "py-8 text-center text-gray-500 dark:text-gray-400" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "clock", "className": "w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "text": "$t:admin.schedules.modals.no_history"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{schedule_history?.data?.data && schedule_history?.data?.data?.length > 0}}",
+      "props": { "className": "space-y-3 max-h-96 overflow-y-auto" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Foreach",
+          "props": {
+            "items": "{{schedule_history?.data?.data}}",
+            "itemKey": "id"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "p-3 border border-gray-200 dark:border-gray-700 rounded-lg" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mb-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-2" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{item.status === 'success'}}",
+                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+                          "text": "$t:admin.schedules.result.success"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{item.status === 'failed'}}",
+                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
+                          "text": "$t:admin.schedules.result.failed"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{item.status === 'running'}}",
+                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+                          "text": "$t:admin.schedules.result.running"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{item.trigger_type === 'manual'}}",
+                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+                          "text": "$t:admin.schedules.trigger_type.manual"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{item.trigger_type === 'scheduled'}}",
+                          "props": { "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400" },
+                          "text": "$t:admin.schedules.trigger_type.scheduled"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                      "text": "{{item.started_at}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{item.duration_formatted}}",
+                      "text": "$t:admin.schedules.history.duration|duration={{item.duration_formatted}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{item.memory_usage_formatted}}",
+                      "text": "$t:admin.schedules.history.memory|memory={{item.memory_usage_formatted}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{item.triggered_by_name}}",
+                      "text": "$t:admin.schedules.history.triggered_by|user={{item.triggered_by_name}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{item.output}}",
+                  "props": { "className": "mt-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Pre",
+                      "props": { "className": "text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-20 text-gray-700 dark:text-gray-300" },
+                      "text": "{{item.output}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{item.error_output}}",
+                  "props": { "className": "mt-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Pre",
+                      "props": { "className": "text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto max-h-20 text-red-700 dark:text-red-300" },
+                      "text": "{{item.error_output}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{schedule_history?.data?.last_page > 1}}",
+      "props": { "className": "mt-4 flex justify-center" },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Pagination",
+          "props": {
+            "currentPage": "{{schedule_history?.data?.current_page ?? 1}}",
+            "totalPages": "{{schedule_history?.data?.last_page ?? 1}}",
+            "totalItems": "{{schedule_history?.data?.total ?? 0}}",
+            "perPage": 10,
+            "showAlways": false
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "type": "action",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "historyPage": "{{$args[0]}}"
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": { "dataSourceId": "schedule_history" }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "historyPage": 1
+                  }
+                },
+                {
+                  "handler": "closeModal",
+                  "target": "schedule_history_modal"
+                }
+              ]
+            }
+          ],
+          "text": "$t:common.close"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "title": "개인결제 상세",
+  "meta": {
+    "payment_number": "결제번호",
+    "created_at": "생성일시",
+    "status": "상태"
+  },
+  "actions": {
+    "list": "목록",
+    "edit": "수정",
+    "delete": "삭제"
+  },
+  "product_info": {
+    "paid_at": "결제일시",
+    "payment_method": "결제수단",
+    "payer_name": "결제자명",
+    "approval_number": "승인번호",
+    "transaction_id": "거래ID",
+    "view_receipt": "영수증 확인"
+  },
+  "status_message": {
+    "pending": "결제 대기중입니다.",
+    "completed": "결제가 완료되었습니다.",
+    "expired": "결제가 만료되었습니다."
+  },
+  "member_info": {
+    "title": "회원 정보",
+    "buyer_title": "구매자 정보",
+    "name": "회원명",
+    "buyer_name": "이름",
+    "member_id": "회원 ID",
+    "email": "이메일",
+    "phone": "연락처"
+  },
+  "payment_detail": {
+    "title": "개인결제 상세",
+    "payment_number": "결제번호",
+    "order_number": "주문번호",
+    "created_at": "생성일시",
+    "expired_at": "만료예정"
+  },
+  "payment_link": {
+    "title": "결제 링크",
+    "copy": "복사",
+    "open": "열기"
+  },
+  "memo": {
+    "title": "메모",
+    "edit": "수정"
+  },
+  "log": {
+    "title": "처리로그",
+    "count": "{{count}}개",
+    "sort": "정렬",
+    "sort_options": {
+      "latest": "처리일시 최신순",
+      "oldest": "처리일시 오래된순"
+    },
+    "per_page": "페이지당",
+    "columns": {
+      "processed_at": "처리일시",
+      "processor": "처리자",
+      "event": "이벤트"
+    }
+  }
+}

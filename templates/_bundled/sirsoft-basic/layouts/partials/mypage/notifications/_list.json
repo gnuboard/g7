@@ -1,0 +1,340 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 알림 탭 - 시안 기반 반응형 레이아웃"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "userNotifications"
+  },
+  "props": { "className": "mt-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "mt-4" }
+    }
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg overflow-hidden" },
+      "children": [
+        {
+          "comment": "알림 헤더 바 - 반응형",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "flex flex-col gap-2 p-3 border-b border-gray-200 dark:border-gray-700" }
+            }
+          },
+          "children": [
+            {
+              "comment": "읽지 않은 알림 카운트",
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-red-500 dark:text-red-400 font-medium" },
+              "text": "$t:mypage.notifications.unread_count|count={{userNotifications.data?.unread_count ?? 0}}"
+            },
+            {
+              "comment": "액션 버튼 그룹",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "flex items-center justify-end gap-3" }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" },
+                  "text": "$t:mypage.notifications.mark_all_read",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/notifications/read-all",
+                      "params": { "method": "PUT" },
+                      "onSuccess": [
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
+                        { "handler": "setState", "params": { "target": "global", "notificationCount": 0 } }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
+                  "props": { "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" },
+                  "text": "$t:mypage.notifications.delete_all",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "confirm",
+                      "params": { "message": "$t:mypage.notifications.delete_all_confirm" },
+                      "onConfirm": [
+                        {
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/notifications",
+                          "params": { "method": "DELETE" },
+                          "onSuccess": [
+                            { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
+                            { "handler": "setState", "params": { "target": "global", "notificationCount": 0 } },
+                            { "handler": "toast", "params": { "type": "success", "message": "$t:mypage.notifications.all_deleted" } }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "알림 목록",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
+          "props": { "className": "divide-y divide-gray-200 dark:divide-gray-700" },
+          "iteration": { "source": "{{userNotifications.data.data ?? []}}", "item_var": "notification" },
+          "children": [
+            {
+              "comment": "알림 아이템 - 반응형",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "apiCall",
+                      "if": "{{!notification.read_at}}",
+                      "auth_required": true,
+                      "target": "/api/notifications/{{notification.id}}/read",
+                      "params": { "method": "PUT" },
+                      "onSuccess": [
+                        { "handler": "setState", "params": { "target": "global", "notificationCount": "{{Math.max(0, _global.notificationCount - 1)}}" } }
+                      ]
+                    },
+                    {
+                      "handler": "navigate",
+                      "if": "{{notification.link}}",
+                      "target": "{{notification.link}}"
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-start gap-3" },
+                  "children": [
+                    {
+                      "comment": "읽지 않음 표시 + 아이콘",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex items-center gap-2 flex-shrink-0" },
+                      "children": [
+                        {
+                          "comment": "읽지 않음 빨간 점",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{!notification.read_at}}",
+                          "props": { "className": "w-2 h-2 rounded-full bg-red-500" }
+                        },
+                        {
+                          "comment": "타입 아이콘",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "w-10 h-10 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}"
+                          },
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "w-9 h-9 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}"
+                              }
+                            }
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
+                                "className": "w-5 h-5 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                              },
+                              "responsive": {
+                                "portable": {
+                                  "props": {
+                                    "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
+                                    "className": "w-4 h-4 {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "알림 내용",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex-1 min-w-0" },
+                      "children": [
+                        {
+                          "comment": "제목 + 태그 + 삭제 버튼",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "flex items-center justify-between gap-2 mb-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": { "className": "flex items-center gap-2 min-w-0" },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": { "className": "text-sm text-gray-900 dark:text-white truncate {{notification.read_at ? '' : 'font-semibold'}}" },
+                                  "text": "{{notification.title}}"
+                                },
+                                {
+                                  "comment": "타입 태그",
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}"
+                                  },
+                                  "text": "$t:mypage.notifications.type.{{notification.type}}"
+                                }
+                              ]
+                            },
+                            {
+                              "comment": "삭제 버튼",
+                              "type": "basic",
+                              "name": "Button",
+                              "props": { "className": "flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" },
+                              "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-4 h-4" } }
+                              ],
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "stopPropagation"
+                                },
+                                {
+                                  "type": "click",
+                                  "handler": "apiCall",
+                                  "auth_required": true,
+                                  "target": "/api/notifications/{{notification.id}}",
+                                  "params": { "method": "DELETE" },
+                                  "onSuccess": [
+                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
+                                    {
+                                      "handler": "setState",
+                                      "if": "{{!notification.read_at}}",
+                                      "params": { "target": "global", "notificationCount": "{{Math.max(0, _global.notificationCount - 1)}}" }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "알림 메시지",
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-1" },
+                          "text": "{{notification.message}}"
+                        },
+                        {
+                          "comment": "날짜",
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                          "text": "{{notification.created_at | datetime}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "알림 없음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!userNotifications.data.data || userNotifications.data.data.length === 0}}",
+          "props": { "className": "p-12 text-center" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "p-8 text-center" }
+            }
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "bell-off", "className": "w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" } },
+            { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:mypage.notifications.empty" }
+          ]
+        },
+        {
+          "comment": "페이지네이션",
+          "type": "composite",
+          "name": "Pagination",
+          "if": "{{userNotifications.data.last_page > 1}}",
+          "props": {
+            "currentPage": "{{userNotifications.data.current_page}}",
+            "totalPages": "{{userNotifications.data.last_page}}",
+            "className": "p-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "currentPage": "{{userNotifications.data.current_page}}",
+                "totalPages": "{{userNotifications.data.last_page}}",
+                "className": "p-3 border-t border-gray-200 dark:border-gray-700"
+              }
+            }
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "notificationsPage": "{{$args[0]}}" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

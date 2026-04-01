@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Save Search Preset Modal"
+  },
+  "id": "modal_preset_save",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-secondary text-sm mb-6"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.description"
+    },
+    {
+      "type": "basic",
+      "name": "Input",
+      "props": {
+        "type": "text",
+        "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
+        "className": "input w-full"
+      }
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary w-full"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.save",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

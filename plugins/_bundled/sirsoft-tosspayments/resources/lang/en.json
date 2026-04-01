@@ -1,0 +1,35 @@
+{
+    "plugin_name": "TossPayments",
+    "plugin_description": "TossPayments gateway (integrated payment window)",
+    "settings": {
+        "title": "TossPayments Settings",
+        "description": "Configure TossPayments API keys.",
+        "test_mode": "Test Mode",
+        "test_mode_hint": "No real payments occur in test mode.",
+        "test_client_key": "Test Client Key",
+        "test_client_key_hint": "Found in Developer Center > API Keys",
+        "test_secret_key": "Test Secret Key",
+        "test_secret_key_hint": "Keep this key secret.",
+        "live_client_key": "Live Client Key",
+        "live_secret_key": "Live Secret Key",
+        "live_secret_key_hint": "Keep this key secret.",
+        "section_test_keys": "Test API Keys",
+        "section_live_keys": "Live API Keys",
+        "section_redirect": "Redirect Settings",
+        "redirect_success_url": "Payment Success Redirect URL",
+        "redirect_success_url_hint": "Supports relative paths (/shop/...) or full URLs (https://...). {orderId} will be replaced with the actual order number.",
+        "redirect_fail_url": "Payment Failure Redirect URL",
+        "redirect_fail_url_hint": "Supports relative paths or full URLs. Error details (error, message, orderId) are appended as query parameters.",
+        "save": "Save",
+        "saved": "Settings saved."
+    },
+    "payment_error_title": "Payment Error",
+    "payment_cancel_title": "Payment Cancelled",
+    "payment_cancelled_message": "Payment has been cancelled. Please try again or choose a different payment method.",
+    "errors": {
+        "confirm_failed": "Payment confirmation failed.",
+        "amount_mismatch": "Payment amount does not match.",
+        "order_not_found": "Order not found.",
+        "payment_failed": "Payment failed."
+    }
+}

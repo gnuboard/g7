@@ -1,0 +1,492 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Product Form - Common Info Section (시안 반영)"
+    },
+    "id": "section_common_info",
+    "type": "basic",
+    "name": "Section",
+    "props": {
+        "id": "common_info",
+        "className": "scroll-mt-32"
+    },
+    "children": [
+        {
+            "id": "common_info_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-accordion mb-6"
+            },
+            "children": [
+                {
+                    "id": "common_info_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-accordion-header"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "ui.commonInfoExpanded": "{{!_local.ui.commonInfoExpanded}}"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "file-alt",
+                                        "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "card-accordion-title"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sections.common_info"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "chevron-down",
+                                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "common_info_body",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.ui.commonInfoExpanded !== false}}",
+                    "props": {
+                        "className": "card-accordion-body p-6 space-y-6"
+                    },
+                    "children": [
+                        {
+                            "id": "common_info_template_header",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "flex flex-col gap-2"
+                                    }
+                                }
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label mb-0"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.fields.common_info"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "A",
+                                    "props": {
+                                        "href": "/admin/ecommerce/common-info",
+                                        "target": "_blank",
+                                        "rel": "noopener noreferrer",
+                                        "className": "btn btn-outline text-xs"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-up-right-from-square",
+                                                "className": "w-3 h-3 mr-1.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.product.buttons.manage_common_info"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "use_default_common_info_toggle",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "use_default_common_info",
+                                        "checked": "{{_local.form.use_default_common_info ?? false}}",
+                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "if": "{{$event.target.checked}}",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.use_default_common_info": true,
+                                                        "form.common_info_id": "{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id ?? null}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "change",
+                                            "if": "{{!$event.target.checked}}",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.use_default_common_info": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.common_info.use_default"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "common_info_buttons_container",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(common_infos?.data?.data ?? []).length > 0}}",
+                            "props": {
+                                "className": "{{_local.errors?.common_info_id ? 'flex flex-wrap gap-2 p-2 border border-red-500 dark:border-red-500 rounded-lg' : 'flex flex-wrap gap-2'}}"
+                            },
+                            "children": [
+                                {
+                                    "id": "common_info_none_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.common_info.none",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.common_info_id": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "ui.commonInfoDetailExpanded": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "common_info_default_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.common_info_id": "{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.product.common_info.badge_default"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "common_info_other_buttons_wrapper",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "contents"
+                                    },
+                                    "iteration": {
+                                        "source": "{{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}",
+                                        "item_var": "commonInfo",
+                                        "index_var": "idx"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "common_info_btn_{{commonInfo.id}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
+                                            },
+                                            "text": "{{$localized(commonInfo.name)}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.common_info_id": "{{commonInfo.id}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.common_info_id}}",
+                            "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                            "text": "{{_local.errors?.common_info_id?.[0]}}"
+                        },
+                        {
+                            "id": "common_info_detail_accordion",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form.common_info_id}}",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "id": "common_info_detail_header",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "ui.commonInfoDetailExpanded": "{{!_local.ui.commonInfoDetailExpanded}}"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{$localized((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.name)}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chevron-down",
+                                                "className": "w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "common_info_detail_body",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.ui.commonInfoDetailExpanded}}",
+                                    "props": {
+                                        "className": "border-t border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "common_info_locale_tabs",
+                                            "type": "composite",
+                                            "name": "MultilingualTabPanel",
+                                            "props": {
+                                                "variant": "underline",
+                                                "className": "px-4 pt-4",
+                                                "locales": "{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k && (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "event": "onLocaleChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "ui.commonInfoLocale": "{{$args[0]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "children": [
+                                                {
+                                                    "id": "common_info_content_display",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "p-4 max-h-96 overflow-y-auto"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode === 'html'}}",
+                                                            "props": {
+                                                                "className": "prose prose-sm dark:prose-invert max-w-none",
+                                                                "dangerouslySetInnerHTML": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode !== 'html'}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                                                            },
+                                                            "text": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "common_info_empty_state",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!(common_infos?.data?.data ?? []).length}}",
+                            "props": {
+                                "className": "text-center py-8 text-gray-500 dark:text-gray-400"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.common_info.empty"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

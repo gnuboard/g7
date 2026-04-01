@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "신상품 섹션"
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{newProducts.data && newProducts.data.length > 0}}",
+  "isolatedState": {
+    "scrollIdx": 0
+  },
+  "isolatedScopeId": "new-products-scroll",
+  "props": { "className": "mb-12" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-between items-center mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": { "className": "text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "sparkles", "className": "w-5 h-5 text-yellow-500" } },
+            { "type": "basic", "name": "Span", "text": "$t:shop.new_products" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "{{_isolated.scrollIdx <= 0 ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
+                "disabled": "{{_isolated.scrollIdx <= 0}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "isolated",
+                        "scrollIdx": "{{_isolated.scrollIdx - 1}}"
+                      }
+                    },
+                    {
+                      "handler": "scrollIntoView",
+                      "params": {
+                        "selector": "#new-product-{{_isolated.scrollIdx}}",
+                        "behavior": "smooth",
+                        "inline": "start",
+                        "waitForElement": true,
+                        "timeout": 1000
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-left", "className": "w-4 h-4" } }]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "{{(_isolated.scrollIdx + 4) >= (newProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
+                "disabled": "{{(_isolated.scrollIdx + 4) >= (newProducts.data.length)}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "isolated",
+                        "scrollIdx": "{{_isolated.scrollIdx + 1}}"
+                      }
+                    },
+                    {
+                      "handler": "scrollIntoView",
+                      "params": {
+                        "selector": "#new-product-{{_isolated.scrollIdx}}",
+                        "behavior": "smooth",
+                        "inline": "start",
+                        "waitForElement": true,
+                        "timeout": 1000
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [{ "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-4 h-4" } }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-4 overflow-x-hidden" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "{{newProducts.data ?? []}}", "item_var": "product", "index_var": "idx" },
+          "props": {
+            "id": "new-product-{{idx}}",
+            "className": "flex-none w-[calc(25%-12px)]"
+          },
+          "children": [
+            { "type": "composite", "name": "ProductCard", "props": { "product": "{{product}}", "shopBase": "{{_global.shopBase ?? '/shop'}}" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Product Name",
+  "price": "Price",
+  "stock": "Stock",
+  "description": "Description",
+  "category": "Category",
+  "status": "Status",
+  "statuses": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "soldout": "Sold Out"
+  }
+}

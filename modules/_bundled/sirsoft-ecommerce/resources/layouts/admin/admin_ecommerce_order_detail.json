@@ -1,0 +1,337 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_order_detail",
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.order.detail.title",
+        "description": "$t:sirsoft-ecommerce.admin.order.detail.description"
+    },
+    "computed": {},
+    "data_sources": [
+        {
+            "id": "order",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "initLocal": {
+                "order_number": "{{data.order_number ?? ''}}",
+                "form.recipient_name": "{{data.recipient_name ?? ''}}",
+                "form.recipient_phone": "{{data.recipient_phone ?? ''}}",
+                "form.recipient_tel": "{{data.recipient_tel ?? ''}}",
+                "form.recipient_zipcode": "{{data.recipient_zipcode ?? ''}}",
+                "form.recipient_address": "{{data.recipient_address ?? ''}}",
+                "form.recipient_detail_address": "{{data.recipient_detail_address ?? ''}}",
+                "form.delivery_memo": "{{data.delivery_memo ?? ''}}",
+                "form.admin_memo": "{{data.admin_memo ?? ''}}"
+            }
+        },
+        {
+            "id": "active_carriers",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true
+        },
+        {
+            "id": "order_logs",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "per_page": "{{_local.logsPerPage ?? 10}}",
+                "page": "{{_local.logsPage ?? 1}}",
+                "sort_order": "{{_local.logsSort === 'date_asc' ? 'asc' : 'desc'}}"
+            }
+        },
+        {
+            "id": "refundReasons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/claim-reasons/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "type": "refund"
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "activeOrderTab": "order_info",
+                "selectedProducts": [],
+                "selectAll": false,
+                "batchOrderStatus": "",
+                "batchCarrierId": "",
+                "batchTrackingNumber": "",
+                "logsPage": 1,
+                "logsPerPage": 10,
+                "logsSort": "date_desc",
+                "changeQuantities": {},
+                "smsPhone": "",
+                "smsMessage": "",
+                "emailAddress": "",
+                "emailMessage": "",
+                "isSending": false,
+                "emailErrors": null,
+                "order_number": "",
+                "form": {
+                    "recipient_name": "",
+                    "recipient_phone": "",
+                    "recipient_tel": "",
+                    "recipient_zipcode": "",
+                    "recipient_address": "",
+                    "recipient_detail_address": "",
+                    "delivery_memo": "",
+                    "admin_memo": ""
+                },
+                "isSaving": false,
+                "errors": null,
+                "cancelItems": [],
+                "cancelReason": "",
+                "cancelReasonDetail": "",
+                "cancelPg": true,
+                "refundEstimate": null,
+                "refundLoading": false,
+                "isCancelling": false,
+                "cancelError": null
+            }
+        }
+    ],
+    "state": {
+        "selectedProducts": [],
+        "selectAll": false,
+        "batchOrderStatus": "",
+        "batchCarrierId": "",
+        "batchTrackingNumber": "",
+        "activeOrderTab": "order_info"
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_order_detail/_modal_send_sms.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_order_detail/_modal_send_email.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_order_detail/_modal_cancel_order.json"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "order_detail_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "sticky_header_container",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 -mx-6 -mt-6 pt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "page-header px-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "page-title"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.order.detail.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "page-description flex items-center gap-2 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_number:"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "font-medium text-gray-900 dark:text-gray-100" },
+                                                        "text": "{{order.data.order_number}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "text-gray-300 dark:text-gray-600" },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_date:"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "font-medium text-gray-900 dark:text-gray-100" },
+                                                        "text": "{{order.data.ordered_at_formatted}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "text-gray-300 dark:text-gray-600" },
+                                                        "text": "|"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.status:"
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "props": {
+                                                            "variant": "{{order.data.order_status_variant}}"
+                                                        },
+                                                        "text": "{{order.data.order_status_label}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "page-actions"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "list_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.common.list",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/orders"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "props": {
+                                    "activeTabId": "{{_local.activeOrderTab ?? 'order_info'}}",
+                                    "enableScrollSpy": true,
+                                    "scrollSpyOffset": 120,
+                                    "sectionIdPrefix": "section_",
+                                    "tabs": [
+                                        {
+                                            "id": "order_info",
+                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.order_info"
+                                        },
+                                        {
+                                            "id": "payment_info",
+                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.payment_info"
+                                        },
+                                        {
+                                            "id": "activity_log",
+                                            "label": "$t:sirsoft-ecommerce.admin.order.detail.tabs.activity_log"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeOrderTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "tab_content_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6 space-y-6"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_order_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_payment_info.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_order_detail/_partial_activity_log.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

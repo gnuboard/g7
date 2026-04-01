@@ -1,0 +1,364 @@
+{
+  "title": "쿠폰 관리",
+  "description": "쿠폰을 생성하고 관리합니다.",
+  "actions": {
+    "create": "쿠폰 등록",
+    "edit_search": "검색 편집",
+    "search": "검색",
+    "reset": "초기화",
+    "bulk_change": "일괄변경",
+    "view_member": "회원정보 보기",
+    "search_by_creator": "이 등록자로 검색"
+  },
+  "action": {
+    "edit": "수정",
+    "delete": "삭제",
+    "edit_search": "검색 편집",
+    "search": "검색",
+    "reset": "초기화",
+    "view_member": "회원정보 보기",
+    "search_by_creator": "이 등록자로 검색"
+  },
+  "search": {
+    "field": {
+      "all": "전체",
+      "coupon_name": "쿠폰명",
+      "coupon_code": "쿠폰코드"
+    },
+    "placeholder": "검색어를 입력하세요...",
+    "column_select": "컬럼 선택",
+    "detail_search": "상세검색"
+  },
+  "filter": {
+    "target_type": "적용대상",
+    "benefit_amount": "혜택금액",
+    "created_at": "등록일",
+    "issue_status": "발급상태",
+    "issue_method": "발급방법",
+    "issue_condition": "발급조건",
+    "min_order_amount": "최소주문금액",
+    "min_order_amount_placeholder": "금액 입력",
+    "min_order_amount_suffix": "원 이상 구매시 사용 가능",
+    "validity_period": "유효기간",
+    "valid_period": "유효기간",
+    "validity_range": "시작일 ~ 종료일",
+    "validity_from_issue": "발급일로부터",
+    "validity_days_suffix": "일",
+    "issue_period": "발급기간",
+    "creator": "등록자",
+    "creator_select": "등록자 선택",
+    "creator_search_placeholder": "이름으로 검색",
+    "creator_search_initial": "등록자 이름을 입력하세요",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "min": "최소",
+    "max": "최대",
+    "date_quick": {
+      "today": "오늘",
+      "1_week": "일주일",
+      "1_month": "1개월",
+      "3_months": "3개월",
+      "6_months": "6개월",
+      "1_year": "1년"
+    }
+  },
+  "target_type": {
+    "all": "전체",
+    "product_amount": "상품금액",
+    "order_amount": "주문금액",
+    "shipping_fee": "배송비"
+  },
+  "benefit_type": {
+    "fixed": "정액",
+    "rate": "정률"
+  },
+  "issue_status": {
+    "all": "전체",
+    "issuing": "발급중",
+    "stopped": "발급중단"
+  },
+  "issue_method": {
+    "all": "전체",
+    "direct": "직접발급",
+    "download": "다운로드",
+    "auto": "자동발급"
+  },
+  "issue_condition": {
+    "all": "전체",
+    "manual": "수동발급",
+    "signup": "회원가입",
+    "first_purchase": "첫구매",
+    "birthday": "생일"
+  },
+  "batch": {
+    "selected_count": "{{count}}개 선택됨",
+    "status_change": "발급상태 변경"
+  },
+  "bulk": {
+    "apply": "적용",
+    "select_status": "변경할 상태 선택"
+  },
+  "toast": {
+    "status_changed": "발급상태가 변경되었습니다.",
+    "deleted": "쿠폰이 삭제되었습니다."
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "selected_count": "{{count}}개 선택됨",
+    "empty": "등록된 쿠폰이 없습니다.",
+    "sort": {
+      "created_at_desc": "등록일시 최근순",
+      "created_at_asc": "등록일시 오래된순",
+      "coupon_name_asc": "쿠폰명 오름차순",
+      "coupon_name_desc": "쿠폰명 내림차순",
+      "name_asc": "쿠폰명 오름차순",
+      "name_desc": "쿠폰명 내림차순",
+      "valid_to_asc": "유효기간 빠른순",
+      "valid_to_desc": "유효기간 느린순"
+    },
+    "per_page": "{{count}}개",
+    "columns": {
+      "checkbox": "선택",
+      "target_type": "적용대상",
+      "coupon_name": "쿠폰명",
+      "name": "쿠폰명",
+      "description": "설명",
+      "benefit_amount": "혜택금액",
+      "validity_period": "유효기간",
+      "valid_period": "유효기간",
+      "issue_period": "발급기간",
+      "issue_count": "발급수량",
+      "issue_method": "발급방법",
+      "issue_condition": "발급조건",
+      "issue_status": "발급상태",
+      "created_at": "등록일",
+      "creator": "등록자",
+      "created_by": "등록자",
+      "actions": "작업"
+    }
+  },
+  "mobile": {
+    "benefit_label": "혜택금액",
+    "target_type_label": "적용대상",
+    "issue_label": "발급",
+    "validity_period_label": "유효기간",
+    "issue_period_label": "발급기간",
+    "issue_count_label": "발급수량",
+    "status_label": "상태",
+    "creator_label": "등록자",
+    "target_type:": "적용대상:",
+    "issue:": "발급:",
+    "valid_period: ": "유효기간: ",
+    "issue_period: ": "발급기간: ",
+    "issue_count: ": "발급수량: ",
+    "status:": "상태:"
+  },
+  "modal": {
+    "status_change": {
+      "title": "발급상태를 변경하시겠습니까?",
+      "message": "선택된 {{count}}개 쿠폰의 발급상태가 {{status}}(으)로 변경됩니다."
+    },
+    "delete": {
+      "title": "쿠폰을 삭제하시겠습니까?",
+      "message": "이 작업은 되돌릴 수 없습니다. 쿠폰과 모든 게시글이 영구적으로 삭제됩니다.",
+      "warning": "삭제된 쿠폰은 복구할 수 없습니다.",
+      "delete": "삭제"
+    },
+    "issue_history": {
+      "title": "쿠폰 발급 내역",
+      "subtitle": "총 {{count}}건의 발급 이력",
+      "total": "총 {{count}}건",
+      "empty": "발급 이력이 없습니다.",
+      "description": "해당 쿠폰이 발급된 사용자 목록입니다. (총 12건)",
+      "total_count": "총 12건",
+      "columns": {
+        "issued_at": "발급일시",
+        "user": "회원",
+        "status": "상태",
+        "member_info": "회원정보",
+        "usage_status": "사용여부",
+        "used_at": "사용일시"
+      },
+      "action": {
+        "filter_by_user": "이 회원으로 필터"
+      },
+      "status": {
+        "used": "사용완료",
+        "unused": "미사용"
+      }
+    }
+  },
+  "messages": {
+    "created": "쿠폰이 등록되었습니다.",
+    "updated": "쿠폰이 수정되었습니다."
+  },
+  "create": {
+    "title": "쿠폰 등록",
+    "description": "새로운 쿠폰을 등록합니다.",
+    "section": {
+      "basic_info": "기본 정보",
+      "benefit_settings": "혜택 설정",
+      "issue_settings": "발급 설정",
+      "usage_conditions": "사용 조건 설정"
+    },
+    "field": {
+      "target_type": "적용대상",
+      "issue_method": "발급방법",
+      "issue_condition": "발급조건",
+      "coupon_name": "쿠폰명",
+      "coupon_description": "쿠폰설명",
+      "benefit_amount": "혜택금액",
+      "min_order_amount": "최소주문금액",
+      "validity_period": "유효기간",
+      "issue_quantity": "발급수량",
+      "issue_period": "발급기간",
+      "reissue": "재발급 (중복 다운로드)",
+      "coupon_overlap": "타 쿠폰과 중복 가능",
+      "apply_target": "적용 대상"
+    },
+    "option": {
+      "product_amount": "상품금액",
+      "order_amount": "주문금액",
+      "shipping_fee": "배송비",
+      "direct_issue": "직접발급",
+      "download": "다운로드",
+      "auto_issue": "자동발급",
+      "manual_issue": "수동발급",
+      "unlimited": "무제한",
+      "quantity_limit": "수량제한",
+      "period_setting": "기간설정",
+      "limit_per_member": "제한 회원당",
+      "possible": "가능",
+      "impossible": "불가능",
+      "no_limit": "제한 없음",
+      "specific_product": "특정 상품",
+      "specific_category": "특정 카테고리"
+    },
+    "placeholder": {
+      "coupon_name": "쿠폰명을 입력하세요",
+      "coupon_description": "쿠폰설명을 입력하세요",
+      "amount_input": "금액 입력",
+      "max_discount": "최대금액",
+      "min_order": "최소주문금액",
+      "quantity": "수량",
+      "days": "일수"
+    },
+    "hint": {
+      "min_order_suffix": "원 이상 구매 시 적용 가능",
+      "max_discount_suffix": "원 할인",
+      "quantity_suffix": "장",
+      "days_suffix": "일",
+      "times_suffix": "회"
+    },
+    "table": {
+      "product_code": "상품코드",
+      "product_name": "상품명",
+      "sale_price": "판매가",
+      "category_name": "카테고리명",
+      "product_count": "등록상품수"
+    },
+    "button": {
+      "select_product": "상품선택",
+      "select_category": "카테고리선택",
+      "delete_selected": "선택삭제"
+    }
+  },
+  "form": {
+    "title_create": "쿠폰 등록",
+    "title_edit": "쿠폰 수정",
+    "description_create": "새로운 쿠폰을 등록합니다.",
+    "description_edit": "쿠폰 #{id}을(를) 수정합니다.",
+    "section": {
+      "basic_info": "기본 정보",
+      "benefit_settings": "혜택 설정",
+      "issue_settings": "발급 설정",
+      "usage_conditions": "사용 조건 설정"
+    },
+    "field": {
+      "target_type": "적용대상",
+      "issue_method": "발급방법",
+      "issue_condition": "발급조건",
+      "coupon_name": "쿠폰명",
+      "coupon_description": "쿠폰설명",
+      "benefit_amount": "혜택금액",
+      "max_discount": "최대할인금액",
+      "min_order_amount": "최소주문금액",
+      "validity_period": "유효기간",
+      "issue_quantity": "발급수량",
+      "issue_period": "발급기간",
+      "reissue": "재발급 (중복 다운로드)",
+      "coupon_overlap": "타 쿠폰과 중복 사용",
+      "apply_target": "적용 대상"
+    },
+    "option": {
+      "target_type_product_amount": "상품금액",
+      "target_type_order_amount": "주문금액",
+      "target_type_shipping_fee": "배송비",
+      "issue_method_direct": "직접발급",
+      "issue_method_download": "다운로드",
+      "issue_method_auto": "자동발급",
+      "issue_condition_manual": "수동발급",
+      "issue_condition_signup": "회원가입",
+      "issue_condition_first_purchase": "첫구매",
+      "issue_condition_birthday": "생일",
+      "discount_type_fixed": "원",
+      "discount_type_rate": "%",
+      "valid_type_fixed_period": "기간 지정",
+      "valid_type_days_from_issue": "발급일로부터",
+      "unlimited": "무제한",
+      "issue_quantity_limited": "수량제한",
+      "issue_period_limited": "기간설정",
+      "reissue_limited": "제한",
+      "combinable_yes": "가능",
+      "combinable_no": "불가능",
+      "target_scope_all": "제한 없음",
+      "target_scope_products": "특정 상품",
+      "target_scope_categories": "특정 카테고리"
+    },
+    "placeholder": {
+      "coupon_name": "쿠폰명을 입력하세요",
+      "coupon_description": "쿠폰설명을 입력하세요"
+    },
+    "hint": {
+      "min_order_suffix": "원 이상 구매 시 사용 가능",
+      "max_prefix": "최대",
+      "currency_won_discount": "원 할인",
+      "from_issue_date": "발급일로부터",
+      "unit_days": "일간 유효",
+      "unit_quantity": "장",
+      "per_user": "회원당",
+      "unit_times": "회"
+    },
+    "search": {
+      "products": "상품 검색",
+      "categories": "카테고리 검색",
+      "field_all": "전체",
+      "field_code": "상품코드",
+      "field_name": "상품명",
+      "field_sku": "SKU",
+      "keyword_placeholder": "검색어를 입력하세요",
+      "results": "검색 결과",
+      "no_results": "검색 결과가 없습니다.",
+      "add_selected": "선택 추가",
+      "selected_products": "선택된 상품",
+      "selected_categories": "선택된 카테고리",
+      "no_selected": "선택된 항목이 없습니다.",
+      "delete_selected": "선택 삭제",
+      "category_placeholder": "카테고리명을 입력하세요",
+      "category_tree": "카테고리 트리",
+      "load_more": "더 보기 ({{current}} / {{total}})"
+    },
+    "table": {
+      "product_code": "상품코드",
+      "product_name": "상품명",
+      "price": "판매가",
+      "category_name": "카테고리명",
+      "product_count": "등록상품수"
+    },
+    "button": {
+      "cancel": "취소",
+      "save": "저장",
+      "saving": "저장 중..."
+    }
+  }
+}

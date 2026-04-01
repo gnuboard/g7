@@ -1,0 +1,1727 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_page_detail",
+    "permissions": [
+        "sirsoft-page.pages.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-page.admin.page.detail.page_title",
+        "description": "$t:sirsoft-page.admin.page.detail.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "page",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/pages/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "versions",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/pages/{{route?.id}}/versions",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "modals": [
+        {
+            "id": "deletePageModal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.modals.delete_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.delete_confirm"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingPage}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeletingPage": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}",
+                                                "params": {
+                                                    "method": "DELETE"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "closeModal"
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingPage": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-page.admin.page.modals.delete_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/pages"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeletingPage": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isDeletingPage}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "restoreVersionModal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.modals.restore_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.restore_confirm"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.restore_notice"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isRestoringVersion}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isRestoringVersion": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore",
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isRestoringVersion": false,
+                                                        "modalStack": [],
+                                                        "activeModal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-page.admin.page.modals.restore_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "page"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "versions"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isRestoringVersion": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isRestoringVersion}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isRestoringVersion ? '$t:sirsoft-page.admin.page.modals.restoring' : '$t:sirsoft-page.admin.page.detail.versions.restore'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "versionPreviewModal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.detail.versions.preview_modal_title|version={{_global.previewVersion?.version ?? ''}}",
+                "width": "800px"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2 space-y-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                    },
+                                    "text": "$t:sirsoft-page.admin.page.form.fields.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "mt-1 text-sm font-medium text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{_global.previewVersion?.title?.[ _local.lang ?? 'ko'] ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                    },
+                                    "text": "$t:sirsoft-page.admin.page.form.fields.content"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "mt-1 max-h-80 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "HtmlContent",
+                                            "props": {
+                                                "content": "{{_global.previewVersion?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                "isHtml": "{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}",
+                                                "className": "text-gray-900 dark:text-gray-100 text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.previewVersion?.seo_meta?.title || _global.previewVersion?.seo_meta?.description || _global.previewVersion?.seo_meta?.keywords}}",
+                            "props": {
+                                "className": "border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                    },
+                                    "text": "$t:sirsoft-page.admin.page.form.seo.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.previewVersion?.seo_meta?.title}}",
+                                    "props": {
+                                        "className": "mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "$t:sirsoft-page.admin.page.form.seo.seo_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-0.5 text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_global.previewVersion?.seo_meta?.title ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.previewVersion?.seo_meta?.description}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "$t:sirsoft-page.admin.page.form.seo.seo_description"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-0.5 text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_global.previewVersion?.seo_meta?.description ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.previewVersion?.seo_meta?.keywords}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "$t:sirsoft-page.admin.page.form.seo.seo_keywords"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-0.5 text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_global.previewVersion?.seo_meta?.keywords ?? '-'}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{_global.previewVersion?.version !== page?.data?.current_version}}",
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{page?.data?.abilities?.can_update !== true}}",
+                                "className": "inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "restoreVersionId": "{{_global.previewVersion?.id}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "restoreVersionModal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "rotate-left",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-page.admin.page.detail.versions.restore"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "page_detail_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-page.admin.page.detail.page_title",
+                            "description": "$t:sirsoft-page.admin.page.detail.page_description",
+                            "backLink": "/admin/pages",
+                            "backLinkText": "$t:sirsoft-page.admin.page.detail.back_to_list"
+                        },
+                        "children": [
+                            {
+                                "id": "header_back_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "responsive": {
+                                    "mobile": {
+                                        "props": {
+                                            "className": "flex items-center justify-center p-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-left",
+                                            "className": "text-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.detail.back_to_list"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "header_edit_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{page?.data?.abilities?.can_update !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "responsive": {
+                                    "mobile": {
+                                        "props": {
+                                            "className": "flex items-center justify-center p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages/{{route?.id}}/edit"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "pencil",
+                                            "className": "text-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.detail.edit"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "header_delete_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{page?.data?.abilities?.can_delete !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "responsive": {
+                                    "mobile": {
+                                        "props": {
+                                            "className": "flex items-center justify-center p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "deletePageModal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "trash",
+                                            "className": "text-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "hidden sm:inline"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.detail.delete"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "page_api_error",
+                        "type": "composite",
+                        "name": "Alert",
+                        "if": "{{_dataSourceErrors?.page}}",
+                        "props": {
+                            "type": "error",
+                            "message": "{{_dataSourceErrors?.page?.message ?? '$t:common.error_occurred'}}",
+                            "className": "mb-6"
+                        }
+                    },
+
+                    {
+                        "id": "unified_lang_tabs",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{page?.data}}",
+                        "props": {
+                            "className": "flex items-center gap-3 mb-4 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "globe",
+                                            "className": "text-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-page.admin.page.detail.display_language"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-1 bg-white dark:bg-gray-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-600"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{(_local.lang ?? 'ko') === 'ko' ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "lang": "ko"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.form.lang_tabs.ko"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{(_local.lang ?? 'ko') === 'en' ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "lang": "en"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.form.lang_tabs.en"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "ml-auto text-xs text-gray-400 dark:text-gray-500 italic"
+                                },
+                                "text": "$t:sirsoft-page.admin.page.detail.display_language_hint"
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "page_info_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{page?.data}}",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "info_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center gap-3 mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "publish_segment_buttons",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-0.5"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "publish_btn_active",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "disabled": "{{page?.data?.abilities?.can_update !== true}}",
+                                                            "className": "{{page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish",
+                                                                "params": {
+                                                                    "method": "PATCH",
+                                                                    "body": {
+                                                                        "published": true
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "$t:sirsoft-page.admin.page.detail.publish_changed"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "page"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.publish_change_failed'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-page.admin.page.published_status.published"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "publish_btn_inactive",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "disabled": "{{page?.data?.abilities?.can_update !== true}}",
+                                                            "className": "{{!page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-500 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish",
+                                                                "params": {
+                                                                    "method": "PATCH",
+                                                                    "body": {
+                                                                        "published": false
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "$t:sirsoft-page.admin.page.detail.publish_changed"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "page"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.publish_change_failed'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-page.admin.page.published_status.unpublished"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-baseline gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.title?.[ _local.lang ?? 'ko'] ?? '-'}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-400 dark:text-gray-500 font-mono"
+                                                },
+                                                "text": "{{page?.data?.slug ?? ''}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "text": "v{{page?.data?.current_version ?? 1}}",
+                                                    "color": "blue",
+                                                    "size": "md"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{page?.data?.published}}",
+                                                "props": {
+                                                    "href": "/page/{{page?.data?.slug ?? ''}}",
+                                                    "target": "_blank",
+                                                    "className": "inline-flex items-center gap-1 text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "arrow-up-right-from-square",
+                                                            "className": "text-[10px]"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.detail.view_page"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "info_grid",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.detail.info.creator"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.creator?.name ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.detail.info.published_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.published_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.detail.info.created_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.created_at ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.detail.info.updated_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.updated_at ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "content_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{page?.data}}",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "content_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer select-none"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "contentCollapsed": "{{!(_local.contentCollapsed ?? false)}}"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.detail.tabs.preview"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "{{(_local.contentCollapsed ?? false) ? 'chevron-down' : 'chevron-up'}}",
+                                            "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "content_body",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!(_local.contentCollapsed ?? false)}}",
+                                "props": {
+                                    "className": "p-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "content_preview",
+                                        "type": "composite",
+                                        "name": "HtmlContent",
+                                        "props": {
+                                            "content": "{{page?.data?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                            "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
+                                            "className": "text-gray-900 dark:text-gray-100"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "attachments_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(page?.data?.attachments ?? []).length > 0}}",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "attachments_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "showAttachments": "{{!_local.showAttachments}}"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "paperclip",
+                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.detail.attachments|count={{(page?.data?.attachments ?? []).length}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
+                                            "className": "text-gray-400 dark:text-gray-500"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "attachments_list",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.showAttachments}}",
+                                "props": {
+                                    "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                },
+                                "iteration": {
+                                    "source": "page?.data?.attachments ?? []",
+                                    "item_var": "attachment_item",
+                                    "index_var": "att_idx"
+                                },
+                                "children": [
+                                    {
+                                        "id": "attachment_card",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "props": {
+                                            "href": "{{attachment_item?.download_url}}",
+                                            "className": "group flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors cursor-pointer no-underline"
+                                        },
+                                        "children": [
+                                            {
+                                                "comment": "이미지 썸네일 (이미지 파일인 경우)",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{attachment_item?.is_image}}",
+                                                "props": {
+                                                    "className": "flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-white dark:bg-gray-700"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Img",
+                                                        "props": {
+                                                            "src": "{{attachment_item?.preview_url}}",
+                                                            "alt": "{{attachment_item?.original_filename}}",
+                                                            "className": "w-full h-full object-cover"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "파일 아이콘 (일반 파일인 경우)",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!attachment_item?.is_image}}",
+                                                "props": {
+                                                    "className": "flex-shrink-0 w-12 h-12 rounded-md bg-white dark:bg-gray-700 flex items-center justify-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "file",
+                                                            "className": "text-lg text-gray-400 dark:text-gray-500"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-1 min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block text-sm text-gray-700 dark:text-gray-300 truncate"
+                                                        },
+                                                        "text": "{{attachment_item?.original_filename ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "text": "{{attachment_item?.size_formatted ?? ''}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-down-tray",
+                                                    "className": "text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "seo_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{page?.data && (page?.data?.seo_meta?.title || page?.data?.seo_meta?.description || page?.data?.seo_meta?.keywords)}}",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "seo_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-3 border-b border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.form.seo.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "seo_body",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "p-6 space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{page?.data?.seo_meta?.title}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.seo.seo_title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.seo_meta?.title ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{page?.data?.seo_meta?.description}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.seo.seo_description"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.seo_meta?.description ?? '-'}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{page?.data?.seo_meta?.keywords}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.seo.seo_keywords"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "mt-1 text-sm text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{page?.data?.seo_meta?.keywords ?? '-'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    {
+                        "id": "versions_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{page?.data}}",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "versions_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-3 border-b border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.detail.tabs.versions"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6 py-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-info",
+                                            "className": "text-blue-500 dark:text-blue-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-page.admin.page.detail.versions.restore_guide"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "versions_datagrid",
+                                "type": "composite",
+                                "name": "DataGrid",
+                                "props": {
+                                    "data": "{{versions?.data ?? []}}",
+                                    "idField": "id",
+                                    "emptyMessage": "$t:common.no_data",
+                                    "responsiveBreakpoint": 768,
+                                    "pagination": true,
+                                    "pageSize": 10,
+                                    "className": "pb-4",
+                                    "columns": [
+                                        {
+                                            "field": "version",
+                                            "header": "$t:sirsoft-page.admin.page.detail.versions.version",
+                                            "width": "120px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "v{{row.version}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{row.version === page?.data?.current_version}}",
+                                                    "props": {
+                                                        "text": "$t:sirsoft-page.admin.page.detail.versions.current",
+                                                        "color": "green",
+                                                        "className": "ml-1"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "creator",
+                                            "header": "$t:sirsoft-page.admin.page.detail.versions.creator",
+                                            "width": "120px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{row.creator?.name ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "created_at",
+                                            "header": "$t:sirsoft-page.admin.page.detail.versions.created_at",
+                                            "width": "180px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.created_at ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "changes_summary",
+                                            "header": "$t:sirsoft-page.admin.page.detail.versions.changes",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.version === 1}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                                    },
+                                                    "text": "$t:sirsoft-page.admin.page.detail.versions.initial"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "if": "{{row.version !== 1 && row.changes_summary?.restored_from}}",
+                                                    "props": {
+                                                        "text": "$t:defer:sirsoft-page.admin.page.detail.versions.restored_from|version={{row.changes_summary.restored_from}}",
+                                                        "color": "blue",
+                                                        "className": "mb-1"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.version !== 1 && row.changes_summary?.changed_fields?.length > 0}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.changes_summary?.changed_fields?.join(', ') ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.version !== 1 && (!row.changes_summary || !row.changes_summary?.changed_fields?.length) && !row.changes_summary?.restored_from}}",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "-"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                        "field": "actions",
+                                        "header": "$t:sirsoft-page.admin.page.detail.versions.actions",
+                                        "width": "80px",
+                                        "cellChildren": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "previewVersion": "{{row}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "versionPreviewModal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.detail.versions.view"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

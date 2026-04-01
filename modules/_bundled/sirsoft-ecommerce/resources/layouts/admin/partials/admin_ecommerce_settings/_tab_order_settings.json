@@ -1,0 +1,913 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쇼핑몰 설정 주문설정 탭 콘텐츠"
+  },
+  "id": "tab_content_order_settings",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'order_settings'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "default_pg_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.form?.available_pg_providers ?? []).length === 0}}",
+          "props": {
+            "className": "flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "circle-info",
+                "className": "text-sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.not_installed"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.form?.available_pg_providers ?? []).length > 0}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "value": "{{_local.form?.order_settings?.default_pg_provider ?? ''}}",
+                "className": "w-64",
+                "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form.order_settings.default_pg_provider": "{{$event.target.value || null}}",
+                    "hasChanges": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payment_methods_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-full"
+          },
+          "children": [
+            {
+              "partial": "_payment_methods_list.json"
+            }
+          ],
+          "responsive": {
+            "portable": {
+              "children": [
+                {
+                  "partial": "_payment_methods_cards.json"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_local.errors?.['order_settings.payment_methods']}}",
+          "props": {
+            "className": "text-red-500 dark:text-red-400 text-xs mt-2 block"
+          },
+          "text": "{{_local.errors?.['order_settings.payment_methods']?.[0] ?? ''}}"
+        }
+      ]
+    },
+    {
+      "id": "bank_accounts_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "card-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "card-description"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.description"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "openModal",
+                      "target": "bank_management_modal"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "building-columns",
+                        "className": "text-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.manage_banks"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.order_settings.bank_accounts": "{{[...(_local.form?.order_settings?.bank_accounts ?? []), { bank_code: '', account_number: '', account_holder: '', is_active: true, is_default: false }]}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "plus",
+                        "className": "text-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.add_account"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-full"
+          },
+          "children": [
+            {
+              "partial": "_bank_accounts_table.json"
+            }
+          ],
+          "responsive": {
+            "portable": {
+              "children": [
+                {
+                  "partial": "_bank_accounts_cards.json"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_local.errors?.['order_settings.bank_accounts']}}",
+          "props": {
+            "className": "text-red-500 dark:text-red-400 text-xs mt-2 block"
+          },
+          "text": "{{_local.errors?.['order_settings.bank_accounts']?.[0] ?? ''}}"
+        }
+      ]
+    },
+    {
+      "id": "auto_cancel_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_description"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.toggle_hint"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "order_settings.auto_cancel_expired",
+                    "value": "{{_local.form?.order_settings?.auto_cancel_expired}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['order_settings.auto_cancel_expired']}}",
+              "props": {
+                "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.['order_settings.auto_cancel_expired']?.[0] ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.order_settings?.auto_cancel_expired}}",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_prefix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "order_settings.auto_cancel_days",
+                    "value": "{{_local.form?.order_settings?.auto_cancel_days ?? 3}}",
+                    "min": 1,
+                    "max": 30,
+                    "className": "{{_local.errors?.['order_settings.auto_cancel_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_suffix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.auto_cancel_days']}}",
+                  "props": {
+                    "className": "w-full text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.auto_cancel_days']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border-t border-gray-100 dark:border-gray-700 my-2"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.vbank_due_days_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "order_settings.vbank_due_days",
+                    "value": "{{_local.form?.order_settings?.vbank_due_days ?? 3}}",
+                    "min": 1,
+                    "max": 30,
+                    "className": "{{_local.errors?.['order_settings.vbank_due_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.vbank_due_days_suffix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.vbank_due_days']}}",
+                  "props": {
+                    "className": "w-full text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.vbank_due_days']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 flex-wrap"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.dbank_due_days_label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "order_settings.dbank_due_days",
+                    "value": "{{_local.form?.order_settings?.dbank_due_days ?? 7}}",
+                    "min": 1,
+                    "max": 30,
+                    "className": "{{_local.errors?.['order_settings.dbank_due_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.dbank_due_days_suffix"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.dbank_due_days']}}",
+                  "props": {
+                    "className": "w-full text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.dbank_due_days']?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cancellable_statuses_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.label"
+                },
+                {
+                  "type": "composite",
+                  "name": "TagInput",
+                  "props": {
+                    "name": "order_settings.cancellable_statuses",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.placeholder",
+                    "options": [
+                      { "value": "payment_complete", "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete" },
+                      { "value": "shipping_hold", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold" },
+                      { "value": "preparing", "label": "$t:sirsoft-ecommerce.enums.order_status.preparing" },
+                      { "value": "shipping_ready", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready" },
+                      { "value": "shipping", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping" },
+                      { "value": "delivered", "label": "$t:sirsoft-ecommerce.enums.order_status.delivered" },
+                      { "value": "confirmed", "label": "$t:sirsoft-ecommerce.enums.order_status.confirmed" }
+                    ],
+                    "value": "{{_local.form?.order_settings?.cancellable_statuses ?? ['payment_complete']}}",
+                    "isMulti": true,
+                    "isClearable": false,
+                    "isSearchable": true,
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cancellable_statuses.hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.cancellable_statuses']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.cancellable_statuses']?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "confirmable_statuses_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.label"
+                },
+                {
+                  "type": "composite",
+                  "name": "TagInput",
+                  "props": {
+                    "name": "order_settings.confirmable_statuses",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.placeholder",
+                    "options": [
+                      { "value": "payment_complete", "label": "$t:sirsoft-ecommerce.enums.order_status.payment_complete" },
+                      { "value": "shipping_hold", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_hold" },
+                      { "value": "preparing", "label": "$t:sirsoft-ecommerce.enums.order_status.preparing" },
+                      { "value": "shipping_ready", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping_ready" },
+                      { "value": "shipping", "label": "$t:sirsoft-ecommerce.enums.order_status.shipping" },
+                      { "value": "delivered", "label": "$t:sirsoft-ecommerce.enums.order_status.delivered" }
+                    ],
+                    "value": "{{_local.form?.order_settings?.confirmable_statuses ?? ['shipping', 'delivered']}}",
+                    "isMulti": true,
+                    "isClearable": false,
+                    "isSearchable": true,
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.confirmable_statuses.hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['order_settings.confirmable_statuses']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                  },
+                  "text": "{{_local.errors?.['order_settings.confirmable_statuses']?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cart_expiry_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 flex-wrap"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.prefix"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "order_settings.cart_expiry_days",
+                "value": "{{_local.form?.order_settings?.cart_expiry_days ?? 30}}",
+                "min": 1,
+                "max": 365,
+                "className": "{{_local.errors?.['order_settings.cart_expiry_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.suffix"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.['order_settings.cart_expiry_days']}}",
+              "props": {
+                "className": "w-full text-red-500 dark:text-red-400 text-xs mt-1"
+              },
+              "text": "{{_local.errors?.['order_settings.cart_expiry_days']?.[0] ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stock_management_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.description"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_description"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.stock_management.restore_on_cancel_hint"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Toggle",
+              "props": {
+                "name": "order_settings.stock_restore_on_cancel",
+                "value": "{{_local.form?.order_settings?.stock_restore_on_cancel}}",
+                "disabled": "{{_computed.isReadOnly}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_local.errors?.['order_settings.stock_restore_on_cancel']}}",
+          "props": {
+            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+          },
+          "text": "{{_local.errors?.['order_settings.stock_restore_on_cancel']?.[0] ?? ''}}"
+        }
+      ]
+    }
+  ]
+}

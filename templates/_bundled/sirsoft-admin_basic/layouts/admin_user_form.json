@@ -1,0 +1,1761 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_user_form",
+    "permissions": {
+        "or": ["core.users.create", "core.users.update"]
+    },
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
+        "description": "{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"
+    },
+    "data_sources": [
+        {
+            "id": "user",
+            "type": "api",
+            "endpoint": "/api/admin/users/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{route?.id}}",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_update !== true}}",
+                "errorCode": 403
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                    }
+                }
+            },
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "defines": {
+        "countryList": [
+            {
+                "code": "KR",
+                "name": "$t:countries.KR"
+            },
+            {
+                "code": "US",
+                "name": "$t:countries.US"
+            },
+            {
+                "code": "JP",
+                "name": "$t:countries.JP"
+            },
+            {
+                "code": "CN",
+                "name": "$t:countries.CN"
+            },
+            {
+                "code": "GB",
+                "name": "$t:countries.GB"
+            },
+            {
+                "code": "DE",
+                "name": "$t:countries.DE"
+            },
+            {
+                "code": "FR",
+                "name": "$t:countries.FR"
+            },
+            {
+                "code": "CA",
+                "name": "$t:countries.CA"
+            },
+            {
+                "code": "AU",
+                "name": "$t:countries.AU"
+            },
+            {
+                "code": "IN",
+                "name": "$t:countries.IN"
+            },
+            {
+                "code": "BR",
+                "name": "$t:countries.BR"
+            },
+            {
+                "code": "RU",
+                "name": "$t:countries.RU"
+            },
+            {
+                "code": "IT",
+                "name": "$t:countries.IT"
+            },
+            {
+                "code": "ES",
+                "name": "$t:countries.ES"
+            },
+            {
+                "code": "MX",
+                "name": "$t:countries.MX"
+            },
+            {
+                "code": "NL",
+                "name": "$t:countries.NL"
+            },
+            {
+                "code": "SE",
+                "name": "$t:countries.SE"
+            },
+            {
+                "code": "CH",
+                "name": "$t:countries.CH"
+            },
+            {
+                "code": "SG",
+                "name": "$t:countries.SG"
+            },
+            {
+                "code": "HK",
+                "name": "$t:countries.HK"
+            },
+            {
+                "code": "TW",
+                "name": "$t:countries.TW"
+            },
+            {
+                "code": "TH",
+                "name": "$t:countries.TH"
+            },
+            {
+                "code": "VN",
+                "name": "$t:countries.VN"
+            },
+            {
+                "code": "PH",
+                "name": "$t:countries.PH"
+            },
+            {
+                "code": "MY",
+                "name": "$t:countries.MY"
+            },
+            {
+                "code": "ID",
+                "name": "$t:countries.ID"
+            },
+            {
+                "code": "NZ",
+                "name": "$t:countries.NZ"
+            },
+            {
+                "code": "AT",
+                "name": "$t:countries.AT"
+            },
+            {
+                "code": "BE",
+                "name": "$t:countries.BE"
+            },
+            {
+                "code": "DK",
+                "name": "$t:countries.DK"
+            },
+            {
+                "code": "FI",
+                "name": "$t:countries.FI"
+            },
+            {
+                "code": "NO",
+                "name": "$t:countries.NO"
+            },
+            {
+                "code": "PL",
+                "name": "$t:countries.PL"
+            },
+            {
+                "code": "PT",
+                "name": "$t:countries.PT"
+            },
+            {
+                "code": "IE",
+                "name": "$t:countries.IE"
+            },
+            {
+                "code": "GR",
+                "name": "$t:countries.GR"
+            },
+            {
+                "code": "CZ",
+                "name": "$t:countries.CZ"
+            },
+            {
+                "code": "HU",
+                "name": "$t:countries.HU"
+            },
+            {
+                "code": "TR",
+                "name": "$t:countries.TR"
+            },
+            {
+                "code": "IL",
+                "name": "$t:countries.IL"
+            },
+            {
+                "code": "AE",
+                "name": "$t:countries.AE"
+            },
+            {
+                "code": "SA",
+                "name": "$t:countries.SA"
+            },
+            {
+                "code": "ZA",
+                "name": "$t:countries.ZA"
+            },
+            {
+                "code": "EG",
+                "name": "$t:countries.EG"
+            },
+            {
+                "code": "AR",
+                "name": "$t:countries.AR"
+            },
+            {
+                "code": "CL",
+                "name": "$t:countries.CL"
+            },
+            {
+                "code": "CO",
+                "name": "$t:countries.CO"
+            },
+            {
+                "code": "PE",
+                "name": "$t:countries.PE"
+            }
+        ]
+    },
+    "state": {
+        "activeTab": "basic_info"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "user_form_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "dataKey": "form",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "sticky_header_container",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 -mx-6 -mt-6 pt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_wrapper",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "page_header",
+                                        "type": "composite",
+                                        "name": "PageHeader",
+                                        "props": {
+                                            "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
+                                            "description": "{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"
+                                        },
+                                        "children": [
+                                    {
+                                        "id": "header_cancel_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigateBack"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.cancel"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_save_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "disabled": "{{_global.isSaving}}",
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                        "params": {
+                                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                            "body": "{{_local.form}}"
+                                                        },
+                                                        "errorHandling": {
+                                                            "403": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:auth.permission_denied"
+                                                                }
+                                                            },
+                                                            "500": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:errors.server_error"
+                                                                }
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/users"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isSaving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "errors": "{{error.errors ?? null}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:admin.users.form.validation_error"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{!_global.isSaving}}",
+                                                "props": {
+                                                    "name": "save",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{_global.isSaving}}",
+                                                "props": {
+                                                    "name": "spinner",
+                                                    "size": "sm",
+                                                    "spin": true
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                                ]
+                            },
+                            {
+                                "id": "user_form_tabs",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "props": {
+                                    "activeTabId": "{{_local.activeTab ?? 'basic_info'}}",
+                                    "enableScrollSpy": true,
+                                    "scrollSpyOffset": 120,
+                                    "sectionIdPrefix": "",
+                                    "tabs": [
+                                        {
+                                            "id": "basic_info",
+                                            "label": "$t:admin.users.detail.tabs.basic_info"
+                                        },
+                                        {
+                                            "id": "contact_info",
+                                            "label": "$t:admin.users.detail.tabs.contact_info"
+                                        },
+                                        {
+                                            "id": "location_info",
+                                            "label": "$t:admin.users.detail.tabs.location_info"
+                                        },
+                                        {
+                                            "id": "profile_memo",
+                                            "label": "$t:admin.users.detail.tabs.profile_memo"
+                                        },
+                                        {
+                                            "id": "activity_info",
+                                            "label": "$t:admin.users.detail.tabs.activity_info",
+                                            "if": "{{route?.id}}"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "{{$event.value}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "user_api_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_dataSourceErrors?.user}}",
+                        "props": {
+                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
+                                                "text": "$t:admin.users.form.error_loading_user"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-sm text-red-700 dark:text-red-300 mt-1"
+                                                },
+                                                "text": "{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors}}",
+                        "props": {
+                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
+                                                "text": "$t:admin.users.form.validation_error"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{typeof _local.errors === 'string'}}",
+                                                "props": {
+                                                    "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                                                },
+                                                "text": "{{_local.errors}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Ul",
+                                                "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
+                                                },
+                                                "iteration": {
+                                                    "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                    "item_var": "message"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Li",
+                                                        "props": {
+                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                        },
+                                                        "text": "{{message}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_basic_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "basic_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.basic_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "field_uuid",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!route?.id}}",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                        },
+                                        "text": "UUID"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-sm text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600"
+                                        },
+                                        "text": "{{user?.data?.uuid ?? '-'}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_email_top",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.form.fields.email"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "email",
+                                                    "name": "email",
+                                                    "placeholder": "$t:admin.users.form.fields.email",
+                                                    "disabled": "{{!!route?.id}}",
+                                                    "className": "{{route?.id ? 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.email}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_local.errors?.email?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_name",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.form.fields.name"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "name",
+                                                    "placeholder": "$t:admin.users.form.fields.name",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.name}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_local.errors?.name?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_nickname",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.nickname"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "nickname",
+                                                    "placeholder": "$t:admin.users.form.fields.nickname",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.form.fields.password"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "password",
+                                                    "name": "password",
+                                                    "placeholder": "{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.password}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_local.errors?.password?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_password_confirmation",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.form.fields.password_confirmation"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "password",
+                                                    "name": "password_confirmation",
+                                                    "placeholder": "$t:admin.users.form.fields.password_confirmation",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_roles",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.form.fields.role"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "TagInput",
+                                                "props": {
+                                                    "name": "role_ids",
+                                                    "value": "{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}",
+                                                    "options": "{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}",
+                                                    "placeholder": "$t:admin.users.form.fields.role_placeholder",
+                                                    "noOptionsMessage": "$t:admin.users.form.fields.role_no_options",
+                                                    "className": "w-full",
+                                                    "defaultVariant": "blue",
+                                                    "disabled": "{{user?.data?.abilities?.can_assign_roles !== true && roles?.data?.abilities?.can_assign_roles !== true}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form": {
+                                                                "role_ids": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.role_ids || _local.errors?.roles}}",
+                                                "props": {
+                                                    "className": "text-red-500 text-xs mt-1"
+                                                },
+                                                "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_status",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.status"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "status",
+                                                    "className": "w-full",
+                                                    "defaultValue": "active",
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:admin.users.form.status_options.active",
+                                                            "value": "active"
+                                                        },
+                                                        {
+                                                            "label": "$t:admin.users.form.status_options.inactive",
+                                                            "value": "inactive"
+                                                        },
+                                                        {
+                                                            "label": "$t:admin.users.form.status_options.blocked",
+                                                            "value": "blocked"
+                                                        },
+                                                        {
+                                                            "label": "$t:admin.users.form.status_options.withdrawn",
+                                                            "value": "withdrawn"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_contact_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "contact_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "envelope",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.contact_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_mobile",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.mobile"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "tel",
+                                                    "name": "mobile",
+                                                    "placeholder": "$t:admin.users.form.fields.mobile",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_phone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.phone"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "tel",
+                                                    "name": "phone",
+                                                    "placeholder": "$t:admin.users.form.fields.phone",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_homepage",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.homepage"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "url",
+                                                    "name": "homepage",
+                                                    "placeholder": "https://",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_location_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "location_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "map-pin",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.location_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_address",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "md:col-span-2 space-y-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.address"
+                                            },
+                                            {
+                                                "comment": "우편번호 + 주소 검색 버튼",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "zipcode",
+                                                            "placeholder": "$t:admin.users.form.fields.zipcode",
+                                                            "readOnly": false,
+                                                            "className": "w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "admin_user_address_search_slot",
+                                                        "type": "extension_point",
+                                                        "name": "address_search_slot",
+                                                        "props": {
+                                                            "readOnlyFields": ["zipcode", "address"],
+                                                            "targetFields": {
+                                                                "zipcode": "form.zipcode",
+                                                                "address": "form.address",
+                                                                "region": "form.region",
+                                                                "city": "form.city"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "기본 주소",
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "address",
+                                                    "placeholder": "$t:admin.users.form.fields.address",
+                                                    "readOnly": false,
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            },
+                                            {
+                                                "comment": "상세 주소",
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "address_detail",
+                                                    "placeholder": "$t:admin.users.form.fields.address_detail",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_country",
+                                        "if": false,
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.country"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "SearchableDropdown",
+                                                "props": {
+                                                    "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
+                                                    "value": "{{_local.form?.country ?? ''}}",
+                                                    "triggerLabel": "$t:admin.users.form.fields.country_select",
+                                                    "searchPlaceholder": "$t:admin.users.form.fields.country_search",
+                                                    "noResultsText": "$t:common.no_results",
+                                                    "className": "w-full"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "event": "onChange",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.country": "{{$args[0]}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_language",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.language"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "language",
+                                                    "className": "w-full",
+                                                    "defaultValue": "ko",
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:admin.users.form.language_options.ko",
+                                                            "value": "ko"
+                                                        },
+                                                        {
+                                                            "label": "$t:admin.users.form.language_options.en",
+                                                            "value": "en"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_timezone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.timezone"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "timezone",
+                                                    "className": "w-full",
+                                                    "defaultValue": "Asia/Seoul",
+                                                    "options": "{{_global.appConfig?.supportedTimezones?.map(tz => ({ value: tz, label: $t('admin.users.form.timezone_options.' + tz) })) ?? []}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_profile_memo",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "id": "profile_memo",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user-circle",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.profile_memo"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_signature",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.signature"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "signature",
+                                                    "placeholder": "$t:admin.users.form.fields.signature",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_bio",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.bio"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Textarea",
+                                                "props": {
+                                                    "name": "bio",
+                                                    "rows": 3,
+                                                    "placeholder": "$t:admin.users.form.fields.bio",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_admin_memo",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.admin_memo"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Textarea",
+                                                "props": {
+                                                    "name": "admin_memo",
+                                                    "rows": 3,
+                                                    "placeholder": "$t:admin.users.form.fields.admin_memo",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_activity_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{route?.id}}",
+                        "props": {
+                            "id": "activity_info",
+                            "className": "scroll-mt-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "clock",
+                                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:admin.users.form.sections.activity_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_created_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.created_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "value": "{{user?.data?.created_at ?? ''}}",
+                                                    "disabled": true,
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_last_login_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.last_login_at"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "value": "{{user?.data?.last_login_at ?? ''}}",
+                                                    "disabled": true,
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_ip_address",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                },
+                                                "text": "$t:admin.users.form.fields.ip_address"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "value": "{{user?.data?.ip_address ?? ''}}",
+                                                    "disabled": true,
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "extension_form_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "comment": "모듈/플러그인 확장 UI가 동적으로 주입되는 영역"
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end gap-3 mt-6 pt-4"
+                        },
+                        "children": [
+                            {
+                                "id": "footer_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigateBack"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "footer_save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{_global.isSaving}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isSaving": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
+                                                "params": {
+                                                    "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:auth.permission_denied"
+                                                        }
+                                                    },
+                                                    "500": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:errors.server_error"
+                                                        }
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/users"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "errors": "{{error.errors ?? null}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:admin.users.form.validation_error"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isSaving}}",
+                                        "props": {
+                                            "name": "save",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "spin": true
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

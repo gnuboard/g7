@@ -1,0 +1,75 @@
+#!/usr/bin/env php
+<?php
+
+use Illuminate\Foundation\Application;
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+// Register the Composer autoloader...
+$loader = require __DIR__.'/vendor/autoload.php';
+
+// Register extension (module/plugin) autoload...
+// CoreServiceProvider에서 중복 등록 방지용 플래그 (테스트 시에도 설정하여 tests/bootstrap.php에 위임)
+define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
+
+// 테스트 실행 시에는 확장 오토로드를 건너뛰기
+// tests/bootstrap.php가 _bundled 기준으로 확장을 우선 로드합니다.
+$isTestCommand = isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'test';
+$extensionAutoloadFile = __DIR__.'/bootstrap/cache/autoload-extensions.php';
+
+if (!$isTestCommand && file_exists($extensionAutoloadFile)) {
+    $extensionAutoloads = require $extensionAutoloadFile;
+
+    // PSR-4 네임스페이스 등록
+    if (!empty($extensionAutoloads['psr4'])) {
+        foreach ($extensionAutoloads['psr4'] as $namespace => $paths) {
+            // 경로가 배열인 경우와 문자열인 경우 모두 처리
+            $paths = (array) $paths;
+            foreach ($paths as $path) {
+                $absolutePath = __DIR__.'/'.$path;
+                if (is_dir($absolutePath)) {
+                    $loader->addPsr4($namespace, $absolutePath);
+                }
+            }
+        }
+    }
+
+    // Classmap 파일 로드 (module.php, plugin.php)
+    if (!empty($extensionAutoloads['classmap'])) {
+        foreach ($extensionAutoloads['classmap'] as $file) {
+            $absolutePath = __DIR__.'/'.$file;
+            if (file_exists($absolutePath)) {
+                require_once $absolutePath;
+            }
+        }
+    }
+
+    // Files 로드 (헬퍼 함수 등)
+    if (!empty($extensionAutoloads['files'])) {
+        foreach ($extensionAutoloads['files'] as $file) {
+            $absolutePath = __DIR__.'/'.$file;
+            if (file_exists($absolutePath)) {
+                require_once $absolutePath;
+            }
+        }
+    }
+
+    // Vendor autoloads 로드 (모듈/플러그인의 composer 의존성)
+    if (!empty($extensionAutoloads['vendor_autoloads'])) {
+        foreach ($extensionAutoloads['vendor_autoloads'] as $vendorAutoload) {
+            $absolutePath = __DIR__.'/'.$vendorAutoload;
+            if (file_exists($absolutePath)) {
+                require_once $absolutePath;
+            }
+        }
+    }
+}
+
+// Bootstrap Laravel and handle the command...
+/** @var Application $app */
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+$status = $app->handleCommand(new ArgvInput);
+
+exit($status);

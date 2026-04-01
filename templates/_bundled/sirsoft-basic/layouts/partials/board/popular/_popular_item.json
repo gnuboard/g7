@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "인기 게시글 아이템 (2줄 배치, UserInfo 사용)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "group flex w-full text-left gap-4 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500' : index === 1 ? 'bg-yellow-500' : index === 2 ? 'bg-yellow-400' : 'bg-gray-400'}}" },
+      "text": "{{index + 1}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex-1 min-w-0 flex flex-col gap-1.5" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0" },
+              "text": "{{post.board_name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "justify-start font-medium text-gray-900 dark:text-white truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer" },
+              "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{post.board_slug}}/{{post.id}}" } }],
+              "text": "{{post.title}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{post.is_new}}",
+              "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded flex-shrink-0" },
+              "text": "N"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0", "title": "{{post.created_at ?? ''}}" },
+              "text": "{{post.created_at_formatted ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "comment": "작성자 (Avatar + UserInfo)",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Avatar",
+                  "props": {
+                    "author": "{{post.author}}",
+                    "size": "xs"
+                  }
+                },
+                {
+                  "type": "composite",
+                  "name": "UserInfo",
+                  "props": {
+                    "author": "{{post.author}}",
+                    "showDropdown": true,
+                    "className": "text-sm"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded text-xs flex items-center gap-1" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "xs" } },
+                    { "type": "basic", "name": "Span", "text": "{{post.view_count ?? 0}}" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded text-xs flex items-center gap-1" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "message-square", "size": "xs" } },
+                    { "type": "basic", "name": "Span", "text": "{{post.comment_count ?? 0}}" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

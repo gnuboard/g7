@@ -1,0 +1,18 @@
+{
+  "toolbar": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "strike": "Strikethrough",
+    "code": "Code",
+    "bullet_list": "Bullet List",
+    "ordered_list": "Numbered List",
+    "blockquote": "Quote",
+    "link": "Link",
+    "code_view": "Code View"
+  },
+  "link_modal": {
+    "title": "Insert Link",
+    "insert": "Insert"
+  }
+}

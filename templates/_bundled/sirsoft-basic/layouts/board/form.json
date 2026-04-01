@@ -1,0 +1,115 @@
+{
+    "version": "1.0.0",
+    "layout_name": "board/form",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}} - {{form_meta?.data?.board?.name || ''}}",
+        "description": "{{route.id ? '$t:board.edit_post_description' : '$t:board.new_post_description'}}"
+    },
+    "data_sources": [
+        {
+            "id": "form_data",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-data",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "cache": false,
+            "refetchOnMount": true,
+            "initLocal": "form",
+            "loading_strategy": "blocking",
+            "params": {
+                "post_id": "{{route?.id ?? ''}}",
+                "parent_id": "{{query?.parent_id ?? ''}}",
+                "verification_token": "{{_local.verificationToken ?? ''}}"
+            },
+            "onSuccess": {
+                "comment": "refetch 후 _local.form을 응답값으로 직접 덮어씌우기 (비밀글 content 반영)",
+                "handler": "setState",
+                "params": {
+                    "target": "local",
+                    "form": "{{response.data.data}}"
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원)",
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        },
+        {
+            "id": "form_meta",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-meta",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "cache": false,
+            "refetchOnMount": true,
+            "params": {
+                "post_id": "{{route?.id ?? ''}}",
+                "parent_id": "{{query?.parent_id ?? ''}}",
+                "verification_token": "{{_local.verificationToken ?? ''}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "권한 없음 - 에러 페이지 표시 (errorHandling에서 route 컨텍스트 미지원)",
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "tempKey 생성",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "tempKey": "{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "comment": "비회원 수정 시 비밀번호 확인 모달",
+                "partial": "partials/board/form/_password_verify_modal.json"
+            },
+            {
+                "type": "layout",
+                "name": "Container",
+                "blur_until_loaded": true,
+                "dataKey": "form",
+                "trackChanges": true,
+                "props": {
+                    "className": "py-8 max-w-4xl mx-auto"
+                },
+                "children": [
+                    {
+                        "partial": "partials/board/form/_type_renderer.json"
+                    }
+                ]
+            }
+        ]
+    }
+}

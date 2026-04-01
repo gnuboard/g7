@@ -1,0 +1,429 @@
+{
+  "title": "쇼핑몰 환경설정",
+  "description": "쇼핑몰의 기본 환경을 설정합니다.",
+  "tabs": {
+    "basic_info": "기본정보",
+    "language_currency": "언어/통화",
+    "seo": "SEO 설정",
+    "order_settings": "주문설정",
+    "claim": "클래임",
+    "shipping": "배송설정",
+    "review_settings": "리뷰 설정",
+    "mail_templates": "메일 템플릿"
+  },
+  "save_success": "설정이 저장되었습니다.",
+  "save_error": "설정 저장에 실패했습니다.",
+  "validation_error": "입력 내용을 확인해 주세요.",
+  "basic_info": {
+    "shop_info": {
+      "title": "쇼핑몰 정보",
+      "description": "쇼핑몰의 기본 정보를 설정합니다.",
+      "shop_name": "쇼핑몰 이름",
+      "shop_name_placeholder": "쇼핑몰 이름을 입력하세요",
+      "route_path": "라우트 경로",
+      "no_route": "라우트 경로를 사용하지 않습니다. (쇼핑몰만 단독 운영하고자 하는 경우)"
+    },
+    "business_info": {
+      "title": "사업자 정보",
+      "description": "사업자 등록 정보를 입력합니다.",
+      "company_name": "상호(회사명)",
+      "company_name_placeholder": "회사명을 입력하세요",
+      "business_number": "사업자번호",
+      "ceo_name": "대표자 이름",
+      "ceo_name_placeholder": "대표자 이름을 입력하세요",
+      "business_type": "업태",
+      "business_type_placeholder": "예: 도매, 소매",
+      "business_category": "종목",
+      "business_category_placeholder": "예: 전자상거래",
+      "address": "사업장 주소",
+      "zipcode": "우편번호",
+      "search_address": "주소찾기",
+      "base_address": "기본주소",
+      "detail_address": "상세주소",
+      "phone": "대표 전화번호",
+      "fax": "대표 팩스번호",
+      "email": "대표 E-mail",
+      "email_id_placeholder": "이메일 아이디",
+      "email_domain_placeholder": "도메인",
+      "email_domain_direct": "직접입력",
+      "privacy_officer": "개인정보 보호책임자",
+      "privacy_officer_placeholder": "개인정보 보호책임자 이름",
+      "privacy_officer_email": "개인정보 보호책임자 E-mail",
+      "privacy_officer_email_placeholder": "privacy@example.com",
+      "mail_order_number": "통신판매업 신고번호",
+      "mail_order_number_placeholder": "제 2024-서울강남-12345 호",
+      "telecom_number": "부가통신 사업자번호",
+      "telecom_number_placeholder": "부가통신 사업자번호",
+      "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
+    },
+    "inquiry_settings": {
+      "title": "1:1 문의게시판 설정",
+      "description": "상품 1:1 문의 기능을 설정합니다.",
+      "module_not_installed": "게시판 모듈 활성화 후 이용할 수 있습니다."
+    }
+  },
+  "language_currency": {
+    "language_settings": {
+      "title": "언어/통화",
+      "description": "쇼핑몰의 기본 언어 및 화폐를 설정합니다.",
+      "default_language": "기본언어",
+      "default_currency": "기본화폐",
+      "currency_change_warning": "최초 상품등록 이후 변경이 불가능합니다."
+    },
+    "exchange_settings": {
+      "title": "환율/통화 설정",
+      "description": "KRW 1,000 기준 환율 및 통화별 절사 기준을 설정합니다.",
+      "add_currency": "통화 추가",
+      "currency_code": "통화 코드",
+      "currency_name": "통화명",
+      "exchange_rate": "환율",
+      "rounding_unit": "절사 단위",
+      "rounding_method": "절사 방식",
+      "decimal_places": "소수 자릿수",
+      "actions": "관리",
+      "delete": "삭제",
+      "base_currency": "기본 통화",
+      "krw_base": "KRW 1,000 =",
+      "rounding_units": {
+        "1": "1 (일의 자리)",
+        "10": "10 (십의 자리)",
+        "100": "100 (백의 자리)",
+        "0_1": "0.1 (소수점 첫째자리)",
+        "0_01": "0.01 (소수점 둘째자리)"
+      },
+      "rounding_methods": {
+        "floor": "버림",
+        "round": "반올림",
+        "ceil": "올림"
+      },
+      "default_label": "기본 통화",
+      "currencies": {
+        "KRW": "KRW (원)",
+        "KRW_default": "KRW (원) (기본 통화)",
+        "USD": "USD (달러)",
+        "JPY": "JPY (엔)",
+        "CNY": "CNY (위안)",
+        "EUR": "EUR (유로)"
+      },
+      "new_currency": {
+        "title": "새 통화 추가",
+        "code_placeholder": "예: GBP",
+        "name_placeholder": "통화명"
+      },
+      "edit_currency": {
+        "title": "통화 수정"
+      },
+      "edit": "수정",
+      "duplicate_currency_error": "이미 등록된 통화 코드입니다."
+    }
+  },
+  "order_settings": {
+    "default_pg_provider": {
+      "title": "기본 PG사 설정",
+      "description": "결제 처리에 사용할 기본 PG사를 선택합니다.",
+      "not_installed": "PG 플러그인을 설치하면 선택할 수 있습니다.",
+      "select": "PG사 선택"
+    },
+    "payment_methods": {
+      "title": "결제수단 설정",
+      "description": "사용할 결제수단을 설정하고 우선순위를 지정합니다.",
+      "timing_order_placed": "주문접수 시",
+      "timing_payment_complete": "결제완료 시",
+      "timing_none": "재고 차감 안함",
+      "stock_deduction_timing": "재고 차감 시점",
+      "min_order_amount": "최소 주문금액",
+      "is_active": "사용여부",
+      "orphaned_badge": "플러그인 미설치",
+      "remove_orphaned": "삭제",
+      "pg_provider": "PG사",
+      "pg_use_default": "기본 PG",
+      "pg_not_required": "PG 불필요",
+      "pg_not_installed": "PG 미설치",
+      "pg_select_first": "PG사를 먼저 선택하세요"
+    },
+    "bank_accounts": {
+      "title": "무통장 계좌번호 설정",
+      "description": "무통장입금에 사용할 계좌 정보를 관리합니다.",
+      "manage_banks": "은행 관리",
+      "add_account": "계좌 추가",
+      "bank": "은행",
+      "account_number": "계좌번호",
+      "account_number_placeholder": "계좌번호를 입력하세요",
+      "account_holder": "예금주",
+      "account_holder_placeholder": "예금주를 입력하세요",
+      "is_default": "기본",
+      "is_active": "사용",
+      "empty": "등록된 계좌가 없습니다."
+    },
+    "bank_management": {
+      "modal_title": "은행 관리",
+      "code": "은행코드",
+      "code_placeholder": "예: 004",
+      "name": "은행명",
+      "name_placeholder": "은행명을 입력하세요",
+      "name_ko": "한국어 이름",
+      "name_ko_placeholder": "예: 국민은행",
+      "name_en": "영문 이름",
+      "name_en_placeholder": "예: Kookmin Bank",
+      "add_bank": "은행 추가",
+      "confirm": "확인",
+      "delete": "삭제",
+      "empty": "등록된 은행이 없습니다.",
+      "saving": "저장중...",
+      "validation_error": "입력 내용을 확인해 주세요."
+    },
+    "cancellable_statuses": {
+      "title": "취소 가능 상태",
+      "description": "사용자 및 관리자가 주문을 취소할 수 있는 주문 상태를 설정합니다.",
+      "label": "취소 가능 주문 상태",
+      "hint": "선택한 상태의 주문만 취소할 수 있습니다. 기본값(주문대기, 결제대기, 결제완료)은 항상 취소 가능합니다.",
+      "placeholder": "취소 가능 상태를 선택하세요"
+    },
+    "confirmable_statuses": {
+      "title": "구매확정 가능 상태",
+      "description": "사용자가 구매확정할 수 있는 주문 옵션 상태를 설정합니다.",
+      "label": "구매확정 가능 주문 상태",
+      "hint": "선택한 상태의 주문 옵션만 구매확정할 수 있습니다.",
+      "placeholder": "구매확정 가능 상태를 선택하세요"
+    },
+    "auto_cancel": {
+      "title": "주문 자동취소",
+      "description": "입금대기 상태 주문의 자동 취소 및 입금 기한을 설정합니다.",
+      "toggle_label": "주문 자동취소",
+      "toggle_description": "입금대기 상태의 주문을 지정 기간 후 자동으로 취소합니다.",
+      "toggle_hint": "비활성화하면 입금대기 주문이 자동 취소되지 않습니다.",
+      "days_prefix": "입금대기 상태의 주문건은 주문일 포함",
+      "days_suffix": "일 이후 자동 취소됩니다.",
+      "vbank_due_days_label": "가상계좌 입금기한:",
+      "vbank_due_days_suffix": "일",
+      "dbank_due_days_label": "무통장입금 입금기한:",
+      "dbank_due_days_suffix": "일"
+    },
+    "cart_expiry": {
+      "title": "장바구니 유효기간",
+      "description": "장바구니에 담긴 상품의 자동 삭제 기간을 설정합니다.",
+      "prefix": "장바구니 상품은",
+      "suffix": "일 후 자동 삭제됩니다."
+    },
+    "stock_management": {
+      "title": "재고 관리",
+      "description": "재고 관련 글로벌 정책을 설정합니다.",
+      "restore_on_cancel": "주문 취소 시 재고 복구",
+      "restore_on_cancel_description": "주문이 취소되면 차감된 재고를 자동으로 복구합니다.",
+      "restore_on_cancel_hint": "반품/교환 처리 시에도 적용됩니다."
+    }
+  },
+  "claim": {
+    "title": "클래임 설정",
+    "refund_reasons": {
+      "section_title": "환불 사유 관리",
+      "add_button": "사유 추가",
+      "empty": "등록된 환불 사유가 없습니다.",
+      "columns": {
+        "code": "코드",
+        "name": "사유명",
+        "fault_type": "귀책 구분",
+        "is_user_selectable": "고객 선택",
+        "is_active": "활성",
+        "actions": "관리"
+      },
+      "form": {
+        "code": "사유 코드",
+        "code_placeholder": "영문소문자, 언더스코어 (예: order_mistake)",
+        "name": "사유명",
+        "name_ko_placeholder": "한국어",
+        "name_en_placeholder": "English",
+        "fault_type": "귀책 구분",
+        "fault_types": {
+          "customer": "고객 귀책",
+          "seller": "판매자 귀책",
+          "carrier": "배송사 귀책"
+        },
+        "is_user_selectable": "고객 선택 가능",
+        "cancel": "취소",
+        "save": "추가"
+      },
+      "confirm_delete": "이 환불 사유를 삭제하시겠습니까?",
+      "validation": {
+        "code_required": "코드를 입력해 주세요",
+        "name_required": "사유명을 입력해 주세요"
+      }
+    }
+  },
+  "shipping": {
+    "title": "배송설정",
+    "description": "배송 관련 설정을 관리합니다.",
+    "basic": {
+      "title": "기본 배송 설정",
+      "description": "기본 배송 국가 및 해외배송 설정을 관리합니다.",
+      "default_country": "기본 국가",
+      "default_country_hint": "새 배송정책 등록 시 기본으로 추가되는 국가",
+      "international_shipping": "해외배송 사용",
+      "international_shipping_description": "해외배송 기능을 활성화합니다"
+    },
+    "countries": {
+      "title": "배송가능 국가",
+      "description": "배송 가능한 국가를 설정합니다.",
+      "add": "국가 추가",
+      "country_code": "국가코드",
+      "country_code_placeholder": "예: KR",
+      "country_name": "국가명",
+      "country_name_ko": "한국어명",
+      "name_ko_placeholder": "예: 한국",
+      "country_name_en": "영문명",
+      "name_en_placeholder": "예: South Korea",
+      "is_active": "사용",
+      "actions": "관리",
+      "delete": "삭제",
+      "edit": "수정",
+      "empty": "등록된 배송국가가 없습니다.",
+      "duplicate_error": "이미 등록된 국가코드입니다.",
+      "default_badge": "기본"
+    },
+    "carriers": {
+      "section_title": "배송사 관리",
+      "add_button": "배송사 추가",
+      "empty": "등록된 배송사가 없습니다.",
+      "columns": {
+        "code": "코드",
+        "name": "배송사명",
+        "type": "유형",
+        "tracking_url": "추적 URL",
+        "is_active": "활성",
+        "actions": "관리"
+      },
+      "form": {
+        "code": "배송사 코드",
+        "code_placeholder": "영문소문자, 숫자, 하이픈 (예: cj, fedex)",
+        "name": "배송사명",
+        "type": "유형",
+        "type_domestic": "국내",
+        "type_international": "국제",
+        "tracking_url": "추적 URL",
+        "tracking_url_placeholder": "https://example.com/track?no={tracking_number}",
+        "tracking_url_help": "{tracking_number}가 운송장번호로 치환됩니다.",
+        "cancel": "취소",
+        "save": "저장",
+        "name_ko_placeholder": "한국어"
+      },
+      "created": "배송사가 등록되었습니다.",
+      "updated": "배송사가 수정되었습니다.",
+      "deleted": "배송사가 삭제되었습니다.",
+      "confirm_delete": "이 배송사를 삭제하시겠습니까?",
+      "validation": {
+        "code_required": "코드를 입력해 주세요",
+        "name_required": "배송사명을 입력해 주세요"
+      }
+    },
+    "remote_area": {
+      "title": "도서산간 배송비 기본설정",
+      "description": "도서산간 지역 배송비 기본값을 설정합니다.",
+      "enable": "도서산간 추가배송비 사용",
+      "remote_extra_fee": "도서산간 추가배송비",
+      "island_extra_fee": "제주/도서 추가배송비"
+    },
+    "modal": {
+      "disable_international": {
+        "title": "해외배송 비활성화 확인",
+        "message": "해외배송을 비활성화하면 기본 국가 외 모든 국가의 활성 상태가 해제됩니다. 계속하시겠습니까?",
+        "confirm": "확인",
+        "cancel": "취소"
+      }
+    }
+  },
+  "seo": {
+    "meta_settings": {
+      "title": "메타태그 설정",
+      "description": "각 페이지의 메타태그를 설정합니다. 변수를 사용하여 동적으로 설정할 수 있습니다.",
+      "main_page": "메인화면",
+      "category_page": "카테고리",
+      "search_page": "검색 결과",
+      "product_page": "상품 상세페이지",
+      "meta_title": "Title",
+      "meta_description": "Description",
+      "available_variables": "사용 가능한 변수",
+      "main_description_placeholder": "메인 페이지 설명",
+      "category_description_placeholder": "카테고리 페이지 설명",
+      "search_description_placeholder": "검색 결과 페이지 설명",
+      "product_description_placeholder": "상품 상세 페이지 설명"
+    },
+    "seo_friendly": {
+      "title": "검색엔진 친화적 페이지 설정",
+      "description": "검색엔진을 위한 최적화된 페이지를 제공합니다.",
+      "provide_pages": "검색엔진 친화적 페이지를 제공할 항목",
+      "site_main": "사이트 메인",
+      "category": "카테고리",
+      "search_result": "검색결과",
+      "product_detail": "상품 상세페이지",
+      "user_agent_management": "검색엔진 User-Agent 관리",
+      "user_agent_description": "검색엔진 친화적 페이지를 제공할 User-Agent를 관리합니다.",
+      "user_agent_placeholder": "User-Agent 입력 (예: Googlebot)",
+      "cache_management": "검색엔진 친화적 페이지 캐시 관리",
+      "cache_description": "검색엔진 친화적 페이지의 캐시를 관리합니다.",
+      "current_cache_size": "현재 캐시 용량",
+      "clear_cache": "캐시 삭제"
+    }
+  },
+  "review_settings": {
+    "title": "리뷰 설정",
+    "description": "상품 리뷰 관련 설정을 관리합니다.",
+    "write_deadline_days_label": "리뷰 작성 가능 기간",
+    "write_deadline_days_hint": "구매 확정 후 리뷰를 작성할 수 있는 기간",
+    "days_unit": "일",
+    "max_images_label": "최대 이미지 수",
+    "max_images_hint": "리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 불가)",
+    "images_unit": "장",
+    "max_image_size_mb_label": "이미지 최대 용량",
+    "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량"
+  },
+  "mail_templates": {
+    "title": "메일 템플릿 관리",
+    "description": "주문 관련 이메일 알림 템플릿을 관리합니다. 각 알림 유형별로 제목과 본문을 커스터마이징할 수 있습니다.",
+    "active": "활성",
+    "inactive": "비활성",
+    "default_badge": "기본",
+    "btn_edit": "편집",
+    "btn_reset": "기본값 복원",
+    "btn_activate": "활성화",
+    "btn_deactivate": "비활성화",
+    "toggle_success": "메일 템플릿 상태가 변경되었습니다.",
+    "reset_success": "메일 템플릿이 기본값으로 복원되었습니다.",
+    "save_success": "메일 템플릿이 저장되었습니다.",
+    "save_error": "메일 템플릿 저장에 실패했습니다.",
+    "types": {
+      "order_confirmed": "주문 확인",
+      "order_shipped": "배송 시작",
+      "order_completed": "구매 확정",
+      "order_cancelled": "주문 취소",
+      "new_order_admin": "신규 주문 (관리자)",
+      "inquiry_received": "상품 문의 접수 (관리자)",
+      "inquiry_replied": "상품 문의 답변"
+    },
+    "btn_search": "검색",
+    "btn_reset_filter": "초기화",
+    "search_placeholder": "검색어를 입력하세요",
+    "search_type_all": "전체",
+    "search_type_subject": "제목",
+    "search_type_body": "본문",
+    "total_count": "총 {{count}}건",
+    "per_page_label": "페이지당",
+    "empty_message": "등록된 메일 템플릿이 없습니다.",
+    "empty_no_results": "검색 결과가 없습니다.",
+    "edit_modal": {
+      "title": "메일 템플릿 편집",
+      "type_label": "유형:",
+      "subject": "제목",
+      "body": "본문",
+      "variables_title": "사용 가능한 변수",
+      "btn_preview": "미리보기",
+      "validation_error": "입력 정보를 확인해주세요.",
+      "is_active_label": "활성화"
+    },
+    "preview_modal": {
+      "title": "메일 템플릿 미리보기",
+      "rendered_subject": "렌더링된 제목",
+      "rendered_body": "렌더링된 본문",
+      "btn_close": "닫기"
+    }
+  }
+}

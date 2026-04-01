@@ -1,0 +1,763 @@
+{
+  "default_shipping": "기본 배송",
+  "title": "주문내역",
+  "description": "주문 내역을 조회하고 관리합니다.",
+  "index": {
+    "title": "주문 관리",
+    "description": "주문 목록을 관리합니다",
+    "empty_title": "주문이 없습니다",
+    "empty_description": "아직 접수된 주문이 없습니다"
+  },
+  "detail": {
+    "title": "주문 상세",
+    "description": "주문 상세 정보를 확인합니다",
+    "placeholder": "주문 상세가 여기에 표시됩니다",
+    "order_number": "주문번호",
+    "order_date": "주문일시",
+    "status": "상태",
+    "order_info": {
+      "title": "주문정보",
+      "order_products": "주문상품",
+      "no_products": "주문상품이 없습니다.",
+      "selected_count": "{{count}}개 선택됨",
+      "change_status": "주문상태 변경",
+      "carrier": "배송사",
+      "tracking_number": "송장번호",
+      "batch_change": "일괄변경",
+      "select_all": "전체 선택",
+      "columns": {
+        "product_info": "상품정보",
+        "price": "정가/판매가",
+        "quantity": "구매수량",
+        "discount": "할인가격",
+        "actual_price": "실 구매가격",
+        "points": "적립예정",
+        "status": "주문상태",
+        "delivery": "배송방법",
+        "subtotal": "소계"
+      },
+      "discount_details": {
+        "discount_code": "할인코드",
+        "referral": "유입경로",
+        "coupon": "쿠폰",
+        "event": "이벤트"
+      },
+      "price_details": {
+        "taxable": "과세",
+        "vat": "부가세",
+        "mileage": "마일리지",
+        "deposit": "예치금"
+      },
+      "delivery_info": {
+        "parcel": "택배",
+        "free_shipping": "무료배송",
+        "paid_shipping": "유료배송",
+        "shipping_fee": "배송비"
+      },
+      "summary": {
+        "total": "합계",
+        "original_price": "정가",
+        "selling_price": "판매가",
+        "shipping_fee": "배송비"
+      },
+      "orderer_info": {
+        "title": "주문자 정보",
+        "name": "이름",
+        "phone": "핸드폰",
+        "tel": "전화번호",
+        "email": "이메일",
+        "send": "보내기"
+      },
+      "orderer_action": {
+        "view_member": "상세정보 보기",
+        "search_by_member": "회원으로 검색",
+        "search_by_name": "주문자명으로 검색",
+        "search_by_phone": "연락처로 검색"
+      },
+      "receiver_info": {
+        "title": "수취인 정보",
+        "name": "수취인명",
+        "phone": "핸드폰",
+        "tel": "전화번호",
+        "zipcode": "우편번호",
+        "find_zipcode": "우편번호 찾기",
+        "address": "주소",
+        "address_detail": "상세주소",
+        "delivery_message": "배송메시지",
+        "send": "보내기",
+        "phone_or_tel_hint": "휴대폰 또는 전화번호 중 하나는 필수입니다."
+      },
+      "admin_memo": {
+        "title": "관리자 메모",
+        "placeholder": "관리자 메모를 입력하세요..."
+      },
+      "save": "저장",
+      "save_success": "주문 정보가 저장되었습니다.",
+      "save_error": "주문 정보 저장에 실패했습니다.",
+      "validation_error_title": "입력값을 확인해주세요.",
+      "member": "회원",
+      "non_member": "비회원",
+      "view_member_detail": "상세정보 보기",
+      "search_by_member": "회원으로 검색",
+      "search_by_name": "주문자명으로 검색",
+      "search_by_phone": "연락처로 검색"
+    },
+    "tabs": {
+      "order_info": "주문정보",
+      "claim_history": "클레임내역",
+      "payment_info": "결제정보",
+      "activity_log": "활동 로그"
+    },
+    "handler": {
+      "bulk_change_success": "{{count}}개 옵션의 상태가 변경되었습니다.",
+      "bulk_change_failed": "상태 변경에 실패했습니다.",
+      "memo_save_success": "관리자 메모가 저장되었습니다.",
+      "address_save_success": "배송지 정보가 저장되었습니다."
+    },
+    "batch_modal": {
+      "title": "일괄변경 확인",
+      "description": "선택한 상품을 {{status}}(으)로 변경합니다.",
+      "columns": {
+        "product_name": "상품명",
+        "current_status": "현재상태",
+        "available_quantity": "보유수량",
+        "change_quantity": "변경수량"
+      },
+      "carrier_info": "택배사: {{carrier}}, 송장번호: {{tracking}}",
+      "cancel": "취소",
+      "confirm": "확인"
+    },
+    "claim_history": {
+      "title": "클레임내역",
+      "tabs": {
+        "refund": "환불내역",
+        "return": "반품내역",
+        "exchange": "교환내역"
+      },
+      "view_refund_management": "환불관리에서 보기",
+      "view_return_management": "반품관리에서 보기",
+      "view_exchange_management": "교환관리에서 보기",
+      "empty": {
+        "refund": "환불 내역이 없습니다",
+        "return": "반품 내역이 없습니다",
+        "exchange": "교환 내역이 없습니다"
+      },
+      "sort": {
+        "label": "정렬",
+        "request_date_desc": "신청일시 최근순"
+      },
+      "per_page": "페이지당",
+      "items_count": "{{count}}개",
+      "columns": {
+        "request_date": "신청일시",
+        "refund_number": "환불번호",
+        "return_number": "반품번호",
+        "exchange_number": "교환번호",
+        "product_info": "상품정보",
+        "amount_info": "금액정보",
+        "quantity": "수량",
+        "refund_method": "환불수단",
+        "refund_status": "환불상태",
+        "return_status": "반품상태",
+        "exchange_status": "교환상태",
+        "refund_reason": "환불사유",
+        "return_reason": "반품사유",
+        "exchange_reason": "교환사유"
+      },
+      "amount": {
+        "actual_price": "실제 가격",
+        "expected_refund": "환불 예상",
+        "actual_refund": "실 환불",
+        "return_request": "반품신청",
+        "original_order": "원주문",
+        "order_quantity": "주문",
+        "difference": "차액"
+      },
+      "method": {
+        "direct_refund": "직접 환불",
+        "deposit": "예치금"
+      },
+      "status": {
+        "refund_rejected": "환불반려",
+        "refund_hold": "환불보류",
+        "refund_approved": "환불승인",
+        "refund_completed": "환불완료",
+        "return_requested": "반품접수",
+        "return_pickup_in_progress": "반품회수중",
+        "return_pickup_completed": "반품회수도착",
+        "return_completed": "반품완료",
+        "exchange_requested": "교환접수",
+        "exchange_shipping": "교환배송",
+        "exchange_completed": "교환완료"
+      },
+      "delivery": {
+        "carrier": "배송사",
+        "tracking_number": "송장번호",
+        "pickup_carrier": "회수 배송사",
+        "pickup_tracking": "회수 송장번호",
+        "shipping_carrier": "발송 배송사",
+        "shipping_tracking": "발송 송장번호",
+        "pickup_fee": "회수배송료",
+        "round_trip_fee": "왕복배송료"
+      },
+      "reason": {
+        "customer_fault": "고객귀책",
+        "seller_fault": "판매자귀책",
+        "simple_change": "단순변심",
+        "wrong_color": "색상 다름",
+        "defect": "초기불량",
+        "defective_product": "상품불량",
+        "color_change": "색상 변경",
+        "size_exchange": "사이즈교환"
+      },
+      "product": {
+        "original_product": "원상품",
+        "exchange_product": "교환상품",
+        "same_product": "동일상품교환",
+        "same_product_exchange": "동일상품교환",
+        "size": "사이즈",
+        "color": "색상",
+        "capacity": "용량"
+      }
+    },
+    "payment_info": {
+      "title": "결제정보",
+      "type": {
+        "original": "원주문",
+        "additional_shipping": "추가배송비",
+        "admin_manual": "관리자수동요청"
+      },
+      "status": {
+        "completed": "결제완료",
+        "pending": "입금대기"
+      },
+      "payment_method": "결제수단",
+      "payment_date": "결제일시",
+      "payment_request_date": "결제요청일시",
+      "due_date": "입금기한",
+      "order_amount": "주문금액",
+      "shipping_fee": "배송비",
+      "total_discount": "총 할인",
+      "coupon": "쿠폰",
+      "discount_code": "할인코드",
+      "event": "이벤트",
+      "referral": "접속경로",
+      "mileage_used": "마일리지 사용",
+      "deposit_used": "예치금 사용",
+      "final_amount": "최종 결제금액",
+      "taxable_amount": "과세 금액",
+      "vat": "부가세 (VAT)",
+      "expected_points": "적립예정 포인트",
+      "method": {
+        "credit_card": "신용카드",
+        "bank_transfer": "무통장입금",
+        "virtual_account": "가상계좌"
+      },
+      "account_info": "{{bank}} {{account}} ({{holder}})",
+      "cancelled_amount": "취소금액",
+      "refunded_amount": "환불금액",
+      "refund_status": "환불상태",
+      "refund_points_amount": "마일리지 환불"
+    },
+    "activity_log": {
+      "title": "활동 로그",
+      "sort": {
+        "label": "정렬:",
+        "date_desc": "최근순",
+        "date_asc": "오래된순"
+      },
+      "per_page": "페이지당:",
+      "per_page_option": "{{count}}개",
+      "items_count": "{{count}}개",
+      "columns": {
+        "date": "일시",
+        "actor": "수행자",
+        "event": "내용"
+      },
+      "empty": "활동 로그가 없습니다.",
+      "actor_action": {
+        "view_member": "회원정보 보기"
+      },
+      "system": "시스템",
+      "changes": {
+        "title": "변경 내역",
+        "field": "항목",
+        "before": "변경 전",
+        "after": "변경 후",
+        "bulk_model_id": "ID: {{id}}"
+      }
+    },
+    "modal": {
+      "send_sms": {
+        "title": "메시지 보내기",
+        "description": "SMS 문자 메시지를 발송합니다.",
+        "phone": "휴대폰 번호",
+        "phone_placeholder": "010-1234-5678",
+        "message": "메시지 내용",
+        "message_placeholder": "메시지 내용을 입력하세요",
+        "char_count": "{{count}}자",
+        "plugin_label": "SMS 플러그인",
+        "cancel": "취소",
+        "send": "보내기"
+      },
+      "send_email": {
+        "title": "메시지 보내기",
+        "description": "이메일 메시지를 발송합니다.",
+        "email": "이메일 주소",
+        "email_placeholder": "hong@example.com",
+        "message": "메시지 내용",
+        "message_placeholder": "메시지 내용을 입력하세요",
+        "char_count": "{{count}}자",
+        "cancel": "취소",
+        "send": "보내기",
+        "validation_error": "입력값을 확인해주세요.",
+        "sent_success": "이메일이 발송되었습니다.",
+        "sent_failed": "이메일 발송에 실패했습니다."
+      },
+      "batch_change": {
+        "title": "일괄변경 확인",
+        "confirm_message": "선택한 {{count}}개 상품의 상태를 일괄 변경하시겠습니까?",
+        "confirm_prefix": "선택한",
+        "confirm_count": "{{count}}개 상품을",
+        "confirm_status": "{{status}}",
+        "confirm_suffix": "(으)로 일괄 변경하시겠습니까?",
+        "status_label": "변경 상태:",
+        "carrier_label": "택배사:",
+        "tracking_label": "송장번호:",
+        "no_changes": "변경할 정보가 없습니다.",
+        "cancel": "취소",
+        "confirm": "확인",
+        "product_col": "상품정보",
+        "price_col": "판매가",
+        "change_quantity_col": "변경수량",
+        "current_status_col": "현재상태",
+        "quantity_note": "수량을 줄이면 나머지는 현재 상태로 유지됩니다."
+      },
+      "cancel": {
+        "title": "주문 취소",
+        "description": "선택한 상품의 주문을 취소합니다.",
+        "validation_error_title": "입력값을 확인해주세요",
+        "pg_error_title": "PG 환불 실패",
+        "pg_error_description": "PG 환불 처리에 실패했습니다. 오류 내용을 확인하고 다시 시도하거나, PG 관리자 화면에서 직접 환불 처리를 진행해주세요.",
+        "product_col": "상품정보",
+        "unit_price_col": "단가",
+        "cancel_quantity_col": "취소수량",
+        "status_col": "현재상태",
+        "cancel_pg": "PG 결제도 함께 취소합니다",
+        "cancel_pg_description": "체크 해제 시 주문 상태만 변경되며, PG 환불은 별도로 진행해야 합니다.",
+        "cancel_reason_type_label": "취소 사유",
+        "reason_placeholder": "취소 사유를 선택하세요",
+        "reason": {
+          "order_mistake": "주문 실수",
+          "changed_mind": "단순 변심",
+          "reorder_other": "다른 상품으로 재주문",
+          "delayed_delivery": "배송 지연",
+          "product_info_different": "상품 정보 상이",
+          "admin_cancel": "관리자 취소",
+          "etc": "기타"
+        },
+        "cancel_reason_detail_placeholder": "상세 사유를 입력하세요 (선택)",
+        "refund_priority_label": "환불 우선순위",
+        "refund_priority_pg_first": "PG 결제 우선 환불",
+        "refund_priority_points_first": "마일리지 우선 환불",
+        "refund_estimate_title": "환불 예정금액",
+        "refund_loading": "환불 예정금액 계산 중...",
+        "refund_product_amount": "상품 환불액",
+        "refund_shipping_diff": "배송비 변동",
+        "refund_discount_diff": "할인 조정",
+        "refund_points_amount": "마일리지 환불",
+        "refund_total": "최종 환불 예정액",
+        "remaining_pg_balance": "환불 후 PG 잔액",
+        "remaining_points_balance": "환불 후 마일리지 잔액",
+        "refund_shipping_base": "기본 배송비",
+        "refund_shipping_extra": "추가 배송비(도서산간)",
+        "restored_coupons_label": "복원될 쿠폰",
+        "restored_coupons_notice": "위 쿠폰이 쿠폰함으로 복원됩니다.",
+        "comparison_title": "주문금액 비교",
+        "col_before": "취소 전",
+        "col_after": "취소 후",
+        "item_count": "상품수량",
+        "count_unit": "개",
+        "list_price_amount": "총 정가금액",
+        "subtotal_amount": "총 판매가 금액",
+        "product_coupon_discount": "상품쿠폰 할인",
+        "order_coupon_discount": "주문쿠폰 할인",
+        "code_discount": "할인코드 할인",
+        "shipping_coupon_discount": "배송비쿠폰 할인",
+        "base_shipping": "기본배송비",
+        "extra_shipping": "추가배송비",
+        "points_used": "포인트 사용",
+        "taxable_amount": "과세금액",
+        "vat_amount": "부가세",
+        "total_paid": "실결제금액",
+        "earned_points": "적립예정포인트",
+        "product_subtotal": "소계",
+        "cancel_btn": "주문 취소",
+        "close_btn": "닫기",
+        "estimate_failed": "환불 예상금액 계산에 실패했습니다.",
+        "cancel_success": "주문이 취소되었습니다.",
+        "cancel_failed": "주문 취소에 실패했습니다."
+      }
+    }
+  },
+  "preset": {
+    "label": "검색 프리셋",
+    "applied": "{{name}} 프리셋이 적용되었습니다.",
+    "today_payment": "오늘 결제완료",
+    "bank_pending": "무통장 입금대기",
+    "add_new": "새 프리셋 추가",
+    "delete_confirm_message": "'{{name}}' 프리셋을 삭제하시겠습니까?",
+    "delete_confirm_title": "프리셋 삭제",
+    "delete_success": "프리셋이 삭제되었습니다",
+    "empty": "등록된 프리셋이 없습니다",
+    "manage_description": "검색 프리셋을 관리합니다",
+    "manage_title": "프리셋 관리",
+    "more": "더보기",
+    "name_label": "프리셋 이름",
+    "name_placeholder": "프리셋 이름을 입력하세요",
+    "save": "저장",
+    "save_description": "현재 검색 조건을 프리셋으로 저장합니다",
+    "save_success": "프리셋이 저장되었습니다",
+    "save_title": "프리셋 저장",
+    "update_success": "프리셋이 수정되었습니다"
+  },
+  "search": {
+    "placeholder": "검색어를 입력하세요...",
+    "field": {
+      "all": "전체",
+      "order_number": "주문번호",
+      "orderer_name": "주문자명",
+      "product_name": "상품명",
+      "receiver_name": "수령인명",
+      "phone": "연락처",
+      "email": "이메일"
+    },
+    "edit_search": "검색 편집",
+    "preset_manage": "프리셋 관리",
+    "column_select": "컬럼 선택",
+    "detail_search": "상세검색"
+  },
+  "filter": {
+    "date": "일자",
+    "date_type": {
+      "order_date": "주문일자",
+      "payment_date": "결제일자",
+      "shipping_date": "발송일자"
+    },
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "date_quick": {
+      "today": "오늘",
+      "week": "일주일",
+      "1_month": "1개월",
+      "3_months": "3개월",
+      "6_months": "6개월",
+      "1_year": "1년"
+    },
+    "order_status": "주문상태",
+    "order_status_options": {
+      "waiting": "주문대기",
+      "payment_pending": "결제대기",
+      "payment_complete": "결제완료",
+      "shipping_hold": "배송보류",
+      "preparing": "상품준비중",
+      "shipping_ready": "배송준비완료",
+      "shipping": "배송중",
+      "delivered": "배송완료",
+      "cancelled": "주문취소",
+      "confirmed": "구매확정"
+    },
+    "claim_status": "클레임상태",
+    "claim_mode": "클레임모드",
+    "claim_refund": "환불",
+    "claim_refund_options": {
+      "requested": "환불접수",
+      "hold": "환불보류",
+      "approved": "환불승인",
+      "rejected": "환불반려",
+      "completed": "환불완료"
+    },
+    "claim_return": "반품",
+    "claim_return_options": {
+      "requested": "반품접수",
+      "payment_pending": "반품결제대기",
+      "hold": "반품보류",
+      "approved": "반품승인",
+      "pickup_in_progress": "반품회수중",
+      "pickup_completed": "반품회수도착",
+      "rejected": "반품반려",
+      "completed": "반품완료"
+    },
+    "claim_exchange": "교환",
+    "claim_exchange_options": {
+      "requested": "교환접수",
+      "payment_pending": "교환결제대기",
+      "hold": "교환보류",
+      "approved": "교환승인",
+      "pickup_in_progress": "교환회수중",
+      "pickup_completed": "교환회수도착",
+      "rejected": "교환반려",
+      "reshipping": "교환발송",
+      "reshipping_completed": "교환배송완료",
+      "completed": "교환완료"
+    },
+    "delivery_method": "배송방법",
+    "delivery_options": {
+      "parcel": "택배",
+      "direct": "직접배송",
+      "mail": "우편",
+      "pickup": "방문수령",
+      "quick": "빠른배송"
+    },
+    "payment_method": "결제수단",
+    "payment_options": {
+      "bank": "무통장",
+      "card": "신용카드",
+      "virtual": "가상계좌",
+      "naver": "네이버페이",
+      "kakao": "카카오페이",
+      "toss": "토스페이"
+    },
+    "category": "상품카테고리",
+    "category_level": "카테고리{{level}}",
+    "price": "구매금액",
+    "min_price": "최소금액",
+    "max_price": "최대금액",
+    "currency": "원",
+    "country": "배송국가",
+    "country_options": {
+      "kr": "대한민국",
+      "us": "미국",
+      "jp": "일본",
+      "cn": "중국",
+      "ru": "러시아",
+      "tw": "대만"
+    },
+    "device": "구매환경",
+    "device_options": {
+      "pc": "PC",
+      "mobile": "모바일"
+    },
+    "shipping_policy": "배송정책",
+    "shipping_fee": "배송비",
+    "min_shipping_fee": "최소배송비",
+    "max_shipping_fee": "최대배송비",
+    "category_placeholder": "카테고리 선택",
+    "claim_module_link": "클레임관리에서 보기",
+    "detail_title": "상세검색",
+    "orderer": "주문자",
+    "orderer_select": "회원 선택",
+    "orderer_search_placeholder": "이름 또는 이메일로 검색",
+    "orderer_search_initial": "회원을 검색하세요"
+  },
+  "action": {
+    "search": "검색",
+    "reset": "초기화",
+    "save_preset": "프리셋 저장",
+    "excel_download": "엑셀 다운로드",
+    "print": "인쇄",
+    "view": "보기",
+    "view_detail": "상세보기",
+    "view_member": "회원정보 보기",
+    "search_by_orderer": "주문자로 검색"
+  },
+  "batch": {
+    "selected_count": "{{count}}개 선택됨",
+    "status_change": "주문상태 변경",
+    "shipping_process": "발송처리",
+    "carrier": "택배사",
+    "carrier_options": {
+      "cj": "CJ대한통운",
+      "lotte": "롯데택배",
+      "hanjin": "한진택배",
+      "post": "우체국택배"
+    },
+    "tracking_number": "송장번호",
+    "batch_change": "일괄변경"
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "sort": {
+      "latest": "최신 주문순",
+      "oldest": "오래된 주문순",
+      "amount_high": "금액 높은순",
+      "amount_low": "금액 낮은순"
+    },
+    "per_page": "{{count}}개",
+    "excel_download": "엑셀 다운로드",
+    "columns": {
+      "checkbox": "선택",
+      "no": "번호",
+      "order_date": "주문일시",
+      "order_number": "주문번호",
+      "order_status": "주문상태",
+      "order_amount": "주문금액",
+      "product": "주문상품",
+      "orderer": "주문자명",
+      "payment_method": "결제수단",
+      "country": "배송국가",
+      "delivery_method": "배송방법",
+      "action": "작업",
+      "actions": "작업"
+    }
+  },
+  "mobile": {
+    "orderer": "주문자",
+    "payment": "결제",
+    "shipping": "배송",
+    "shipping_country": "배송국",
+    "payment_delivery": "결제 / 배송",
+    "country": "배송국가"
+  },
+  "modal": {
+    "excel_download": {
+      "title": "엑셀 다운로드",
+      "description": "다운로드할 주문서 범위를 선택하세요.",
+      "option_search": "현재 검색 조건으로 다운로드",
+      "option_search_desc": "총 {{count}}개의 주문서가 다운로드됩니다.",
+      "option_selected": "선택한 주문서만 다운로드",
+      "option_selected_desc": "{{count}}개의 주문서가 다운로드됩니다.",
+      "cancel": "취소",
+      "download": "다운로드"
+    },
+    "preset_manage": {
+      "title": "프리셋 관리",
+      "description": "검색 프리셋을 관리합니다.",
+      "add_preset": "새 프리셋 추가",
+      "add_new": "새 프리셋 추가",
+      "empty": "저장된 프리셋이 없습니다."
+    },
+    "preset_save": {
+      "title": "프리셋 저장",
+      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
+      "placeholder": "프리셋 이름을 입력하세요",
+      "save": "저장"
+    },
+    "preset_edit": {
+      "title": "프리셋 수정"
+    },
+    "preset_delete": {
+      "title": "프리셋 삭제",
+      "confirm": "'{{name}}' 프리셋을 삭제하시겠습니까?"
+    }
+  },
+  "status": {
+    "waiting": "주문대기",
+    "payment_pending": "입금대기",
+    "payment_complete": "결제완료",
+    "shipping_hold": "발송보류",
+    "preparing": "상품준비중",
+    "shipping_ready": "배송준비중",
+    "shipping": "배송중",
+    "delivered": "배송완료",
+    "cancelled": "주문취소",
+    "confirmed": "구매확정"
+  },
+  "datagrid": {
+    "total_count": "총 {count}개"
+  },
+  "message": {
+    "no_orders": "주문이 없습니다"
+  },
+  "pagination": {
+    "showing_info": "{{from}}-{{to}} / {{total}}개"
+  },
+  "sort": {
+    "latest_order": "최근 주문순",
+    "oldest_order": "오래된 주문순",
+    "latest_payment": "최근 결제순",
+    "oldest_payment": "오래된 결제순",
+    "latest_shipping": "최근 발송순",
+    "oldest_shipping": "오래된 발송순",
+    "highest_amount": "금액 높은순",
+    "lowest_amount": "금액 낮은순"
+  },
+  "excel": {
+    "title": "엑셀 다운로드",
+    "description": "다운로드할 주문서 범위를 선택하세요",
+    "download": "다운로드",
+    "download_success": "엑셀 파일이 다운로드되었습니다",
+    "option_search": "현재 검색 조건으로 다운로드",
+    "option_search_desc": "총 {{count}}개의 주문서가 다운로드됩니다",
+    "option_selected": "선택한 주문서만 다운로드",
+    "option_selected_desc": "{{count}}개의 주문서가 다운로드됩니다"
+  },
+  "bulk": {
+    "selected_count": "{{count}}개 선택됨",
+    "apply": "적용",
+    "apply_full": "일괄 적용",
+    "courier_placeholder": "택배사 선택",
+    "shipping_label": "발송처리:",
+    "status_placeholder": "상태 선택",
+    "no_status_selected": "변경할 주문상태를 선택해주세요.",
+    "no_items_selected": "변경할 상품을 선택해주세요.",
+    "no_cancellable_items": "취소할 수 있는 상품이 없습니다. 이미 취소된 상품은 제외됩니다.",
+    "carrier_required": "해당 상태로 변경하려면 택배사와 송장번호를 모두 입력해주세요.",
+    "success": "일괄 변경되었습니다",
+    "tracking_placeholder": "송장번호 입력",
+    "confirm_title": "일괄 변경 확인",
+    "confirm_message": "선택한 {{count}}개 주문에 대해 다음 변경을 적용합니다.",
+    "confirm_status_label": "주문상태 변경: ",
+    "confirm_carrier_label": "택배사: ",
+    "confirm_tracking_label": "운송장번호: ",
+    "confirm_cancel": "취소",
+    "confirm_apply": "변경 적용",
+    "confirm_no_changes": "변경할 항목이 없습니다."
+  },
+  "column": {
+    "no": "번호",
+    "order_date": "주문일시",
+    "order_number": "주문번호",
+    "product": "주문상품",
+    "order_amount": "주문금액",
+    "shipping_fee_short": "배송비 {{amount}}",
+    "paid_short": "결제 {{amount}}",
+    "unpaid_short": "미결제 {{amount}}",
+    "order_status": "주문상태",
+    "orderer": "주문자명",
+    "payment_method": "결제수단",
+    "delivery_method": "배송방법",
+    "country": "배송국가",
+    "device": "구매환경",
+    "first_order": "첫구매",
+    "action": "작업"
+  },
+  "device": {
+    "mobile": "모바일",
+    "pc": "PC"
+  },
+  "product": {
+    "more": "외 {{count}}건"
+  },
+  "claim": {
+    "refund": {
+      "requested": "환불접수",
+      "hold": "환불보류",
+      "approved": "환불승인",
+      "rejected": "환불반려",
+      "completed": "환불완료"
+    },
+    "return": {
+      "requested": "반품접수",
+      "payment_pending": "반품결제대기",
+      "hold": "반품보류",
+      "approved": "반품승인",
+      "pickup_in_progress": "반품회수중",
+      "pickup_completed": "반품회수도착",
+      "rejected": "반품반려",
+      "completed": "반품완료"
+    },
+    "exchange": {
+      "requested": "교환접수",
+      "payment_pending": "교환결제대기",
+      "hold": "교환보류",
+      "approved": "교환승인",
+      "pickup_in_progress": "교환회수중",
+      "pickup_completed": "교환회수도착",
+      "rejected": "교환반려",
+      "reshipping": "교환발송",
+      "reshipping_completed": "교환배송완료",
+      "completed": "교환완료"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "parent_post": "Original Post",
+  "view_parent_post": "View Original Post",
+  "view_detail": "View Detail",
+  "show_more": "Show more",
+  "show_less": "Show less",
+  "permissions": {
+    "admin": {
+      "posts": {
+        "read": "View Posts (Admin)",
+        "read_desc": "Can view post list and details in admin page.",
+        "write": "Create/Edit/Delete Posts (Admin)",
+        "write_desc": "Can create posts and edit/delete all posts in admin page.",
+        "read-secret": "View Secret Posts (Admin)",
+        "read-secret_desc": "Can view secret posts without entering password."
+      },
+      "comments": {
+        "read": "View Comments (Admin)",
+        "read_desc": "Can view all comments in admin page.",
+        "write": "Create/Edit/Delete Comments (Admin)",
+        "write_desc": "Can create comments and edit/delete all comments in admin page."
+      },
+      "attachments": {
+        "upload": "Upload/Delete Files (Admin)",
+        "upload_desc": "Can attach files to posts and delete all attachments.",
+        "download": "Download Files (Admin)",
+        "download_desc": "Can download all attachments."
+      },
+      "manage": "Manage Board (Admin)",
+      "manage_desc": "Can manage others' posts/comments, blind, restore, and set notices."
+    },
+    "posts": {
+      "read": "View Posts",
+      "read_desc": "Can view post list and details.",
+      "write": "Create/Edit/Delete Posts",
+      "write_desc": "Can create posts and edit/delete own posts.",
+      "read-secret": "View Secret Posts",
+      "read-secret_desc": "Can view secret posts without entering password."
+    },
+    "comments": {
+      "read": "View Comments",
+      "read_desc": "Can view comment list.",
+      "write": "Create/Edit/Delete Comments",
+      "write_desc": "Can create comments and edit/delete own comments."
+    },
+    "attachments": {
+      "upload": "Upload/Delete Files",
+      "upload_desc": "Can attach files to posts and delete own attachments.",
+      "download": "Download Files",
+      "download_desc": "Can download attached files."
+    },
+    "manager": "Manage Board (User)",
+    "manager_desc": "Can blind, restore, and delete others' posts/comments in user page."
+  }
+}

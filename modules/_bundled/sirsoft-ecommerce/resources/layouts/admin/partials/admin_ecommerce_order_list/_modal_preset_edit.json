@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order List - Preset Edit Modal"
+  },
+  "id": "modal_preset_edit",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_edit.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Input",
+      "props": {
+        "type": "text",
+        "placeholder": "$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder",
+        "className": "input w-full",
+        "value": "{{_global.editingPresetName}}"
+      },
+      "actions": [
+        {
+          "type": "input",
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "editingPresetName": "{{$event.target.value}}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isSaving}}"
+          },
+          "actions": [{ "type": "click", "handler": "closeModal" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === '' || _global.isSaving}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "isSaving": true }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}",
+                  "params": {
+                    "method": "PUT",
+                    "body": {
+                      "name": "{{_global.editingPresetName}}"
+                    }
+                  },
+                  "onSuccess": [
+                    { "handler": "setState", "params": { "target": "global", "isSaving": false } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "presets" } },
+                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.messages.presets.updated" } },
+                    { "handler": "closeModal" }
+                  ],
+                  "onError": [
+                    { "handler": "setState", "params": { "target": "global", "isSaving": false } },
+                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isSaving}}",
+              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

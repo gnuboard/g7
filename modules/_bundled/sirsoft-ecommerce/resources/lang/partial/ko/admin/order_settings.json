@@ -1,0 +1,51 @@
+{
+  "title": "주문 설정",
+  "description": "주문 관련 설정을 관리합니다.",
+  "payment_methods": {
+    "title": "결제수단 설정",
+    "description": "쇼핑몰에서 사용 가능한 결제수단을 설정합니다. 드래그하여 노출 순서를 변경할 수 있습니다.",
+    "method": "결제수단",
+    "min_order_amount": "최소 주문금액",
+    "enabled": "사용 여부",
+    "pg_hint": "* PG사 플러그인을 설치하면 추가 결제수단이 자동으로 등록됩니다."
+  },
+  "bank_accounts": {
+    "title": "무통장 계좌번호 설정",
+    "description": "무통장 입금 시 고객에게 안내될 계좌 정보를 설정합니다.",
+    "add_account": "계좌 추가",
+    "default": "기본",
+    "bank": "은행",
+    "account_number": "계좌번호",
+    "account_holder": "예금주",
+    "enabled": "사용 여부",
+    "delete": "삭제",
+    "default_account": "기본 계좌"
+  },
+  "auto_cancel": {
+    "title": "주문 자동취소",
+    "description": "무통장/가상계좌 결제 시 입금 대기 기간을 설정합니다.",
+    "days_prefix": "입금대기 상태의 주문건은 주문일포함",
+    "days_suffix": "영업일 이후 자동 취소됩니다.",
+    "hint": "* 주문 시점에 입금 만료 기한이 결정됩니다."
+  },
+  "cart_expiry": {
+    "title": "장바구니 유효기간",
+    "description": "장바구니에 담긴 상품을 유지하는 기간을 설정합니다.",
+    "days_prefix": "장바구니 상품은",
+    "days_suffix": "일 후 자동 삭제됩니다."
+  },
+  "inventory": {
+    "title": "재고 관리",
+    "description": "상품 재고 차감 및 복구 정책을 설정합니다.",
+    "deduction_timing": "재고 차감 시점",
+    "deduction_suffix": "시 상품재고를 차감합니다.",
+    "deduction_options": {
+      "order_complete": "주문완료",
+      "payment_complete": "결제완료",
+      "shipping_start": "배송시작"
+    },
+    "restore_on_cancel": "주문 취소 시 재고 복구",
+    "restore_description": "주문이 취소되었을 때 차감된 재고를 자동으로 복구합니다.",
+    "restore_label": "주문 취소 후 상품재고를 복구합니다."
+  }
+}

@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Bulk Price Change Modal"
+  },
+  "id": "modal_bulk_price",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.title",
+    "description": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "id": "bulk_price_form",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "id": "price_method_field",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method"
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "select w-full"
+              },
+              "bindings": {
+                "value": "bulkPriceMethod"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "bulkPriceMethod": "{{$event.target.value}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "increase"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase"
+                },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "decrease"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease"
+                },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "fixed"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "price_value_field",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.value"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "placeholder": "0",
+                    "className": "input flex-1"
+                  },
+                  "bindings": {
+                    "value": "bulkPriceValue"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkPriceValue": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "className": "select w-24"
+                  },
+                  "bindings": {
+                    "value": "bulkPriceUnit"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkPriceUnit": "{{$event.target.value}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": {
+                        "value": "won"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_won"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": {
+                        "value": "percent"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "price_preview",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "id": "preview_increase",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkPriceMethod || 'increase') === 'increase'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_increase|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+            },
+            {
+              "id": "preview_decrease",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkPriceMethod || 'increase') === 'decrease'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_decrease|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+            },
+            {
+              "id": "preview_fixed",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(_local.bulkPriceMethod || 'increase') === 'fixed'}}",
+              "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원'}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bulk_price_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "bulkPriceCondition": "{{(_local.bulkPriceMethod || 'increase') === 'fixed' ? (_local.bulkPriceValue || 0) + ((_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원') : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkPriceValue || 0) + ((_local.bulkPriceUnit || 'won') === 'percent' ? '%' : '원')}}",
+                "bulkPriceMethod": "{{_local.bulkPriceMethod || 'increase'}}",
+                "bulkPriceValue": "{{_local.bulkPriceValue || 0}}",
+                "bulkPriceUnit": "{{_local.bulkPriceUnit || 'won'}}"
+              }
+            },
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "title": "Personal Payment Detail",
+  "meta": {
+    "payment_number": "Payment No.",
+    "created_at": "Created",
+    "status": "Status"
+  },
+  "actions": {
+    "list": "List",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "product_info": {
+    "paid_at": "Paid At",
+    "payment_method": "Payment Method",
+    "payer_name": "Payer Name",
+    "approval_number": "Approval No.",
+    "transaction_id": "Transaction ID",
+    "view_receipt": "View Receipt"
+  },
+  "status_message": {
+    "pending": "Payment is pending.",
+    "completed": "Payment has been completed.",
+    "expired": "Payment has expired."
+  },
+  "member_info": {
+    "title": "Member Info",
+    "buyer_title": "Buyer Info",
+    "name": "Name",
+    "buyer_name": "Name",
+    "member_id": "Member ID",
+    "email": "Email",
+    "phone": "Phone"
+  },
+  "payment_detail": {
+    "title": "Payment Detail",
+    "payment_number": "Payment No.",
+    "order_number": "Order No.",
+    "created_at": "Created",
+    "expired_at": "Expires"
+  },
+  "payment_link": {
+    "title": "Payment Link",
+    "copy": "Copy",
+    "open": "Open"
+  },
+  "memo": {
+    "title": "Memo",
+    "edit": "Edit"
+  },
+  "log": {
+    "title": "Activity Log",
+    "count": "{{count}} items",
+    "sort": "Sort",
+    "sort_options": {
+      "latest": "Date (Latest)",
+      "oldest": "Date (Oldest)"
+    },
+    "per_page": "Per Page",
+    "columns": {
+      "processed_at": "Date",
+      "processor": "Processor",
+      "event": "Event"
+    }
+  }
+}

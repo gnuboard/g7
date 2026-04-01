@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "장바구니 담기 완료 모달"
+  },
+  "id": "cart_added_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:shop.product.cart_added_modal_title",
+    "size": "sm",
+    "closeOnBackdropClick": false
+  },
+  "children": [
+    {
+      "comment": "모달 내용",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "pb-6 text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-center mb-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "check", "className": "text-green-600 dark:text-green-400", "size": "lg" } }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-700 dark:text-gray-300" },
+          "text": "$t:shop.product.cart_added_modal_message"
+        }
+      ]
+    },
+    {
+      "comment": "모달 푸터 - 쇼핑 계속 / 장바구니 이동",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-3 p-4 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isNavigatingToCart}}"
+          },
+          "text": "$t:shop.product.continue_shopping",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "$parent._local", "selectedOptionItems": [], "currentSelection": {}, "noOptionQuantity": 1, "additionalOptions": {} }
+                },
+                { "handler": "closeModal" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isNavigatingToCart}}"
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "if": "{{_global.isNavigatingToCart}}", "props": { "name": "spinner", "size": "sm", "className": "animate-spin" } },
+            { "type": "basic", "name": "Span", "text": "$t:shop.product.go_to_cart" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "global", "isNavigatingToCart": true } },
+                { "handler": "closeModal" },
+                { "handler": "navigate", "params": { "path": "{{_global.shopBase}}/cart" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

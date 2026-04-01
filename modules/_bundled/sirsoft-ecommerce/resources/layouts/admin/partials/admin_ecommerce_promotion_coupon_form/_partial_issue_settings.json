@@ -1,0 +1,344 @@
+{
+    "id": "issue_settings_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-5"
+            },
+            "children": [
+                {
+                    "comment": "발급수량",
+                    "id": "field_issue_quantity",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
+                        "error": "{{_local.errors?.total_quantity?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "props": {
+                                        "value": "{{_local.issue_quantity_type}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                "value": "unlimited"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_quantity_limited",
+                                                "value": "limited"
+                                            }
+                                        ]
+                                    },
+                                    "responsive": {
+                                        "mobile": {
+                                            "props": {
+                                                "inline": false
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "issue_quantity_type": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "form.total_quantity": "{{$event.target.value === 'unlimited' ? null : _local.form?.total_quantity}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "수량제한 시: 수량 입력",
+                                    "id": "issue_quantity_input",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.issue_quantity_type === 'limited'}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "total_quantity",
+                                                "className": "input w-32",
+                                                "min": 1
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_quantity"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "발급기간",
+                    "id": "field_issue_period",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period",
+                        "error": "{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "props": {
+                                        "value": "{{_local.issue_period_type}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                "value": "unlimited"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_period_limited",
+                                                "value": "limited"
+                                            }
+                                        ]
+                                    },
+                                    "responsive": {
+                                        "mobile": {
+                                            "props": {
+                                                "inline": false
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "issue_period_type": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "form.issue_from": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_from}}",
+                                                            "form.issue_to": "{{$event.target.value === 'unlimited' ? null : _local.form?.issue_to}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "기간설정 시: 시작일 ~ 종료일",
+                                    "id": "issue_period_range",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.issue_period_type === 'limited'}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "datetime-local",
+                                                "name": "issue_from",
+                                                "className": "input w-52"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "datetime-local",
+                                                "name": "issue_to",
+                                                "className": "input w-52"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "재발급 (중복 다운로드)",
+                    "id": "field_reissue",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue",
+                        "error": "{{_local.errors?.per_user_limit?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "props": {
+                                        "value": "{{_local.reissue_type}}",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited",
+                                                "value": "unlimited"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.reissue_limited",
+                                                "value": "limited"
+                                            }
+                                        ]
+                                    },
+                                    "responsive": {
+                                        "mobile": {
+                                            "props": {
+                                                "inline": false
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "reissue_type": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "form.per_user_limit": "{{$event.target.value === 'unlimited' ? 0 : (_local.form?.per_user_limit || 1)}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "제한 시: 횟수 입력",
+                                    "id": "reissue_limit_input",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.reissue_type === 'limited'}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "per_user_limit",
+                                                "className": "input w-24",
+                                                "min": 1
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

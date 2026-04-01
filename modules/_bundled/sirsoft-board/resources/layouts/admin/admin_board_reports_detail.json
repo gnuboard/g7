@@ -1,0 +1,365 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_reports_detail",
+    "permissions": [
+        "sirsoft-board.reports.view"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-board.admin.reports.detail.page_title",
+        "description": "$t:sirsoft-board.admin.reports.detail.page_description"
+    },
+    "state": {
+        "_local": {
+            "reporters_page": 1,
+            "reporters_loading": false
+        },
+        "_global": {
+            "actionReason": "",
+            "isSaving": false,
+            "actionType": ""
+        }
+    },
+    "data_sources": [
+        {
+            "id": "report_detail",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        },
+        {
+            "id": "reporters_list",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/reporters",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{_local.reporters_page}}",
+                "per_page": 10
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "report_detail_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-board.admin.reports.detail.page_title",
+                            "description": "$t:sirsoft-board.admin.reports.detail.page_description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports/{{route.id}}",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrows-rotate",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "back_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-left",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.back"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_board_reports_detail/_alert_status.json"
+                    },
+                    {
+                        "partial": "partials/admin_board_reports_detail/_card_report_info.json"
+                    },
+                    {
+                        "partial": "partials/admin_board_reports_detail/_card_history.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "status_action_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_title' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}",
+                "size": "medium"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                            },
+                            "text": "{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_confirm_single' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_confirm_single' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_confirm_single' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_confirm_single' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_confirm_single'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.actionType === 'rejected' && report_detail.data?.target_status === 'blinded'}}",
+                            "props": {
+                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "eye",
+                                        "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-orange-700 dark:text-orange-300"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count=1"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.reason_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "props": {
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "rows": 4,
+                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
+                                "value": "{{_global.actionReason || ''}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "actionReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isSaving}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "actionReason": ""
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "disabled": "{{_global.isSaving}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSaving": true
+                                    }
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/status",
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "status": "{{_global.actionType === 'pending' ? 'pending' : _global.actionType === 'review' ? 'review' : _global.actionType === 'rejected' ? 'rejected' : _global.actionType === 'deleted' ? 'deleted' : 'suspended'}}",
+                                            "process_note": "{{_global.actionReason}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "actionReason": "",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-board.admin.reports.modals.status_change_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/boards/reports/{{route.id}}",
+                                                "mergeQuery": false
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isSaving ? $t:common.saving : $t:common.confirm}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,465 @@
+{
+    "version": "1.0.0",
+    "layout_name": "page/show",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "{{page?.data?.seo_meta?.title ?? page?.data?.title ?? '$t:user.page.page_title'}}",
+        "description": "{{page?.data?.seo_meta?.description ?? ''}}",
+        "keywords": "{{page?.data?.seo_meta?.keywords ?? ''}}",
+        "seo": {
+            "enabled": true,
+            "data_sources": ["page"],
+            "priority": 0.5,
+            "changefreq": "monthly",
+            "og": {
+                "type": "website",
+                "title": "{{page.data.title ?? ''}}",
+                "description": "{{page.data.excerpt ?? ''}}"
+            },
+            "structured_data": {
+                "@type": "WebPage",
+                "name": "{{page.data.title ?? ''}}",
+                "description": "{{page.data.excerpt ?? ''}}",
+                "datePublished": "{{page.data.created_at ?? ''}}",
+                "dateModified": "{{page.data.updated_at ?? ''}}"
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "page",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/pages/{{route?.slug}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "blocking",
+            "fallback": {
+                "data": null
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-12"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "py-6 px-4"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "max-w-3xl mx-auto"
+                        },
+                        "children": [
+                            {
+                                "id": "page_content_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{page?.data}}",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-10"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-5"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-wrap items-center justify-between gap-2 mb-4"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-wrap items-center justify-between gap-2 mb-3"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H1",
+                                                        "props": {
+                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                        },
+                                                        "responsive": {
+                                                            "portable": {
+                                                                "props": {
+                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                                }
+                                                            }
+                                                        },
+                                                        "text": "{{page?.data?.title ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_global.currentUser?.is_admin}}",
+                                                        "props": {
+                                                            "className": "px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                                                        },
+                                                        "text": "v{{page?.data?.version ?? '1'}}.0"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{page?.data?.status === 'draft'}}",
+                                                        "props": {
+                                                            "className": "px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded"
+                                                        },
+                                                        "text": "$t:user.page.status_draft"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{page?.data?.status === 'archived'}}",
+                                                        "props": {
+                                                            "className": "px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded"
+                                                        },
+                                                        "text": "$t:user.page.status_archived"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "page_admin_edit_button",
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{_global.currentUser?.is_admin}}",
+                                                "props": {
+                                                    "href": "/admin/pages/{{page?.data?.id}}/edit",
+                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "pencil",
+                                                            "className": "text-xs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:user.page.admin_edit"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{page?.data?.published_at}}",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                                                }
+                                            }
+                                        },
+                                        "text": "$t:user.page.published_at: {{page?.data?.published_at | date}}"
+                                    },
+                                    {
+                                        "id": "page_html_content",
+                                        "type": "composite",
+                                        "name": "HtmlContent",
+                                        "props": {
+                                            "content": "{{page?.data?.content ?? ''}}",
+                                            "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
+                                            "className": "text-gray-700 dark:text-gray-300"
+                                        }
+                                    },
+                                    {
+                                        "id": "page_attachments_section",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(page?.data?.attachments ?? []).length > 0}}",
+                                        "props": {
+                                            "className": "mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2 mb-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "paperclip",
+                                                            "className": "text-gray-500 dark:text-gray-400 text-sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "$t:user.page.attachments"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-2"
+                                                },
+                                                "iteration": {
+                                                    "source": "page?.data?.attachments ?? []",
+                                                    "item_var": "att_item",
+                                                    "index_var": "att_index"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-3 min-w-0"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "{{att_item.is_image ? 'image' : 'file'}}",
+                                                                            "className": "text-gray-400 text-sm flex-shrink-0"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-sm text-gray-900 dark:text-white truncate"
+                                                                        },
+                                                                        "text": "{{att_item.original_filename}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "props": {
+                                                                    "href": "{{att_item.download_url}}",
+                                                                    "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 no-underline"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "download",
+                                                                            "className": "text-xs"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:user.page.download"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_not_found",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!page?.data && !page?.loading}}",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-exclamation",
+                                            "className": "text-4xl text-gray-400 dark:text-gray-500 mb-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "text-xl font-bold text-gray-900 dark:text-white mb-2"
+                                        },
+                                        "text": "$t:user.page.not_found_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-gray-500 dark:text-gray-400 mb-6"
+                                        },
+                                        "text": "$t:user.page.not_found_description"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "house",
+                                                            "className": "text-sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:user.page.back_to_home"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "if": "{{_global.currentUser?.is_admin}}",
+                                                "props": {
+                                                    "href": "/admin/pages/create?slug={{route?.slug ?? ''}}",
+                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "plus",
+                                                            "className": "text-sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:user.page.create_page"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_back_button",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{page?.data}}",
+                                "props": {
+                                    "className": "mt-8 text-center"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "mt-6 text-center"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-left",
+                                                    "className": "text-sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:user.page.back_to_home"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

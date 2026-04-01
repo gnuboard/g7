@@ -1,0 +1,37 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/pages",
+            "layout": "admin_page_list",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-page.admin.page.list.title"
+            }
+        },
+        {
+            "path": "*/admin/pages/create",
+            "layout": "admin_page_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-page.admin.page.create.title"
+            }
+        },
+        {
+            "path": "*/admin/pages/:id/edit",
+            "layout": "admin_page_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-page.admin.page.edit.title"
+            }
+        },
+        {
+            "path": "*/admin/pages/:id",
+            "layout": "admin_page_detail",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-page.admin.page.detail.title"
+            }
+        }
+    ]
+}

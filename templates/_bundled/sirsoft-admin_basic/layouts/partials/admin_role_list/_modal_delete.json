@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "역할 삭제 확인 모달"
+  },
+  "id": "delete_confirm_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.roles.modals.delete_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:admin.roles.modals.delete_confirm"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal",
+              "target": "delete_confirm_modal"
+            }
+          ],
+          "text": "$t:common.cancel"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isDeleting": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/roles/{{_global.deleteTargetId}}",
+                  "params": { "method": "DELETE" },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "deleteTargetId": null,
+                        "deleteTargetName": ""
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.roles.modals.delete_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": { "dataSourceId": "roles" }
+                    },
+                    {
+                      "handler": "closeModal",
+                      "target": "delete_confirm_modal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? $t:admin.roles.errors.delete_failed}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isDeleting}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

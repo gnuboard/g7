@@ -1,0 +1,20 @@
+{
+    "name": "plugins/sirsoft-tosspayments",
+    "description": "TossPayments PG Plugin for G7 platform",
+    "version": "1.0.0-beta.1",
+    "type": "library",
+    "authors": [
+        {
+            "name": "sirsoft",
+            "email": "contact@sirsoft.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Tosspayments\\": ["src/", "./"]
+        }
+    }
+}

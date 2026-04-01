@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Category Image Preview Modal"
+  },
+  "id": "modal_image_preview",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.title",
+    "width": "90vw"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Img",
+          "props": {
+            "src": "{{_global.imagePreview.imageUrl}}",
+            "alt": "{{_global.imagePreview.imageAlt}}",
+            "className": "max-w-full max-h-[70vh] object-contain"
+          }
+        }
+      ]
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal",
+          "target": "modal_image_preview"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,557 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "배송지 추가/수정 모달 - Nexibase 스타일"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "addressModal",
+  "props": {
+    "title": "{{_global.editingAddress?.id ? '$t:mypage.addresses.edit_title' : '$t:mypage.addresses.add_title'}}",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Form",
+      "dataKey": "_global.editingAddress",
+      "props": {
+        "className": "space-y-4"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "space-y-3"
+          }
+        }
+      },
+      "children": [
+        {
+          "comment": "배송지명",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.addresses.form.label"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 ml-0.5"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "value": "{{$localized(_global.editingAddress?.name) ?? ''}}",
+                "placeholder": "$t:mypage.addresses.form.label_placeholder",
+                "required": true,
+                "error": "{{_local.addressErrors?.name?.[0] ?? ''}}",
+                "className": "{{_local.addressErrors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "text",
+                    "value": "{{$localized(_global.editingAddress?.name) ?? ''}}",
+                    "placeholder": "$t:mypage.addresses.form.label_placeholder",
+                    "required": true,
+                    "className": "{{_local.addressErrors?.name ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "editingAddress.name": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.addressErrors?.name}}",
+              "props": {
+                "className": "text-red-500 text-xs mt-1"
+              },
+              "text": "{{_local.addressErrors?.name?.[0] ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "받는 분 + 연락처 (가로 배치, 모바일은 세로)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "grid grid-cols-1 gap-3"
+              }
+            }
+          },
+          "children": [
+            {
+              "comment": "받는 분",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:mypage.addresses.form.recipient"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-red-500 ml-0.5"
+                      },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "recipient_name",
+                    "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
+                    "required": true,
+                    "error": "{{_local.addressErrors?.recipient_name?.[0] ?? ''}}",
+                    "className": "{{_local.addressErrors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "type": "text",
+                        "name": "recipient_name",
+                        "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
+                        "required": true,
+                        "className": "{{_local.addressErrors?.recipient_name ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.addressErrors?.recipient_name}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1"
+                  },
+                  "text": "{{_local.addressErrors?.recipient_name?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "comment": "연락처",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:mypage.addresses.form.phone"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-red-500 ml-0.5"
+                      },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "tel",
+                    "name": "recipient_phone",
+                    "placeholder": "$t:mypage.addresses.form.phone_placeholder",
+                    "required": true,
+                    "error": "{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}",
+                    "className": "{{_local.addressErrors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "type": "tel",
+                        "name": "recipient_phone",
+                        "placeholder": "$t:mypage.addresses.form.phone_placeholder",
+                        "required": true,
+                        "className": "{{_local.addressErrors?.recipient_phone ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.addressErrors?.recipient_phone}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1"
+                  },
+                  "text": "{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "주소 검색 - sirsoft-daum_postcode 플러그인 연동",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.addresses.form.address"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 ml-0.5"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "comment": "우편번호 + 검색 버튼",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "zipcode",
+                        "placeholder": "$t:shop.checkout.zipcode_placeholder",
+                        "className": "{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
+                        "readOnly": true
+                      }
+                    },
+                    {
+                      "id": "modal_address_search_slot",
+                      "type": "extension_point",
+                      "name": "address_search_slot",
+                      "props": {
+                        "readOnlyFields": ["zipcode", "address"],
+                        "onAddressSelect": {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "editingAddress.zipcode": "{{$event.zipcode}}",
+                            "editingAddress.address": "{{$event.address}}",
+                            "editingAddress.region": "{{$event.region}}",
+                            "editingAddress.city": "{{$event.city}}"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "기본 주소",
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "address",
+                    "placeholder": "$t:shop.checkout.address_placeholder",
+                    "className": "{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
+                    "readOnly": true
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.addressErrors?.zipcode || _local.addressErrors?.address}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1"
+                  },
+                  "text": "{{_local.addressErrors?.zipcode?.[0] ?? _local.addressErrors?.address?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "상세 주소",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:mypage.addresses.form.detail_address"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "address_detail",
+                "placeholder": "$t:mypage.addresses.form.detail_placeholder",
+                "className": "{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "text",
+                    "name": "address_detail",
+                    "placeholder": "$t:mypage.addresses.form.detail_placeholder",
+                    "className": "{{_local.addressErrors?.address_detail ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "기본 배송지로 설정 체크박스",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 pt-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Checkbox",
+              "props": {
+                "id": "address_is_default",
+                "name": "is_default",
+                "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "htmlFor": "address_is_default",
+                "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+              },
+              "text": "$t:mypage.addresses.form.set_default"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  }
+                }
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                "disabled": "{{_local.isSaving ?? false}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "comment": "스피너",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.isSaving}}",
+                  "props": {
+                    "className": "w-4 h-4 border-2 border-white/30 dark:border-gray-900/30 border-t-white dark:border-t-gray-900 rounded-full animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_local.isSaving}}",
+                  "text": "{{_global.editingAddress?.id ? '$t:common.save' : '$t:mypage.addresses.add'}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.isSaving}}",
+                  "text": "$t:common.processing"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isSaving": true,
+                        "addressErrors": null
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "{{_global.editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _global.editingAddress.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}",
+                      "params": {
+                        "method": "{{_global.editingAddress?.id ? 'PUT' : 'POST'}}",
+                        "body": "{{_global.editingAddress}}"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "addresses"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isSaving": false,
+                            "addressErrors": null
+                          }
+                        },
+                        {
+                          "handler": "closeModal"
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "{{_global.editingAddress?.id ? '$t:mypage.addresses.updated' : '$t:mypage.addresses.added'}}"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isSaving": false,
+                            "addressErrors": "{{error.errors ?? {}}}"
+                          }
+                        },
+                        {
+                          "comment": "409 = 배송지명 중복 → 덮어쓰기 확인 모달",
+                          "if": "{{error.status === 409}}",
+                          "handler": "openModal",
+                          "target": "confirmOverwriteModal"
+                        },
+                        {
+                          "if": "{{error.status !== 409}}",
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

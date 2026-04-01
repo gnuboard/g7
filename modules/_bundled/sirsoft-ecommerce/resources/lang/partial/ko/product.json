@@ -1,0 +1,13 @@
+{
+  "name": "상품명",
+  "price": "가격",
+  "stock": "재고",
+  "description": "상품 설명",
+  "category": "카테고리",
+  "status": "상태",
+  "statuses": {
+    "active": "판매중",
+    "inactive": "판매중지",
+    "soldout": "품절"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "홈 통계 카드 - 게시글 수 (blue)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-3" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 dark:bg-blue-900/30" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "file-alt", "className": "w-5 h-5 text-blue-600 dark:text-blue-400" } }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-2xl font-bold text-gray-900 dark:text-white" }, "text": "{{stats?.data?.posts ?? 0 | number}}" },
+            { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:home.stats.posts" }
+          ]
+        }
+      ]
+    }
+  ]
+}

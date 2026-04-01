@@ -1,0 +1,143 @@
+<?php
+
+namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
+
+use App\Enums\ExtensionOwnerType;
+use App\Enums\MailSendStatus;
+use App\Models\MailSendLog;
+use App\Traits\HasSeederCounts;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+
+/**
+ * 이커머스 모듈 메일 발송 이력 개발용 시더
+ *
+ * 이커머스 메일 템플릿(order_confirmed, order_shipped, order_completed,
+ * order_cancelled, new_order_admin)을 기반으로 발송 이력 샘플 데이터를 생성합니다.
+ *
+ * 개발/테스트 용도이므로 설치 시 자동 실행되지 않습니다.
+ * 수동 실행: php artisan module:seed sirsoft-ecommerce --class=EcommerceMailSendLogSeeder
+ */
+class EcommerceMailSendLogSeeder extends Seeder
+{
+    use HasSeederCounts;
+
+    /**
+     * 이커머스 메일 템플릿 유형별 제목 패턴
+     *
+     * @var array<string, string>
+     */
+    private array $templateSubjects = [
+        'order_confirmed' => '[그누보드7] 주문이 확인되었습니다',
+        'order_shipped' => '[그누보드7] 배송이 시작되었습니다',
+        'order_completed' => '[그누보드7] 구매가 확정되었습니다',
+        'order_cancelled' => '[그누보드7] 주문이 취소되었습니다',
+        'new_order_admin' => '[그누보드7] 신규 주문이 접수되었습니다',
+    ];
+
+    /**
+     * 시더 실행
+     *
+     * @return void
+     */
+    public function run(): void
+    {
+        $count = $this->getSeederCount('mail_send_logs', 35);
+
+        $this->command->info('이커머스 메일 발송 이력 시딩 시작...');
+
+        $templateTypes = array_keys($this->templateSubjects);
+        $recipients = $this->getRecipients();
+
+        for ($i = 0; $i < $count; $i++) {
+            $templateType = $templateTypes[array_rand($templateTypes)];
+            $recipient = $recipients[array_rand($recipients)];
+            $status = $this->randomStatus();
+            $sentAt = $this->randomSentAt();
+
+            MailSendLog::create([
+                'recipient_email' => $recipient['email'],
+                'recipient_name' => $recipient['name'],
+                'subject' => $this->templateSubjects[$templateType],
+                'template_type' => $templateType,
+                'extension_type' => ExtensionOwnerType::Module,
+                'extension_identifier' => 'sirsoft-ecommerce',
+                'source' => 'notification',
+                'status' => $status->value,
+                'error_message' => $status === MailSendStatus::Failed
+                    ? $this->randomErrorMessage()
+                    : null,
+                'sent_at' => $sentAt,
+            ]);
+        }
+
+        $this->command->info("이커머스 메일 발송 이력 시딩 완료 ({$count}건)");
+    }
+
+    /**
+     * 샘플 수신자 목록을 반환합니다.
+     *
+     * @return array<int, array{email: string, name: string}>
+     */
+    private function getRecipients(): array
+    {
+        return [
+            ['email' => 'hong@example.com', 'name' => '홍길동'],
+            ['email' => 'kim@example.com', 'name' => '김철수'],
+            ['email' => 'lee@example.com', 'name' => '이영희'],
+            ['email' => 'park@example.com', 'name' => '박민수'],
+            ['email' => 'choi@example.com', 'name' => '최지은'],
+            ['email' => 'jung@example.com', 'name' => '정수민'],
+            ['email' => 'admin@example.com', 'name' => '관리자'],
+            ['email' => 'john@example.com', 'name' => 'John Doe'],
+            ['email' => 'jane@example.com', 'name' => 'Jane Smith'],
+            ['email' => 'buyer@example.com', 'name' => '구매자'],
+        ];
+    }
+
+    /**
+     * 가중치 기반 랜덤 상태를 반환합니다.
+     *
+     * @return MailSendStatus
+     */
+    private function randomStatus(): MailSendStatus
+    {
+        $rand = mt_rand(1, 100);
+
+        if ($rand <= 85) {
+            return MailSendStatus::Sent;
+        } elseif ($rand <= 95) {
+            return MailSendStatus::Failed;
+        }
+
+        return MailSendStatus::Skipped;
+    }
+
+    /**
+     * 최근 90일 내 랜덤 발송 시각을 반환합니다.
+     *
+     * @return Carbon
+     */
+    private function randomSentAt(): Carbon
+    {
+        return Carbon::now()->subDays(mt_rand(0, 90))->subHours(mt_rand(0, 23))->subMinutes(mt_rand(0, 59));
+    }
+
+    /**
+     * 랜덤 에러 메시지를 반환합니다.
+     *
+     * @return string
+     */
+    private function randomErrorMessage(): string
+    {
+        $messages = [
+            'Connection timed out after 30 seconds',
+            'SMTP server returned 550: Mailbox not found',
+            'DNS resolution failed for mail server',
+            'Authentication failed: Invalid credentials',
+            'Message rejected: Recipient address rejected',
+        ];
+
+        return $messages[array_rand($messages)];
+    }
+}

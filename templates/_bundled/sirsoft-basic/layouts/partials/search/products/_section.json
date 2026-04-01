@@ -1,0 +1,74 @@
+{
+  "meta": { "is_partial": true, "description": "전체 탭 - 상품 섹션 (최대 5개 + 전체보기)" },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" },
+  "children": [
+    {
+      "comment": "섹션 헤더",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "size": "sm", "className": "text-gray-500 dark:text-gray-400" } },
+            { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "$t:search.tabs.products" },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{searchResults?.data?.products_count ?? 0}}" }
+          ]
+        },
+        {
+          "comment": "전체보기 버튼",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(searchResults?.data?.products_count ?? 0) > 0}}",
+          "props": { "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:search.view_all" },
+            { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "size": "sm" } }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "global", "searchActiveTab": "products", "searchPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "searchResults" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "상품 그리드 (전체 탭: 최대 5개)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{searchResults?.data?.products?.length > 0}}",
+      "props": { "className": "p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "{{searchResults?.data?.products ?? []}}", "item_var": "product" },
+          "children": [
+            { "partial": "partials/search/products/_item_card.json" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "결과 없음 안내",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!searchResults?.data?.products || searchResults?.data?.products?.length === 0}}",
+      "props": { "className": "px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400" },
+      "children": [
+        { "type": "basic", "name": "Span", "text": "$t:search.empty.products_in_all" }
+      ]
+    }
+  ]
+}

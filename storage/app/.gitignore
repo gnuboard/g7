@@ -1,0 +1,6 @@
+*
+!attachments/
+!core_pending/
+!private/
+!public/
+!.gitignore

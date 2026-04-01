@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Brand Detail Panel - View/Form Container"
+  },
+  "id": "detail_panel",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "col-span-2-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+  },
+  "children": [
+    {
+      "id": "empty_state_panel",
+      "type": "composite",
+      "name": "EmptyState",
+      "if": "{{!_global.selectedBrandId && _global.panelMode !== 'create' && _global.panelMode !== 'edit'}}",
+      "props": {
+        "icon": "tag",
+        "title": "$t:sirsoft-ecommerce.admin.brand.empty.title",
+        "description": "$t:sirsoft-ecommerce.admin.brand.empty.description",
+        "className": "py-16"
+      }
+    },
+    { "partial": "_panel_view.json" },
+    { "partial": "_panel_form.json" }
+  ]
+}

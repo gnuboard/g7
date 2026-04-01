@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "결제수단 설정 - Desktop Sortable 리스트"
+  },
+  "id": "payment_methods_sortable",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-2"
+  },
+  "sortable": {
+    "source": "{{_local.form?.order_settings?.payment_methods ?? []}}",
+    "itemKey": "id",
+    "strategy": "verticalList",
+    "handle": "[data-drag-handle]",
+    "itemVar": "$method",
+    "indexVar": "$methodIndex"
+  },
+  "actions": [
+    {
+      "event": "onSortEnd",
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "form.order_settings.payment_methods": "{{$sortedItems.map((m, i) => ({...m, sort_order: i + 1}))}}",
+        "hasChanges": true
+      }
+    }
+  ],
+  "itemTemplate": {
+    "type": "basic",
+    "name": "Div",
+    "props": {
+      "className": "border rounded-lg p-3 flex items-center gap-4"
+    },
+    "classMap": {
+      "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
+      "variants": {
+        "normal": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700",
+        "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
+      }
+    },
+    "children": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "props": {
+          "data-drag-handle": true,
+          "className": "cursor-grab text-gray-400 dark:text-gray-500"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Icon",
+            "props": {
+              "name": "grip-vertical",
+              "className": "text-lg"
+            }
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Icon",
+        "props": {
+          "name": "{{$method._cached_icon ?? 'circle-question'}}",
+          "className": "text-2xl text-gray-600 dark:text-gray-400"
+        }
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "flex-1 min-w-0"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "flex items-center gap-2"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "font-medium text-gray-900 dark:text-gray-100"
+                },
+                "text": "{{$localized($method._cached_name) || $method.id}}"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "if": "{{$method._orphaned}}",
+                "props": {
+                  "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                },
+                "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{$localized($method._cached_description)}}",
+            "props": {
+              "className": "text-sm text-gray-500 dark:text-gray-400"
+            },
+            "text": "{{$localized($method._cached_description)}}"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "props": {
+          "className": "flex flex-col gap-1"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Span",
+            "props": {
+              "className": "text-xs text-gray-500 dark:text-gray-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
+          },
+          {
+            "type": "basic",
+            "name": "Select",
+            "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length > 0}}",
+            "props": {
+              "value": "{{$method.pg_provider ?? ''}}",
+              "className": "w-36",
+              "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+              "disabled": "{{_computed.isReadOnly}}"
+            },
+            "actions": [
+              {
+                "type": "change",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}",
+                  "hasChanges": true
+                }
+              }
+            ]
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{!['point','deposit','free','dbank'].includes($method.id) && (_local.form?.available_pg_providers ?? []).length === 0}}",
+            "props": {
+              "className": "text-xs text-gray-400 dark:text-gray-500 italic"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
+          },
+          {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{['point','deposit','free','dbank'].includes($method.id)}}",
+            "props": {
+              "className": "text-xs text-gray-400 dark:text-gray-500"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "props": {
+          "className": "flex flex-col gap-1"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Span",
+            "props": {
+              "className": "text-xs text-gray-500 dark:text-gray-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
+          },
+          {
+            "type": "basic",
+            "name": "Select",
+            "props": {
+              "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
+              "className": "w-36",
+              "options": [
+                {
+                  "value": "order_placed",
+                  "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed"
+                },
+                {
+                  "value": "payment_complete",
+                  "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete"
+                },
+                {
+                  "value": "none",
+                  "label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_none"
+                }
+              ],
+              "disabled": "{{_computed.isReadOnly}}"
+            },
+            "actions": [
+              {
+                "type": "change",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, stock_deduction_timing: $event.target.value} : m)}}",
+                  "hasChanges": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "props": {
+          "className": "flex flex-col gap-1"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Span",
+            "props": {
+              "className": "text-xs text-gray-500 dark:text-gray-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
+          },
+          {
+            "type": "basic",
+            "name": "Input",
+            "props": {
+              "type": "number",
+              "value": "{{$method.min_order_amount ?? 0}}",
+              "min": 0,
+              "className": "input w-28",
+              "disabled": "{{_computed.isReadOnly}}"
+            },
+            "actions": [
+              {
+                "type": "change",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}",
+                  "hasChanges": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Div",
+        "if": "{{!$method._orphaned}}",
+        "children": [
+          {
+            "type": "composite",
+            "name": "Toggle",
+            "props": {
+              "value": "{{$method.is_active}}",
+              "disabled": "{{_computed.isReadOnly || !['point','deposit','free','dbank'].includes($method.id) && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider}}"
+            },
+            "actions": [
+              {
+                "type": "change",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}",
+                  "hasChanges": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "if": "{{$method._orphaned}}",
+        "props": {
+          "type": "button",
+          "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
+          "disabled": "{{_computed.isReadOnly}}"
+        },
+        "actions": [
+          {
+            "type": "click",
+            "handler": "setState",
+            "params": {
+              "target": "local",
+              "form.order_settings.payment_methods": "{{(_local.form?.order_settings?.payment_methods ?? []).filter((_, i) => i !== $methodIndex)}}",
+              "hasChanges": true
+            }
+          }
+        ],
+        "children": [
+          {
+            "type": "basic",
+            "name": "Icon",
+            "props": {
+              "name": "trash",
+              "className": "text-sm"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

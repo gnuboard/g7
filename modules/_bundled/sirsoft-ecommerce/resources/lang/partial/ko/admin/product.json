@@ -1,0 +1,1181 @@
+{
+  "title": "상품 관리",
+  "add": "상품 등록",
+  "preset": {
+    "label": "검색 프리셋",
+    "out_of_stock": "품절상품",
+    "new_product": "신규상품",
+    "display_stopped": "전시중지",
+    "applied": "'{{name}}' 프리셋이 적용되었습니다."
+  },
+  "search": {
+    "placeholder": "검색어를 입력하세요...",
+    "field": {
+      "all": "전체",
+      "product_name": "상품명",
+      "description": "상품설명",
+      "product_code": "상품코드",
+      "sku": "SKU",
+      "barcode": "바코드"
+    },
+    "column_select": "컬럼 선택",
+    "detail_search": "상세검색"
+  },
+  "filter": {
+    "detail_title": "상세 검색",
+    "category": "카테고리",
+    "no_category": "카테고리 미등록",
+    "date": "날짜",
+    "date_type": {
+      "created_at": "등록일",
+      "updated_at": "수정일"
+    },
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "date_quick": {
+      "today": "오늘",
+      "3days": "3일간",
+      "week": "일주일",
+      "month": "1개월",
+      "3months": "3개월",
+      "all": "전체"
+    },
+    "sales_status": "판매 상태",
+    "sales_status_options": {
+      "all": "전체",
+      "on_sale": "판매중",
+      "out_of_stock": "품절",
+      "restocking": "재고 확보 중",
+      "stopped": "판매 중지"
+    },
+    "display_status": "전시 상태",
+    "display_status_options": {
+      "all": "전체",
+      "displayed": "전시중",
+      "hidden": "전시중지"
+    },
+    "brand": "브랜드",
+    "no_brand": "브랜드 미등록",
+    "tax_status": "과세 여부",
+    "tax_status_options": {
+      "all": "전체",
+      "taxable": "과세",
+      "tax_free": "비과세"
+    },
+    "price": "가격",
+    "price_type": {
+      "selling_price": "판매가",
+      "supply_price": "공급가",
+      "original_price": "정가"
+    },
+    "min_price": "최소 금액",
+    "max_price": "최대 금액",
+    "min": "최소",
+    "max": "최대",
+    "stock": "재고",
+    "stock_unit": "개",
+    "shipping_policy": "배송 정책",
+    "shipping_policy_options": {
+      "all": "전체"
+    },
+    "detail_filter_label": "상세 검색 필터"
+  },
+  "action": {
+    "edit": "수정",
+    "copy": "복사",
+    "delete": "삭제",
+    "edit_search": "검색 편집",
+    "search": "검색",
+    "reset": "초기화",
+    "save_preset": "프리셋 저장"
+  },
+  "bulk_apply": "일괄 적용",
+  "bulk_success": "선택한 상품이 일괄 변경되었습니다.",
+  "bulk": {
+    "no_selection": "선택된 항목이 없습니다.",
+    "update_success": "상품 {{products}}개, 옵션 {{options}}개가 수정되었습니다.",
+    "update_error": "일괄 업데이트에 실패했습니다.",
+    "option_update_success": "{{count}}개 옵션이 수정되었습니다.",
+    "option_update_error": "옵션 일괄 업데이트에 실패했습니다."
+  },
+  "stock_options_hint": "옵션이 있는 상품은 옵션별로 재고를 관리합니다",
+  "stock_mismatch_warning": "옵션 재고 합계와 불일치합니다",
+  "selected_count": "{count}개 선택됨",
+  "total_count": "총 {count}개",
+  "excel_download": "엑셀 다운로드",
+  "sort": {
+    "latest": "최신순",
+    "oldest": "오래된순",
+    "name_asc": "이름 오름차순",
+    "name_desc": "이름 내림차순",
+    "price_asc": "가격 낮은순",
+    "price_desc": "가격 높은순",
+    "stock_asc": "재고 적은순",
+    "stock_desc": "재고 많은순"
+  },
+  "table": {
+    "selected_count": "{{count}}개 선택됨",
+    "total_count": "총 {{count}}개",
+    "bulk_action": {
+      "sales_status": "판매상태 변경",
+      "display_status": "전시상태 변경",
+      "price": "판매가 변경",
+      "price_bulk": "판매가 일괄 변경",
+      "stock_bulk": "재고 일괄 변경",
+      "apply": "일괄 변경"
+    },
+    "sort": {
+      "label": "정렬",
+      "latest": "최신순",
+      "oldest": "오래된순",
+      "name_asc": "이름 오름차순",
+      "name_desc": "이름 내림차순",
+      "price_asc": "가격 낮은순",
+      "price_desc": "가격 높은순"
+    },
+    "per_page": "{{count}}개",
+    "excel_download": "엑셀 다운로드",
+    "column": {
+      "image": "이미지",
+      "product_name": "상품명",
+      "original_price": "정가",
+      "selling_price": "판매가",
+      "stock": "재고",
+      "safety_stock": "안전재고",
+      "sales_status": "판매상태",
+      "display_status": "전시상태",
+      "shipping_policy": "배송비 정책",
+      "created_at": "등록일",
+      "updated_at": "수정일",
+      "actions": "작업",
+      "default": "기본",
+      "usd": "USD ($)",
+      "jpy": "JPY (¥)",
+      "cny": "CNY (¥)",
+      "sku": "SKU",
+      "use_status": "사용여부",
+      "color": "색상",
+      "category": "카테고리",
+      "brand": "브랜드",
+      "min_purchase_qty": "최소수량",
+      "max_purchase_qty": "최대구매수량"
+    },
+    "status": {
+      "on_sale": "판매중",
+      "out_of_stock": "품절",
+      "restocking": "재고 확보 중",
+      "stopped": "판매 중지",
+      "discontinued": "판매중지",
+      "displayed": "전시중",
+      "hidden": "전시중지"
+    },
+    "options": {
+      "title": "옵션",
+      "color": "색상",
+      "size": "사이즈",
+      "show_detail": "상세옵션 보기",
+      "hide_detail": "상세옵션 닫기",
+      "column": {
+        "name": "옵션명",
+        "is_default": "기본",
+        "color": "색상",
+        "size": "사이즈",
+        "list_price": "정가",
+        "selling_price": "판매가",
+        "price": "가격",
+        "sku": "SKU",
+        "stock": "재고",
+        "safe_stock": "안전재고",
+        "active": "사용"
+      },
+      "no_options": "등록된 옵션이 없습니다"
+    },
+    "shipping": {
+      "free": "무료배송",
+      "conditional_free": "조건부 무료배송",
+      "standard": "기본배송"
+    },
+    "pagination": {
+      "prev": "이전",
+      "next": "다음",
+      "showing": "전체 {{total}}개 중 {{from}} - {{to}}"
+    },
+    "empty": {
+      "title": "등록된 상품이 없습니다",
+      "description": "새 상품을 추가해주세요"
+    },
+    "mobile": {
+      "price_label": "정가",
+      "selling_price_label": "판매가",
+      "stock_label": "재고",
+      "stock": "재고:",
+      "safety_stock_label": "안전재고",
+      "status_label": "상태",
+      "shipping_label": "배송정책",
+      "created_at_label": "등록일",
+      "updated_at_label": "수정일",
+      "unit": "개",
+      "options": "옵션 목록"
+    },
+    "no_data": "등록된 상품이 없습니다"
+  },
+  "validation": {
+    "selling_price_exceeds_list_price": "판매가는 정가를 초과할 수 없습니다"
+  },
+  "index": {
+    "title": "상품 관리",
+    "description": "상품 목록을 관리합니다",
+    "add_product": "상품 추가",
+    "empty_title": "등록된 상품이 없습니다",
+    "empty_description": "새 상품을 추가해주세요"
+  },
+  "create": {
+    "title": "상품 등록",
+    "title_edit": "상품 수정",
+    "description": {
+      "title": "상세설명",
+      "placeholder": "상세 설명을 입력하세요",
+      "mode_text": "텍스트",
+      "mode_html": "HTML",
+      "languages": {
+        "ko": "한국어",
+        "en": "English"
+      },
+      "add_language": "언어 추가"
+    },
+    "description_edit": "상품 정보를 수정합니다",
+    "basic_info": {
+      "title": "기본정보",
+      "category": {
+        "title": "카테고리 선택",
+        "required": "*",
+        "max_count": "(최대 5개)",
+        "manage": "카테고리 관리",
+        "selected": "선택된 카테고리",
+        "selected_count": "({{current}}/{{max}})",
+        "step": "{{n}}단계"
+      },
+      "brand": {
+        "title": "브랜드",
+        "manage": "브랜드 관리"
+      },
+      "product_name": {
+        "title": "상품명",
+        "required": "*",
+        "placeholder": "상품명을 입력하세요"
+      },
+      "languages": {
+        "ko": "한국어",
+        "en": "English"
+      }
+    },
+    "sales_info": {
+      "title": "판매정보",
+      "base_currency": "기본 통화",
+      "original_price": "정가",
+      "sale_price": "판매가",
+      "sale_price_hint": "기본 설정 옵션의 판매가 기준으로 자동 설정됩니다",
+      "stock": "재고",
+      "stock_sync_hint": "최신 재고와 일치 함",
+      "tax_status": "과세 여부",
+      "tax_status_options": {
+        "taxable": "과세",
+        "tax_free": "면세"
+      },
+      "sales_status": "판매 상태",
+      "sales_status_options": {
+        "on_sale": "판매중",
+        "out_of_stock": "품절",
+        "stopped": "판매중지"
+      },
+      "display_status": "전시 상태",
+      "display_status_options": {
+        "displayed": "전시중",
+        "hidden": "전시안함"
+      }
+    },
+    "product_options": {
+      "title": "상품옵션",
+      "bulk_create": {
+        "title": "옵션 일괄 생성 (최대 3개)",
+        "helper": "상품옵션을 생성하기 위한 기능입니다. 옵션명과 항목을 입력 후 '옵션 항목으로 생성' 버튼을 누르면 조합된 옵션이 생성됩니다. (기본 항목은 초기화됨)",
+        "option_name_placeholder": "옵션명",
+        "add_option": "옵션 추가",
+        "generate": "옵션 항목으로 생성"
+      },
+      "table": {
+        "title": "상품옵션설정",
+        "multi_currency_auto": "다중 통화 가격 자동 입력",
+        "add_row": "+ 행 추가",
+        "columns": {
+          "default": "기본",
+          "size": "사이즈",
+          "color": "색상",
+          "regular_price": "정가",
+          "sale_price": "판매가 *",
+          "usd": "USD($)",
+          "jpy": "JPY(¥)",
+          "cny": "CNY(¥)",
+          "sku": "SKU",
+          "stock": "재고 *",
+          "safety_stock": "안전 재고",
+          "weight": "무게(g)",
+          "volume": "부피(cm³)",
+          "mileage": "마일리지",
+          "active": "사용",
+          "delete": "삭제"
+        }
+      },
+      "additional": {
+        "title": "상품추가옵션",
+        "helper": "고객이 직접 텍스트를 입력할 수 있는 추가 옵션입니다. 최대 5개까지 추가 가능합니다. (예: 개인 문구, 선물 메시지 등)",
+        "used": "사용",
+        "unused": "미사용",
+        "option_name": "옵션명",
+        "option_name_placeholder": "옵션명 입력",
+        "required": "필수",
+        "add_option": "추가옵션 추가"
+      }
+    },
+    "image": {
+      "title": "이미지",
+      "upload_title": "이미지 업로드 (최대 10개)",
+      "upload_hint": "권장: 1000x1000px, 최대 5MB",
+      "drag_hint": "드래그하여 순서 변경 (대표 이미지는 항상 맨 앞)",
+      "thumbnail_hint": "대표 이미지는 사이즈별 섬네일이 자동 생성됩니다",
+      "main_badge": "대표",
+      "set_main_button": "대표"
+    },
+    "product_notice": {
+      "title": "상품정보제공고시",
+      "category_label": "상품군 선택",
+      "category_placeholder": "상품군을 선택하세요",
+      "manage_link": "상품정보제공고시 관리 이동",
+      "languages": {
+        "ko": "한국어",
+        "en": "English",
+        "zh": "中文",
+        "ja": "日本語"
+      },
+      "items_header": "항목 목록",
+      "items_count": "{{count}}개",
+      "batch_change": "모든 항목 '상세설명참조'로 변경",
+      "table": {
+        "order": "순번",
+        "name": "항목명",
+        "value": "내용"
+      },
+      "add_item": "항목 추가",
+      "category_options": {
+        "clothing": "의류",
+        "food": "식품",
+        "electronics": "전자제품",
+        "cosmetics": "화장품"
+      }
+    },
+    "shipping": {
+      "title": "배송비",
+      "policy_label": "배송비 정책",
+      "manage_link": "배송비 관리",
+      "use_default": "기본 배송비 사용",
+      "policy_types": {
+        "default": "기본",
+        "free_shipping": "무료배송 정책",
+        "conditional_free": "조건부 무료배송",
+        "collect_3000": "착불 3000원",
+        "quantity_based": "수량별 배송 정책"
+      },
+      "detail": {
+        "delivery_method": "배송방법",
+        "carrier": "택배사",
+        "fee": "배송비",
+        "delivery_days": "배송기간",
+        "condition": "배송조건",
+        "return_exchange_fee": "반품/교환배송비",
+        "additional_info": "추가정보"
+      }
+    },
+    "common_info": {
+      "title": "상품 공통 정보",
+      "label": "상품 공통 정보",
+      "manage_link": "공통정보 관리",
+      "use_default": "기본 상품 공통 정보 사용",
+      "types": {
+        "none": "사용안함",
+        "general": "일반 상품 안내"
+      },
+      "badge_default": "기본"
+    },
+    "other_info": {
+      "title": "기타정보",
+      "product_label": {
+        "title": "상품 라벨",
+        "hit": "HIT",
+        "etc": "기타",
+        "best": "BEST",
+        "sale": "SALE",
+        "edit": "수정",
+        "remove": "제거"
+      },
+      "min_qty": {
+        "title": "최소 구매 수량",
+        "hint": "1개 이상"
+      },
+      "max_qty": {
+        "title": "최대 구매 수량",
+        "hint": "0은 제한 없음으로 처리"
+      },
+      "purchase_limit": {
+        "title": "구매 대상 제한",
+        "no_limit": "제한 없음",
+        "restricted": "구매 대상 제한"
+      },
+      "allowed_roles": {
+        "title": "허용 역할"
+      }
+    },
+    "seo_settings": {
+      "title": "SEO 설정",
+      "seo_tags": {
+        "label": "SEO 태그",
+        "placeholder": "태그 입력 후 Enter"
+      }
+    },
+    "identification_codes": {
+      "title": "식별코드",
+      "product_code": {
+        "label": "상품코드(자사몰)",
+        "placeholder": "상품코드 입력"
+      },
+      "barcode": {
+        "label": "바코드",
+        "placeholder": "바코드 입력"
+      },
+      "hs_code": {
+        "label": "HS 코드",
+        "placeholder": "HS 코드 입력"
+      }
+    },
+    "shopping_integration": {
+      "title": "쇼핑 연동",
+      "integration_status": "연동 여부",
+      "enabled": "연동",
+      "disabled": "연동안함",
+      "naver": {
+        "name": "네이버 쇼핑 연동",
+        "plugin": "네이버 쇼핑 플러그인"
+      },
+      "daum": {
+        "name": "다음 쇼핑 연동",
+        "plugin": "다음 쇼핑 플러그인"
+      },
+      "facebook": {
+        "name": "페이스북 쇼핑 연동",
+        "plugin": "페이스북 쇼핑 플러그인"
+      },
+      "google": {
+        "name": "구글 쇼핑 연동",
+        "plugin": "구글 쇼핑 플러그인"
+      }
+    },
+    "activity_log": {
+      "title": "처리로그",
+      "sort": {
+        "label": "정렬:",
+        "latest": "처리일시 최근순",
+        "oldest": "처리일시 오래된순"
+      },
+      "per_page": {
+        "label": "페이지당:"
+      },
+      "columns": {
+        "datetime": "처리일시",
+        "actor": "처리자",
+        "event": "이벤트"
+      }
+    },
+    "modal": {
+      "add_language": {
+        "title": "언어 추가",
+        "description": "추가할 언어를 선택하세요."
+      },
+      "label_period": {
+        "title": "라벨 기간 설정",
+        "description": "라벨의 표시 기간을 설정합니다.",
+        "start_date": "시작일",
+        "end_date": "종료일 (선택사항)",
+        "labels": {
+          "featured": "기획",
+          "new": "신상품",
+          "best": "베스트",
+          "sale": "세일"
+        }
+      },
+      "copy_product": {
+        "title": "상품 복사",
+        "description": "선택한 상품을 복사하여 새 상품을 등록하시겠습니까?",
+        "note": "기존 상품의 모든 정보가 복사되며, 수정 후 저장할 수 있습니다.",
+        "copy": "복사하기"
+      },
+      "confirm": {
+        "title": "옵션 재생성 확인",
+        "regenerate_options": "기존 옵션이 초기화됩니다. 새로운 옵션 조합으로 다시 생성하시겠습니까?",
+        "regenerate_options_note": "동일한 이름의 옵션은 기존 가격·재고 정보가 유지됩니다."
+      }
+    }
+  },
+  "edit": {
+    "title": "상품 수정"
+  },
+  "form": {
+    "title": "상품 정보",
+    "description": "상품 정보를 입력합니다",
+    "placeholder": "상품 폼이 여기에 표시됩니다"
+  },
+  "modal": {
+    "preset_manage": {
+      "title": "프리셋 관리",
+      "description": "검색 프리셋을 관리합니다.",
+      "add_new": "새 프리셋 추가",
+      "empty": "저장된 프리셋이 없습니다."
+    },
+    "preset_save": {
+      "title": "프리셋 저장",
+      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
+      "placeholder": "프리셋 이름을 입력하세요",
+      "save": "저장"
+    },
+    "preset_edit": {
+      "title": "프리셋 수정"
+    },
+    "preset_delete": {
+      "title": "프리셋 삭제",
+      "confirm": "'{{name}}' 프리셋을 삭제하시겠습니까?"
+    },
+    "bulk_price": {
+      "title": "판매가 일괄 변경",
+      "description": "선택한 {{count}}개 상품의 판매가를 변경합니다.",
+      "method": "변경 방식",
+      "method_increase": "인상",
+      "method_decrease": "인하",
+      "method_fixed": "으로 변경",
+      "value": "변경 금액/비율",
+      "unit_won": "원",
+      "unit_percent": "%",
+      "preview_increase": "판매가를 {{value}}{{unit}} 인상합니다.",
+      "preview_decrease": "판매가를 {{value}}{{unit}} 인하합니다.",
+      "preview_fixed": "판매가를 {{value}}{{unit}}(으)로 변경합니다."
+    },
+    "bulk_stock": {
+      "title": "재고 일괄 변경",
+      "description": "선택한 {{count}}개 상품의 재고를 변경합니다.",
+      "method": "변경 방식",
+      "method_increase": "증가",
+      "method_decrease": "감소",
+      "method_set": "으로 변경",
+      "value": "변경 수량",
+      "preview_increase": "재고를 {{value}}개 증가합니다.",
+      "preview_decrease": "재고를 {{value}}개 감소합니다.",
+      "preview_set": "재고를 {{value}}개(으)로 변경합니다."
+    },
+    "bulk_confirm": {
+      "title": "일괄 변경 확인",
+      "description": "다음 항목을 일괄 변경합니다.",
+      "bulk_changes_section": "일괄 변경 조건",
+      "products_section": "변경될 상품 ({{count}}개)",
+      "options_section": "변경될 옵션 ({{count}}개)",
+      "sales_status": "판매 상태를 {{value}}(으)로 변경합니다.",
+      "display_status": "전시 상태를 {{value}}(으)로 변경합니다.",
+      "price": "판매가를 {{value}} 변경합니다.",
+      "stock": "재고를 {{value}} 변경합니다.",
+      "price_change": "판매가 일괄 변경",
+      "stock_change": "재고 일괄 변경",
+      "no_changes": "변경할 항목이 없습니다."
+    },
+    "bulk_placeholder": {
+      "sales_status": "판매 상태 선택",
+      "display_status": "전시 상태 선택"
+    },
+    "excel_download": {
+      "title": "엑셀 다운로드",
+      "description": "다운로드할 주문서 범위를 선택하세요.",
+      "option_search": "현재 검색 조건으로 다운로드",
+      "option_search_desc": "총 {{count}}개의 상품이 다운로드됩니다.",
+      "option_selected": "선택한 상품만 다운로드",
+      "option_selected_desc": "{{count}}개의 상품만 다운로드됩니다.",
+      "download": "다운로드"
+    },
+    "common": {
+      "cancel": "취소",
+      "change": "변경",
+      "apply": "적용",
+      "confirm": "확인"
+    },
+    "copy": {
+      "title": "상품 복사",
+      "no_name": "(이름 없음)",
+      "options_label": "복사 옵션",
+      "option_images": "상품 이미지",
+      "option_product_options": "상품 옵션",
+      "option_categories": "카테고리",
+      "option_sales_info": "판매 정보",
+      "option_description": "상품 설명",
+      "option_notice": "상품정보제공고시",
+      "option_common_info": "공통 정보",
+      "option_other_info": "기타 정보",
+      "option_shipping": "배송 정책",
+      "option_seo": "SEO 설정",
+      "option_identification": "식별 코드",
+      "note": "선택한 옵션의 데이터가 상품 등록 페이지에 사전 입력됩니다.",
+      "submit": "복사하기"
+    },
+    "delete": {
+      "title": "상품 삭제",
+      "confirm_question": "정말 이 상품을 삭제하시겠습니까?",
+      "cannot_delete_title": "삭제할 수 없습니다",
+      "related_data_notice": "다음 데이터가 함께 삭제됩니다:",
+      "warning_message": "삭제된 상품은 복구할 수 없습니다.",
+      "permanent_warning": "이 작업은 되돌릴 수 없습니다. 상품과 관련된 모든 데이터(이미지, 옵션, 재고 등)가 영구적으로 삭제됩니다.",
+      "confirm_button": "삭제"
+    },
+    "mode_change": {
+      "title": "상세설명 모드 변경",
+      "confirm_question": "상세설명 편집 모드를 변경하시겠습니까?",
+      "description": "모드를 변경하면 현재 작성 중인 내용의 형식이 변경될 수 있습니다.",
+      "current_mode": "현재 모드",
+      "new_mode": "변경할 모드",
+      "warning_title": "주의",
+      "warning_message": "모드 변경 시 일부 서식이 손실될 수 있습니다. 변경 전 내용을 저장하는 것을 권장합니다.",
+      "confirm_button": "모드 변경"
+    },
+    "save_template": {
+      "title": "고시정보 템플릿 저장",
+      "description": "현재 입력된 고시정보를 템플릿으로 저장합니다. 저장된 템플릿은 다른 상품에서 불러와 사용할 수 있습니다.",
+      "template_name": "템플릿 이름",
+      "template_name_placeholder": "예: 의류 기본 템플릿",
+      "category": "카테고리",
+      "category_placeholder": "카테고리 선택 (선택사항)",
+      "set_as_default": "기본 템플릿으로 설정",
+      "preview": "저장될 내용 미리보기",
+      "fields_count": "필드",
+      "more_fields": "개 필드 더 보기",
+      "info": "템플릿은 고시정보 입력 시 빠르게 불러와 사용할 수 있습니다.",
+      "save_button": "템플릿 저장"
+    }
+  },
+  "description": {
+    "mode_html": "HTML",
+    "mode_editor": "에디터",
+    "pc_tab": "PC용",
+    "mobile_tab": "모바일용",
+    "pc_hint": "PC에서 보여지는 상세설명입니다",
+    "mobile_hint": "모바일에서 보여지는 상세설명입니다",
+    "copy_from_pc": "PC 내용 복사",
+    "text_mode": "텍스트",
+    "html_mode": "HTML 편집"
+  },
+  "messages": {
+    "deleted_success": "상품이 삭제되었습니다.",
+    "deleted_error": "상품 삭제 중 오류가 발생했습니다.",
+    "code_generate_error": "상품코드 생성에 실패했습니다.",
+    "label_period_saved": "라벨 기간이 저장되었습니다.",
+    "label_period_removed": "라벨 기간이 제거되었습니다.",
+    "copy_code_required": "새 상품코드를 입력해주세요.",
+    "copy_source_not_found": "원본 상품 정보를 찾을 수 없습니다.",
+    "copy_success": "상품이 복사되었습니다.",
+    "copy_error": "상품 복사 중 오류가 발생했습니다.",
+    "copy_failed": "상품 복사에 실패했습니다.",
+    "bulk_summary_sales_status": "판매상태: {status}",
+    "bulk_summary_display_status": "전시상태: {status}",
+    "bulk_summary_name_changed": "상품명 수정",
+    "bulk_summary_list_price": "정가: {price}",
+    "bulk_summary_selling_price": "판매가: {price}",
+    "bulk_summary_inline_modified": "인라인 수정",
+    "bulk_summary_bulk_applied": "일괄 변경 적용",
+    "bulk_summary_price_adjustment": "조정가: {method} {value}",
+    "bulk_summary_price_adjustment_inline": "조정가: {value}",
+    "bulk_summary_stock": "재고: {method} {value}",
+    "bulk_summary_stock_inline": "재고: {value}",
+    "bulk_summary_option_name": "옵션명: {name}",
+    "bulk_summary_sku": "SKU: {sku}",
+    "bulk_summary_selected": "선택됨"
+  },
+  "buttons": {
+    "auto_generate": "자동 생성",
+    "generate_code": "코드 생성",
+    "manage_category": "카테고리 관리",
+    "manage_brand": "브랜드 관리",
+    "manage_labels": "라벨 관리",
+    "manage_shipping": "배송정책 관리",
+    "manage_common_info": "공통정보 관리",
+    "manage_notice_template": "상품정보제공고시 관리",
+    "create_shipping_policy": "배송정책 생성"
+  },
+  "image_delete_confirm": "이 이미지를 삭제하시겠습니까?",
+  "title_create": "상품 등록",
+  "title_edit": "상품 수정",
+  "description_create": "새 상품을 등록합니다",
+  "description_edit": "상품 정보를 수정합니다",
+  "uncategorized": "미분류",
+  "tabs": {
+    "basic": "기본정보",
+    "sales": "판매정보",
+    "options": "상품옵션",
+    "images": "이미지",
+    "description": "상세설명",
+    "notice": "상품고시정보",
+    "shipping": "배송",
+    "common_info": "공통정보",
+    "other": "기타정보",
+    "seo": "SEO",
+    "identification": "식별코드",
+    "additional_options": "추가옵션",
+    "shopping": "쇼핑연동",
+    "activity_log": "처리로그"
+  },
+  "sections": {
+    "basic_info": "기본정보",
+    "sales_info": "판매정보",
+    "product_options": "상품옵션",
+    "images": "이미지",
+    "description": "상세설명",
+    "notice": "상품정보제공고시",
+    "shipping": "배송정보",
+    "common_info": "상품 공통 정보",
+    "other_info": "기타정보",
+    "seo": "SEO 설정",
+    "identification": "식별코드",
+    "additional_options": "추가옵션",
+    "shopping_integration": "쇼핑 연동",
+    "activity_log": "처리로그",
+    "product_code_info": "상품코드 정보"
+  },
+  "fields": {
+    "base_currency": "기본 통화",
+    "name": "상품명",
+    "alternative_name": "영문명",
+    "category": "카테고리",
+    "brand": "브랜드",
+    "price": "가격",
+    "stock": "재고",
+    "sales_status": "판매상태",
+    "display_status": "전시상태",
+    "tax_status": "과세상태",
+    "product_code": "상품코드",
+    "sales_product_code": "판매상품코드",
+    "sku": "SKU",
+    "barcode": "바코드",
+    "hs_code": "HS 코드",
+    "description": "상세설명",
+    "short_description": "간략설명",
+    "short_description_hint": "상품 목록 등에 표시되는 짧은 설명입니다",
+    "summary_description": "요약설명",
+    "characteristics": "상품특성",
+    "labels": "상품라벨",
+    "purchase_qty": "구매수량",
+    "min_purchase_qty": "최소 구매 수량",
+    "max_purchase_qty": "최대 구매 수량",
+    "purchase_restriction": "구매대상 제한",
+    "purchase_start_limit": "구매시작제한",
+    "benefit_price_qty": "혜택가 수량",
+    "allowed_roles": "허용 역할",
+    "shipping_policy": "배송정책",
+    "notice_template": "상품고시 템플릿",
+    "common_info": "공통정보",
+    "meta_title": "SEO 제목",
+    "meta_description": "SEO 설명",
+    "meta_keywords": "SEO 키워드",
+    "use_main_image_for_og": "대표 이미지를 OG 이미지로 사용",
+    "created_at": "등록일",
+    "updated_at": "수정일"
+  },
+  "placeholders": {
+    "name": "상품명을 입력하세요",
+    "alternative_name": "영문 상품명을 입력하세요",
+    "alternative_name_en": "Enter product name in English",
+    "brand": "브랜드를 선택하세요",
+    "product_code": "상품코드를 입력하세요",
+    "sku": "SKU를 입력하세요",
+    "barcode": "바코드를 입력하세요",
+    "hs_code": "HS 코드를 입력하세요",
+    "description": "상세설명을 입력하세요",
+    "description_en": "Enter detailed description",
+    "description_mobile": "모바일용 상세설명을 입력하세요",
+    "description_mobile_en": "Enter mobile description",
+    "short_description": "간략설명을 입력하세요",
+    "summary_description": "요약설명을 입력하세요",
+    "common_info": "공통정보를 선택하세요",
+    "notice_template": "상품고시 템플릿을 선택하세요",
+    "meta_title": "SEO 제목을 입력하세요",
+    "meta_description": "SEO 설명을 입력하세요",
+    "meta_keywords": "SEO 키워드를 입력하세요",
+    "select_roles": "허용할 역할을 선택하세요",
+    "search_roles": "역할 검색..."
+  },
+  "options": {
+    "use_options": "옵션 사용",
+    "required_notice": "상품 등록 시 최소 1개의 옵션이 필수입니다. 옵션을 추가해주세요.",
+    "option_table_title": "옵션 목록",
+    "add_option_group": "옵션그룹 추가",
+    "add_row": "행 추가",
+    "generate_options": "옵션 생성",
+    "bulk_create_title": "옵션 일괄 생성",
+    "bulk_create_hint": "옵션명과 옵션값을 입력 후 '옵션 생성' 버튼을 클릭하세요",
+    "option_name_placeholder": "옵션명 (예: 색상)",
+    "option_values_placeholder": "옵션값을 쉼표(,)로 구분하여 입력",
+    "additional_title": "상품추가옵션",
+    "additional_hint": "고객이 직접 텍스트를 입력할 수 있는 추가 옵션입니다. 최대 5개까지 추가 가능합니다. (예: 각인 문구, 선물 메시지 등)",
+    "add_additional": "추가옵션 추가",
+    "additional_name_label": "옵션명",
+    "additional_name_placeholder": "각인 문구",
+    "no_additional": "등록된 추가옵션이 없습니다",
+    "auto_currency": "다중통화 가격 자동계산",
+    "items_count": "{{count}}개 옵션",
+    "required": "필수",
+    "columns": {
+      "default": "기본",
+      "option": "옵션",
+      "option_id": "옵션ID",
+      "category": "분류",
+      "list_price": "정가",
+      "selling_price": "판매가",
+      "price": "가격",
+      "price_type": "가격유형",
+      "sku": "SKU",
+      "stock": "재고",
+      "safe_stock": "안전재고",
+      "weight": "무게(g)",
+      "volume": "부피(cm³)",
+      "mileage": "마일리지",
+      "shipping": "배송",
+      "active": "사용",
+      "required": "필수"
+    },
+    "mileage_type": {
+      "fixed": "원",
+      "percent": "%"
+    },
+    "option_count": "({count}개 옵션)",
+    "price_type": {
+      "fixed": "고정가",
+      "additional": "추가금액"
+    },
+    "shipping": {
+      "available": "가능",
+      "unavailable": "불가"
+    },
+    "messages": {
+      "input_max_3": "최대 3개까지 추가할 수 있습니다.",
+      "name_value_required": "옵션명과 옵션값을 입력해주세요.",
+      "generated": "{count}개의 옵션이 생성되었습니다.",
+      "name_required": "옵션 이름을 입력해주세요.",
+      "add_tool_applied": "옵션추가도구가 적용되었습니다.",
+      "additional_max_5": "최대 5개까지 추가할 수 있습니다."
+    }
+  },
+  "notice": {
+    "tab_existing_template": "템플릿 선택",
+    "tab_new_registration": "직접 입력",
+    "items_list": "항목 목록",
+    "items_count_suffix": "개 항목",
+    "col_number": "순번",
+    "col_name": "항목명",
+    "col_value": "내용",
+    "add_item": "항목 추가",
+    "item_name_placeholder": "항목명을 입력하세요",
+    "input_placeholder": "내용을 입력하세요",
+    "bulk_input": "일괄입력",
+    "preview": "미리보기",
+    "save_as_template": "템플릿으로 저장",
+    "new_template_name": "새 템플릿 이름",
+    "template_name_ko_placeholder": "한국어 템플릿명",
+    "template_name_en_placeholder": "영어 템플릿명",
+    "empty_message": "등록된 항목이 없습니다",
+    "empty_hint": "항목을 추가하거나 템플릿을 선택해주세요",
+    "fill_detail_ref": "모든 항목 '상세설명참조'로 변경",
+    "confirm_change_title": "템플릿 변경 확인",
+    "confirm_change_warning": "기존에 입력된 항목이 있습니다.",
+    "confirm_change_description": "템플릿을 변경하면 기존 항목이 새 템플릿의 항목으로 대체됩니다. 동일한 항목명의 값은 유지됩니다.",
+    "confirm_change_button": "변경하기",
+    "modals": {
+      "bulk_change": {
+        "title": "모든 항목 일괄 변경",
+        "message": "모든 항목의 내용을 '상세설명참조'로 변경하시겠습니까?",
+        "preview_label": "변경 후 내용",
+        "preview_value": "상세설명참조",
+        "notice": "이 작업은 현재 입력된 모든 값을 덮어씁니다.",
+        "confirm": "변경"
+      }
+    },
+    "messages": {
+      "no_items_to_change": "변경할 항목이 없습니다.",
+      "all_items_changed_to_detail_ref": "모든 항목이 '상세설명참조'로 변경되었습니다.",
+      "template_name_required": "템플릿 이름을 입력해주세요.",
+      "no_items": "저장할 항목이 없습니다.",
+      "template_saved": "템플릿이 저장되었습니다.",
+      "template_save_error": "템플릿 저장에 실패했습니다.",
+      "info_empty": "저장할 고시정보가 없습니다.",
+      "filled": "빈 항목에 일괄 입력되었습니다."
+    }
+  },
+  "shopping_integration": {
+    "description": "외부 쇼핑몰과의 상품 연동 설정입니다",
+    "naver": {
+      "title": "네이버 쇼핑"
+    },
+    "google": {
+      "title": "구글 쇼핑"
+    },
+    "facebook": {
+      "title": "페이스북 쇼핑"
+    },
+    "sync_interval": "연동 주기",
+    "intervals": {
+      "realtime": "실시간",
+      "1h": "1시간",
+      "6h": "6시간",
+      "1d": "1일",
+      "manual": "수동"
+    },
+    "last_synced": "마지막 연동",
+    "status": {
+      "enabled": "연동중",
+      "disabled": "연동안함"
+    },
+    "manage": "연동 관리",
+    "note": "연동을 위해서는 해당 플러그인이 설치되어 있어야 합니다"
+  },
+  "activity_log": {
+    "columns": {
+      "datetime": "처리일시",
+      "actor": "처리자",
+      "action": "작업",
+      "description": "설명"
+    },
+    "sort_order": "정렬",
+    "sort": {
+      "latest": "최신순",
+      "oldest": "오래된순"
+    },
+    "per_page": "표시개수",
+    "total_count": "총 {{count}}건",
+    "empty": "처리 이력이 없습니다",
+    "system": "시스템",
+    "actor_action": {
+      "view_member": "회원정보 보기"
+    },
+    "changes": {
+      "title": "변경 내역",
+      "field": "항목",
+      "before": "변경 전",
+      "after": "변경 후",
+      "bulk_model_id": "ID: {{id}}"
+    }
+  },
+  "shipping": {
+    "use_default": "기본 배송정책 사용",
+    "default_badge": "기본",
+    "empty_message": "배송정책이 없습니다",
+    "detail": {
+      "shipping_method": "배송방법",
+      "carrier": "운송사",
+      "charge_policy": "부과정책",
+      "fee": "배송비",
+      "countries": "배송국가",
+      "currency": "기준통화",
+      "extra_fee": "추가배송비",
+      "condition": "배송조건",
+      "return_exchange_fee": "반품/교환비"
+    }
+  },
+  "price": {
+    "base_currency": "기본통화",
+    "currency": "통화",
+    "list_price": "정가",
+    "selling_price": "판매가",
+    "selling_price_hint": "실제 판매되는 가격입니다",
+    "option_price_hint": "기본 설정 옵션의 판매가 기준으로 자동 설정됩니다",
+    "auto_calculate": "자동계산"
+  },
+  "stock": {
+    "current": "현재재고",
+    "safe_stock": "안전재고",
+    "from_options": "옵션 재고 합계",
+    "from_options_hint": "옵션별 재고의 합계입니다",
+    "total_option_stock": "총 옵션재고",
+    "auto_calculated_hint": "옵션 재고에서 자동 계산됩니다",
+    "option_total_hint": "옵션 재고의 총 합"
+  },
+  "description_editor": {
+    "pc_tab": "PC용",
+    "mobile_tab": "모바일용",
+    "pc_hint": "PC에서 보여지는 상세설명입니다",
+    "mobile_hint": "모바일에서 보여지는 상세설명입니다",
+    "copy_from_pc": "PC 내용 복사",
+    "text_mode": "텍스트",
+    "html_mode": "HTML",
+    "messages": {
+      "default_locale_cannot_delete": "기본 언어는 삭제할 수 없습니다.",
+      "locale_removed": "{locale} 언어가 제거되었습니다.",
+      "locale_already_added": "이미 추가된 언어입니다.",
+      "locale_unsupported": "지원되지 않는 언어입니다.",
+      "locale_added": "{locale} 언어가 추가되었습니다."
+    }
+  },
+  "common_info": {
+    "use_default": "기본 상품 공통 정보 사용",
+    "badge_default": "기본",
+    "none": "사용안함",
+    "empty": "공통정보가 없습니다",
+    "preview": "미리보기",
+    "add_template": "템플릿 추가"
+  },
+  "seo": {
+    "title_hint": "검색엔진에 표시될 제목입니다",
+    "keywords_hint": "쉼표로 구분하여 입력하세요",
+    "preview": "검색결과 미리보기",
+    "untitled": "제목 없음",
+    "no_description": "설명이 없습니다",
+    "sync_title": "상품명과 동일하게 설정",
+    "sync_description": "상품내용과 동일하게 설정"
+  },
+  "additional_options": {
+    "enable_label": "추가옵션 사용",
+    "description": "고객이 주문 시 직접 입력하는 옵션입니다",
+    "add_option": "옵션 추가",
+    "option_name": "옵션명",
+    "option_name_placeholder": "옵션명을 입력하세요",
+    "input_type": "입력유형",
+    "type_text": "텍스트",
+    "type_textarea": "여러줄 텍스트",
+    "type_number": "숫자",
+    "type_date": "날짜",
+    "required": "필수"
+  },
+  "images": {
+    "drag_hint": "드래그하여 순서를 변경하세요",
+    "thumbnail_hint": "첫번째 이미지가 대표 이미지가 됩니다",
+    "format_hint": "JPG, PNG, GIF 형식 지원",
+    "upload_complete": "업로드 완료",
+    "deleted": "이미지가 삭제되었습니다.",
+    "messages": {
+      "max_count": "최대 {max}장만 추가할 수 있습니다.",
+      "unsupported_format": "{name}: 지원하지 않는 형식입니다.",
+      "size_exceeded": "{name}: 10MB를 초과합니다.",
+      "upload_failed": "{name}: 업로드 실패"
+    }
+  },
+  "category": {
+    "select_prev": "상위 카테고리를 먼저 선택하세요",
+    "no_subcategory": "하위 카테고리가 없습니다",
+    "selected": "선택된 카테고리",
+    "max_count": "최대 {{count}}개까지 선택 가능",
+    "max_5": "최대 5개",
+    "add_selected": "선택한 카테고리 추가",
+    "step_1": "1단계",
+    "step_2": "2단계",
+    "step_3": "3단계",
+    "step_4": "4단계",
+    "messages": {
+      "max_5": "최대 5개까지 선택 가능합니다.",
+      "already_selected": "이미 선택된 카테고리입니다."
+    }
+  },
+  "characteristics": {
+    "hint": "상품의 특성을 설정합니다",
+    "never_sold_out": "품절없음",
+    "notify_on_restock": "재입고 알림",
+    "allow_guest_order": "비회원 주문 허용"
+  },
+  "purchase": {
+    "min": "최소",
+    "max": "최대",
+    "unit": "개",
+    "min_suffix": "개 이상",
+    "unlimited_hint": "0은 제한 없음으로 처리"
+  },
+  "restriction": {
+    "none": "제한없음",
+    "members": "회원만",
+    "roles": "특정 역할",
+    "restricted": "구매 대상 제한"
+  },
+  "sales_status": {
+    "on_sale": "판매중",
+    "sold_out": "품절",
+    "suspended": "판매중지",
+    "coming_soon": "출시예정"
+  },
+  "display_status": {
+    "visible": "전시중",
+    "hidden": "전시안함"
+  },
+  "tax": {
+    "taxable": "과세",
+    "tax_free": "비과세"
+  },
+  "labels": {
+    "title": "라벨",
+    "no_available": "등록된 라벨이 없습니다.",
+    "edit": "수정",
+    "remove": "삭제",
+    "no_period": "기간 미설정",
+    "modal_title": "라벨 설정",
+    "modal_description": "라벨의 이름, 색상, 적용 기간을 설정합니다.",
+    "name": "라벨명",
+    "color": "색상",
+    "color_reset": "색상 초기화",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "end_date_hint": "비워두면 무기한 적용",
+    "date_preset": "기간 프리셋",
+    "preset_7d": "7일",
+    "preset_14d": "14일",
+    "preset_30d": "30일",
+    "preset_permanent": "영구",
+    "save_success": "라벨이 저장되었습니다.",
+    "save_error": "라벨 저장에 실패했습니다.",
+    "delete_success": "라벨이 삭제되었습니다.",
+    "delete_error": "라벨 삭제에 실패했습니다.",
+    "preview": "미리보기",
+    "delete_modal": {
+      "title": "라벨 삭제",
+      "message": "을(를) 삭제하시겠습니까?",
+      "description": "삭제된 라벨은 모든 상품에서 제거됩니다.",
+      "deleting": "삭제 중..."
+    },
+    "uncheck_modal": {
+      "title": "라벨 해제 확인",
+      "message": "체크해제 시 설정된 시작일/종료일이 삭제됩니다.",
+      "confirm": "해제"
+    },
+    "inline_period": {
+      "preset_7d": "7일",
+      "preset_14d": "14일",
+      "preset_30d": "30일",
+      "preset_permanent": "영구"
+    }
+  },
+  "roles": {
+    "system": "시스템 역할",
+    "custom": "사용자 정의 역할"
+  },
+  "copy_section": {
+    "title": "섹션 복사",
+    "help": "다른 상품에서 이 섹션의 내용을 복사합니다"
+  },
+  "copy_mode": {
+    "title": "상품 복제 모드",
+    "view_original": "원본 상품 보기"
+  },
+  "buttons_form": {
+    "generate_code": "코드 생성",
+    "manage_category": "카테고리 관리",
+    "manage_brand": "브랜드 관리",
+    "manage_labels": "라벨 관리",
+    "manage_shipping": "배송정책 관리",
+    "manage_common_info": "공통정보 관리",
+    "manage_notice_template": "상품정보제공고시 관리",
+    "create_shipping_policy": "배송정책 생성"
+  }
+}

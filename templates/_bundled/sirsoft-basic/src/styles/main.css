@@ -1,0 +1,211 @@
+/**
+ * sirsoft-basic 템플릿 메인 스타일시트
+ * Tailwind CSS v4 사용
+ */
+@import 'tailwindcss';
+
+/**
+ * Dark mode variant 설정
+ * class 기반 dark 모드 활성화 (.dark 클래스 사용)
+ */
+@variant dark (.dark &);
+
+/**
+ * 레이아웃 JSON에서 동적으로 사용되는 클래스들을 위한 safelist
+ * Tailwind가 자동 스캔하지 못하는 JSON 파일의 클래스들은 safelist.txt에 정의
+ */
+@source "./safelist.txt";
+
+/**
+ * 커스텀 테마 색상 정의
+ * Nexibase 스타일 기반
+ */
+@theme {
+  /* Primary colors - Blue */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  /* Success colors - Green */
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+
+  /* Warning colors - Yellow */
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+
+  /* Danger colors - Red */
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+
+/**
+ * 다크 모드 지원
+ */
+@layer base {
+  /* 기본 다크 모드 전환 */
+  :root {
+    --background: 255 255 255;
+    --foreground: 17 24 39;
+  }
+
+  .dark {
+    --background: 17 24 39;
+    --foreground: 255 255 255;
+  }
+
+  /* 부드러운 스크롤 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 기본 body 스타일 */
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* 링크 기본 스타일 */
+  a {
+    @apply text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300;
+    text-decoration: none;
+  }
+
+  /* 포커스 스타일 */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-500;
+  }
+}
+
+/**
+ * 유틸리티 클래스
+ */
+@layer utilities {
+  /* 숨김 처리 (접근성 유지) */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* 스크롤바 숨기기 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 텍스트 줄임 */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
+/**
+ * 컴포넌트 스타일
+ */
+@layer components {
+  /* 버튼 기본 스타일 */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+    @apply dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500;
+    @apply dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-400;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500;
+    @apply dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:ring-gray-400;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-400;
+  }
+
+  /* 입력 필드 기본 스타일 */
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300;
+    @apply bg-white text-gray-900;
+    @apply focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500;
+  }
+
+  .input-error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500;
+  }
+
+  /* 카드 스타일 */
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* 뱃지 스타일 */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  }
+}

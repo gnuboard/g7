@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마일리지 사용 섹션 - 보유 마일리지 표시 및 사용 금액 입력 (PC/모바일 반응형, 로그인 사용자만)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{_global.currentUser?.uuid}}",
+  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6" },
+  "responsive": {
+    "portable": {
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" }
+    }
+  },
+  "children": [
+    {
+      "comment": "섹션 헤더",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" },
+      "responsive": {
+        "portable": {
+          "props": { "className": "flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700" }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "coins", "className": "w-5 h-5 text-gray-700 dark:text-gray-300" } },
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white" },
+              "responsive": {
+                "portable": {
+                  "props": { "className": "text-base font-semibold text-gray-900 dark:text-white" }
+                }
+              },
+              "text": "$t:shop.checkout.mileage_section_title"
+            }
+          ]
+        },
+        {
+          "comment": "보유 마일리지",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:shop.checkout.mileage_available" },
+            { "type": "basic", "name": "Span", "props": { "className": "ml-1 font-semibold text-blue-600 dark:text-blue-400" }, "text": "{{checkoutData.data.mileage?.balance_formatted ?? '0'}}" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "마일리지 입력 영역",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "comment": "최대 사용 가능 안내",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(checkoutData.data.mileage?.max_usable ?? 0) > 0}}",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+          "text": "$t:shop.checkout.mileage_max_usable|amount={{checkoutData.data.mileage?.max_usable_formatted ?? '0'}}"
+        },
+        {
+          "comment": "입력 필드 + 전액사용 + 적용 버튼",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "number",
+                "name": "use_points",
+                "value": "{{_local.checkout?.use_points ?? 0}}",
+                "placeholder": "$t:shop.checkout.mileage_input_placeholder",
+                "min": "0",
+                "max": "{{checkoutData.data.mileage?.max_usable ?? 0}}",
+                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+                "disabled": "{{(checkoutData.data.mileage?.balance ?? 0) === 0}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "checkout": "{{Object.assign({}, _local.checkout, { use_points: parseInt($event.target.value) || 0 })}}"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "전액 사용 버튼",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm whitespace-nowrap",
+                "disabled": "{{(checkoutData.data.mileage?.max_usable ?? 0) === 0}}"
+              },
+              "text": "$t:shop.checkout.mileage_use_all",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "checkout": "{{Object.assign({}, _local.checkout, { use_points: checkoutData.data.mileage?.max_usable ?? 0 })}}"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "적용 버튼",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                "disabled": "{{(_local.checkout?.use_points ?? 0) === 0 && (checkoutData.data.calculation?.summary?.points_used ?? 0) === 0}}"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  }
+                }
+              },
+              "text": "$t:shop.checkout.mileage_apply",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "apiCall",
+                  "target": "/api/modules/sirsoft-ecommerce/checkout",
+                  "params": {
+                    "method": "PUT",
+                    "body": "{{_local.checkout}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "updateDataSource",
+                      "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:shop.checkout.mileage_applied"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적용된 마일리지 정보",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}",
+          "props": { "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "check-circle", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Span", "text": "-{{checkoutData.data.calculation?.summary?.points_used_formatted}}" }
+          ]
+        },
+        {
+          "comment": "마일리지 부족 안내",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(checkoutData.data.mileage?.balance ?? 0) === 0}}",
+          "props": { "className": "mt-2 text-xs text-gray-500 dark:text-gray-400" },
+          "text": "$t:shop.checkout.mileage_insufficient"
+        }
+      ]
+    }
+  ]
+}

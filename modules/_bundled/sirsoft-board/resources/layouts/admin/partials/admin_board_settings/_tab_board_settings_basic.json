@@ -1,0 +1,464 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)"
+  },
+  "id": "basic",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "comment": "========== 페이지 안내 배너 ==========",
+      "id": "page_info_banner",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "circle-info",
+            "className": "text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5",
+            "size": "sm"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-blue-700 dark:text-blue-300"
+          },
+          "text": "$t:sirsoft-board.admin.settings.page_info"
+        }
+      ]
+    },
+    {
+      "comment": "========== 섹션 1: 기본 설정 ==========",
+      "id": "section_basic",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-1 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.basic"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.basic_description"
+        },
+        {
+          "id": "field_type",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('type') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4 px-3 py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "checkbox",
+                                "className": "checkbox flex-shrink-0",
+                                "checked": "{{(_local.bulkApplyFields ?? []).includes('type')}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.settings.fields.type"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "settings_btn_manage_board_types",
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "variant": "ghost",
+                            "size": "sm",
+                            "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "gear",
+                                "size": "sm"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:sirsoft-board.admin.board_types.manage"
+                            }
+                          ],
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "sequence",
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "global",
+                                    "btFormMode": "add",
+                                    "btEditingItem": null,
+                                    "btFormSlug": "",
+                                    "btFormName": {
+                                      "ko": "",
+                                      "en": ""
+                                    }
+                                  }
+                                },
+                                {
+                                  "handler": "apiCall",
+                                  "auth_required": true,
+                                  "target": "/api/modules/sirsoft-board/admin/board-types",
+                                  "params": {
+                                    "method": "GET"
+                                  },
+                                  "onSuccess": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "boardTypesList": "{{response.data}}"
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "board_type_manage_modal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 pl-6 font-normal"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.fields.descriptions.type"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "basic_defaults.type",
+                    "options": "{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                    "className": "w-48 flex-shrink-0 text-sm",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_secret_mode",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4 px-3 py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.settings.fields.secret_mode"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.fields.descriptions.secret_mode"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "basic_defaults.secret_mode",
+                    "options": [
+                      { "value": "disabled", "label": "$t:sirsoft-board.admin.settings.options.secret_mode.disabled" },
+                      { "value": "enabled", "label": "$t:sirsoft-board.admin.settings.options.secret_mode.enabled" },
+                      { "value": "always", "label": "$t:sirsoft-board.admin.settings.options.secret_mode.always" }
+                    ],
+                    "className": "w-48 flex-shrink-0 text-sm",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_show_view_count",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4 px-3 py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.settings.fields.show_view_count"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.fields.descriptions.show_view_count"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "basic_defaults.show_view_count",
+                    "className": "flex-shrink-0",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_use_report",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('use_report') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-4 px-3 py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_report')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-board.admin.settings.fields.use_report"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_report"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "basic_defaults.use_report",
+                    "className": "flex-shrink-0",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

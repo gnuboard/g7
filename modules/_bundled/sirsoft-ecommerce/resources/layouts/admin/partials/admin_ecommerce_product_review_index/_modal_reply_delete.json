@@ -1,0 +1,144 @@
+{
+    "id": "modal_reply_delete",
+    "type": "composite",
+    "name": "Modal",
+    "meta": {
+        "is_partial": true
+    },
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-base text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.message"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.warning"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "modal_reply_delete"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_local.isDeleting}}"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/reviews/{{_global.editReviewId}}/reply",
+                                    "auth_required": true,
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "reviews"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "modal_reply_delete"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "isDeleting": false
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.isDeleting}}",
+                            "text": "$t:sirsoft-ecommerce.admin.product_review.modal.reply_delete.confirm"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isDeleting}}",
+                            "text": "$t:common.loading"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

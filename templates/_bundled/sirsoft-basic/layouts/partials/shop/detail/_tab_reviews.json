@@ -1,0 +1,419 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "상품 상세 리뷰 탭"
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_local.activeTab ?? 'info') === 'reviews'}}",
+  "props": { "className": "py-6" },
+  "children": [
+    {
+      "comment": "리뷰 요약 (이미지1: 좌측 평균 별점 + 우측 분포 바)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-6 mb-4 px-16 py-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg" },
+      "children": [
+        {
+          "comment": "평균 별점 (좌측)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "text-center shrink-0 min-w-24" },
+          "children": [
+            { "type": "basic", "name": "Span", "props": { "className": "text-4xl font-bold text-gray-900 dark:text-white" }, "text": "{{reviews.data?.rating_stats?.avg ?? 0}}" },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-center gap-0.5 my-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "iteration": { "source": "{{_local.starList}}", "item_var": "star" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "star", "size": "sm", "className": "{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}" } }
+                  ]
+                }
+              ]
+            },
+            { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:shop.product.rating_out_of_5|total={{reviews.data?.total_count ?? 0}}" }
+          ]
+        },
+        {
+          "comment": "구분선",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "w-px h-16 bg-gray-200 dark:bg-gray-600 shrink-0" }
+        },
+        {
+          "comment": "별점 분포 바 (우측)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex-1 space-y-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "iteration": { "source": "{{_local.starNums}}", "item_var": "starNum" },
+              "children": [
+                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 w-3 shrink-0 text-right" }, "text": "{{starNum}}" },
+                { "type": "basic", "name": "Icon", "props": { "name": "star", "size": "sm", "className": "text-yellow-400 shrink-0" } },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-2" },
+                  "children": [
+                    { "type": "basic", "name": "Div", "props": { "className": "bg-yellow-400 h-2 rounded-full", "style": { "width": "{{(reviews.data?.rating_stats?.[starNum + '']?.percent ?? 0) + '%'}}" } } }
+                  ]
+                },
+                { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 w-5 text-right shrink-0" }, "text": "{{reviews.data?.rating_stats?.[starNum + '']?.count ?? 0}}" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "옵션 필터 행 (옵션 키별 동적 Select들 + 별점 Select + 초기화)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg" },
+      "children": [
+        {
+          "comment": "옵션 키별 Select (동적 생성, 건수 포함)",
+          "type": "basic",
+          "name": "Select",
+          "iteration": { "source": "{{reviews.data?.option_filters ?? []}}", "item_var": "optionFilter" },
+          "props": {
+            "value": "{{_local.reviewOptionFilters?.[optionFilter.key] ?? ''}}",
+            "options": "{{[{ value: '', label: optionFilter.key }].concat((optionFilter.values ?? []).map(v => ({ value: v.value, label: v.value + ' (' + v.count + ')' })))}}",
+            "className": "text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "reviewOptionFilters": "{{Object.assign(Object.create(null), _local.reviewOptionFilters, { [optionFilter.key]: $event.target.value })}}",
+                    "reviewsPage": 1
+                  }
+                },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "별점 필터 Select (정적, min-w는 가장 긴 항목 기준으로 고정)",
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "value": "{{_local.reviewRating ?? ''}}",
+            "options": [
+              { "value": "", "label": "$t:shop.product.filter_all_rating" },
+              { "value": "5", "label": "$t:shop.product.filter_rating_5" },
+              { "value": "4", "label": "$t:shop.product.filter_rating_4" },
+              { "value": "3", "label": "$t:shop.product.filter_rating_3" },
+              { "value": "2", "label": "$t:shop.product.filter_rating_2" },
+              { "value": "1", "label": "$t:shop.product.filter_rating_1" }
+            ],
+            "className": "w-40 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "reviewRating": "{{$event.target.value}}", "reviewsPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "초기화 버튼",
+          "type": "basic",
+          "name": "Button",
+          "props": { "type": "button", "className": "ml-auto text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" },
+          "text": "$t:shop.product.filter_reset",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "reviewOptionFilters": {}, "reviewRating": "", "reviewPhotoOnly": false, "reviewsPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "정렬 + 포토리뷰 필터 행",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-4 gap-3" },
+      "children": [
+        {
+          "comment": "포토리뷰 필터 토글",
+          "type": "basic",
+          "name": "Button",
+          "props": { "type": "button", "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors {{(_local.reviewPhotoOnly ?? false) ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}}" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "image", "size": "sm" } },
+            { "type": "basic", "name": "Span", "text": "$t:shop.product.photo_reviews_only" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "reviewPhotoOnly": "{{!(_local.reviewPhotoOnly ?? false)}}", "reviewsPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "정렬 선택",
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "value": "{{_local.reviewSortBy ?? 'created_at_desc'}}",
+            "options": [
+              { "value": "created_at_desc", "label": "$t:shop.product.sort_latest" },
+              { "value": "rating_desc", "label": "$t:shop.product.sort_rating_high" },
+              { "value": "rating_asc", "label": "$t:shop.product.sort_rating_low" }
+            ],
+            "className": "text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                { "handler": "setState", "params": { "target": "local", "reviewSortBy": "{{$event.target.value}}", "reviewsPage": 1 } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "리뷰 목록 (이미지3: 카드 레이아웃 수정)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "" },
+      "iteration": { "source": "{{reviews.data?.reviews?.data ?? []}}", "item_var": "review" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "p-4 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "comment": "카드 헤더: 좌측(Avatar+이름+날짜) / 우측(별점)",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-start justify-between mb-3" },
+              "children": [
+                {
+                  "comment": "작성자 정보",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2" },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Avatar",
+                      "props": {
+                        "name": "{{review.user?.name ?? '?'}}",
+                        "avatar": "{{review.user?.avatar ?? null}}",
+                        "size": "sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex flex-col" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "font-medium text-sm text-gray-900 dark:text-white" }, "text": "{{review.user?.name}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "{{review.created_at}}" }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "별점 (우측)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-0.5 shrink-0" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "iteration": { "source": "{{_local.starList}}", "item_var": "star" },
+                      "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "star", "size": "sm", "className": "{{star <= review.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}" } }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "옵션 스냅샷 배지 (option_snapshot.option_values 배열에서 직접 표시)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{review.option_snapshot?.option_values?.length > 0}}",
+              "props": { "className": "flex flex-wrap gap-1 mb-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "iteration": { "source": "{{review.option_snapshot?.option_values ?? []}}", "item_var": "opt" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
+                      "props": { "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" },
+                      "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            { "type": "basic", "name": "P", "props": { "className": "text-gray-700 dark:text-gray-300 mb-3 text-sm" }, "text": "{{review.content}}" },
+            {
+              "comment": "리뷰 이미지 (최대 4개, 초과 시 +N 오버레이)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{review.image_count > 0}}",
+              "props": { "className": "flex gap-2 mt-3" },
+              "children": [
+                {
+                  "comment": "이미지 1",
+                  "type": "basic",
+                  "name": "Img",
+                  "if": "{{(review.images ?? []).length > 0}}",
+                  "props": { "src": "{{review.images[0].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80" },
+                  "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{review.user?.name ?? ''}}", "userAvatar": "{{review.user?.avatar ?? null}}", "rating": "{{review.rating}}", "createdAt": "{{review.created_at}}", "optionValues": "{{review.option_snapshot?.option_values ?? []}}", "content": "{{review.content ?? ''}}", "images": "{{review.images ?? []}}" }, "reviewImageIndex": 0 } }, { "handler": "openModal", "target": "review_image_modal" }] }]
+                },
+                {
+                  "comment": "이미지 2",
+                  "type": "basic",
+                  "name": "Img",
+                  "if": "{{(review.images ?? []).length > 1}}",
+                  "props": { "src": "{{review.images[1].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80" },
+                  "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{review.user?.name ?? ''}}", "userAvatar": "{{review.user?.avatar ?? null}}", "rating": "{{review.rating}}", "createdAt": "{{review.created_at}}", "optionValues": "{{review.option_snapshot?.option_values ?? []}}", "content": "{{review.content ?? ''}}", "images": "{{review.images ?? []}}" }, "reviewImageIndex": 1 } }, { "handler": "openModal", "target": "review_image_modal" }] }]
+                },
+                {
+                  "comment": "이미지 3",
+                  "type": "basic",
+                  "name": "Img",
+                  "if": "{{(review.images ?? []).length > 2}}",
+                  "props": { "src": "{{review.images[2].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80" },
+                  "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{review.user?.name ?? ''}}", "userAvatar": "{{review.user?.avatar ?? null}}", "rating": "{{review.rating}}", "createdAt": "{{review.created_at}}", "optionValues": "{{review.option_snapshot?.option_values ?? []}}", "content": "{{review.content ?? ''}}", "images": "{{review.images ?? []}}" }, "reviewImageIndex": 2 } }, { "handler": "openModal", "target": "review_image_modal" }] }]
+                },
+                {
+                  "comment": "이미지 4 (4장 정확히일 때 일반 이미지)",
+                  "type": "basic",
+                  "name": "Img",
+                  "if": "{{(review.images ?? []).length == 4}}",
+                  "props": { "src": "{{review.images[3].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80" },
+                  "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{review.user?.name ?? ''}}", "userAvatar": "{{review.user?.avatar ?? null}}", "rating": "{{review.rating}}", "createdAt": "{{review.created_at}}", "optionValues": "{{review.option_snapshot?.option_values ?? []}}", "content": "{{review.content ?? ''}}", "images": "{{review.images ?? []}}" }, "reviewImageIndex": 3 } }, { "handler": "openModal", "target": "review_image_modal" }] }]
+                },
+                {
+                  "comment": "+N 오버레이 (5장 이상일 때 4번째 자리)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(review.images ?? []).length >= 5}}",
+                  "props": { "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-lg overflow-hidden" },
+                  "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{review.user?.name ?? ''}}", "userAvatar": "{{review.user?.avatar ?? null}}", "rating": "{{review.rating}}", "createdAt": "{{review.created_at}}", "optionValues": "{{review.option_snapshot?.option_values ?? []}}", "content": "{{review.content ?? ''}}", "images": "{{review.images ?? []}}" }, "reviewImageIndex": 3 } }, { "handler": "openModal", "target": "review_image_modal" }] }],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Img",
+                      "props": { "src": "{{review.images[3].download_url}}", "alt": "", "className": "w-full h-full object-cover" }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-white font-semibold text-sm" },
+                          "text": "+{{(review.images ?? []).length - 3}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "판매자 답변 (이미지3: 날짜 추가)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{review.has_reply}}",
+              "props": { "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-l-4 border-gray-400 dark:border-gray-500" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mb-1" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-xs font-semibold text-gray-600 dark:text-gray-400" }, "text": "$t:shop.product.seller_reply" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-400 dark:text-gray-500" }, "text": "{{review.replied_at}}" }
+                  ]
+                },
+                { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{review.reply_content}}" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "리뷰 없음",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!reviews.data?.reviews?.data || reviews.data.reviews.data.length === 0}}",
+      "props": { "className": "text-center py-12 text-gray-500 dark:text-gray-400" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "comment-dots", "size": "3x", "className": "mx-auto mb-3 opacity-50" } },
+        { "type": "basic", "name": "P", "text": "$t:shop.product.no_reviews" }
+      ]
+    },
+    {
+      "comment": "리뷰 페이지네이션",
+      "type": "composite",
+      "name": "Pagination",
+      "props": {
+        "currentPage": "{{reviews.data?.reviews?.meta?.current_page ?? 1}}",
+        "totalPages": "{{reviews.data?.reviews?.meta?.last_page ?? 1}}",
+        "className": "mt-6 flex justify-center"
+      },
+      "actions": [
+        {
+          "event": "onPageChange",
+          "handler": "sequence",
+          "actions": [
+            { "handler": "setState", "params": { "target": "local", "reviewsPage": "{{$args[0]}}" } },
+            { "handler": "refetchDataSource", "params": { "dataSourceId": "reviews" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "no_content": "No content available.",
+  "published_at": "Published",
+  "status": {
+    "active": "Currently Active"
+  },
+  "back_to_home": "Back to Home",
+  "terms": {
+    "title": "Terms of Service"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "article1": {
+      "title": "Article 1 (Personal Information Collected)",
+      "required": "Required",
+      "optional": "Optional",
+      "auto": "Automatically Collected"
+    },
+    "article2": {
+      "title": "Article 2 (Purpose of Collection and Use)"
+    },
+    "article3": {
+      "title": "Article 3 (Retention Period)"
+    },
+    "article4": {
+      "title": "Article 4 (Disposal of Personal Information)"
+    }
+  },
+  "refund": {
+    "title": "Cancellation/Return/Exchange Policy",
+    "subtitle": "Information about cancellation, return, and exchange policies.",
+    "delivery": {
+      "title": "Shipping Information",
+      "item1": "Orders are shipped within 1-3 business days. (Excluding weekends and holidays)",
+      "item2": "Additional shipping fees may apply for remote areas.",
+      "item3_prefix": "You can track your delivery in ",
+      "item3_link": "Order History",
+      "item3_suffix": "."
+    },
+    "cancel": {
+      "title": "Order Cancellation",
+      "before_title": "Before Shipping",
+      "before_item1": "Orders can be cancelled before the product is prepared for shipping.",
+      "before_item2_prefix": "You can cancel directly in My Page > ",
+      "before_item2_link": "Order History",
+      "before_item2_suffix": ".",
+      "before_item3_highlight": "Full refund",
+      "before_item3_suffix": " will be issued.",
+      "after_title": "After Shipping",
+      "after_item1_prefix": "After shipping, cancellation is ",
+      "after_item1_highlight": "not possible",
+      "after_item1_suffix": " and will be processed as a return.",
+      "after_item2_prefix": "Return shipping fee of ",
+      "after_item2_highlight": "$5.00",
+      "after_item2_suffix": " will be deducted."
+    },
+    "return": {
+      "title": "Return Information",
+      "period_title": "Return Period",
+      "period_desc": "Returns can be requested within 7 days of receiving the product.",
+      "reject_title": "Returns Not Accepted",
+      "reject_item1": "Products damaged due to customer negligence",
+      "reject_item2": "Products that have been opened and used",
+      "reject_item3": "Products that cannot be resold due to time elapsed",
+      "fee_label": "Return Shipping:",
+      "fee_amount": "$5.00",
+      "fee_condition": "(for change of mind)",
+      "fee_note": "* Free shipping for defective products or wrong deliveries"
+    },
+    "exchange": {
+      "title": "Exchange Information",
+      "period_title": "Exchange Period",
+      "period_desc": "Exchanges can be requested within 7 days of receiving the product.",
+      "process_title": "Exchange Process",
+      "process_step1": "Request exchange via customer service or My Page",
+      "process_step2": "Ship the product to the return address",
+      "process_step3": "Exchange product will be shipped after inspection",
+      "fee_label": "Exchange Shipping:",
+      "fee_amount": "Round-trip $10.00",
+      "fee_condition": "(for change of mind)",
+      "fee_note": "* Free shipping for defective products or wrong deliveries"
+    },
+    "contact": {
+      "title": "Return/Exchange Contact",
+      "no_info": "Contact information is not registered.",
+      "customer_service": "Customer Service:",
+      "return_address": "Return Address:"
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "last_modified": "Last Modified",
+    "guide": {
+      "title": "Contact Information",
+      "description": "If you have any questions while using our service, please feel free to contact us."
+    },
+    "info": {
+      "title": "Contact",
+      "email_label": "Email:",
+      "email": "minsup@sir.kr",
+      "hours_label": "Hours:",
+      "hours": "Mon-Fri 09:00 - 18:00"
+    },
+    "faq": {
+      "title": "FAQ",
+      "description": "Please check the FAQ before contacting us.",
+      "link": "View FAQ"
+    }
+  },
+  "faq": {
+    "title": "FAQ",
+    "last_modified": "Last Modified",
+    "subtitle": "Frequently Asked Questions",
+    "q1": "How do I sign up?",
+    "a1_prefix": "Click the ",
+    "a1_link": "'Sign Up'",
+    "a1_suffix": " button at the top right of the homepage.",
+    "q2": "I forgot my password.",
+    "a2_prefix": "You can reset it via ",
+    "a2_link": "'Forgot Password'",
+    "a2_suffix": " on the login page.",
+    "q3": "How do I write a post?",
+    "a3_prefix": "After logging in, click the ",
+    "a3_link": "'Write'",
+    "a3_suffix": " button in the desired board."
+  },
+  "about": {
+    "title": "About Gnuboard7",
+    "last_modified": "Last Modified",
+    "welcome_title": "Welcome to Gnuboard7",
+    "welcome_description1": "Gnuboard7 is an open-source CMS platform built on Laravel and React.",
+    "welcome_description2": "With modules, plugins, and a template system, you can freely extend functionality without modifying the core. From small websites to large-scale services, build fast and flexible with Gnuboard7.",
+    "why_title": "Why Gnuboard7?",
+    "why_description1": "Traditional CMS platforms require core modifications to add features. Every update breaks customizations, creating a vicious cycle of maintenance headaches.",
+    "why_description2": "Gnuboard7 was designed to solve this problem. With hooks and modular architecture, you can add features while keeping the core intact.",
+    "opensource_title": "Built Together",
+    "opensource_description1": "Gnuboard7 is completely open-source. You can freely use, modify, and distribute the source code, including for commercial projects.",
+    "opensource_description2": "Bug reports, feature suggestions, and code contributions are all welcome. Check out the development progress on GitHub and join our community.",
+    "back_to_home": "Back to Home"
+  },
+  "published_at": "Published",
+  "status": {
+    "active": "Currently Active",
+    "outdated": "Previous Version"
+  },
+  "back_to_home": "Back to Home"
+}

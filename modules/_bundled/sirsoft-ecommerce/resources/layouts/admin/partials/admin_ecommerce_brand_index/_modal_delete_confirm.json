@@ -1,0 +1,226 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Brand Delete Confirmation Modal"
+  },
+  "id": "delete_confirm_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.brand.delete_modal.title",
+    "size": "medium"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-base text-gray-900 dark:text-white"
+          },
+          "text": "{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_global.modal_data?.productsCount ?? 0) > 0}}",
+          "props": {
+            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-shrink-0 mt-0.5"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "times-circle",
+                        "className": "w-5 h-5 text-red-600 dark:text-red-400"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm font-semibold text-red-800 dark:text-red-300 mb-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-red-700 dark:text-red-300"
+                      },
+                      "text": "{{$t('sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete').replace('{count}', _global.modal_data?.productsCount ?? 0)}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{(_global.modal_data?.productsCount ?? 0) === 0}}",
+          "props": {
+            "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isDeleting": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/modules/sirsoft-ecommerce/admin/brands/{{_global.modal_data.brandId}}",
+                  "params": {
+                    "method": "DELETE"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "brands"
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "panelMode": "empty",
+                        "selectedBrandId": null,
+                        "selectedBrand": null
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-ecommerce.admin.brand.messages.deleted"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isDeleting": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{!_local.isDeleting}}",
+              "text": "$t:common.delete"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.isDeleting}}",
+              "text": "$t:common.loading"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

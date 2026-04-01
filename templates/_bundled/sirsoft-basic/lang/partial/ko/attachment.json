@@ -1,0 +1,13 @@
+{
+  "drop_or_click": "파일을 드래그하거나 클릭하여 업로드",
+  "upload_limit": "최대 {{maxFiles}}개, 각 {{maxSize}}MB까지",
+  "delete_confirm_title": "첨부파일 삭제",
+  "delete_confirm_message": "이 파일을 삭제하시겠습니까?",
+  "deleting": "삭제 중...",
+  "attached_count": "{{count}}/{{max}}개 첨부됨",
+  "max_size": "최대 {{size}}MB",
+  "reorder_failed": "파일 순서 변경에 실패했습니다",
+  "drag_to_reorder": "드래그하여 순서 변경",
+  "primary_image": "대표 이미지",
+  "set_as_primary": "대표 이미지로 설정"
+}

@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "구매확정 모달 - 상품 정보 + 적립 포인트 + 경고 문구 + 확인/취소 버튼"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "modal_confirm_purchase",
+  "props": {
+    "width": "480px",
+    "className": "max-w-full",
+    "title": "$t:mypage.order_detail.confirm_modal.title"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "p-5 space-y-5" },
+      "children": [
+        {
+          "comment": "상품 정보",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Img",
+                  "props": {
+                    "src": "{{$parent._local.confirmTarget?.thumbnail_url ?? ''}}",
+                    "alt": "{{$parent._local.confirmTarget?.product_name ?? ''}}",
+                    "className": "w-full h-full object-cover"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex-1 min-w-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm font-medium text-gray-900 dark:text-white line-clamp-2" },
+                  "text": "{{$parent._local.confirmTarget?.product_name ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{$parent._local.confirmTarget?.option_name}}",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                  "text": "$t:mypage.order_detail.confirm_modal.option_label: {{$parent._local.confirmTarget?.option_name ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "적립 예정 포인트",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{($parent._local.confirmTarget?.subtotal_earned_points_amount ?? 0) > 0}}",
+          "props": { "className": "bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "gift", "className": "w-4 h-4 text-blue-600 dark:text-blue-400" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-blue-700 dark:text-blue-300" },
+                  "text": "$t:mypage.order_detail.confirm_modal.earned_points"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-lg font-bold text-blue-700 dark:text-blue-300 mt-1 ml-6" },
+              "text": "{{$parent._local.confirmTarget?.subtotal_earned_points_amount_formatted ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "경고 문구",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start gap-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "triangle-exclamation", "className": "w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-yellow-700 dark:text-yellow-300" },
+              "text": "$t:mypage.order_detail.confirm_modal.warning"
+            }
+          ]
+        },
+        {
+          "comment": "버튼 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-3 pt-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal",
+                  "target": "modal_confirm_purchase"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                "disabled": "{{_local.isConfirming === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.confirmOrderOption",
+                  "params": {
+                    "orderId": "{{$parent._local.confirmTarget?.orderId ?? ''}}",
+                    "optionId": "{{$parent._local.confirmTarget?.id ?? ''}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isConfirming}}",
+                  "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_local.isConfirming ? '$t:common.processing' : '$t:mypage.order_detail.confirm_modal.confirm_button'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

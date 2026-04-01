@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order Detail - Send Email Modal"
+  },
+  "id": "modal_send_email",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.title",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "lifecycle": {
+        "onMount": [
+          {
+            "handler": "setState",
+            "params": {
+              "target": "$parent._local",
+              "isSending": false,
+              "emailErrors": null
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.description"
+        },
+        {
+          "comment": "Validation 에러 배너",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.emailErrors && Object.keys($parent._local.emailErrors).length > 0}}",
+          "props": { "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-1" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "circle-exclamation", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.validation_error" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "Object.values($parent._local.emailErrors ?? {}).flat()",
+                    "item_var": "errMsg",
+                    "index_var": "errIdx"
+                  },
+                  "text": "• {{errMsg}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "이메일 주소 필드",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1" },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.email"
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "className": "{{$parent._local.emailErrors?.email ? 'input w-full bg-gray-100 dark:bg-gray-800 border-red-500 dark:border-red-500' : 'input w-full bg-gray-100 dark:bg-gray-800'}}",
+                "value": "{{$parent._local.emailAddress}}",
+                "readOnly": true
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{$parent._local.emailErrors?.email}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{$parent._local.emailErrors?.email?.[0]}}"
+            }
+          ]
+        },
+        {
+          "comment": "메시지 내용 필드",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex justify-between mb-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                  "text": "{{($parent._local.emailMessage || '').length}}자"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "className": "{{$parent._local.emailErrors?.message ? 'input w-full min-h-32 border-red-500 dark:border-red-500' : 'input w-full min-h-32'}}",
+                "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.message_placeholder",
+                "value": "{{$parent._local.emailMessage}}"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "$parent._local",
+                    "emailMessage": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{$parent._local.emailErrors?.message}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{$parent._local.emailErrors?.message?.[0]}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{$parent._local.isSending}}"
+          },
+          "actions": [{ "type": "click", "handler": "closeModal" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.cancel" }]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{$parent._local.isSending || !$parent._local.emailMessage}}"
+          },
+          "actions": [{
+            "type": "click",
+            "handler": "sequence",
+            "actions": [
+              {
+                "handler": "setState",
+                "params": { "target": "$parent._local", "isSending": true, "emailErrors": null }
+              },
+              {
+                "handler": "apiCall",
+                "auth_mode": "required",
+                "target": "/api/modules/sirsoft-ecommerce/admin/orders/{{route.orderNumber}}/send-email",
+                "params": {
+                  "method": "POST",
+                  "body": {
+                    "email": "{{$parent._local.emailAddress}}",
+                    "message": "{{$parent._local.emailMessage}}"
+                  }
+                },
+                "onSuccess": [
+                  { "handler": "setState", "params": { "target": "$parent._local", "isSending": false, "emailMessage": "", "emailErrors": null } },
+                  { "handler": "toast", "params": { "message": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.sent_success", "type": "success" } },
+                  { "handler": "closeModal" }
+                ],
+                "onError": [
+                  { "handler": "setState", "params": { "target": "$parent._local", "isSending": false, "emailErrors": "{{error.errors}}" } },
+                  { "handler": "toast", "params": { "message": "{{error.message + (error.errors?.detail ? ' (' + error.errors.detail + ')' : '')}}", "type": "error" } }
+                ]
+              }
+            ]
+          }],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{$parent._local.isSending}}",
+              "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.send"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

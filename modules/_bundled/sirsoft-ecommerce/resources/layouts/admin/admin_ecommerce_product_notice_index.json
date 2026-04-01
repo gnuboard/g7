@@ -1,0 +1,281 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_product_notice_index",
+    "permissions": [
+        "sirsoft-ecommerce.product-notice-templates.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title",
+        "description": "$t:sirsoft-ecommerce.admin.product_notice_template.description"
+    },
+    "data_sources": [
+        {
+            "id": "templates",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "cache": false,
+            "refetchOnMount": true,
+            "params": {
+                "search": "{{query.search}}",
+                "per_page": 20
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "initLocal": {
+                "form": {
+                    "name": {},
+                    "fields": [
+                        {
+                            "name": {},
+                            "content": {}
+                        }
+                    ],
+                    "is_active": true
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "notice_page_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 h-[calc(100vh-64px)] overflow-hidden"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 h-[calc(100vh-64px)] overflow-hidden"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between gap-4 mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "flex flex-col gap-4 mb-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title mb-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product_notice_template.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-secondary text-sm"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product_notice_template.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 flex-shrink-0"
+                                },
+                                "children": [
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                            "aria-label": "$t:sirsoft-ecommerce.common.refresh"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/product-notices",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "id": "refresh_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "refresh",
+                                                    "className": "w-5 h-5"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "add_template_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "disabled": "{{templates?.data?.abilities?.can_create !== true}}",
+                                            "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedTemplateId": null,
+                                                            "selectedTemplate": null,
+                                                            "panelMode": "create"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form": null,
+                                                            "errors": null,
+                                                            "isSaving": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form": {
+                                                                "name": {},
+                                                                "fields": [
+                                                                    {
+                                                                        "name": {},
+                                                                        "content": {}
+                                                                    }
+                                                                ],
+                                                                "is_active": true
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "plus",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.add"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "main_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "className": "grid-cols-1-lg-3"
+                        },
+                        "children": [
+                            {
+                                "id": "left_panel",
+                                "partial": "partials/admin_ecommerce_product_notice_index/_panel_list.json"
+                            },
+                            {
+                                "id": "right_panel",
+                                "partial": "partials/admin_ecommerce_product_notice_index/_panel_detail.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_product_notice_index/_modal_delete_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_product_notice_index/_modal_bulk_change.json"
+        }
+    ],
+    "initGlobal": {
+        "infiniteScroll": {
+            "currentPage": 1,
+            "hasMore": true,
+            "isLoadingMore": false
+        },
+        "selectedTemplateId": null,
+        "selectedTemplate": null,
+        "panelMode": "view"
+    },
+    "initLocal": {
+        "form": {
+            "name": {},
+            "fields": [],
+            "is_active": true
+        },
+        "isSaving": false,
+        "errors": null,
+        "deleteModal": {
+            "isOpen": false,
+            "templateId": null,
+            "templateName": ""
+        },
+        "editingModal": {
+            "isOpen": false
+        },
+        "bulkChangeModal": {
+            "isOpen": false
+        }
+    }
+}

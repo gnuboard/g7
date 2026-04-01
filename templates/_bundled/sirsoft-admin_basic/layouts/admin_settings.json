@@ -1,0 +1,549 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_settings",
+    "permissions": [
+        "core.settings.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.settings.page_title",
+        "description": "$t:admin.settings.page_description"
+    },
+    "computed": {
+        "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}"
+    },
+    "data_sources": [
+        {
+            "id": "settings",
+            "type": "api",
+            "endpoint": "/api/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": {
+                "form": "{{data}}",
+                "originalDrivers": "drivers"
+            },
+            "initGlobal": {
+                "settingsAbilities": "abilities"
+            },
+            "refetchOnMount": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "systemInfo",
+            "type": "api",
+            "endpoint": "/api/admin/settings/system-info",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "php_version": "-",
+                    "laravel_version": "-",
+                    "database_type": "-",
+                    "server_software": "-"
+                }
+            }
+        },
+        {
+            "id": "appKey",
+            "type": "api",
+            "endpoint": "/api/admin/settings/app-key",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "key": "-"
+                }
+            }
+        },
+        {
+            "id": "mailTemplates",
+            "type": "api",
+            "endpoint": "/api/admin/mail-templates",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {}
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "settings_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": "{{_local.isSaving}}",
+                "dataKey": "form",
+                "trackChanges": true,
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.settings.page_title"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "settings"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "readonly_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isReadOnly}}",
+                        "props": {
+                            "className": "mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                                        },
+                                        "text": "$t:admin.settings.readonly_notice"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "tab_navigation",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "props": {
+                            "tabs": [
+                                {
+                                    "id": "general",
+                                    "label": "$t:admin.settings.tabs.general"
+                                },
+                                {
+                                    "id": "mail",
+                                    "label": "$t:admin.settings.tabs.mail"
+                                },
+                                {
+                                    "id": "upload",
+                                    "label": "$t:admin.settings.tabs.upload"
+                                },
+                                {
+                                    "id": "seo",
+                                    "label": "$t:admin.settings.tabs.seo"
+                                },
+                                {
+                                    "id": "security",
+                                    "label": "$t:admin.settings.tabs.security"
+                                },
+                                {
+                                    "id": "drivers",
+                                    "label": "$t:admin.settings.tabs.drivers"
+                                },
+                                {
+                                    "id": "advanced",
+                                    "label": "$t:admin.settings.tabs.advanced"
+                                },
+                                {
+                                    "id": "mail_templates",
+                                    "label": "$t:admin.settings.tabs.mail_templates"
+                                },
+                                {
+                                    "id": "info",
+                                    "label": "$t:admin.settings.tabs.info"
+                                }
+                            ],
+                            "activeTabId": "{{_global.activeSettingsTab || query.tab || 'general'}}",
+                            "variant": "default"
+                        },
+                        "actions": [
+                            {
+                                "event": "onTabChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "errors": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "activeSettingsTab": "{{$args[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/settings",
+                                            "query": {
+                                                "tab": "{{$args[0]}}"
+                                            },
+                                            "replace": true
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors}}",
+                        "props": {
+                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "triangle-exclamation",
+                                            "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                },
+                                                "text": "$t:admin.settings.validation_error"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{typeof _local.errors === 'string'}}",
+                                                "props": {
+                                                    "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                                                },
+                                                "text": "{{_local.errors}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Ul",
+                                                "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
+                                                },
+                                                "iteration": {
+                                                    "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                    "item_var": "message"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Li",
+                                                        "props": {
+                                                            "className": "text-sm text-red-700 dark:text-red-300"
+                                                        },
+                                                        "text": "{{message}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_general.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_mail.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_upload.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_seo.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_security.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_drivers.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_advanced.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_mail_templates.json"
+                    },
+                    {
+                        "partial": "partials/admin_settings/_tab_info.json"
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'mail_templates'}}",
+                        "props": {
+                            "className": "flex justify-end gap-3 mt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "settings"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' && ((_local.form?.drivers?.storage_driver === 's3' && !_local.driverTestResults?.s3?.success && ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || ''))) || (_local.form?.drivers?.cache_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' && !_local.driverTestResults?.memcached?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled && !_local.driverTestResults?.websocket?.success && (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}",
+                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "emitEvent",
+                                                "params": {
+                                                    "event": "upload:site_logo"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/settings",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "settings": "{{result.data.settings}}",
+                                                            "uploadSettings": "{{result.data.settings.upload}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.settings.save_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:admin.settings.save_error"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "w-4 h-4 animate-spin"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_settings/_modal_password_confirm.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_cache_delete.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_mail_template_form.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_mail_template_preview.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_core_update_result.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_core_changelog.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_core_update_guide.json"
+        }
+    ],
+    "initLocal": {
+        "driverTestResults": [],
+        "editingTemplate": null,
+        "editLang": "ko",
+        "previewData": null,
+        "isSaving": false,
+        "templateErrors": null,
+        "expandedMailTemplateIds": [],
+        "checkingCoreUpdate": false,
+        "coreUpdateInfo": null,
+        "coreChangelog": null,
+        "loadingChangelog": false
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "mailTemplateFilter": {
+                    "search": "{{query.search || ''}}",
+                    "searchType": "{{query.search_type || 'all'}}"
+                }
+            }
+        }
+    ]
+}

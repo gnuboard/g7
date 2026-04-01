@@ -1,0 +1,247 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "입금 수동 매칭 모달"
+  },
+  "id": "modal_manual_match",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.title",
+    "description": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "id": "deposit_info_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label text-xs"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-primary font-medium mt-1"
+                  },
+                  "text": "박민수"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label text-xs"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-blue-600 dark:text-blue-400 font-semibold mt-1"
+                  },
+                  "text": "\\49,000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label text-xs"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_bank"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-primary mt-1"
+              },
+              "text": "카카오뱅크"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "order_search_section",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "text-label text-sm mb-2"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_label"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "relative mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_placeholder",
+                "className": "input w-full pl-10"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "search",
+                "className": "w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+              }
+            }
+          ]
+        },
+        {
+          "id": "search_result_list",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+          },
+          "children": [
+            {
+              "id": "search_result_item_1",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-l-blue-500 bg-blue-50/50 dark:bg-blue-900/10"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-medium"
+                      },
+                      "text": "20240127-004"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-secondary text-sm"
+                  },
+                  "text": "이영희 · 스포츠 자켓"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mt-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-primary font-semibold"
+                      },
+                      "text": "\\159,000"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-secondary text-xs"
+                      },
+                      "text": "2024-01-27 11:20:00"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-outline"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.cancel",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.match",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        }
+      ]
+    }
+  ]
+}

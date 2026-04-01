@@ -1,0 +1,111 @@
+{
+  "title": "Product Notice Management",
+  "description": "Manage product information disclosure templates by category",
+  "list": {
+    "title": "Product Groups",
+    "count": "{{count}}",
+    "add": "Add",
+    "search_placeholder": "Search product groups...",
+    "empty": "No product groups registered",
+    "fields_count": "{{count}}"
+  },
+  "info": {
+    "title": "Product Group Info"
+  },
+  "fields": {
+    "order": "No.",
+    "name": "Item Name",
+    "content": "Content"
+  },
+  "empty": {
+    "title": "Select a product group",
+    "description": "Please select a product group from the list or add a new one"
+  },
+  "actions": {
+    "copy": "Copy"
+  },
+  "view": {
+    "title": "Product Group Info",
+    "fields_count": "{{count}} items",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "order": "No.",
+      "name": "Item Name",
+      "content": "Content"
+    },
+    "copy": "Copy",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "form": {
+    "create_title": "Add Product Group",
+    "edit_title": "Edit Product Group",
+    "name": "Group Name",
+    "name_label": "Group Name",
+    "name_placeholder": "e.g., E-book",
+    "name_required": "Group name is required",
+    "status_title": "Status Settings",
+    "is_active": "Active",
+    "is_active_label": "Active",
+    "fill_detail_ref": "Fill all with 'See details'",
+    "fill_all_detail_ref": "Fill all with 'See details'",
+    "detail_reference": "See detail description",
+    "fields_title": "Item List",
+    "field_name_placeholder": "Enter item name",
+    "field_content_placeholder": "Enter content",
+    "empty_fields": "No items. Please add an item.",
+    "field": {
+      "name_label": "Item Name",
+      "name_placeholder": "Enter item name",
+      "content_label": "Content",
+      "content_placeholder": "Enter content"
+    },
+    "add_field": "Add Item",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "empty_selection": {
+    "title": "Select a product group",
+    "description": "Please select a product group from the list or add a new one"
+  },
+  "messages": {
+    "created": "Product group has been created",
+    "updated": "Product group has been updated",
+    "deleted": "Product group has been deleted",
+    "copied": "Product group has been copied",
+    "create_error": "Failed to create product group",
+    "update_error": "Failed to update product group",
+    "delete_error": "Failed to delete product group",
+    "no_fields_to_change": "No items to change.",
+    "all_fields_changed_to_detail_ref": "All items have been changed to 'See detail description'."
+  },
+  "modals": {
+    "delete": {
+      "title": "Delete Product Group",
+      "message": "Are you sure you want to delete this product group?",
+      "message_suffix": " - Are you sure you want to delete this product group?",
+      "warning": "This action cannot be undone."
+    },
+    "editing": {
+      "title": "Editing in Progress",
+      "message": "Changes will not be saved.",
+      "confirm_message": "Are you sure you want to cancel and select another item?",
+      "continue": "Continue Editing",
+      "discard": "Discard and Move"
+    },
+    "bulk_change": {
+      "title": "Change All Items",
+      "message": "Do you want to change all item contents to 'See detail description'?",
+      "preview_label": "Changed to:",
+      "notice": "※Only contents in the currently selected language will be changed.",
+      "confirm": "Change"
+    }
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}

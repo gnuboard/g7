@@ -1,0 +1,954 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 고급 탭 콘텐츠"
+  },
+  "id": "tab_content_advanced",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab) === 'advanced'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "card_cache_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.advanced.cache"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.advanced.cache_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_cache_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.advanced.cache_enabled"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.advanced.cache_enabled_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['advanced.cache_enabled']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['advanced.cache_enabled']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "advanced.cache_enabled",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "pt-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-4"
+                  },
+                  "text": "$t:admin.settings.advanced.cache_detail_settings"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "cache_layout",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between gap-4 py-2"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex flex-col gap-3 py-2"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "composite",
+                              "name": "Toggle",
+                              "props": {
+                                "name": "advanced.layout_cache_enabled",
+                                "size": "sm",
+                                "disabled": "{{_computed.isReadOnly}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:admin.settings.advanced.layout_cache"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:admin.settings.advanced.layout_cache_desc"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.errors?.['advanced.layout_cache_enabled']}}",
+                                  "props": {
+                                    "className": "text-red-500 text-xs mt-1 block"
+                                  },
+                                  "text": "{{_local.errors?.['advanced.layout_cache_enabled']?.[0] ?? ''}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                      },
+                                      "text": "$t:admin.settings.advanced.cache_ttl"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "name": "advanced.layout_cache_ttl",
+                                    "placeholder": "3600",
+                                    "min": "0",
+                                    "max": "14400",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "className": "{{_local.errors?.['advanced.layout_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['advanced.layout_cache_ttl']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['advanced.layout_cache_ttl']?.[0] ?? ''}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "cache_stats",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between gap-4 py-2"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex flex-col gap-3 py-2"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "composite",
+                              "name": "Toggle",
+                              "props": {
+                                "name": "advanced.stats_cache_enabled",
+                                "size": "sm",
+                                "disabled": "{{_computed.isReadOnly}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:admin.settings.advanced.stats_cache"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:admin.settings.advanced.stats_cache_desc"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.errors?.['advanced.stats_cache_enabled']}}",
+                                  "props": {
+                                    "className": "text-red-500 text-xs mt-1 block"
+                                  },
+                                  "text": "{{_local.errors?.['advanced.stats_cache_enabled']?.[0] ?? ''}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                      },
+                                      "text": "$t:admin.settings.advanced.cache_ttl"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "name": "advanced.stats_cache_ttl",
+                                    "placeholder": "1800",
+                                    "min": "0",
+                                    "max": "14400",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "className": "{{_local.errors?.['advanced.stats_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['advanced.stats_cache_ttl']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['advanced.stats_cache_ttl']?.[0] ?? ''}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "cache_seo",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between gap-4 py-2"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex flex-col gap-3 py-2"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "composite",
+                              "name": "Toggle",
+                              "props": {
+                                "name": "advanced.seo_cache_enabled",
+                                "size": "sm",
+                                "disabled": "{{_computed.isReadOnly}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:admin.settings.advanced.seo_cache"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:admin.settings.advanced.seo_cache_desc"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{_local.errors?.['advanced.seo_cache_enabled']}}",
+                                  "props": {
+                                    "className": "text-red-500 text-xs mt-1 block"
+                                  },
+                                  "text": "{{_local.errors?.['advanced.seo_cache_enabled']?.[0] ?? ''}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                      },
+                                      "text": "$t:admin.settings.advanced.cache_ttl"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-red-500 ml-1"
+                                      },
+                                      "text": "*"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "number",
+                                    "name": "advanced.seo_cache_ttl",
+                                    "placeholder": "7200",
+                                    "min": "0",
+                                    "max": "14400",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "className": "{{_local.errors?.['advanced.seo_cache_ttl'] ? 'w-24 px-2 py-1 border border-red-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['advanced.seo_cache_ttl']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['advanced.seo_cache_ttl']?.[0] ?? ''}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-4"
+                      },
+                      "text": "$t:admin.settings.advanced.cache_ttl_zero_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "pt-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "openModal",
+                      "target": "settings_cache_delete_modal"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.advanced.clear_all_cache"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_debug_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.advanced.debug"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.advanced.debug_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_debug_mode",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.advanced.debug_mode"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.advanced.debug_mode_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['advanced.debug_mode']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['advanced.debug_mode']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3"
+                  },
+                  "children": [
+                    {
+                      "id": "btn_dev_dashboard",
+                      "type": "basic",
+                      "name": "A",
+                      "if": "{{_local.form?.advanced?.debug_mode}}",
+                      "props": {
+                        "href": "/dev",
+                        "target": "_blank",
+                        "rel": "noopener noreferrer",
+                        "className": "px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap no-underline"
+                      },
+                      "text": "$t:admin.settings.advanced.dev_dashboard"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Toggle",
+                      "props": {
+                        "name": "advanced.debug_mode",
+                        "size": "md",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "toggle_sql_query_log",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.advanced.sql_query_log"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.advanced.sql_query_log_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['advanced.sql_query_log']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['advanced.sql_query_log']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "advanced.sql_query_log",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_core_update_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.advanced.core_update"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.advanced.core_update_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "input_core_update_github_url",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.advanced.core_update_github_url"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.settings.advanced.core_update_github_url_desc"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "url",
+                    "name": "advanced.core_update_github_url",
+                    "placeholder": "https://github.com/owner/repo",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['advanced.core_update_github_url'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['advanced.core_update_github_url']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['advanced.core_update_github_url']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "id": "input_core_update_github_token",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.advanced.core_update_github_token"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.settings.advanced.core_update_github_token_desc"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "password",
+                    "name": "advanced.core_update_github_token",
+                    "placeholder": "ghp_xxxxxxxxxxxxxxxxxxxx",
+                    "autoComplete": "off",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['advanced.core_update_github_token'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['advanced.core_update_github_token']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['advanced.core_update_github_token']?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

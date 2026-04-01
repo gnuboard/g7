@@ -1,0 +1,118 @@
+{
+  "version": "1.0.0",
+  "layout_name": "auth/register",
+  "extends": "_user_base",
+  "data_sources": [
+    {
+      "id": "termsContent",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-page/pages/terms",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_mode": "optional"
+    },
+    {
+      "id": "privacyContent",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-page/pages/privacy",
+      "method": "GET",
+      "auto_fetch": false,
+      "auth_mode": "optional"
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "isRegistering": false,
+        "registerError": null,
+        "errors": null,
+        "registerForm": {}
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Flex",
+        "blur_until_loaded": "{{_global?.currentUser?.uuid}}",
+        "props": {
+          "justify": "center",
+          "className": "min-h-[60vh] py-12"
+        },
+        "children": [
+          {
+            "partial": "partials/auth/_redirect_if_logged_in.json"
+          },
+          {
+            "comment": "회원가입 폼",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H2",
+                "props": {
+                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                },
+                "text": "$t:auth.register.title"
+              },
+              {
+                "partial": "partials/auth/_register_form.json"
+              },
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "mt-6 text-center text-sm text-gray-600 dark:text-gray-400"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:auth.already_member"
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": " "
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                      "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    },
+                    "actions": [
+                      {
+                        "type": "click",
+                        "handler": "navigate",
+                        "params": {
+                          "path": "/login"
+                        }
+                      }
+                    ],
+                    "text": "$t:auth.login"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "modals": [
+    {
+      "partial": "partials/auth/_modal_terms.json"
+    },
+    {
+      "partial": "partials/auth/_modal_privacy.json"
+    }
+  ]
+}

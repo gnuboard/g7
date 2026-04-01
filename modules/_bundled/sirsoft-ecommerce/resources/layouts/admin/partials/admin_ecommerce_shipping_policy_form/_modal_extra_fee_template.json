@@ -1,0 +1,920 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 도서산간 추가배송비 템플릿 CRUD 모달"
+    },
+    "id": "extra_fee_template",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.title",
+        "width": "900px",
+        "className": "max-w-[calc(100vw-2rem)]"
+    },
+    "children": [
+        {
+            "id": "modal_content",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "space-y-4" },
+            "children": [
+                {
+                    "id": "search_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "flex gap-2" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "value": "{{$parent._local.templateSearch ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.search_placeholder",
+                                "className": "input flex-1"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "templateSearch": "{{$event.target.value}}"
+                                    },
+                                    "debounce": 300
+                                },
+                                {
+                                    "type": "keydown",
+                                    "key": "Enter",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                            { "handler": "setState", "params": { "target": "$parent._local", "selectedTemplateIds": [] } },
+                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": { "type": "button", "className": "btn btn-outline" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "magnifying-glass", "className": "text-sm" } }
+                            ],
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                            { "handler": "setState", "params": { "target": "$parent._local", "selectedTemplateIds": [] } },
+                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "toolbar_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "flex items-center justify-between" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-primary flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{$parent._local.isAddingTemplate === true || $parent._computed.isReadOnly}}"
+                                    },
+                                    "children": [
+                                        { "type": "basic", "name": "Icon", "props": { "name": "plus", "className": "text-xs" } },
+                                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.add_btn" }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "$parent._local",
+                                                "isAddingTemplate": true,
+                                                "editingTemplate": null,
+                                                "templateForm": "{{({ zipcode: '', fee: 3000, region: '', description: '' })}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{($parent._local.selectedTemplateIds ?? []).length > 0}}",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-danger flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}"
+                                    },
+                                    "children": [
+                                        { "type": "basic", "name": "Icon", "if": "{{_global.isTemplateDeleting}}", "props": { "name": "spinner", "className": "text-xs animate-spin" } },
+                                        { "type": "basic", "name": "Icon", "if": "{{!_global.isTemplateDeleting}}", "props": { "name": "trash", "className": "text-xs" } },
+                                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.bulk_delete" }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.bulk_delete_confirm|count={{($parent._local.selectedTemplateIds ?? []).length}}",
+                                            "params": {
+                                                "actions": [
+                                                    { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": true } },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/bulk",
+                                                        "params": { "method": "DELETE", "body": { "ids": "{{$parent._local.selectedTemplateIds ?? []}}" } },
+                                                        "onSuccess": [
+                                                            { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": false } },
+                                                            { "handler": "setState", "params": { "target": "$parent._local", "selectedTemplateIds": [] } },
+                                                            { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } },
+                                                            { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_bulk_deleted" } }
+                                                        ],
+                                                        "onError": [
+                                                            { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": false } },
+                                                            { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{($parent._local.selectedTemplateIds ?? []).length > 0}}",
+                                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.selected_count|count={{($parent._local.selectedTemplateIds ?? []).length}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(extra_fee_templates?.data?.data ?? []).length > 0}}",
+                            "props": { "className": "flex items-center gap-2" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_all",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm",
+                                            "params": {
+                                                "actions": [
+                                                    { "handler": "sirsoft-ecommerce.applyExtraFeeTemplate", "params": { "countryIndex": "{{$parent._local.activeCountryTab ?? 0}}", "settings": "{{(extra_fee_templates?.data?.data ?? []).filter(t => t.is_active).map(t => ({ zipcode: t.zipcode, fee: Number(t.fee), region: t.region ?? '' }))}}" } },
+                                                    { "handler": "closeModal" }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{($parent._local.selectedTemplateIds ?? []).length > 0}}",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_selected",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm",
+                                            "params": {
+                                                "actions": [
+                                                    { "handler": "sirsoft-ecommerce.applyExtraFeeTemplate", "params": { "countryIndex": "{{$parent._local.activeCountryTab ?? 0}}", "settings": "{{(extra_fee_templates?.data?.data ?? []).filter(t => ($parent._local.selectedTemplateIds ?? []).includes(t.id)).map(t => ({ zipcode: t.zipcode, fee: Number(t.fee), region: t.region ?? '' }))}}" } },
+                                                    { "handler": "closeModal" }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "table_container",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(extra_fee_templates?.data?.data ?? []).length > 0 || $parent._local.isAddingTemplate === true}}",
+                    "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg" },
+                    "children": [
+                        {
+                            "id": "template_list",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "max-h-96 overflow-y-auto" },
+                            "actions": [
+                                {
+                                    "type": "scroll",
+                                    "debounce": 200,
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "switch",
+                                                "params": {
+                                                    "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
+                                                },
+                                                "cases": {
+                                                    "true": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": { "target": "global", "infiniteScroll.isLoadingMore": true }
+                                                            },
+                                                            {
+                                                                "handler": "scrollIntoView",
+                                                                "params": {
+                                                                    "selector": "#loading_indicator",
+                                                                    "scrollContainer": "#template_list",
+                                                                    "behavior": "smooth",
+                                                                    "block": "end",
+                                                                    "waitForElement": true,
+                                                                    "timeout": 2000
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-ecommerce/admin/extra-fee-templates",
+                                                                "params": {
+                                                                    "method": "GET",
+                                                                    "query": {
+                                                                        "page": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                                        "per_page": 20,
+                                                                        "search": "{{$parent._local.templateSearch ?? ''}}"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "appendDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "extra_fee_templates",
+                                                                            "dataPath": "data.data",
+                                                                            "newData": "{{response.data.data}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                                            "infiniteScroll.hasMore": "{{(response.data?.data?.length ?? 0) >= 20}}",
+                                                                            "infiniteScroll.isLoadingMore": false
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": { "target": "global", "infiniteScroll.isLoadingMore": false }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": { "className": "table whitespace-nowrap" },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": { "className": "sticky top-0 z-10 bg-white dark:bg-gray-800" },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": { "className": "w-10 text-center" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "checkbox",
+                                                                        "checked": "{{(extra_fee_templates?.data?.data ?? []).length > 0 && ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}",
+                                                                        "className": "w-4 h-4 rounded",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "$parent._local",
+                                                                                "selectedTemplateIds": "{{($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length ? [] : (extra_fee_templates?.data?.data ?? []).map(t => t.id)}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        { "type": "basic", "name": "Th", "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode" },
+                                                        { "type": "basic", "name": "Th", "props": { "className": "whitespace-normal" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region" },
+                                                        { "type": "basic", "name": "Th", "props": { "className": "w-28" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee" },
+                                                        { "type": "basic", "name": "Th", "props": { "className": "w-20 text-center" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.status" },
+                                                        { "type": "basic", "name": "Th", "props": { "className": "w-24 text-center" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.manage" }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "id": "new_template_row",
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "if": "{{$parent._local.isAddingTemplate === true}}",
+                                                    "props": { "className": "bg-blue-50 dark:bg-blue-900/20" },
+                                                    "children": [
+                                                        { "type": "basic", "name": "Td" },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{$parent._local.templateForm.zipcode ?? ''}}",
+                                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode",
+                                                                        "className": "{{$parent._local.templateFormErrors?.zipcode ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.zipcode": "{{$event.target.value}}", "templateFormErrors.zipcode": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.templateFormErrors?.zipcode}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "whitespace-normal" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{$parent._local.templateForm.region ?? ''}}",
+                                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region",
+                                                                        "className": "{{$parent._local.templateFormErrors?.region ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.region": "{{$event.target.value}}", "templateFormErrors.region": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.templateFormErrors?.region}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{$parent._local.templateForm.fee ?? 3000}}",
+                                                                        "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee",
+                                                                        "className": "{{$parent._local.templateFormErrors?.fee ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "min": 0,
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.fee": "{{Number($event.target.value) || 0}}", "templateFormErrors.fee": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.templateFormErrors?.fee}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        { "type": "basic", "name": "Td" },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "text-center" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": { "className": "flex items-center justify-center gap-1" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}"
+                                                                            },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "if": "{{_global.isTemplateSaving}}", "props": { "name": "spinner", "className": "text-sm animate-spin" } },
+                                                                                { "type": "basic", "name": "Icon", "if": "{{!_global.isTemplateSaving}}", "props": { "name": "check", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "params": {
+                                                                                        "actions": [
+                                                                                            { "handler": "setState", "params": { "target": "$parent._local", "templateFormErrors": "{{({})}}" } },
+                                                                                            { "handler": "setState", "params": { "target": "global", "isTemplateSaving": true } },
+                                                                                            {
+                                                                                                "handler": "apiCall",
+                                                                                                "auth_required": true,
+                                                                                                "target": "/api/modules/sirsoft-ecommerce/admin/extra-fee-templates",
+                                                                                                "params": { "method": "POST", "body": "{{$parent._local.templateForm}}" },
+                                                                                                "onSuccess": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateSaving": false } },
+                                                                                                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_saved" } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "isAddingTemplate": false, "templateForm": "{{({ zipcode: '', fee: 3000, region: '', description: '' })}}", "templateFormErrors": "{{({})}}" } },
+                                                                                                    { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                                                                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } }
+                                                                                                ],
+                                                                                                "onError": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateSaving": false } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "templateFormErrors": "{{error.errors ?? {}}}" } },
+                                                                                                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": { "type": "button", "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "props": { "name": "xmark", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "setState",
+                                                                                    "params": { "target": "$parent._local", "isAddingTemplate": false, "templateForm": "{{({ zipcode: '', fee: 3000, region: '', description: '' })}}", "templateFormErrors": "{{({})}}" }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "{{extra_fee_templates?.data?.data ?? []}}",
+                                                        "item_var": "template",
+                                                        "index_var": "templateIdx"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "text-center" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "props": {
+                                                                        "type": "checkbox",
+                                                                        "checked": "{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}",
+                                                                        "className": "w-4 h-4 rounded",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "$parent._local",
+                                                                                "selectedTemplateIds": "{{($parent._local.selectedTemplateIds ?? []).includes(template.id) ? ($parent._local.selectedTemplateIds ?? []).filter(id => id !== template.id) : [...($parent._local.selectedTemplateIds ?? []), template.id]}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id}}",
+                                                                    "props": { "className": "text-sm font-mono text-gray-900 dark:text-white" },
+                                                                    "text": "{{template.zipcode ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id}}",
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{$parent._local.templateForm.zipcode ?? ''}}",
+                                                                        "className": "{{$parent._local.templateFormErrors?.zipcode ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.zipcode": "{{$event.target.value}}", "templateFormErrors.zipcode": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id && $parent._local.templateFormErrors?.zipcode}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "whitespace-normal" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id}}",
+                                                                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400 truncate" },
+                                                                    "text": "{{template.region ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id}}",
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{$parent._local.templateForm.region ?? ''}}",
+                                                                        "className": "{{$parent._local.templateFormErrors?.region ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.region": "{{$event.target.value}}", "templateFormErrors.region": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id && $parent._local.templateFormErrors?.region}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id}}",
+                                                                    "props": { "className": "text-sm text-gray-900 dark:text-white" },
+                                                                    "text": "{{template.fee_formatted ?? (Number(template.fee ?? 0).toLocaleString() + '원')}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id}}",
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{$parent._local.templateForm.fee ?? 0}}",
+                                                                        "className": "{{$parent._local.templateFormErrors?.fee ? 'input w-full border-red-500 dark:border-red-500' : 'input w-full'}}",
+                                                                        "min": 0,
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        { "type": "change", "handler": "setState", "params": { "target": "$parent._local", "templateForm.fee": "{{Number($event.target.value) || 0}}", "templateFormErrors.fee": null }, "debounce": 300 }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id && $parent._local.templateFormErrors?.fee}}",
+                                                                    "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1 block" },
+                                                                    "text": "{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "text-center" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id && template.is_active}}",
+                                                                    "props": { "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.active"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id && !template.is_active}}",
+                                                                    "props": { "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.inactive"
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id}}",
+                                                                    "props": {
+                                                                        "value": "{{$parent._local.templateForm.is_active ?? true}}",
+                                                                        "name": "is_active",
+                                                                        "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "$parent._local",
+                                                                                "templateForm.is_active": "{{!($parent._local.templateForm.is_active ?? true)}}"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": { "className": "text-center" },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{$parent._local.editingTemplate !== template.id}}",
+                                                                    "props": { "className": "flex items-center justify-center gap-1" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                "disabled": "{{$parent._computed.isReadOnly}}"
+                                                                            },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "props": { "name": "pencil", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "$parent._local",
+                                                                                        "editingTemplate": "{{template.id}}",
+                                                                                        "isAddingTemplate": false,
+                                                                                        "templateForm": "{{({ zipcode: template.zipcode, fee: Number(template.fee), region: template.region ?? '', description: template.description ?? '', is_active: template.is_active ?? true })}}"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                "disabled": "{{_global.isTemplateDeleting || $parent._computed.isReadOnly}}"
+                                                                            },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "props": { "name": "trash", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "confirm": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.delete_confirm",
+                                                                                    "params": {
+                                                                                        "actions": [
+                                                                                            { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": true } },
+                                                                                            {
+                                                                                                "handler": "apiCall",
+                                                                                                "auth_required": true,
+                                                                                                "target": "{{'/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/' + template.id}}",
+                                                                                                "params": { "method": "DELETE" },
+                                                                                                "onSuccess": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": false } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "selectedTemplateIds": "{{($parent._local.selectedTemplateIds ?? []).filter(id => id !== template.id)}}" } },
+                                                                                                    { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                                                                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } },
+                                                                                                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_deleted" } }
+                                                                                                ],
+                                                                                                "onError": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateDeleting": false } },
+                                                                                                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{$parent._local.editingTemplate === template.id}}",
+                                                                    "props": { "className": "flex items-center justify-center gap-1" },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
+                                                                                "disabled": "{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed.isReadOnly}}"
+                                                                            },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "if": "{{_global.isTemplateSaving}}", "props": { "name": "spinner", "className": "text-sm animate-spin" } },
+                                                                                { "type": "basic", "name": "Icon", "if": "{{!_global.isTemplateSaving}}", "props": { "name": "check", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "sequence",
+                                                                                    "params": {
+                                                                                        "actions": [
+                                                                                            { "handler": "setState", "params": { "target": "global", "isTemplateSaving": true } },
+                                                                                            { "handler": "setState", "params": { "target": "$parent._local", "templateFormErrors": "{{({})}}" } },
+                                                                                            {
+                                                                                                "handler": "apiCall",
+                                                                                                "auth_required": true,
+                                                                                                "target": "{{'/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/' + $parent._local.editingTemplate}}",
+                                                                                                "params": { "method": "PUT", "body": "{{$parent._local.templateForm}}" },
+                                                                                                "onSuccess": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateSaving": false } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "templateFormErrors": "{{({})}}" } },
+                                                                                                    { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_saved" } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "editingTemplate": null, "templateForm": "{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" } },
+                                                                                                    { "handler": "setState", "params": { "target": "global", "infiniteScroll.currentPage": 1, "infiniteScroll.hasMore": true, "infiniteScroll.isLoadingMore": false } },
+                                                                                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "extra_fee_templates" } }
+                                                                                                ],
+                                                                                                "onError": [
+                                                                                                    { "handler": "setState", "params": { "target": "global", "isTemplateSaving": false } },
+                                                                                                    { "handler": "setState", "params": { "target": "$parent._local", "templateFormErrors": "{{error.errors ?? {}}}" } },
+                                                                                                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "props": { "type": "button", "className": "btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" },
+                                                                            "children": [
+                                                                                { "type": "basic", "name": "Icon", "props": { "name": "xmark", "className": "text-sm" } }
+                                                                            ],
+                                                                            "actions": [
+                                                                                {
+                                                                                    "type": "click",
+                                                                                    "handler": "setState",
+                                                                                    "params": { "target": "$parent._local", "editingTemplate": null, "templateForm": "{{({ zipcode: '', fee: 3000, region: '', description: '' })}}", "templateFormErrors": "{{({})}}" }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "loading_indicator",
+                                    "type": "composite",
+                                    "name": "LoadingSpinner",
+                                    "if": "{{_global.infiniteScroll.isLoadingMore}}",
+                                    "props": {
+                                        "size": "sm",
+                                        "text": "$t:sirsoft-ecommerce.common.loading",
+                                        "color": "text-blue-600 dark:text-blue-400",
+                                        "className": "py-3"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "empty_state",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(extra_fee_templates?.data?.data ?? []).length === 0 && $parent._local.isAddingTemplate !== true}}",
+                    "props": { "className": "text-center py-12 text-gray-400 dark:text-gray-500" },
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "inbox", "className": "text-4xl mx-auto mb-3" } },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-sm" }, "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "modal_footer",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": { "type": "button", "className": "btn btn-secondary" },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.close",
+                    "actions": [
+                        { "type": "click", "handler": "closeModal" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

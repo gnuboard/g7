@@ -1,0 +1,754 @@
+{
+    "id": "usage_conditions_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.usage_conditions"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-5"
+            },
+            "children": [
+                {
+                    "comment": "타 쿠폰과 중복 가능",
+                    "id": "field_is_combinable",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_overlap",
+                        "error": "{{_local.errors?.is_combinable?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "is_combinable",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_yes",
+                                        "value": "true"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.combinable_no",
+                                        "value": "false"
+                                    }
+                                ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "적용 대상",
+                    "id": "field_target_scope",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.apply_target",
+                        "error": "{{_local.errors?.target_scope?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "props": {
+                                "name": "target_scope",
+                                "inline": true,
+                                "options": [
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_all",
+                                        "value": "all"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_products",
+                                        "value": "products"
+                                    },
+                                    {
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.target_scope_categories",
+                                        "value": "categories"
+                                    }
+                                ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "========== 특정 상품 선택 UI ==========",
+                    "id": "target_products_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form?.target_scope === 'products'}}",
+                    "children": [
+                        {
+                            "comment": "상품 검색 토글 버튼 + 선택삭제",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 mb-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "toggle_product_search",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{_local.productSearchOpen ? 'caret-down' : 'caret-right'}}",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.products"
+                                        }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "productSearchOpen": "{{!_local.productSearchOpen}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "delete_selected_products",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "form.products": "{{(_local.form?.products ?? []).filter(p => !(_local.selectedProductIds ?? []).includes(p.id))}}",
+                                "selectedProductIds": "{{[]}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "상품 검색 패널 (토글)",
+                            "id": "product_search_panel",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.productSearchOpen}}",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800"
+                            },
+                            "children": [
+                                {
+                                    "comment": "검색 필터",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-3 mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "검색필드 + 키워드 + 검색버튼",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "props": {
+                                                        "value": "{{_local.productSearchField}}",
+                                                        "className": "input w-32",
+                                                        "options": [
+                                                            { "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_all", "value": "all" },
+                                                            { "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_code", "value": "code" },
+                                                            { "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_name", "value": "name" },
+                                                            { "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.field_sku", "value": "sku" }
+                                                        ]
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "productSearchField": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "value": "{{_local.productSearchKeyword ?? ''}}",
+                                                        "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.keyword_placeholder",
+                                                        "className": "input flex-1"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "productSearchKeyword": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"
+                                                    },
+                                                    "text": "$t:common.search",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "apiCall",
+                                                            "auth_mode": "required",
+                                                            "target": "/api/modules/sirsoft-ecommerce/admin/products",
+                                                            "params": {
+                                                                "method": "GET",
+                                                                "query": {
+                                                                    "search_field": "{{_local.productSearchField}}",
+                                                                    "keyword": "{{_local.productSearchKeyword}}",
+                                                                    "per_page": 10,
+                                                                    "page": 1
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "productSearchResults": "{{response?.data?.data ?? response?.data ?? []}}",
+                                                                        "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
+                                                                        "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                                                        "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "검색 결과 헤더",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between items-center mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.results ({{_local.productSearchTotal ?? (_local.productSearchResults ?? []).length}})"
+                                        },
+                                        {
+                                            "id": "add_selected_products",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "form.products": "{{[...(_local.form?.products ?? []), ...(_local.productSearchResults ?? []).filter(r => (_local.productSearchSelected ?? []).includes(r.id) && !(_local.form?.products ?? []).some(p => p.id === r.id)).map(r => ({...r, type: 'include'}))]}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "검색 결과 스크롤 컨테이너 (무한스크롤)",
+                                    "id": "product_search_results_scroll",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "overflow-y-auto",
+                                        "style": { "maxHeight": "300px" }
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "검색 결과 DataGrid",
+                                            "type": "composite",
+                                            "name": "DataGrid",
+                                            "props": {
+                                                "data": "{{_local.productSearchResults ?? []}}",
+                                                "columns": [
+                                                    { "field": "product_code", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code", "width": "120px" },
+                                                    { "field": "name_localized", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name" },
+                                                    { "field": "selling_price_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price", "width": "100px", "align": "right" }
+                                                ],
+                                                "selectable": true,
+                                                "selectedIds": "{{_local.productSearchSelected ?? []}}",
+                                                "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_results"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "event": "onSelectionChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "productSearchSelected": "{{$args[0] ?? []}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "무한스크롤 로딩 인디케이터",
+                                            "id": "product_search_loading",
+                                            "type": "composite",
+                                            "name": "LoadingSpinner",
+                                            "if": "{{_local.productSearchIsLoadingMore === true}}",
+                                            "props": {
+                                                "size": "sm"
+                                            }
+                                        }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "scroll",
+                                            "debounce": 200,
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "switch",
+                                                    "params": {
+                                                        "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && (_local.productSearchPage ?? 1) < (_local.productSearchLastPage ?? 1) && !_local.productSearchIsLoadingMore}}"
+                                                    },
+                                                    "cases": {
+                                                        "true": {
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "_local",
+                                                                        "productSearchIsLoadingMore": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "scrollIntoView",
+                                                                    "params": {
+                                                                        "selector": "#product_search_loading",
+                                                                        "scrollContainer": "#product_search_results_scroll",
+                                                                        "behavior": "smooth",
+                                                                        "block": "end",
+                                                                        "waitForElement": true,
+                                                                        "timeout": 2000
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "auth_mode": "required",
+                                                                    "target": "/api/modules/sirsoft-ecommerce/admin/products",
+                                                                    "params": {
+                                                                        "method": "GET",
+                                                                        "query": {
+                                                                            "search_field": "{{_local.productSearchField}}",
+                                                                            "keyword": "{{_local.productSearchKeyword}}",
+                                                                            "per_page": 10,
+                                                                            "page": "{{(_local.productSearchPage ?? 1) + 1}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "productSearchResults": "{{[...(_local.productSearchResults ?? []), ...(response?.data?.data ?? response?.data ?? [])]}}",
+                                                                                "productSearchPage": "{{response?.data?.pagination?.current_page ?? 1}}",
+                                                                                "productSearchLastPage": "{{response?.data?.pagination?.last_page ?? 1}}",
+                                                                                "productSearchTotal": "{{response?.data?.pagination?.total ?? 0}}",
+                                                                                "productSearchIsLoadingMore": false
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "_local",
+                                                                                "productSearchIsLoadingMore": false
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "선택된 상품 테이블",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_products ({{(_local.form?.products ?? []).length}})"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "DataGrid",
+                                    "props": {
+                                        "data": "{{_local.form?.products ?? []}}",
+                                        "columns": [
+                                            { "field": "product_code", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_code", "width": "150px" },
+                                            { "field": "name_localized", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_name" },
+                                            { "field": "selling_price_formatted", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.price", "width": "120px", "align": "right" }
+                                        ],
+                                        "selectable": true,
+                                        "selectedIds": "{{_local.selectedProductIds ?? []}}",
+                                        "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected"
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onSelectionChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "selectedProductIds": "{{$args[0]}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "========== 특정 카테고리 선택 UI ==========",
+                    "id": "target_categories_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form?.target_scope === 'categories'}}",
+                    "children": [
+                        {
+                            "comment": "카테고리 검색 토글 버튼 + 선택삭제",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 mb-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "toggle_category_search",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{_local.categorySearchOpen ? 'caret-down' : 'caret-right'}}",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.categories"
+                                        }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "categorySearchOpen": "{{!_local.categorySearchOpen}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "delete_selected_categories",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "form.categories": "{{(_local.form?.categories ?? []).filter(c => !(_local.selectedCategoryIds ?? []).includes(c.id))}}",
+                                "selectedCategoryIds": "{{[]}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "카테고리 검색 패널 (토글)",
+                            "id": "category_search_panel",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.categorySearchOpen}}",
+                            "props": {
+                                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800"
+                            },
+                            "children": [
+                                {
+                                    "comment": "키워드 검색",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-2 mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "value": "{{_local.categorySearchKeyword ?? ''}}",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_placeholder",
+                                                "className": "input flex-1"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "categorySearchKeyword": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "카테고리는 data_source로 이미 로드됨. CategoryTree searchKeyword prop으로 클라이언트 필터링",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-4 py-2 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg text-sm"
+                                            },
+                                            "text": "$t:common.search",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "categories"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "트리 헤더",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex justify-between items-center mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_tree"
+                                        },
+                                        {
+                                            "id": "add_selected_categories",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "form.categories": "{{[...(_local.form?.categories ?? []), ...(categories?.data?.data ?? categories?.data ?? []).reduce((acc, cat) => { const findSelected = (node, parentPath) => { const displayName = node.localized_name || node.name; const currentPath = parentPath ? parentPath + ' › ' + displayName : displayName; if ((_local.categorySearchSelected ?? []).includes(node.id) && !(_local.form?.categories ?? []).some(c => c.id === node.id)) { acc.push({id: node.id, name: displayName, path: currentPath, products_count: node.products_count ?? 0, type: 'include'}); } (node.children ?? []).forEach(child => findSelected(child, currentPath)); }; findSelected(cat, ''); return acc; }, [])]}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "카테고리 트리",
+                                    "type": "composite",
+                                    "name": "CategoryTree",
+                                    "props": {
+                                        "data": "{{categories?.data?.data ?? categories?.data ?? []}}",
+                                        "expandedIds": "{{_local.categoryExpandedIds ?? []}}",
+                                        "selectedIds": "{{_local.categorySearchSelected ?? []}}",
+                                        "searchKeyword": "{{_local.categorySearchKeyword ?? ''}}",
+                                        "showProductCount": true,
+                                        "selectable": true
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onToggle",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "categoryExpandedIds": "{{$args[0] ?? []}}"
+                                            }
+                                        },
+                                        {
+                                            "event": "onSelectionChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "categorySearchSelected": "{{$args[0] ?? []}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "선택된 카테고리 테이블",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mt-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.selected_categories ({{(_local.form?.categories ?? []).length}})"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "DataGrid",
+                                    "props": {
+                                        "data": "{{_local.form?.categories ?? []}}",
+                                        "columns": [
+                                            { "field": "path", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.category_name" },
+                                            { "field": "products_count", "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.table.product_count", "width": "120px", "align": "right" }
+                                        ],
+                                        "selectable": true,
+                                        "selectedIds": "{{_local.selectedCategoryIds ?? []}}",
+                                        "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.no_selected"
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onSelectionChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "selectedCategoryIds": "{{$args[0]}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,381 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/category",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "title": "{{category?.data?.name_localized ?? $t:shop.categories}}",
+        "description": "{{category?.data?.description_localized ?? ''}}",
+        "seo": {
+            "enabled": true,
+            "data_sources": ["category", "products"],
+            "page_type": "category",
+            "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_category",
+            "vars": {
+                "category_name": "{{category.data.name ?? ''}}",
+                "commerce_name": "$module_settings:sirsoft-ecommerce:basic_info.shop_name",
+                "site_name": "$core_settings:general.site_name",
+                "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
+            },
+            "priority": 0.6,
+            "changefreq": "weekly",
+            "og": {
+                "type": "website",
+                "title": "{{category.data.name ?? ''}}",
+                "description": "{{category.data.description ?? ''}}"
+            },
+            "structured_data": {
+                "@type": "ItemList",
+                "name": "{{category.data.name ?? ''}}"
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "category",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/categories/{{route.slug}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/categories",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "products",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products",
+            "method": "GET",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": 12,
+                "category_slug": "{{route.slug}}",
+                "sort": "{{query.sort ?? 'latest'}}",
+                "search": "{{query.keyword ?? ''}}"
+            },
+            "auto_fetch": true,
+            "fallback": {
+                "data": [],
+                "meta": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 12,
+                    "total": 0
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-8"
+                },
+                "children": [
+                    {
+                        "comment": "카테고리 헤더",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "comment": "뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": { "name": "arrow-left", "className": "w-5 h-5" }
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{category?.data?.name_localized ?? $t:shop.categories}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "설명 + 브레드크럼 한 줄",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center justify-between mt-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!!category?.data?.description_localized}}",
+                                        "props": {
+                                            "className": "text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "{{category?.data?.description_localized ?? ''}}"
+                                    },
+                                    {
+                                        "comment": "브레드크럼 (전체 > 경로 > 현재)",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "props": {
+                                                    "href": "{{_global.shopBase}}/products",
+                                                    "className": "hover:text-gray-700 dark:hover:text-gray-300"
+                                                },
+                                                "text": "$t:shop.category.all"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "iteration": {
+                                                    "source": "{{category?.data?.breadcrumb ?? []}}",
+                                                    "item_var": "crumb"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "chevron-right",
+                                                                    "className": "w-3 h-3"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "if": "{{crumb.slug !== route.slug}}",
+                                                                "props": {
+                                                                    "href": "{{_global.shopBase}}/category/{{crumb.slug}}",
+                                                                    "className": "hover:text-gray-700 dark:hover:text-gray-300"
+                                                                },
+                                                                "text": "{{crumb.name}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{crumb.slug === route.slug}}",
+                                                                "props": {
+                                                                    "className": "text-gray-900 dark:text-white font-medium"
+                                                                },
+                                                                "text": "{{crumb.name}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "카테고리 배너 이미지",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(category?.data?.images ?? []).length > 0}}",
+                        "props": {
+                            "className": "mb-6 rounded-lg overflow-hidden"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Img",
+                                "props": {
+                                    "src": "{{category?.data?.images?.[0]?.download_url ?? ''}}",
+                                    "alt": "{{category?.data?.images?.[0]?.alt_text ?? category?.data?.name_localized ?? ''}}",
+                                    "className": "w-full h-auto object-cover max-h-64"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "검색 바",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": { "className": "flex gap-2 mb-4" },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Input",
+                                "props": {
+                                    "type": "text",
+                                    "name": "keyword",
+                                    "placeholder": "$t:shop.search_placeholder",
+                                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                    "value": "{{_local.keyword ?? query.keyword ?? ''}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": { "target": "local", "keyword": "{{$event.target.value}}" }
+                                    },
+                                    {
+                                        "type": "keydown",
+                                        "handler": "navigate",
+                                        "key": "Enter",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "keyword": "{{_local.keyword ?? ''}}",
+                                                "page": "1"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": { "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium" },
+                                "text": "$t:shop.search",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "keyword": "{{_local.keyword ?? query.keyword ?? ''}}",
+                                                "page": "1"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "하위 카테고리 칩 (자식 카테고리가 있을 때만 표시)",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(category?.data?.children ?? []).length > 0}}",
+                        "props": { "className": "flex flex-wrap gap-2 mb-4" },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": { "source": "{{category?.data?.children ?? []}}", "item_var": "sub" },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        },
+                                        "text": "{{sub?.name_localized}}",
+                                        "actions": [
+                                            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/category/{{sub?.slug}}" } }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "정렬 바",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-semibold text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Select",
+                                "props": {
+                                    "name": "sort",
+                                    "value": "{{query.sort ?? 'latest'}}",
+                                    "className": "h-9 w-32",
+                                    "options": [
+                                        { "value": "latest", "label": "$t:shop.sort.latest" },
+                                        { "value": "sales", "label": "$t:shop.sort.sales" },
+                                        { "value": "price_asc", "label": "$t:shop.sort.price_asc" },
+                                        { "value": "price_desc", "label": "$t:shop.sort.price_desc" }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "sort": "{{$event.target.value}}",
+                                                "page": "1"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/shop/list/_product_grid.json"
+                    }
+                ]
+            }
+        ]
+    }
+}

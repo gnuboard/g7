@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시글 상단 네비게이션. 목록으로 버튼 + 게시판 이름 + 이전글/다음글 버튼"
+  },
+  "comment": "상단 네비게이션 버튼",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "flex items-center justify-between mb-6"
+  },
+  "children": [
+    {
+      "comment": "목록으로 버튼",
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "navigate",
+          "params": {
+            "path": "/board/{{route.slug}}"
+          }
+        }
+      ],
+      "children": [
+        {
+          "type": "composite",
+          "name": "Icon",
+          "props": {
+            "name": "list",
+            "size": "sm"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "$t:board.back_to_list"
+        }
+      ]
+    },
+    {
+      "comment": "게시판 이름 (가운데)",
+      "type": "basic",
+      "name": "Span",
+      "props": {
+        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+      },
+      "text": "{{post?.data?.board?.name ?? ''}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-2"
+      },
+      "children": [
+        {
+          "comment": "이전글 버튼 - 아이콘 + 텍스트",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{post?.data?.navigation?.prev?.id}}",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}/{{post.data.navigation.prev.id}}",
+                "query": {
+                  "del": "{{query.del ?? ''}}"
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-left",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.prev"
+            }
+          ]
+        },
+        {
+          "comment": "다음글 버튼 - 아이콘 + 텍스트",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{post?.data?.navigation?.next?.id}}",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/board/{{route.slug}}/{{post.data.navigation.next.id}}",
+                "query": {
+                  "del": "{{query.del ?? ''}}"
+                }
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.next"
+            },
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-right",
+                "size": "sm"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "검색 바 + 정렬 바 (검색 입력, 총 상품 수, 초기화, 정렬)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "space-y-4" },
+  "children": [
+    {
+      "comment": "검색 영역",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "keyword",
+            "placeholder": "$t:shop.search_placeholder",
+            "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+            "value": "{{_local.keyword ?? query.keyword ?? ''}}"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": { "target": "local", "keyword": "{{$event.target.value}}" }
+            },
+            {
+              "type": "keydown",
+              "handler": "navigate",
+              "key": "Enter",
+              "params": {
+                "path": "{{_global.shopBase}}/products",
+                "mergeQuery": true,
+                "query": {
+                  "keyword": "{{_local.keyword ?? ''}}",
+                  "page": "1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium" },
+          "text": "$t:shop.search",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{_global.shopBase}}/products",
+                "mergeQuery": true,
+                "query": {
+                  "keyword": "{{_local.keyword ?? query.keyword ?? ''}}",
+                  "page": "1"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "정렬 바 (총 상품 수 + 초기화 + 정렬)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50" },
+      "children": [
+        {
+          "comment": "총 상품 수",
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm font-semibold text-gray-700 dark:text-gray-300" },
+          "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
+        },
+        {
+          "comment": "오른쪽: 초기화 버튼 + 정렬",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "comment": "전체 초기화 버튼 (필터 적용 시에만 표시)",
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!!query.category || !!query.keyword}}",
+              "props": { "className": "h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" },
+              "text": "$t:shop.reset_all",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": { "path": "{{_global.shopBase}}/products", "query": {} }
+                }
+              ]
+            },
+            {
+              "comment": "정렬 Select",
+              "type": "composite",
+              "name": "Select",
+              "props": {
+                "name": "sort",
+                "value": "{{query.sort ?? 'latest'}}",
+                "className": "h-9 w-32",
+                "options": [
+                  { "value": "latest", "label": "$t:shop.sort.latest" },
+                  { "value": "sales", "label": "$t:shop.sort.sales" },
+                  { "value": "price_asc", "label": "$t:shop.sort.price_asc" },
+                  { "value": "price_desc", "label": "$t:shop.sort.price_desc" }
+                ]
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "{{_global.shopBase}}/products",
+                    "mergeQuery": true,
+                    "query": {
+                      "sort": "{{$event.target.value}}",
+                      "page": "1"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "title": "검색",
+  "placeholder": "검색어를 입력하세요",
+  "button": "검색",
+  "submit": "검색",
+  "results": "검색 결과",
+  "results_count": "{{count}}개의 결과",
+  "result_summary": "검색 결과 {{count}}건",
+  "no_results": "검색 결과가 없습니다.",
+  "try_different": "다른 검색어로 시도해보세요.",
+  "tabs": {
+    "all": "전체",
+    "posts": "게시글",
+    "products": "상품",
+    "pages": "페이지"
+  },
+  "filter": {
+    "all": "전체",
+    "posts": "게시글",
+    "products": "상품",
+    "all_boards": "전체 게시판"
+  },
+  "sort": {
+    "relevance": "관련도순",
+    "latest": "최신순",
+    "popular": "인기순",
+    "price_asc": "낮은 가격순",
+    "price_desc": "높은 가격순"
+  },
+  "empty": {
+    "all": "검색 결과가 없습니다.",
+    "posts": "게시글 검색 결과가 없습니다.",
+    "products": "상품 검색 결과가 없습니다.",
+    "pages": "페이지 검색 결과가 없습니다.",
+    "posts_in_all": "게시글 검색 결과가 없습니다",
+    "products_in_all": "상품 검색 결과가 없습니다",
+    "pages_in_all": "페이지 검색 결과가 없습니다",
+    "suggestion": "다른 검색어로 시도해 보세요"
+  },
+  "page_published_at": "발행일: {{date}}",
+  "view_more": "더보기",
+  "view_all": "전체보기",
+  "initial": {
+    "title": "검색어를 입력해주세요",
+    "description": "게시글, 상품, 페이지를 통합 검색할 수 있습니다.",
+    "hint_title": "검색 팁",
+    "hint_1": "두 단어 이상을 입력하면 더 정확한 결과를 얻을 수 있습니다",
+    "hint_2": "검색어는 제목과 내용에서 함께 검색됩니다"
+  }
+}

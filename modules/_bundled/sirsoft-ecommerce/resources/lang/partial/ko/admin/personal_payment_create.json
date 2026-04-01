@@ -1,0 +1,61 @@
+{
+  "title": "개인결제 생성",
+  "description": "새로운 개인결제를 생성합니다",
+  "buyer_info": {
+    "title": "구매자 정보",
+    "required_notice": "필수 항목입니다",
+    "buyer_type": "결제 대상",
+    "member_select": "회원 선택",
+    "guest_input": "비회원 입력",
+    "selected_member": "선택된 회원",
+    "name": "이름",
+    "name_placeholder": "예: 홍길동",
+    "phone": "연락처",
+    "phone_placeholder": "예: 010-1234-5678",
+    "phone_hint": "숫자만 입력하시면 자동으로 형식이 적용됩니다",
+    "email": "이메일",
+    "email_placeholder": "예: example@email.com"
+  },
+  "payment_detail": {
+    "title": "개인결제 상세",
+    "product_name": "상품명",
+    "product_name_placeholder": "예: 프리미엄 멤버십 1년",
+    "amount": "결제금액",
+    "amount_placeholder": "예: 100,000",
+    "amount_hint": "숫자만 입력하시면 자동으로 형식이 적용됩니다",
+    "expired_at": "만료일시",
+    "expired_at_hint": "기본값: 현재일 + 7일",
+    "order_link": "주문번호 연동",
+    "order_link_optional": "(선택사항)",
+    "search_order": "주문 검색 및 연동",
+    "search_order_hint": "기존 주문과 연동하려면 선택하세요",
+    "linked_order": "연동된 주문",
+    "linked_order_optional": "(선택사항)",
+    "memo": "관리자 메모",
+    "memo_optional": "(선택사항)",
+    "memo_placeholder": "예: 정기 멤버십 결제 - VIP 고객 특별 할인 적용\n고객 요청사항 등을 기록할 수 있습니다"
+  },
+  "modal": {
+    "member_search": {
+      "title": "회원 검색",
+      "description": "회원명, ID, 이메일로 검색하여 선택하세요",
+      "search_placeholder": "회원명, ID, 이메일로 검색"
+    },
+    "order_search": {
+      "title": "주문 검색 및 연동",
+      "description": "주문번호, 고객명, 상품명으로 검색하여 선택하세요",
+      "search_field": "검색 필드",
+      "search_field_all": "전체",
+      "search_field_order_number": "주문번호",
+      "search_field_member_name": "고객명",
+      "search_field_product_name": "상품명",
+      "search_placeholder": "검색어를 입력하세요",
+      "order_date": "주문일",
+      "order_date_all": "전체",
+      "order_date_last_7_days": "최근 7일",
+      "order_date_last_30_days": "최근 30일",
+      "order_date_last_90_days": "최근 90일",
+      "result_count": "{{count}}개의 주문이 검색되었습니다"
+    }
+  }
+}

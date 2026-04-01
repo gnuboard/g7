@@ -1,0 +1,1214 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "마이페이지 프로필 - View 모드 (시안 기반 레이아웃)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "blur_until_loaded": {
+    "enabled": true,
+    "data_sources": "user"
+  },
+  "props": {
+    "className": "space-y-6"
+  },
+  "responsive": {
+    "portable": {
+      "props": {
+        "className": "space-y-4"
+      }
+    }
+  },
+  "children": [
+    {
+      "comment": "상태별 안내 메시지 - 비활성화 (회색 - secondary)",
+      "if": "{{user.data?.status === 'inactive'}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-3 p-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "circle-pause",
+            "size": "lg",
+            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:mypage.profile.status_inactive_notice"
+        }
+      ]
+    },
+    {
+      "comment": "상태별 안내 메시지 - 차단 (빨간색 경고)",
+      "if": "{{user.data?.status === 'blocked'}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "ban",
+            "size": "lg",
+            "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-red-800 dark:text-red-200"
+          },
+          "text": "$t:mypage.profile.status_blocked_notice"
+        }
+      ]
+    },
+    {
+      "comment": "상태별 안내 메시지 - 탈퇴 (노란색 - warning)",
+      "if": "{{user.data?.status === 'withdrawn'}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "circle-xmark",
+            "size": "lg",
+            "className": "text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-col gap-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-yellow-800 dark:text-yellow-200"
+              },
+              "text": "$t:mypage.profile.status_withdrawn_notice"
+            },
+            {
+              "if": "{{user.data?.withdrawn_at}}",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-yellow-600 dark:text-yellow-300"
+              },
+              "text": "$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "섹션 헤더 - 내 정보 + 수정하기 버튼 (카드 외부)",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center justify-between"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-xl font-semibold text-gray-900 dark:text-white"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+              }
+            }
+          },
+          "text": "$t:mypage.profile.view_title"
+        },
+        {
+          "comment": "버튼 그룹 - 수정하기 + 비밀번호 변경",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "comment": "비밀번호 변경 버튼",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "lock",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.profile.change_password_button"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/mypage/change-password"
+                  }
+                }
+              ]
+            },
+            {
+              "comment": "수정하기 버튼 - 편집 페이지로 이동",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "pen-to-square",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.profile.edit_button"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/mypage/profile/edit"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "프로필 카드 - 아바타 + 이름 + 이메일 + 가입일/마지막 로그인",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "comment": "데스크탑: 가로 배치 (아바타 + 정보)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex gap-4 items-start"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex flex-col items-center gap-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "comment": "프로필 아바타 - AvatarUploader 컴포넌트 (xl = 96px)",
+              "type": "composite",
+              "name": "AvatarUploader",
+              "props": {
+                "src": "{{user.data?.avatar}}",
+                "fallbackText": "{{user.data?.name?.charAt(0) ?? 'U'}}",
+                "size": "xl",
+                "showDeleteButton": true,
+                "confirmDelete": true,
+                "uploadSuccessActions": [
+                  { "handler": "refetchDataSource", "params": { "dataSourceId": "user" } },
+                  { "handler": "refetchDataSource", "params": { "dataSourceId": "current_user" } }
+                ],
+                "deleteSuccessActions": [
+                  { "handler": "refetchDataSource", "params": { "dataSourceId": "user" } },
+                  { "handler": "refetchDataSource", "params": { "dataSourceId": "current_user" } }
+                ]
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "size": "lg"
+                  }
+                }
+              }
+            },
+            {
+              "comment": "기본 정보 - 데스크탑: 좌측 정렬, 모바일: 중앙 정렬",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 space-y-3 py-2"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "w-full space-y-3 text-center"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "comment": "이름 + 닉네임 (하단 정렬)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-end gap-2"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex items-end justify-center gap-2"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-2xl font-semibold text-gray-900 dark:text-white leading-none"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none"
+                          }
+                        }
+                      },
+                      "text": "{{user.data?.name ?? '-'}}"
+                    },
+                    {
+                      "comment": "닉네임 (있는 경우만 표시)",
+                      "if": "{{user.data?.nickname}}",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-base text-gray-500 dark:text-gray-400 leading-none"
+                      },
+                      "text": "({{user.data?.nickname}})"
+                    },
+                    {
+                      "comment": "상태 배지 (Active가 아닌 경우만 표시)",
+                      "if": "{{user.data?.status && user.data?.status !== 'active'}}",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "{{user.data?.status_variant === 'secondary' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : user.data?.status_variant === 'danger' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'}}"
+                      },
+                      "text": "{{user.data?.status_label}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "이메일",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-base text-gray-600 dark:text-gray-300"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-300"
+                      }
+                    }
+                  },
+                  "text": "{{user.data?.email ?? '-'}}"
+                },
+                {
+                  "comment": "구분선",
+                  "type": "basic",
+                  "name": "Hr",
+                  "props": {
+                    "className": "border-gray-200 dark:border-gray-700 my-2"
+                  }
+                },
+                {
+                  "comment": "가입일 / 마지막 로그인",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:mypage.profile.joined_at"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "ml-2 text-purple-600 dark:text-purple-400 font-mono"
+                          },
+                          "text": "{{user.data?.created_at ?? '-'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:mypage.profile.last_login"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "ml-2 text-purple-600 dark:text-purple-400",
+                            "title": "{{user.data?.last_login_at ?? ''}}"
+                          },
+                          "text": "{{user.data?.last_login_human ?? '-'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "탈퇴 일시 (탈퇴 상태인 경우만 표시)",
+                      "if": "{{user.data?.status === 'withdrawn' && user.data?.withdrawn_at}}",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:mypage.profile.withdrawn_at"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "ml-2 text-red-600 dark:text-red-400 font-mono"
+                          },
+                          "text": "{{user.data?.withdrawn_at}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "2컬럼 카드 - 연락처 정보 / 위치 정보",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "grid grid-cols-2 gap-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "grid grid-cols-1 gap-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "comment": "연락처 정보 카드",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "text": "$t:mypage.profile.contact_info"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "comment": "휴대폰 번호",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.mobile"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.mobile ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "전화번호",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.phone"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.phone ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "홈페이지",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.homepage"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.homepage ?? '-'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "위치 정보 카드",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "text": "$t:mypage.profile.location_info"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "comment": "국가",
+                  "if": false,
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.country"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.country_name ?? user.data?.country ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "언어",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.language"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.language_label ?? user.data?.language ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "시간대",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-center"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.profile.timezone"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white"
+                      },
+                      "text": "{{user.data?.timezone ?? '-'}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "주소",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex justify-between items-start"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0"
+                      },
+                      "text": "$t:mypage.profile.address"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%]"
+                      },
+                      "text": "{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "profile_view_bio_card",
+      "comment": "서명 및 자기소개 카드",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:mypage.profile.section_signature_bio"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-5"
+          },
+          "children": [
+            {
+              "comment": "서명",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                  },
+                  "text": "$t:mypage.profile.signature"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white whitespace-pre-wrap"
+                  },
+                  "text": "{{user.data?.signature ?? '-'}}"
+                }
+              ]
+            },
+            {
+              "comment": "자기소개",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                  },
+                  "text": "$t:mypage.profile.bio"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white whitespace-pre-wrap"
+                  },
+                  "text": "{{user.data?.bio ?? '-'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "게시판 알림 설정 (sirsoft-board 모듈 설치 시 표시)",
+      "if": "{{user.data?.notify_comment !== undefined}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex items-center justify-between mb-3"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "bell",
+                    "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                      }
+                    }
+                  },
+                  "text": "$t:mypage.notification_settings.title"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "grid grid-cols-1 gap-3"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3 p-3 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "name": "notify_post_complete",
+                    "checked": "{{!!user.data?.notify_post_complete}}",
+                    "disabled": true,
+                    "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:mypage.notification_settings.post_complete"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.notification_settings.post_complete_desc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3 p-3 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "name": "notify_post_reply",
+                    "checked": "{{!!user.data?.notify_post_reply}}",
+                    "disabled": true,
+                    "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:mypage.notification_settings.post_reply"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.notification_settings.post_reply_desc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3 p-3 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "name": "notify_comment",
+                    "checked": "{{!!user.data?.notify_comment}}",
+                    "disabled": true,
+                    "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:mypage.notification_settings.comment"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.notification_settings.comment_desc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3 p-3 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "name": "notify_reply_comment",
+                    "checked": "{{!!user.data?.notify_reply_comment}}",
+                    "disabled": true,
+                    "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:mypage.notification_settings.reply_comment"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:mypage.notification_settings.reply_comment_desc"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "회원 탈퇴 섹션 - 탈퇴 상태가 아닌 경우만 표시",
+      "if": "{{user.data?.status !== 'withdrawn'}}",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-red-50 dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "bg-red-50 dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-4"
+          }
+        }
+      },
+      "children": [
+        {
+          "comment": "제목 (아이콘 인라인)",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "size": "lg",
+                "className": "text-red-500"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-lg font-semibold text-red-600 dark:text-red-400"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "text-base font-semibold text-red-600 dark:text-red-400"
+                  }
+                }
+              },
+              "text": "$t:mypage.profile.withdraw"
+            }
+          ]
+        },
+        {
+          "comment": "경고 메시지 박스 (슈퍼관리자 제외)",
+          "if": "{{!user.data?.is_super}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-red-100 dark:bg-red-950/80 rounded-lg p-4 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-red-700 dark:text-red-200"
+              },
+              "text": "$t:mypage.profile.withdraw_warning"
+            }
+          ]
+        },
+        {
+          "comment": "슈퍼관리자 안내 메시지",
+          "if": "{{user.data?.is_super}}",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "info",
+                "size": "md",
+                "className": "text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-yellow-800 dark:text-yellow-200"
+              },
+              "text": "$t:mypage.profile.admin_cannot_withdraw"
+            }
+          ]
+        },
+        {
+          "comment": "탈퇴 버튼 (슈퍼관리자 제외)",
+          "if": "{{!user.data?.is_super}}",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "trash-can",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:mypage.profile.withdraw_button"
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "confirmWithdraw": false
+                    },
+                    "isWithdrawing": false
+                  }
+                },
+                {
+                  "handler": "openModal",
+                  "target": "withdrawModal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

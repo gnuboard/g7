@@ -1,0 +1,18 @@
+{
+    "name": "modules/sirsoft-board",
+    "description": "Board module for Gnuboard7",
+    "type": "library",
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Sirsoft\\Board\\": "src/",
+            "Modules\\Sirsoft\\Board\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Sirsoft\\Board\\Database\\Factories\\": "database/factories/",
+            "Modules\\Sirsoft\\Board\\Upgrades\\": "upgrades/"
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

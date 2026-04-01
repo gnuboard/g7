@@ -1,0 +1,104 @@
+{
+  "marketing_consent_title": "Marketing Consent",
+  "email_subscription": "Email Subscription",
+  "email_subscription_desc": "Receive promotional emails including events, discounts, and marketing updates.",
+  "marketing_consent": "Marketing Consent",
+  "marketing_consent_desc": "Agree to the collection and use of personal information for marketing purposes.",
+  "third_party_consent": "Third Party Sharing",
+  "third_party_consent_desc": "Agree to the sharing of personal information with third parties for marketing purposes.",
+  "info_disclosure": "Information Disclosure",
+  "info_disclosure_desc": "Allow your profile information to be visible to other users.",
+"agree_marketing_consent": "(Optional) Marketing consent",
+  "agree_third_party_consent": "(Optional) Third party sharing consent",
+  "agree_info_disclosure": "(Optional) Information disclosure consent",
+  "no_consent_history": "No consent history available.",
+  "history_date": "Date",
+  "history_channel_key": "Consent Item",
+  "history_action": "Action",
+  "history_source": "Source",
+  "action_granted": "Granted",
+  "action_revoked": "Revoked",
+  "source_register": "Registration",
+  "source_admin": "Admin",
+  "source_profile": "My Page",
+  "consent_date_prefix": "Agreed:",
+  "not_agreed": "Not agreed",
+  "marketing_consent_edit_hint": "Edit in profile settings",
+  "view_terms": "View",
+  "info_disclosure_warning": "Some community features may be limited if not agreed.",
+  "no_terms_content": "Terms content has not been registered.",
+  "terms_published_at": "Published date",
+  "terms_modal_marketing_consent": "Marketing Consent Terms",
+  "terms_modal_email_subscription": "Email Subscription Terms",
+  "terms_modal_third_party_consent": "Third Party Consent Terms",
+  "terms_modal_info_disclosure": "Information Disclosure Terms",
+  "settings": {
+    "title": "Marketing Consent Settings",
+    "description": "Manage marketing consent items and terms pages.",
+    "section": {
+      "channels": "Marketing Channels",
+      "legal": "Legal Consent Items"
+    },
+    "fields": {
+      "marketing_consent_enabled": {
+        "label": "Enable Marketing Consent",
+        "hint": "When disabled, the marketing consent item is hidden from all screens."
+      },
+      "marketing_consent_terms_slug": {
+        "label": "Marketing Consent Terms Page Slug",
+        "hint": "Enter the SLUG of the terms page managed by the Page module. Leave empty to hide the view terms button."
+      },
+      "terms_slug_placeholder": "e.g. marketing-terms",
+      "channels": {
+        "label": "Channels"
+      },
+      "third_party_consent_enabled": {
+        "label": "Enable Third Party Consent",
+        "hint": "When disabled, the third party consent item is hidden."
+      },
+      "third_party_consent_terms_slug": {
+        "label": "Third Party Consent Terms Page Slug",
+        "hint": "Enter the SLUG of the terms page managed by the Page module."
+      },
+      "info_disclosure_enabled": {
+        "label": "Enable Information Disclosure Consent",
+        "hint": "When disabled, the information disclosure consent item is hidden."
+      },
+      "info_disclosure_terms_slug": {
+        "label": "Information Disclosure Terms Page Slug",
+        "hint": "Enter the SLUG of the terms page managed by the Page module."
+      }
+    },
+    "channels": {
+      "description": "Manage marketing consent channels. Each channel is an independent consent item that members can opt in or out of individually during registration and in their profile settings.",
+      "col_label": "Name",
+      "col_slug": "Terms slug",
+      "col_enabled": "Enabled",
+      "add": "Add Channel",
+      "system_badge": "System",
+      "delete_success": "Channel deleted.",
+      "save_success": "Channel saved.",
+      "save_error": "Failed to save channel."
+    },
+    "channel_modal": {
+      "title": "Add / Edit Channel",
+      "enabled": "Enabled",
+      "key": "Channel Key",
+      "key_hint": "Only lowercase letters, numbers, and underscores (_) are allowed.",
+      "key_placeholder": "e.g. sms_subscription",
+      "label_ko": "Name (Korean)",
+      "label_en": "Name (English)",
+      "label_placeholder": "e.g. SMS Marketing",
+      "page_slug": "Terms Page Slug",
+      "page_slug_hint": "Leave empty to hide the view terms button.",
+      "page_slug_placeholder": "e.g. sms-terms",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "channel_deactivate_modal": {
+      "title": "Cannot Delete Channel",
+      "message": "This channel has existing consent records and cannot be deleted. Would you like to deactivate it instead?",
+      "confirm": "Deactivate Instead"
+    }
+  }
+}

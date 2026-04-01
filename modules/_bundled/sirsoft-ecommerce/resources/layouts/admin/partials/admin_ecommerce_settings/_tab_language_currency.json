@@ -1,0 +1,274 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "쇼핑몰 설정 언어/통화 탭 콘텐츠"
+  },
+  "id": "tab_content_language_currency",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'language_currency'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "language_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "language_settings_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "language_settings_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.title"
+            },
+            {
+              "id": "language_settings_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.description"
+            }
+          ]
+        },
+        {
+          "id": "language_settings_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 md:grid-cols-2 gap-6"
+          },
+          "children": [
+            {
+              "id": "field_default_language",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_language"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "language_currency.default_language",
+                    "value": "{{_local.form?.language_currency?.default_language ?? 'ko'}}",
+                    "options": [
+                      {
+                        "value": "ko",
+                        "label": "한국어"
+                      },
+                      {
+                        "value": "en",
+                        "label": "English"
+                      },
+                      {
+                        "value": "ja",
+                        "label": "日本語"
+                      },
+                      {
+                        "value": "zh",
+                        "label": "中文"
+                      }
+                    ],
+                    "className": "{{_local.errors?.['language_currency.default_language'] ? 'w-full select-error' : 'w-full'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['language_currency.default_language']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['language_currency.default_language']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "id": "field_default_currency",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "language_currency.default_currency",
+                    "value": "{{_local.form?.language_currency?.default_currency ?? 'KRW'}}",
+                    "options": "{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))}}",
+                    "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['language_currency.default_currency']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exchange_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "exchange_settings_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "id": "exchange_settings_title",
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "card-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title"
+                },
+                {
+                  "id": "exchange_settings_description",
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "card-description"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.description"
+                }
+              ]
+            },
+            {
+              "id": "add_currency_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly || _local.isAddingCurrency === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingCurrency": true,
+                    "form.newCurrency": {
+                      "code": "",
+                      "name": {},
+                      "exchange_rate": 1,
+                      "rounding_unit": "0.01",
+                      "rounding_method": "round",
+                      "decimal_places": 2,
+                      "is_default": false
+                    }
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "w-4 h-4 mr-1"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.add_currency"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "exchange_rate_list",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-full"
+          },
+          "children": [
+            {
+              "partial": "_currency_exchange_table.json"
+            }
+          ],
+          "responsive": {
+            "portable": {
+              "children": [
+                {
+                  "partial": "_currency_exchange_cards.json"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

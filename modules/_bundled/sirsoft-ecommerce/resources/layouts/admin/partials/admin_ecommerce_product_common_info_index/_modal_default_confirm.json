@@ -1,0 +1,72 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Default Setting Confirm Modal"
+    },
+    "id": "default_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 text-center"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.is_default": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.confirm",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

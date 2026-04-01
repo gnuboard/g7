@@ -1,0 +1,69 @@
+{
+  "title": "Excel Download Management",
+  "description": "Download and manage generated Excel files (files are kept for 7 days)",
+  "search": {
+    "file_content": "File Content",
+    "placeholder": "Enter search keyword",
+    "reset": "Reset"
+  },
+  "filter": {
+    "status": "Status",
+    "all": "All",
+    "category": "Category",
+    "date_search": "Date Search",
+    "request_date": "Request Date",
+    "start_date": "Start Date",
+    "end_date": "End Date"
+  },
+  "category_options": {
+    "all": "All",
+    "product": "Product Management",
+    "order": "Order Management",
+    "visit": "Visit Statistics",
+    "member": "Member Statistics"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort_by": "Request Date (Latest)",
+    "per_page": "{{count}} items",
+    "columns": {
+      "no": "No.",
+      "category": "Category",
+      "file_content": "File Content",
+      "status": "Status",
+      "request_date": "Request Date",
+      "created_date": "Created Date",
+      "creator": "Creator",
+      "download": "Download",
+      "download_count": "Download Count",
+      "expire_date": "Expire Date"
+    }
+  },
+  "actions": {
+    "download": "Download",
+    "view_member": "View Member Info",
+    "search_by_creator": "Search by Creator"
+  },
+  "modal": {
+    "download_history": {
+      "title": "Download History",
+      "description": "View the download history of this file",
+      "file_content": "File Content",
+      "category": "Category",
+      "status": "Status",
+      "created_date": "Created Date",
+      "expire_date": "Expire Date",
+      "total_download": "Total Downloads",
+      "download_count": "{{count}} times",
+      "history_title": "Download History",
+      "history_count": "{{count}} records",
+      "confirm": "Confirm"
+    }
+  },
+  "status": {
+    "completed": "Completed",
+    "processing": "Processing",
+    "failed": "Failed",
+    "expired": "Expired"
+  }
+}

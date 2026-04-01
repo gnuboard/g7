@@ -1,0 +1,641 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Form Panel - Create/Edit/Copy Mode"
+    },
+    "id": "form_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit' || _global.panelMode === 'copy'}}",
+    "onComponentEvent": [
+        {
+            "event": "common_info:init_copy_form",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form": {
+                    "name": "{{_eventData.name}}",
+                    "content": "{{_eventData.content}}",
+                    "content_mode": "{{_eventData.content_mode}}",
+                    "is_default": "{{_eventData.is_default}}",
+                    "is_active": "{{_eventData.is_active}}"
+                },
+                "errors": null,
+                "isSaving": false,
+                "showPreview": false
+            }
+        }
+    ],
+    "children": [
+        {
+            "id": "form_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    },
+                    "text": "{{_global.panelMode === 'create' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_add' : (_global.panelMode === 'copy' ? '$t:sirsoft-ecommerce.admin.common_info.form.title_copy' : '$t:sirsoft-ecommerce.admin.common_info.form.title_edit')}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "view"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form": {
+                                                    "name": {},
+                                                    "content": {},
+                                                    "content_mode": "text",
+                                                    "is_default": false,
+                                                    "is_active": true
+                                                },
+                                                "errors": null,
+                                                "isSaving": false,
+                                                "showPreview": false
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isSaving || (_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true)}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isSaving": true,
+                                                "errors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "{{_global.panelMode === 'edit' ? '/api/modules/sirsoft-ecommerce/admin/product-common-infos/' + _global.selectedId : '/api/modules/sirsoft-ecommerce/admin/product-common-infos'}}",
+                                            "params": {
+                                                "method": "{{_global.panelMode === 'edit' ? 'PUT' : 'POST'}}",
+                                                "body": {
+                                                    "name": "{{_local.form.name}}",
+                                                    "content": "{{_local.form.content}}",
+                                                    "content_mode": "{{_local.form.content_mode}}",
+                                                    "is_default": "{{_local.form.is_default}}",
+                                                    "is_active": "{{_local.form.is_active}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "commonInfos"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedId": "{{response.data.id}}",
+                                                        "selectedItem": "{{response.data}}",
+                                                        "panelMode": "view"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isSaving": false,
+                                                        "form": {
+                                                            "name": {},
+                                                            "content": {},
+                                                            "content_mode": "text",
+                                                            "is_default": false,
+                                                            "is_active": true
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{response.message}}"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isSaving": false,
+                                                        "errors": "{{error.errors}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.button.save"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "form_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-4 max-h-[calc(100vh-200px)] overflow-y-auto"
+            },
+            "children": [
+                {
+                    "id": "name_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.common_info.form.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-red-500 dark:text-red-400 ml-1"
+                                    },
+                                    "text": "*"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "props": {
+                                "value": "{{_local.form.name}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.common_info.form.name_placeholder",
+                                "error": "{{_local.errors?.name}}",
+                                "layout": "tabs",
+                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.name": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "content_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
+                    },
+                    "children": [
+                        {
+                            "id": "content_header",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between mb-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.common_info.form.content_section"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "preview_button",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{_local.form.content_mode === 'html'}}",
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.showPreview ? 'px-3 py-1.5 text-xs font-bold rounded-lg text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500' : 'px-3 py-1.5 text-xs font-bold rounded-lg text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-700 border border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-gray-600'}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "showPreview": "{{!_local.showPreview}}"
+                                                    }
+                                                }
+                                            ],
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "eye",
+                                                        "className": "w-3 h-3 inline mr-1"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-ecommerce.admin.common_info.form.preview"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "html_mode_checkbox",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex items-center gap-2 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "checked": "{{_local.form.content_mode === 'html'}}",
+                                                        "className": "w-4 h-4 text-blue-600 dark:text-blue-400 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}",
+                                                                "showPreview": false
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.common_info.form.mode_html"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "locale_tabs",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2 mb-3"
+                            },
+                            "children": [
+                                {
+                                    "id": "locale_tab_ko",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{(_local.editLocale ?? $locale) === 'ko' ? 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500 text-white dark:bg-blue-600 dark:text-white shadow-md' : 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editLocale": "ko"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "globe",
+                                                "className": "w-3 h-3"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.language.ko"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-300"
+                                            },
+                                            "text": "*"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "locale_tab_en",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{(_local.editLocale ?? $locale) === 'en' ? 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-500 text-white dark:bg-gray-600 dark:text-white shadow-md' : 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "editLocale": "en"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "globe",
+                                                "className": "w-3 h-3"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.language.en"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "content_editor",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_local.showPreview}}",
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "value": "{{_local.form.content?.[_local.editLocale ?? $locale] ?? ''}}",
+                                        "placeholder": "{{_local.form.content_mode === 'html' ? '$t:sirsoft-ecommerce.admin.common_info.form.placeholder_html' : '$t:sirsoft-ecommerce.admin.common_info.form.placeholder_text'}}",
+                                        "rows": 10,
+                                        "className": "{{_local.form.content_mode === 'html' ? 'w-full font-mono bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600 text-gray-800 dark:text-gray-200' : 'w-full'}}",
+                                        "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.content": "{{Object.assign({}, _local.form.content, {[_local.editLocale ?? $locale]: $event.target.value})}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "content_preview",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.showPreview}}",
+                            "props": {
+                                "className": "p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[250px] border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "HtmlContent",
+                                    "if": "{{_local.form.content_mode === 'html'}}",
+                                    "props": {
+                                        "content": "{{_local.form.content?.[_local.editLocale ?? $locale] ?? ''}}",
+                                        "isHtml": true,
+                                        "className": "prose-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.form.content_mode !== 'html'}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                                    },
+                                    "text": "{{_local.form.content?.[_local.editLocale ?? $locale] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "status_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_section"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-2 gap-6"
+                            },
+                            "children": [
+                                {
+                                    "id": "default_setting_col",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "checked": "{{_local.form.is_default}}",
+                                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "switch",
+                                                            "params": {
+                                                                "value": "{{$event && !_local.form.is_default}}"
+                                                            },
+                                                            "cases": {
+                                                                "true": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "defaultModal": {
+                                                                                    "isOpen": true
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "default_confirm_modal"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "false": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.is_default": "{{$event}}"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_default"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "active_setting_col",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "checked": "{{_local.form.is_active}}",
+                                                "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.is_active": "{{$event}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.common_info.form.status_active"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

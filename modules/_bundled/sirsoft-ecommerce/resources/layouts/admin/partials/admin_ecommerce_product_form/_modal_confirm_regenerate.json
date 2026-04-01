@@ -1,0 +1,118 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Confirm Regenerate Options Modal"
+  },
+  "id": "modal_confirm_regenerate",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "className": "w-5 h-5 text-amber-500 shrink-0 mt-0.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm font-medium text-amber-800 dark:text-amber-200"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-amber-700 dark:text-amber-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3 pt-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-outline"
+              },
+              "text": "$t:sirsoft-ecommerce.common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-warning"
+              },
+              "text": "$t:sirsoft-ecommerce.common.confirm",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "closeModal"
+                      },
+                      {
+                        "handler": "sirsoft-ecommerce.generateOptions",
+                        "params": {
+                          "skipConfirm": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

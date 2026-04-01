@@ -1,0 +1,18 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "Daum 우편번호 플러그인 환경설정"
+    },
+    "defaults": {
+        "display_mode": "layer",
+        "popup_width": 500,
+        "popup_height": 600,
+        "theme_color": "#1D4ED8"
+    },
+    "frontend_schema": {
+        "display_mode": { "expose": true },
+        "popup_width": { "expose": true },
+        "popup_height": { "expose": true },
+        "theme_color": { "expose": true }
+    }
+}

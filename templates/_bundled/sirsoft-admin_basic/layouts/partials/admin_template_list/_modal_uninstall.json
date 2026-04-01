@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 제거 확인 모달"
+  },
+  "id": "template_uninstall_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.templates.modals.uninstall_title",
+    "size": "medium"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.templates.modals.uninstall_confirm|name={{_global.selectedTemplate.name}}"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
+          },
+          "text": "$t:admin.templates.modals.uninstall_warning"
+        }
+      ]
+    },
+    {
+      "id": "delete_data_option",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Checkbox",
+              "props": {
+                "checked": "{{_global.deleteTemplateData || false}}",
+                "className": "mt-0.5"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "deleteTemplateData": "{{$event.target.checked}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:admin.templates.modals.delete_data_option"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:admin.templates.modals.delete_data_warning"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "extension_directory_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-4 border-t border-gray-200 dark:border-gray-600 pt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-sm font-semibold text-gray-900 dark:text-white"
+          },
+          "text": "$t:admin.templates.modals.extension_directory_title"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!_global.templateUninstallInfo}}",
+          "props": {
+            "className": "flex items-center justify-center py-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "spinner",
+                "className": "w-5 h-5 animate-spin text-gray-400"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.templateUninstallInfo && _global.templateUninstallInfo.extension_directory}}",
+          "props": {
+            "className": "mt-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 mb-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "folder-open",
+                    "className": "w-4 h-4 text-gray-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:admin.templates.modals.extension_directory_section"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "($t:admin.templates.modals.tables_total|size={{_global.templateUninstallInfo.extension_directory.size_formatted}})"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between px-3 py-1.5"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs font-mono text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "{{_global.templateUninstallInfo.extension_directory.path}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{_global.templateUninstallInfo.extension_directory.size_formatted}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateUninstalling}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateUninstalling}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isTemplateUninstalling": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/templates/uninstall",
+                  "params": {
+                    "method": "DELETE",
+                    "body": {
+                      "template_name": "{{_global.selectedTemplate.identifier}}",
+                      "delete_data": "{{_global.deleteTemplateData || false}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateUninstalling": false
+                      }
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedTemplate": null,
+                        "deleteTemplateData": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.templates.uninstall_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "templates"
+                      }
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateUninstalling": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isTemplateUninstalling}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isTemplateUninstalling ? '$t:admin.templates.uninstalling' : '$t:admin.templates.actions.uninstall'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

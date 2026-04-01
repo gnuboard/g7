@@ -1,0 +1,307 @@
+{
+  "version": "1.0.0",
+  "description": "sirsoft-basic 사용자 템플릿 라우트 정의",
+  "routes": [
+    {
+      "_comment": "=== 홈 ===",
+      "path": "/",
+      "layout": "home",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.home.page_title"
+      }
+    },
+
+    {
+      "_comment": "=== 인증 ===",
+      "path": "/login",
+      "layout": "auth/login",
+      "auth_required": false,
+      "guest_only": true,
+      "meta": {
+        "title": "$t:user.auth.login_title"
+      }
+    },
+    {
+      "path": "/register",
+      "layout": "auth/register",
+      "auth_required": false,
+      "guest_only": true,
+      "meta": {
+        "title": "$t:user.auth.register_title"
+      }
+    },
+    {
+      "path": "/forgot-password",
+      "layout": "auth/forgot_password",
+      "auth_required": false,
+      "guest_only": true,
+      "meta": {
+        "title": "$t:user.auth.forgot_password_title"
+      }
+    },
+    {
+      "path": "/reset-password",
+      "layout": "auth/reset_password",
+      "auth_required": false,
+      "guest_only": true,
+      "meta": {
+        "title": "$t:user.auth.reset_password_title"
+      }
+    },
+
+    {
+      "_comment": "=== 게시판 ===",
+      "path": "/boards",
+      "layout": "board/boards",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.boards_title"
+      }
+    },
+    {
+      "path": "/boards/popular",
+      "layout": "board/popular",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.popular_title"
+      }
+    },
+    {
+      "path": "/board/:slug",
+      "layout": "board/index",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.list_title"
+      }
+    },
+    {
+      "path": "/board/:slug/write",
+      "layout": "board/form",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.write_title"
+      }
+    },
+    {
+      "path": "/board/:slug/:id",
+      "layout": "board/show",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.show_title"
+      }
+    },
+    {
+      "path": "/board/:slug/:id/edit",
+      "layout": "board/form",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.board.edit_title"
+      }
+    },
+
+    {
+      "_comment": "=== 쇼핑몰 ===",
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products",
+      "layout": "shop/index",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.list_title"
+      }
+    },
+    {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug",
+      "layout": "shop/category",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.category_title"
+      }
+    },
+    {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/products/:id",
+      "layout": "shop/show",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.show_title"
+      }
+    },
+    {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/cart",
+      "layout": "shop/cart",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.cart_title"
+      }
+    },
+    {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/checkout",
+      "layout": "shop/checkout",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.shop.checkout_title"
+      }
+    },
+    {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/orders/:id/complete",
+      "layout": "shop/order_complete",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.shop.order_complete_title"
+      }
+    },
+
+    {
+      "_comment": "=== 마이페이지 ===",
+      "path": "/mypage",
+      "redirect": "/mypage/profile",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.page_title"
+      }
+    },
+    {
+      "path": "/mypage/profile",
+      "layout": "mypage/profile",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.profile_title"
+      }
+    },
+    {
+      "path": "/mypage/profile/edit",
+      "layout": "mypage/profile-edit",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.profile_edit_title"
+      }
+    },
+    {
+      "path": "/mypage/change-password",
+      "layout": "mypage/change-password",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.change_password_title"
+      }
+    },
+    {
+      "path": "/mypage/orders",
+      "layout": "mypage/orders",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.orders_title"
+      }
+    },
+    {
+      "path": "/mypage/orders/:order_number",
+      "layout": "mypage/orders/show",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.order_detail_title"
+      }
+    },
+    {
+      "path": "/mypage/wishlist",
+      "layout": "mypage/wishlist",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.wishlist_title"
+      }
+    },
+    {
+      "path": "/mypage/addresses",
+      "layout": "mypage/addresses",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.addresses_title"
+      }
+    },
+    {
+      "path": "/mypage/notifications",
+      "layout": "mypage/notifications",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.notifications_title"
+      }
+    },
+    {
+      "path": "/mypage/board",
+      "layout": "mypage/board",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.board_title"
+      }
+    },
+    {
+      "path": "/mypage/inquiries",
+      "layout": "mypage/inquiries",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:user.mypage.inquiries_title"
+      }
+    },
+
+    {
+      "_comment": "=== 사용자 프로필 ===",
+      "path": "/users/:userId",
+      "layout": "users/show",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.profile.page_title"
+      }
+    },
+    {
+      "path": "/users/:userId/posts",
+      "layout": "users/posts",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.profile.posts_page_title"
+      }
+    },
+
+    {
+      "_comment": "=== 페이지 ===",
+      "path": "/page/:slug",
+      "layout": "page/show",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.page.page_title"
+      }
+    },
+
+    {
+      "_comment": "=== 검색 ===",
+      "path": "/search",
+      "layout": "search/index",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.search.page_title"
+      }
+    },
+
+    {
+      "_comment": "=== 에러 페이지 ===",
+      "path": "/404",
+      "layout": "errors/404",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.errors.not_found_title"
+      }
+    },
+    {
+      "path": "/403",
+      "layout": "errors/403",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.errors.forbidden_title"
+      }
+    },
+    {
+      "path": "/500",
+      "layout": "errors/500",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.errors.server_error_title"
+      }
+    }
+  ]
+}

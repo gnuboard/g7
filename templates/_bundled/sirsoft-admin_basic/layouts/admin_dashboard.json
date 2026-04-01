@@ -1,0 +1,1533 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_dashboard",
+    "permissions": [
+        "core.dashboard.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.dashboard.title",
+        "description": "$t:admin.dashboard.description",
+        "auth_required": true
+    },
+    "data_sources": [
+        {
+            "id": "dashboard_stats",
+            "type": "api",
+            "endpoint": "/api/admin/dashboard/stats",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "total_users": {
+                        "count": 0,
+                        "change_display": "-"
+                    },
+                    "installed_modules": {
+                        "total": 0,
+                        "active": 0
+                    },
+                    "active_plugins": {
+                        "total": 0,
+                        "active": 0
+                    },
+                    "system_status": {
+                        "label": "-"
+                    }
+                }
+            }
+        },
+        {
+            "id": "dashboard_resources",
+            "type": "api",
+            "endpoint": "/api/admin/dashboard/resources",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "cpu": {
+                        "percentage": 0
+                    },
+                    "memory": {
+                        "percentage": 0
+                    },
+                    "disk": {
+                        "percentage": 0
+                    }
+                }
+            }
+        },
+        {
+            "id": "dashboard_activities",
+            "type": "api",
+            "endpoint": "/api/admin/dashboard/activities",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "dashboard_modules",
+            "type": "api",
+            "endpoint": "/api/admin/modules/installed",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": "5"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
+                }
+            }
+        },
+        {
+            "id": "dashboard_plugins",
+            "type": "api",
+            "endpoint": "/api/admin/plugins/installed",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": "5"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
+                }
+            }
+        },
+        {
+            "id": "dashboard_templates",
+            "type": "api",
+            "endpoint": "/api/admin/templates",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": "5"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
+                }
+            }
+        },
+        {
+            "id": "dashboard_alerts",
+            "type": "api",
+            "endpoint": "/api/admin/dashboard/alerts",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "dashboard_stats_ws",
+            "type": "websocket",
+            "channel": "admin.dashboard",
+            "event": "dashboard.stats.updated",
+            "channel_type": "private",
+            "target_source": "dashboard_stats"
+        },
+        {
+            "id": "dashboard_resources_ws",
+            "type": "websocket",
+            "channel": "admin.dashboard",
+            "event": "dashboard.resources.updated",
+            "channel_type": "private",
+            "target_source": "dashboard_resources"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "dashboard_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "page_title",
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white"
+                                },
+                                "text": "$t:admin.dashboard.title"
+                            },
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+                                    "aria-label": "$t:admin.dashboard.refresh"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "params": {
+                                            "actions": [
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_stats"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_resources"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_activities"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_modules"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_plugins"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "dashboard_templates"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.dashboard.refreshed"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "id": "refresh_icon",
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "stats_cards_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "dashboard_stats"
+                        },
+                        "props": {
+                            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "total_users_card",
+                                "permissions": ["core.users.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "total_users_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "total_users_label",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer transition-colors"
+                                                },
+                                                "text": "$t:admin.dashboard.stats.total_users",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/users"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "total_users_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "users",
+                                                    "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "total_users_value",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.total_users?.count | number}}"
+                                    },
+                                    {
+                                        "id": "total_users_change",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center text-sm text-green-600 dark:text-green-400"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "total_users_trend_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chart-line",
+                                                    "className": "w-4 h-4 mr-1"
+                                                }
+                                            },
+                                            {
+                                                "id": "total_users_trend_text",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{dashboard_stats?.data?.total_users?.change_display}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "installed_modules_card",
+                                "permissions": ["core.modules.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "installed_modules_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "installed_modules_label",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer transition-colors"
+                                                },
+                                                "text": "$t:admin.dashboard.stats.installed_modules",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/modules"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "installed_modules_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "cube",
+                                                    "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "installed_modules_value",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.installed_modules?.total}}"
+                                    },
+                                    {
+                                        "id": "installed_modules_detail",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        },
+                                        "text": "$t:admin.dashboard.stats.active_count|count={{dashboard_stats?.data?.installed_modules?.active}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "active_plugins_card",
+                                "permissions": ["core.plugins.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "active_plugins_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "active_plugins_label",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer transition-colors"
+                                                },
+                                                "text": "$t:admin.dashboard.stats.active_plugins",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "active_plugins_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "puzzle-piece",
+                                                    "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "active_plugins_value",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.active_plugins?.active}}"
+                                    },
+                                    {
+                                        "id": "active_plugins_detail",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center text-sm text-green-600 dark:text-green-400"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "active_plugins_trend_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chart-line",
+                                                    "className": "w-4 h-4 mr-1"
+                                                }
+                                            },
+                                            {
+                                                "id": "active_plugins_trend_text",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.dashboard.stats.total_installed|count={{dashboard_stats?.data?.active_plugins?.total}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "system_status_card",
+                                "permissions": ["core.dashboard.system-status"],
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "system_status_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "system_status_label",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer transition-colors"
+                                                },
+                                                "text": "$t:admin.dashboard.stats.system_status",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/settings",
+                                                            "query": {
+                                                                "tab": "info"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "system_status_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "heart-pulse",
+                                                    "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "system_status_value",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1"
+                                        },
+                                        "text": "{{dashboard_stats?.data?.system_status?.label}}"
+                                    },
+                                    {
+                                        "id": "system_status_detail",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center text-sm text-green-600 dark:text-green-400"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "system_status_trend_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chart-line",
+                                                    "className": "w-4 h-4 mr-1"
+                                                }
+                                            },
+                                            {
+                                                "id": "system_status_trend_text",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.dashboard.stats.all_services_running"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "middle_section_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "system_resources_card",
+                                "permissions": ["core.dashboard.resources"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_resources"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "system_resources_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "system_resources_title",
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "$t:admin.dashboard.system_resources.title"
+                                            },
+                                            {
+                                                "id": "system_resources_subtitle",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:admin.dashboard.system_resources.subtitle"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "cpu_usage_section",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "cpu_usage_header",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex justify-between items-center mb-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "cpu_usage_label",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "$t:admin.dashboard.system_resources.cpu_usage"
+                                                    },
+                                                    {
+                                                        "id": "cpu_usage_value",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "{{dashboard_resources?.data?.cpu?.percentage}}%"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "cpu_progress_bar_bg",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "cpu_progress_bar",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "bg-green-500 h-2 rounded-full",
+                                                            "style": {
+                                                                "width": "{{dashboard_resources?.data?.cpu?.percentage}}%"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "memory_usage_section",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "memory_usage_header",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex justify-between items-center mb-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "memory_usage_label",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "$t:admin.dashboard.system_resources.memory_usage"
+                                                    },
+                                                    {
+                                                        "id": "memory_usage_value",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "{{dashboard_resources?.data?.memory?.percentage}}%"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "memory_progress_bar_bg",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "memory_progress_bar",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "bg-blue-500 h-2 rounded-full",
+                                                            "style": {
+                                                                "width": "{{dashboard_resources?.data?.memory?.percentage}}%"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "disk_usage_section",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "id": "disk_usage_header",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex justify-between items-center mb-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "disk_usage_label",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "$t:admin.dashboard.system_resources.disk_usage"
+                                                    },
+                                                    {
+                                                        "id": "disk_usage_value",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "{{dashboard_resources?.data?.disk?.percentage}}%"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "disk_progress_bar_bg",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "disk_progress_bar",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "bg-gray-500 h-2 rounded-full",
+                                                            "style": {
+                                                                "width": "{{dashboard_resources?.data?.disk?.percentage}}%"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "recent_activity_card",
+                                "permissions": ["core.dashboard.activities"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_activities"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "recent_activity_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start justify-between mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "id": "recent_activity_title",
+                                                        "type": "basic",
+                                                        "name": "H2",
+                                                        "props": {
+                                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "$t:admin.dashboard.recent_activity.title"
+                                                    },
+                                                    {
+                                                        "id": "recent_activity_subtitle",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:admin.dashboard.recent_activity.subtitle"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "activity_more_btn",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/activity-logs"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "activity_list",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "activity_item",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-start gap-3"
+                                                },
+                                                "iteration": {
+                                                    "source": "dashboard_activities?.data",
+                                                    "item_var": "activity"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "activity_dot",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "activity_content",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-1 min-w-0"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "activity_title",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{activity.title}}"
+                                                            },
+                                                            {
+                                                                "id": "activity_desc",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "{{activity.description}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "activity_time",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap"
+                                                        },
+                                                        "text": "{{activity.time}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "extension_status_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+                        },
+                        "children": [
+                            {
+                                "id": "module_status_card",
+                                "permissions": ["core.modules.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_modules"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "module_status_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "module_header_left",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "module_header_icon",
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "cube",
+                                                            "className": "text-lg text-indigo-500 dark:text-indigo-400"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "module_header_text",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "module_status_title",
+                                                                "type": "basic",
+                                                                "name": "H2",
+                                                                "props": {
+                                                                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "$t:admin.dashboard.module_status.title"
+                                                            },
+                                                            {
+                                                                "id": "module_status_subtitle",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.dashboard.module_status.subtitle"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "module_more_btn",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/modules"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "module_list",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "module_item",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center justify-between py-2"
+                                                },
+                                                "iteration": {
+                                                    "source": "dashboard_modules?.data?.data",
+                                                    "item_var": "module"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "module_info",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "module_name",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{module.name}}"
+                                                            },
+                                                            {
+                                                                "id": "module_version",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "v{{module.version}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "module_badge",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{module.status === 'active' ? 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                        },
+                                                        "text": "{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "plugin_status_card",
+                                "permissions": ["core.plugins.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_plugins"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "plugin_status_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "plugin_header_left",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "plugin_header_icon",
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "puzzle-piece",
+                                                            "className": "text-lg text-emerald-500 dark:text-emerald-400"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "plugin_header_text",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "plugin_status_title",
+                                                                "type": "basic",
+                                                                "name": "H2",
+                                                                "props": {
+                                                                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "$t:admin.dashboard.plugin_status.title"
+                                                            },
+                                                            {
+                                                                "id": "plugin_status_subtitle",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.dashboard.plugin_status.subtitle"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "plugin_more_btn",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "plugin_list",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "plugin_item",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center justify-between py-2"
+                                                },
+                                                "iteration": {
+                                                    "source": "dashboard_plugins?.data?.data",
+                                                    "item_var": "plugin"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "plugin_info",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "plugin_name",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{plugin.name}}"
+                                                            },
+                                                            {
+                                                                "id": "plugin_version",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "v{{plugin.version}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "plugin_badge",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{plugin.status === 'active' ? 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                        },
+                                                        "text": "{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "template_status_card",
+                                "permissions": ["core.templates.read"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_templates"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "template_status_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center justify-between mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "template_header_left",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "template_header_icon",
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "palette",
+                                                            "className": "text-lg text-amber-500 dark:text-amber-400"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "template_header_text",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "template_status_title",
+                                                                "type": "basic",
+                                                                "name": "H2",
+                                                                "props": {
+                                                                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "$t:admin.dashboard.template_status.title"
+                                                            },
+                                                            {
+                                                                "id": "template_status_subtitle",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.dashboard.template_status.subtitle"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "template_more_btn",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                },
+                                                "text": "$t:admin.dashboard.extension_status.more",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/templates/admin"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "template_list",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "template_item",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center justify-between py-2"
+                                                },
+                                                "iteration": {
+                                                    "source": "dashboard_templates?.data?.data",
+                                                    "item_var": "template"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "template_info",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "id": "template_name",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{template.name}}"
+                                                            },
+                                                            {
+                                                                "id": "template_version",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "v{{template.version}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "template_badge",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{template.status === 'active' ? 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                        },
+                                                        "text": "{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bottom_section_grid",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 sm:mt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "system_alerts_card",
+                                "if": "false",
+                                "permissions": ["core.dashboard.alerts"],
+                                "type": "basic",
+                                "name": "Div",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "dashboard_alerts"
+                                },
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                                },
+                                "children": [
+                                    {
+                                        "id": "system_alerts_header",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "system_alerts_title",
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "$t:admin.dashboard.system_alerts.title"
+                                            },
+                                            {
+                                                "id": "system_alerts_subtitle",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:admin.dashboard.system_alerts.subtitle"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "alerts_list",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "alert_item",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-start gap-3 p-3 rounded-lg {{alert.bg_class}}"
+                                                },
+                                                "iteration": {
+                                                    "source": "dashboard_alerts?.data",
+                                                    "item_var": "alert"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "alert_icon",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "w-2 h-2 mt-2 rounded-full {{alert.dot_class}} flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "alert_content",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "alert_title",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{alert.title}}"
+                                                            },
+                                                            {
+                                                                "id": "alert_time",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "{{alert.time_ago}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

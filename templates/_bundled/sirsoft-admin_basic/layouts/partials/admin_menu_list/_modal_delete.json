@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "메뉴 삭제 확인 모달"
+  },
+  "id": "delete_confirm_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.menus.modals.delete_title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-600 dark:text-gray-400"
+          },
+          "text": "$t:admin.menus.modals.delete_confirm"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3 justify-end"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal",
+                  "target": "delete_confirm_modal"
+                }
+              ],
+              "text": "$t:common.cancel"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "closeModal",
+                      "target": "delete_confirm_modal"
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/admin/menus/{{_global.selectedMenuId}}",
+                      "params": {
+                        "method": "DELETE"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "parallel",
+                          "actions": [
+                            {
+                              "handler": "toast",
+                              "params": {
+                                "type": "success",
+                                "message": "$t:admin.menus.messages.deleted"
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "menus"
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": {
+                                "dataSourceId": "admin_menu"
+                              }
+                            },
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "selectedMenuId": null,
+                                "selectedMenu": null,
+                                "panelMode": "view"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "text": "$t:common.delete"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

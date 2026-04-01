@@ -1,0 +1,310 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 게시판 활동 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": ["myPosts", "myActivityStats"]
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "responsive": {
+        "portable": {
+            "props": {
+                "className": "mt-4"
+            }
+        }
+    },
+    "children": [
+        {
+            "comment": "페이지 헤더",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-xl font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.board_activities.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:mypage.board_activities.description"
+                }
+            ]
+        },
+        {
+            "comment": "통계 카드 3개",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid grid-cols-3 gap-4 mb-6"
+            },
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "grid grid-cols-1 gap-3 mb-4"
+                    }
+                }
+            },
+            "children": [
+                {
+                    "comment": "작성한 게시글 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "file-text",
+                                "size": "lg",
+                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_posts ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.stats.total_posts"
+                        }
+                    ]
+                },
+                {
+                    "comment": "작성한 댓글 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "comment",
+                                "size": "lg",
+                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_comments ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.stats.total_comments"
+                        }
+                    ]
+                },
+                {
+                    "comment": "총 조회수 카드",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "eye",
+                                "size": "lg",
+                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_views ?? 0) | number}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.stats.total_views"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "탭 네비게이션 (2탭: 내가 쓴 글, 내가 쓴 댓글)",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "comment": "내가 쓴 글 탭",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "file-text",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.tabs.my_posts"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_posts ?? 0) | number}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "boardActivitySubTab": "my-posts",
+                                        "myPostsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myPosts"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "내가 쓴 댓글 탭",
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "comment",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.tabs.my_comments"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full"
+                            },
+                            "text": "{{(myActivityStats?.data?.total_comments ?? 0) | number}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "boardActivitySubTab": "my-comments",
+                                        "myCommentsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myComments"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "내가 쓴 글 콘텐츠",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts'}}",
+            "children": [
+                {
+                    "partial": "partials/mypage/board/_my_posts.json"
+                }
+            ]
+        },
+        {
+            "comment": "내가 쓴 댓글 콘텐츠",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments'}}",
+            "children": [
+                {
+                    "partial": "partials/mypage/board/_my_comments.json"
+                }
+            ]
+        }
+    ]
+}

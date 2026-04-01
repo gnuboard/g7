@@ -1,0 +1,229 @@
+{
+  "target_layout": "admin_user_form",
+  "injections": [
+    {
+      "target_id": "user_form_tabs",
+      "position": "inject_props",
+      "props": {
+        "tabs": {
+          "_append": [
+            {
+              "id": "ext_verification",
+              "label": "$t:admin.users.form.sections.verification_info",
+              "iconName": "puzzle-piece"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target_id": "extension_form_content",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_verification_form_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "id": "ext_verification",
+            "className": "scroll-mt-32"
+          },
+          "children": [
+            {
+              "id": "section_verification_info",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "shield",
+                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.users.form.sections.verification_info"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "ExtensionBadge",
+                      "props": {
+                        "type": "plugin",
+                        "identifier": "sirsoft-verification",
+                        "installedPlugins": "{{_global.installedPlugins}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_verification_method",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          },
+                          "text": "$t:admin.users.form.verification.method"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "verification_method",
+                            "className": "w-full",
+                            "options": [
+                              {
+                                "label": "$t:admin.users.form.verification.method_none",
+                                "value": ""
+                              },
+                              {
+                                "label": "$t:admin.users.form.verification.method_mobile",
+                                "value": "mobile"
+                              },
+                              {
+                                "label": "$t:admin.users.form.verification.method_ipin",
+                                "value": "ipin"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_verification_history",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{route?.id}}",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          },
+                          "text": "$t:admin.users.form.verification.verification_history"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "value": "{{user?.data?.verification_history ?? ''}}",
+                            "disabled": true,
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_identity_verified",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "flex items-center gap-2 cursor-pointer"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "checkbox",
+                                "name": "identity_verified",
+                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:admin.users.form.verification.identity_verified"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_adult_verified",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "flex items-center gap-2 cursor-pointer"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "checkbox",
+                                "name": "adult_verified",
+                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:admin.users.form.verification.adult_verified"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 100
+}

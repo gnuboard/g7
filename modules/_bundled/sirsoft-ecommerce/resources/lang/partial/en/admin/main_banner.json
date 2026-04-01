@@ -1,0 +1,97 @@
+{
+  "title": "Main Banner Management",
+  "description": "Manage homepage main banners and change their order.",
+  "actions": {
+    "create": "Create",
+    "preview_close": "Close Preview"
+  },
+  "preview": {
+    "title": "Customer Preview",
+    "info": "Total {{count}} banners · Auto-rotate every {{interval}} seconds",
+    "carousel_placeholder": "Carousel component development required"
+  },
+  "list": {
+    "title": "Banners",
+    "tabs": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": "No banners registered.",
+    "drag_placeholder": "DragList component development required",
+    "period_always": "Always visible",
+    "status_ended": "Ended"
+  },
+  "detail": {
+    "title": "Banner Information",
+    "preview": "Banner Preview",
+    "language": {
+      "ko": "한국어",
+      "en": "English",
+      "ja": "日本語",
+      "zh": "中文"
+    },
+    "field": {
+      "banner_title": "Title",
+      "banner_content": "Content",
+      "style_settings": "Style Settings",
+      "title_style": "Title",
+      "content_style": "Content",
+      "show": "Show",
+      "hide": "Hide",
+      "color": "Color",
+      "position": "Position",
+      "position_left": "Left",
+      "position_center": "Center",
+      "position_right": "Right",
+      "banner_image": "Banner Image",
+      "image_upload_hint": "Drag an image or click to select a file.",
+      "image_size_hint": "Recommended size: 1200x200px, Max 5MB",
+      "image_placeholder": "No image registered",
+      "image_upload_placeholder": "ImageUpload component development required",
+      "link_url": "Link URL",
+      "link_url_placeholder": "/promotion/sale",
+      "link_url_hint": "Enter the URL to navigate when banner is clicked",
+      "exposure_period": "Exposure Period",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "period_hint": "Always visible if period is not set",
+      "status": "Status",
+      "status_active": "Active",
+      "status_inactive": "Inactive",
+      "created_at": "Created At",
+      "color_picker_placeholder": "ColorPicker component development required"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "form": {
+    "add_title": "Add Banner",
+    "edit_title": "Edit Banner",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "modal": {
+    "delete": {
+      "title": "Confirm",
+      "message": "Are you sure you want to delete the selected banner?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "edit_cancel": {
+      "title": "Editing in Progress",
+      "message": "Unsaved changes will be lost.",
+      "sub_message": "Are you sure you want to cancel and select another banner?",
+      "cancel": "Continue Editing",
+      "confirm": "Cancel and Move"
+    },
+    "status_change": {
+      "title": "Bulk Status Change",
+      "message": "Change the status of selected banners.",
+      "cancel": "Cancel",
+      "confirm": "Change"
+    }
+  }
+}

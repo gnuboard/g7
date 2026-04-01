@@ -1,0 +1,763 @@
+{
+  "default_shipping": "Default Shipping",
+  "title": "Order History",
+  "description": "View and manage order history.",
+  "index": {
+    "title": "Order Management",
+    "description": "Manage order list",
+    "empty_title": "No orders found",
+    "empty_description": "No orders have been placed yet"
+  },
+  "detail": {
+    "title": "Order Details",
+    "description": "View order details",
+    "placeholder": "Order details will be displayed here",
+    "order_number": "Order Number",
+    "order_date": "Order Date",
+    "status": "Status",
+    "order_info": {
+      "title": "Order Info",
+      "order_products": "Order Products",
+      "no_products": "No order products.",
+      "selected_count": "{{count}} selected",
+      "change_status": "Change Status",
+      "carrier": "Carrier",
+      "tracking_number": "Tracking Number",
+      "batch_change": "Batch Change",
+      "select_all": "Select All",
+      "columns": {
+        "product_info": "Product Info",
+        "price": "Price",
+        "quantity": "Quantity",
+        "discount": "Discount",
+        "actual_price": "Actual Price",
+        "points": "Points",
+        "status": "Status",
+        "delivery": "Delivery",
+        "subtotal": "Subtotal"
+      },
+      "discount_details": {
+        "discount_code": "Discount Code",
+        "referral": "Referral",
+        "coupon": "Coupon",
+        "event": "Event"
+      },
+      "price_details": {
+        "taxable": "Taxable",
+        "vat": "VAT",
+        "mileage": "Mileage",
+        "deposit": "Deposit"
+      },
+      "delivery_info": {
+        "parcel": "Parcel",
+        "free_shipping": "Free Shipping",
+        "paid_shipping": "Paid Shipping",
+        "shipping_fee": "Shipping Fee"
+      },
+      "summary": {
+        "total": "Total",
+        "original_price": "Original Price",
+        "selling_price": "Selling Price",
+        "shipping_fee": "Shipping Fee"
+      },
+      "orderer_info": {
+        "title": "Orderer Info",
+        "name": "Name",
+        "phone": "Mobile",
+        "tel": "Phone",
+        "email": "Email",
+        "send": "Send"
+      },
+      "orderer_action": {
+        "view_member": "View Member Details",
+        "search_by_member": "Search by Member",
+        "search_by_name": "Search by Orderer Name",
+        "search_by_phone": "Search by Phone"
+      },
+      "receiver_info": {
+        "title": "Receiver Info",
+        "name": "Receiver Name",
+        "phone": "Mobile",
+        "tel": "Phone",
+        "zipcode": "Zipcode",
+        "find_zipcode": "Find Zipcode",
+        "address": "Address",
+        "address_detail": "Address Detail",
+        "delivery_message": "Delivery Message",
+        "send": "Send",
+        "phone_or_tel_hint": "Either mobile or phone number is required."
+      },
+      "admin_memo": {
+        "title": "Admin Memo",
+        "placeholder": "Enter admin memo..."
+      },
+      "save": "Save",
+      "save_success": "Order information has been saved.",
+      "save_error": "Failed to save order information.",
+      "validation_error_title": "Please check your input.",
+      "member": "Member",
+      "non_member": "Non-member",
+      "view_member_detail": "View Member Details",
+      "search_by_member": "Search by Member",
+      "search_by_name": "Search by Orderer Name",
+      "search_by_phone": "Search by Phone"
+    },
+    "tabs": {
+      "order_info": "Order Info",
+      "claim_history": "Claim History",
+      "payment_info": "Payment Info",
+      "activity_log": "Activity Log"
+    },
+    "handler": {
+      "bulk_change_success": "Status of {{count}} option(s) has been changed.",
+      "bulk_change_failed": "Failed to change status.",
+      "memo_save_success": "Admin memo has been saved.",
+      "address_save_success": "Delivery info has been saved."
+    },
+    "batch_modal": {
+      "title": "Batch Change Confirmation",
+      "description": "Change selected products to {{status}}.",
+      "columns": {
+        "product_name": "Product Name",
+        "current_status": "Current Status",
+        "available_quantity": "Available Qty",
+        "change_quantity": "Change Qty"
+      },
+      "carrier_info": "Carrier: {{carrier}}, Tracking: {{tracking}}",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "modal": {
+      "send_sms": {
+        "title": "Send Message",
+        "description": "Send an SMS text message.",
+        "phone": "Phone Number",
+        "phone_placeholder": "010-1234-5678",
+        "message": "Message",
+        "message_placeholder": "Enter message content",
+        "char_count": "{{count}} chars",
+        "plugin_label": "SMS Plugin",
+        "cancel": "Cancel",
+        "send": "Send"
+      },
+      "send_email": {
+        "title": "Send Message",
+        "description": "Send an email message.",
+        "email": "Email Address",
+        "email_placeholder": "hong@example.com",
+        "message": "Message",
+        "message_placeholder": "Enter message content",
+        "char_count": "{{count}} chars",
+        "cancel": "Cancel",
+        "send": "Send",
+        "validation_error": "Please check the input values.",
+        "sent_success": "Email has been sent successfully.",
+        "sent_failed": "Failed to send email."
+      },
+      "batch_change": {
+        "title": "Batch Change Confirmation",
+        "confirm_message": "Are you sure you want to batch change {{count}} selected product(s)?",
+        "confirm_prefix": "Change",
+        "confirm_count": "{{count}} selected product(s) to",
+        "confirm_status": "{{status}}",
+        "confirm_suffix": "?",
+        "status_label": "Status:",
+        "carrier_label": "Carrier:",
+        "tracking_label": "Tracking Number:",
+        "no_changes": "No changes specified.",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "product_col": "Product",
+        "price_col": "Price",
+        "change_quantity_col": "Qty",
+        "current_status_col": "Status",
+        "quantity_note": "Remaining items will keep their current status."
+      },
+      "cancel": {
+        "title": "Cancel Order",
+        "description": "Cancel the order for selected products.",
+        "validation_error_title": "Please check your input",
+        "pg_error_title": "PG Refund Failed",
+        "pg_error_description": "PG refund processing failed. Please check the error details and try again, or process the refund directly through the PG admin dashboard.",
+        "product_col": "Product",
+        "unit_price_col": "Unit Price",
+        "cancel_quantity_col": "Cancel Qty",
+        "status_col": "Status",
+        "cancel_pg": "Also cancel PG payment",
+        "cancel_pg_description": "If unchecked, only the order status will be changed and PG refund must be processed separately.",
+        "cancel_reason_type_label": "Cancel Reason",
+        "reason_placeholder": "Select cancel reason",
+        "reason": {
+          "order_mistake": "Order Mistake",
+          "changed_mind": "Changed Mind",
+          "reorder_other": "Reorder Other Item",
+          "delayed_delivery": "Delayed Delivery",
+          "product_info_different": "Product Info Mismatch",
+          "admin_cancel": "Admin Cancel",
+          "etc": "Other"
+        },
+        "cancel_reason_detail_placeholder": "Enter details (optional)",
+        "refund_priority_label": "Refund Priority",
+        "refund_priority_pg_first": "PG Payment First",
+        "refund_priority_points_first": "Points/Mileage First",
+        "refund_estimate_title": "Estimated Refund",
+        "refund_loading": "Calculating estimated refund...",
+        "refund_product_amount": "Product Refund",
+        "refund_shipping_diff": "Shipping Difference",
+        "refund_discount_diff": "Discount Adjustment",
+        "refund_points_amount": "Points Refund",
+        "refund_total": "Total Estimated Refund",
+        "remaining_pg_balance": "Remaining PG Balance",
+        "remaining_points_balance": "Remaining Points Balance",
+        "refund_shipping_base": "Base Shipping",
+        "refund_shipping_extra": "Extra Shipping (Remote Area)",
+        "restored_coupons_label": "Coupons to Restore",
+        "restored_coupons_notice": "Above coupons will be restored to your coupon box.",
+        "comparison_title": "Order Amount Comparison",
+        "col_before": "Before",
+        "col_after": "After",
+        "item_count": "Item Count",
+        "count_unit": "",
+        "list_price_amount": "Total List Price",
+        "subtotal_amount": "Total Selling Price",
+        "product_coupon_discount": "Product Coupon",
+        "order_coupon_discount": "Order Coupon",
+        "code_discount": "Code Discount",
+        "shipping_coupon_discount": "Shipping Coupon",
+        "base_shipping": "Base Shipping",
+        "extra_shipping": "Extra Shipping",
+        "points_used": "Points Used",
+        "taxable_amount": "Taxable Amount",
+        "vat_amount": "VAT",
+        "total_paid": "Paid Amount",
+        "earned_points": "Expected Points",
+        "product_subtotal": "Subtotal",
+        "cancel_btn": "Cancel Order",
+        "close_btn": "Close",
+        "estimate_failed": "Failed to calculate estimated refund.",
+        "cancel_success": "Order has been cancelled.",
+        "cancel_failed": "Failed to cancel order."
+      }
+    },
+    "claim_history": {
+      "title": "Claim History",
+      "tabs": {
+        "refund": "Refund History",
+        "return": "Return History",
+        "exchange": "Exchange History"
+      },
+      "view_refund_management": "View in Refund Management",
+      "view_return_management": "View in Return Management",
+      "view_exchange_management": "View in Exchange Management",
+      "empty": {
+        "refund": "No refund history",
+        "return": "No return history",
+        "exchange": "No exchange history"
+      },
+      "sort": {
+        "label": "Sort",
+        "request_date_desc": "Request Date (Latest)"
+      },
+      "per_page": "Per Page",
+      "items_count": "{{count}} items",
+      "columns": {
+        "request_date": "Request Date",
+        "refund_number": "Refund No.",
+        "return_number": "Return No.",
+        "exchange_number": "Exchange No.",
+        "product_info": "Product Info",
+        "amount_info": "Amount Info",
+        "quantity": "Qty",
+        "refund_method": "Refund Method",
+        "refund_status": "Refund Status",
+        "return_status": "Return Status",
+        "exchange_status": "Exchange Status",
+        "refund_reason": "Refund Reason",
+        "return_reason": "Return Reason",
+        "exchange_reason": "Exchange Reason"
+      },
+      "amount": {
+        "actual_price": "Actual Price",
+        "expected_refund": "Expected Refund",
+        "actual_refund": "Actual Refund",
+        "return_request": "Return Request",
+        "original_order": "Original Order",
+        "order_quantity": "Order",
+        "difference": "Difference"
+      },
+      "method": {
+        "direct_refund": "Direct Refund",
+        "deposit": "Deposit"
+      },
+      "status": {
+        "refund_rejected": "Refund Rejected",
+        "refund_hold": "Refund Hold",
+        "refund_approved": "Refund Approved",
+        "refund_completed": "Refund Completed",
+        "return_requested": "Return Requested",
+        "return_pickup_in_progress": "Pickup In Progress",
+        "return_pickup_completed": "Pickup Completed",
+        "return_completed": "Return Completed",
+        "exchange_requested": "Exchange Requested",
+        "exchange_shipping": "Exchange Shipping",
+        "exchange_completed": "Exchange Completed"
+      },
+      "delivery": {
+        "carrier": "Carrier",
+        "tracking_number": "Tracking No.",
+        "pickup_carrier": "Pickup Carrier",
+        "pickup_tracking": "Pickup Tracking No.",
+        "shipping_carrier": "Shipping Carrier",
+        "shipping_tracking": "Shipping Tracking No.",
+        "pickup_fee": "Pickup Fee",
+        "round_trip_fee": "Round Trip Fee"
+      },
+      "reason": {
+        "customer_fault": "Customer",
+        "seller_fault": "Seller",
+        "simple_change": "Simple Change of Mind",
+        "wrong_color": "Wrong Color",
+        "defect": "Defect",
+        "defective_product": "Defective Product",
+        "color_change": "Color Change",
+        "size_exchange": "Size Exchange"
+      },
+      "product": {
+        "original_product": "Original Product",
+        "exchange_product": "Exchange Product",
+        "same_product": "Same Product Exchange",
+        "same_product_exchange": "Same Product Exchange",
+        "size": "Size",
+        "color": "Color",
+        "capacity": "Capacity"
+      }
+    },
+    "payment_info": {
+      "title": "Payment Info",
+      "type": {
+        "original": "Original Order",
+        "additional_shipping": "Additional Shipping",
+        "admin_manual": "Admin Manual Request"
+      },
+      "status": {
+        "completed": "Payment Complete",
+        "pending": "Payment Pending"
+      },
+      "payment_method": "Payment Method",
+      "payment_date": "Payment Date",
+      "payment_request_date": "Payment Request Date",
+      "due_date": "Due Date",
+      "order_amount": "Order Amount",
+      "shipping_fee": "Shipping Fee",
+      "total_discount": "Total Discount",
+      "coupon": "Coupon",
+      "discount_code": "Discount Code",
+      "event": "Event",
+      "referral": "Referral",
+      "mileage_used": "Mileage Used",
+      "deposit_used": "Deposit Used",
+      "final_amount": "Final Amount",
+      "taxable_amount": "Taxable Amount",
+      "vat": "VAT",
+      "expected_points": "Expected Points",
+      "method": {
+        "credit_card": "Credit Card",
+        "bank_transfer": "Bank Transfer",
+        "virtual_account": "Virtual Account"
+      },
+      "account_info": "{{bank}} {{account}} ({{holder}})",
+      "cancelled_amount": "Cancelled Amount",
+      "refunded_amount": "Refunded Amount",
+      "refund_status": "Refund Status",
+      "refund_points_amount": "Mileage Refund"
+    },
+    "activity_log": {
+      "title": "Activity Log",
+      "sort": {
+        "label": "Sort:",
+        "date_desc": "Latest",
+        "date_asc": "Oldest"
+      },
+      "per_page": "Per Page:",
+      "per_page_option": "{{count}}",
+      "items_count": "{{count}} items",
+      "columns": {
+        "date": "Date",
+        "actor": "Actor",
+        "event": "Event"
+      },
+      "empty": "No activity logs.",
+      "actor_action": {
+        "view_member": "View Member"
+      },
+      "system": "System",
+      "changes": {
+        "title": "Changes",
+        "field": "Field",
+        "before": "Before",
+        "after": "After",
+        "bulk_model_id": "ID: {{id}}"
+      }
+    }
+  },
+  "preset": {
+    "label": "Search Preset",
+    "applied": "{{name}} preset has been applied.",
+    "today_payment": "Today's Payments",
+    "bank_pending": "Bank Transfer Pending",
+    "add_new": "Add New Preset",
+    "delete_confirm_message": "Are you sure you want to delete '{{name}}' preset?",
+    "delete_confirm_title": "Delete Preset",
+    "delete_success": "Preset has been deleted",
+    "empty": "No presets available",
+    "manage_description": "Manage search presets",
+    "manage_title": "Manage Presets",
+    "more": "More",
+    "name_label": "Preset Name",
+    "name_placeholder": "Enter preset name",
+    "save": "Save",
+    "save_description": "Save current search criteria as a preset",
+    "save_success": "Preset has been saved",
+    "save_title": "Save Preset",
+    "update_success": "Preset has been updated"
+  },
+  "search": {
+    "placeholder": "Enter search keyword...",
+    "field": {
+      "all": "All",
+      "order_number": "Order Number",
+      "orderer_name": "Orderer Name",
+      "product_name": "Product Name",
+      "receiver_name": "Receiver Name",
+      "phone": "Phone",
+      "email": "Email"
+    },
+    "edit_search": "Edit Search",
+    "preset_manage": "Manage Presets",
+    "column_select": "Select Columns",
+    "detail_search": "Advanced Search"
+  },
+  "filter": {
+    "date": "Date",
+    "date_type": {
+      "order_date": "Order Date",
+      "payment_date": "Payment Date",
+      "shipping_date": "Shipping Date"
+    },
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "date_quick": {
+      "today": "Today",
+      "week": "1 Week",
+      "1_month": "1 Month",
+      "3_months": "3 Months",
+      "6_months": "6 Months",
+      "1_year": "1 Year"
+    },
+    "order_status": "Order Status",
+    "order_status_options": {
+      "waiting": "Pending Order",
+      "payment_pending": "Pending Payment",
+      "payment_complete": "Payment Complete",
+      "shipping_hold": "Shipping Hold",
+      "preparing": "Preparing",
+      "shipping_ready": "Ready to Ship",
+      "shipping": "Shipping",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "confirmed": "Confirmed"
+    },
+    "claim_status": "Claim Status",
+    "claim_mode": "Claim Mode",
+    "claim_refund": "Refund",
+    "claim_refund_options": {
+      "requested": "Refund Requested",
+      "hold": "Refund Hold",
+      "approved": "Refund Approved",
+      "rejected": "Refund Rejected",
+      "completed": "Refund Completed"
+    },
+    "claim_return": "Return",
+    "claim_return_options": {
+      "requested": "Return Requested",
+      "payment_pending": "Return Payment Pending",
+      "hold": "Return Hold",
+      "approved": "Return Approved",
+      "pickup_in_progress": "Return Pickup In Progress",
+      "pickup_completed": "Return Pickup Completed",
+      "rejected": "Return Rejected",
+      "completed": "Return Completed"
+    },
+    "claim_exchange": "Exchange",
+    "claim_exchange_options": {
+      "requested": "Exchange Requested",
+      "payment_pending": "Exchange Payment Pending",
+      "hold": "Exchange Hold",
+      "approved": "Exchange Approved",
+      "pickup_in_progress": "Exchange Pickup In Progress",
+      "pickup_completed": "Exchange Pickup Completed",
+      "rejected": "Exchange Rejected",
+      "reshipping": "Exchange Reshipping",
+      "reshipping_completed": "Exchange Delivery Completed",
+      "completed": "Exchange Completed"
+    },
+    "delivery_method": "Delivery Method",
+    "delivery_options": {
+      "parcel": "Parcel",
+      "direct": "Direct Delivery",
+      "mail": "Mail",
+      "pickup": "Pickup",
+      "quick": "Quick Delivery"
+    },
+    "payment_method": "Payment Method",
+    "payment_options": {
+      "bank": "Bank Transfer",
+      "card": "Credit Card",
+      "virtual": "Virtual Account",
+      "naver": "Naver Pay",
+      "kakao": "Kakao Pay",
+      "toss": "Toss Pay"
+    },
+    "category": "Product Category",
+    "category_level": "Category {{level}}",
+    "price": "Purchase Amount",
+    "min_price": "Min Amount",
+    "max_price": "Max Amount",
+    "currency": "KRW",
+    "country": "Shipping Country",
+    "country_options": {
+      "kr": "South Korea",
+      "us": "United States",
+      "jp": "Japan",
+      "cn": "China",
+      "ru": "Russia",
+      "tw": "Taiwan"
+    },
+    "device": "Purchase Device",
+    "device_options": {
+      "pc": "PC",
+      "mobile": "Mobile"
+    },
+    "shipping_policy": "Shipping Policy",
+    "shipping_fee": "Shipping Fee",
+    "min_shipping_fee": "Min Shipping",
+    "max_shipping_fee": "Max Shipping",
+    "category_placeholder": "Select Category",
+    "claim_module_link": "View in Claim Management",
+    "detail_title": "Advanced Search",
+    "orderer": "Orderer",
+    "orderer_select": "Select Member",
+    "orderer_search_placeholder": "Search by name or email",
+    "orderer_search_initial": "Search for a member"
+  },
+  "action": {
+    "search": "Search",
+    "reset": "Reset",
+    "save_preset": "Save Preset",
+    "excel_download": "Excel Download",
+    "print": "Print",
+    "view": "View",
+    "view_detail": "View Details",
+    "view_member": "View Member Info",
+    "search_by_orderer": "Search by Orderer"
+  },
+  "batch": {
+    "selected_count": "{{count}} selected",
+    "status_change": "Change Order Status",
+    "shipping_process": "Process Shipping",
+    "carrier": "Carrier",
+    "carrier_options": {
+      "cj": "CJ Logistics",
+      "lotte": "Lotte Global",
+      "hanjin": "Hanjin Express",
+      "post": "Korea Post"
+    },
+    "tracking_number": "Tracking Number",
+    "batch_change": "Batch Change"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort": {
+      "latest": "Latest Order",
+      "oldest": "Oldest Order",
+      "amount_high": "Highest Amount",
+      "amount_low": "Lowest Amount"
+    },
+    "per_page": "{{count}} per page",
+    "excel_download": "Excel Download",
+    "columns": {
+      "checkbox": "Select",
+      "no": "No",
+      "order_date": "Order Date",
+      "order_number": "Order Number",
+      "order_status": "Order Status",
+      "order_amount": "Order Amount",
+      "product": "Product",
+      "orderer": "Orderer",
+      "payment_method": "Payment",
+      "country": "Country",
+      "delivery_method": "Delivery",
+      "action": "Action",
+      "actions": "Actions"
+    }
+  },
+  "mobile": {
+    "orderer": "Orderer",
+    "payment": "Payment",
+    "shipping": "Shipping",
+    "shipping_country": "Shipping Country",
+    "payment_delivery": "Payment / Delivery",
+    "country": "Country"
+  },
+  "modal": {
+    "excel_download": {
+      "title": "Excel Download",
+      "description": "Select the range of orders to download.",
+      "option_search": "Download with current search conditions",
+      "option_search_desc": "Total {{count}} orders will be downloaded.",
+      "option_selected": "Download selected orders only",
+      "option_selected_desc": "{{count}} orders will be downloaded.",
+      "cancel": "Cancel",
+      "download": "Download"
+    },
+    "preset_manage": {
+      "title": "Preset Management",
+      "description": "Manage search presets.",
+      "add_preset": "Add New Preset",
+      "add_new": "Add New Preset",
+      "empty": "No presets saved."
+    },
+    "preset_save": {
+      "title": "Save Preset",
+      "description": "Save current search conditions as a preset.",
+      "placeholder": "Enter preset name",
+      "save": "Save"
+    },
+    "preset_edit": {
+      "title": "Edit Preset"
+    },
+    "preset_delete": {
+      "title": "Delete Preset",
+      "confirm": "Are you sure you want to delete the '{{name}}' preset?"
+    }
+  },
+  "status": {
+    "waiting": "Waiting",
+    "payment_pending": "Payment Pending",
+    "payment_complete": "Payment Complete",
+    "shipping_hold": "Shipping Hold",
+    "preparing": "Preparing",
+    "shipping_ready": "Ready to Ship",
+    "shipping": "Shipping",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "confirmed": "Confirmed"
+  },
+  "datagrid": {
+    "total_count": "Total {count} items"
+  },
+  "message": {
+    "no_orders": "No orders found"
+  },
+  "pagination": {
+    "showing_info": "Showing {{from}}-{{to}} of {{total}}"
+  },
+  "sort": {
+    "latest_order": "Latest Orders",
+    "oldest_order": "Oldest Orders",
+    "latest_payment": "Latest Payments",
+    "oldest_payment": "Oldest Payments",
+    "latest_shipping": "Latest Shipments",
+    "oldest_shipping": "Oldest Shipments",
+    "highest_amount": "Highest Amount",
+    "lowest_amount": "Lowest Amount"
+  },
+  "excel": {
+    "title": "Excel Download",
+    "description": "Select the range of orders to download",
+    "download": "Download",
+    "download_success": "Excel file has been downloaded",
+    "option_search": "Download with current search criteria",
+    "option_search_desc": "Total {{count}} orders will be downloaded",
+    "option_selected": "Download selected orders only",
+    "option_selected_desc": "{{count}} orders will be downloaded"
+  },
+  "bulk": {
+    "selected_count": "{{count}} selected",
+    "apply": "Apply",
+    "apply_full": "Apply Bulk",
+    "courier_placeholder": "Select courier",
+    "shipping_label": "Shipping Process:",
+    "status_placeholder": "Select status",
+    "no_status_selected": "Please select an order status to change.",
+    "no_items_selected": "Please select items to change.",
+    "no_cancellable_items": "No items available for cancellation. Already cancelled items are excluded.",
+    "carrier_required": "Both carrier and tracking number are required for the selected status.",
+    "success": "Bulk changes applied successfully",
+    "tracking_placeholder": "Enter tracking number",
+    "confirm_title": "Confirm Bulk Changes",
+    "confirm_message": "The following changes will be applied to {{count}} selected orders.",
+    "confirm_status_label": "Order Status: ",
+    "confirm_carrier_label": "Carrier: ",
+    "confirm_tracking_label": "Tracking Number: ",
+    "confirm_cancel": "Cancel",
+    "confirm_apply": "Apply Changes",
+    "confirm_no_changes": "No changes to apply."
+  },
+  "column": {
+    "no": "NO",
+    "order_date": "Order Date",
+    "order_number": "Order No.",
+    "product": "Product",
+    "order_amount": "Amount",
+    "shipping_fee_short": "Ship. {{amount}}",
+    "paid_short": "Paid {{amount}}",
+    "unpaid_short": "Unpaid {{amount}}",
+    "order_status": "Status",
+    "orderer": "Orderer",
+    "payment_method": "Payment",
+    "delivery_method": "Delivery",
+    "country": "Country",
+    "device": "Device",
+    "first_order": "First Order",
+    "action": "Actions"
+  },
+  "device": {
+    "mobile": "Mobile",
+    "pc": "PC"
+  },
+  "product": {
+    "more": "and {{count}} more"
+  },
+  "claim": {
+    "refund": {
+      "requested": "Refund Requested",
+      "hold": "Refund On Hold",
+      "approved": "Refund Approved",
+      "rejected": "Refund Rejected",
+      "completed": "Refund Completed"
+    },
+    "return": {
+      "requested": "Return Requested",
+      "payment_pending": "Return Payment Pending",
+      "hold": "Return On Hold",
+      "approved": "Return Approved",
+      "pickup_in_progress": "Return Pickup In Progress",
+      "pickup_completed": "Return Pickup Completed",
+      "rejected": "Return Rejected",
+      "completed": "Return Completed"
+    },
+    "exchange": {
+      "requested": "Exchange Requested",
+      "payment_pending": "Exchange Payment Pending",
+      "hold": "Exchange On Hold",
+      "approved": "Exchange Approved",
+      "pickup_in_progress": "Exchange Pickup In Progress",
+      "pickup_completed": "Exchange Pickup Completed",
+      "rejected": "Exchange Rejected",
+      "reshipping": "Exchange Reshipping",
+      "reshipping_completed": "Exchange Reshipping Completed",
+      "completed": "Exchange Completed"
+    }
+  }
+}

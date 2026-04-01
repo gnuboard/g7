@@ -1,0 +1,146 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/cart",
+    "permissions": [],
+    "extends": "_user_base",
+    "state": {
+        "selectedItems": [],
+        "allSelected": true,
+        "isCalculating": false,
+        "showTaxDetails": false,
+        "optionModal": {
+            "visible": false,
+            "targetItem": null
+        },
+        "deleteModal": {
+            "visible": false,
+            "targetIds": []
+        },
+        "unavailableModal": {
+            "visible": false,
+            "items": [],
+            "hasStockIssue": false
+        },
+        "optionProduct": null,
+        "matchedOption": null,
+        "isOrdering": false
+    },
+    "data_sources": [
+        {
+            "id": "cartItems",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/cart/query",
+            "method": "POST",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "headers": {
+                "X-Cart-Key": "{{_global.cartKey}}"
+            },
+            "params": {
+                "selected_ids": "{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"
+            },
+            "initLocal": {
+                "selectedItems": "item_ids"
+            },
+            "fallback": {
+                "data": {
+                    "items": [],
+                    "item_ids": [],
+                    "item_count": 0,
+                    "calculation": null
+                }
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "cartKey 초기화 (data_sources headers에서 사용)",
+            "handler": "initCartKey"
+        }
+    ],
+    "modals": [
+        { "partial": "partials/shop/_modal_cart_delete_confirm.json" },
+        { "partial": "partials/shop/_modal_cart_option_change.json" },
+        { "partial": "partials/shop/_modal_cart_unavailable.json" }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-8"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "shopping-cart",
+                                    "className": "w-6 h-6"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:shop.cart.title"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "name": "Grid",
+                        "props": {
+                            "cols": 3,
+                            "gap": 6
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": { "cols": 1 }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-2 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": { "className": "col-span-1" }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/shop/_cart_list.json"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "col-span-1"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/shop/_cart_summary.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

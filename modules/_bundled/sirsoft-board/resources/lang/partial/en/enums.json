@@ -1,0 +1,29 @@
+{
+  "report_status": {
+    "pending": "Pending",
+    "review": "Under Review",
+    "rejected": "Rejected",
+    "suspended": "Suspended",
+    "deleted": "Permanently Deleted"
+  },
+  "trigger_type": {
+    "report": "Report",
+    "admin": "Admin",
+    "system": "System"
+  },
+  "report_type": {
+    "post": "Post",
+    "comment": "Comment"
+  },
+  "report_reason_type": {
+    "abuse": "Abuse/Insult",
+    "hate_speech": "Hate Speech",
+    "spam": "Spam/Advertisement",
+    "copyright": "Copyright Violation",
+    "privacy": "Privacy Violation",
+    "misinformation": "Misinformation/Fake News",
+    "sexual": "Sexual Content",
+    "violence": "Violent Content",
+    "other": "Other"
+  }
+}

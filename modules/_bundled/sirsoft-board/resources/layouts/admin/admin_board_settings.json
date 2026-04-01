@@ -1,0 +1,648 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_settings",
+    "permissions": [
+        "sirsoft-board.settings.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-board.admin.settings.title",
+        "description": "$t:sirsoft-board.admin.settings.description"
+    },
+    "state": {
+        "mailTemplateCurrentPage": 1,
+        "mailTemplateTotalPages": 1,
+        "mailTemplateTotalItems": 0
+    },
+    "initLocal": {
+        "editingTemplate": null,
+        "editLang": "ko",
+        "previewData": null,
+        "mailTemplateFilter": {
+            "search": "",
+            "searchType": "all"
+        },
+        "expandedMailTemplateIds": []
+    },
+
+    "data_sources": [
+        {
+            "id": "settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        },
+        {
+            "id": "boards_list",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/boards?per_page=999&fields=id,title",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            }
+        },
+        {
+            "id": "roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "board_types",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/board-types",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "boardMailTemplates",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/mail-templates",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}"
+            },
+            "initLocal": {
+                "_merge": "deep",
+                "mailTemplateCurrentPage": "pagination.current_page",
+                "mailTemplateTotalPages": "pagination.last_page",
+                "mailTemplateTotalItems": "pagination.total"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {}
+                }
+            }
+        },
+        {
+            "id": "notification_channels",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "_local",
+                "mailTemplateCurrentPage": "{{+(query.page || 1)}}"
+            }
+        }
+    ],
+    "computed": {
+        "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
+        "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
+        "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
+        "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",
+        "roleOptions": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
+        "adminPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}",
+        "userPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}",
+        "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
+        "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "settings_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": "{{_local.isSaving}}",
+                "dataKey": "form",
+                "trackChanges": true,
+                "props": {
+                    "className": "bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "sticky_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700"
+                        },
+                        "children": [
+                            {
+                                "id": "header_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "px-4 sm:px-6 lg:px-8 pt-4 pb-0"
+                                },
+                                "children": [
+                                    {
+                                        "id": "header_top_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start justify-between gap-4 mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "page_header",
+                                                "type": "composite",
+                                                "name": "PageHeader",
+                                                "props": {
+                                                    "title": "$t:sirsoft-board.admin.settings.title",
+                                                    "description": "$t:sirsoft-board.admin.settings.description"
+                                                }
+                                            },
+                                            {
+                                                "id": "header_save_buttons",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') !== 'mail_templates'}}",
+                                                "props": {
+                                                    "className": "flex items-center gap-3 flex-shrink-0 pt-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_local.hasChanges}}",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "circle-dot",
+                                                                    "size": "xs"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.settings.unsaved_changes"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "cancel_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:common.cancel"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "save_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
+                                                            "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isSaving": true,
+                                                                            "errors": null
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "apiCall",
+                                                                        "auth_required": true,
+                                                                        "target": "/api/modules/sirsoft-board/admin/settings",
+                                                                        "params": {
+                                                                            "method": "PUT",
+                                                                            "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notification_channels: form.notification_channels || {} }; })()}}"
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "isSaving": false,
+                                                                                    "hasChanges": false
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "settings"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "boards_list"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "roles"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "board_types"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "success",
+                                                                                    "message": "$t:sirsoft-board.admin.settings.save_success"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "onError": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "isSaving": false,
+                                                                                    "errors": "{{error.errors}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "$t:sirsoft-board.admin.settings.save_error"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "if": "{{_local.isSaving}}",
+                                                                "props": {
+                                                                    "name": "spinner",
+                                                                    "size": "sm",
+                                                                    "spin": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.isSaving}}",
+                                                                "text": "$t:common.save"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.isSaving}}",
+                                                                "text": "$t:common.saving"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "read_only_banner",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_computed.isReadOnly}}",
+                                        "props": {
+                                            "className": "mb-3 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "lock",
+                                                    "size": "lg",
+                                                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.settings.read_only_message"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "tab_navigation",
+                                        "type": "composite",
+                                        "name": "TabNavigation",
+                                        "props": {
+                                            "tabs": [
+                                                {
+                                                    "id": "general",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.general"
+                                                },
+                                                {
+                                                    "id": "basic_defaults",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.basic_defaults"
+                                                },
+                                                {
+                                                    "id": "report_policy",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.report_policy"
+                                                },
+                                                {
+                                                    "id": "spam_security",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.spam_security"
+                                                },
+                                                {
+                                                    "id": "mail_templates",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.mail_templates"
+                                                }
+                                            ],
+                                            "activeTabId": "{{_global.activeBoardSettingsTab || query.tab || 'general'}}",
+                                            "variant": "default"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onTabChange",
+                                                "type": "change",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "activeBoardSettingsTab": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "replaceUrl",
+                                                        "params": {
+                                                            "query": {
+                                                                "tab": "{{$args[0]}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "sub_tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+                                "props": {
+                                    "tabs": [
+                                        {
+                                            "id": "basic",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.basic"
+                                        },
+                                        {
+                                            "id": "permissions",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"
+                                        },
+                                        {
+                                            "id": "list",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.list"
+                                        },
+                                        {
+                                            "id": "post",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.post"
+                                        },
+                                        {
+                                            "id": "reply",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.reply"
+                                        },
+                                        {
+                                            "id": "comment",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.comment"
+                                        },
+                                        {
+                                            "id": "attachment",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.attachment"
+                                        },
+                                        {
+                                            "id": "notification",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.notification"
+                                        },
+                                        {
+                                            "id": "bulk_apply",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"
+                                        }
+                                    ],
+                                    "className": "bg-white dark:bg-gray-800 flex gap-1 border-b border-gray-200 dark:border-gray-700 px-6 sm:px-8 lg:px-10",
+                                    "sectionIdPrefix": "",
+                                    "enableScrollSpy": true,
+                                    "scrollContainerId": "right_content_area",
+                                    "scrollSpyOffset": 180,
+                                    "scrollOffset": 180
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "main_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "p-4 sm:p-6 lg:p-8"
+                        },
+                        "children": [
+                            {
+                                "id": "validation_error",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.errors}}",
+                                "props": {
+                                    "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "triangle-exclamation",
+                                                    "size": "lg",
+                                                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                        },
+                                                        "text": "$t:sirsoft-board.admin.settings.validation_error"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{typeof _local.errors === 'string'}}",
+                                                        "props": {
+                                                            "className": "mt-2 text-sm text-red-700 dark:text-red-300"
+                                                        },
+                                                        "text": "{{_local.errors}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                                        },
+                                                        "iteration": {
+                                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                            "item_var": "message"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "props": {
+                                                                    "className": "text-sm text-red-700 dark:text-red-300"
+                                                                },
+                                                                "text": "{{message}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_general.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_basic.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_permissions.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_list.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_post.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_reply.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_comment.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_attachment.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_notification.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_bulk_apply.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_report_policy.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_spam_security.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_mail_templates.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_board_settings/_bulk_apply_modal.json"
+        },
+        {
+            "partial": "partials/admin_board_form/_board_type_manage_modal.json"
+        },
+        {
+            "partial": "partials/admin_board_settings/_modal_mail_template_edit.json"
+        },
+        {
+            "partial": "partials/admin_board_settings/_modal_mail_template_preview.json"
+        }
+    ]
+}

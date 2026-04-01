@@ -1,0 +1,811 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Report Info Card for Admin Report Detail View"
+    },
+    "id": "card_report_info",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "reported_content_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-4"
+            },
+            "children": [
+                {
+                    "id": "reported_content_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center justify-between mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H2",
+                                            "props": {
+                                                "className": "text-lg font-bold text-gray-900 dark:text-white"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reports.detail.report_info_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{report_detail?.data}}",
+                                            "props": {
+                                                "className": "{{report_detail?.data?.target_type === 'comment' ? 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}"
+                                            },
+                                            "text": "$t:sirsoft-board.enums.report_type.{{report_detail?.data?.target_type}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-1.5 text-gray-900 dark:text-white"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chart-bar",
+                                                "className": "w-4 h-4"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-bold"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reports.detail.report_summary_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs"
+                                            },
+                                            "text": "{{report_detail?.data?.reason_summary ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-px h-4 bg-gray-300 dark:bg-gray-600"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-1.5  text-gray-900 dark:text-white"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "calendar",
+                                                "className": "w-4 h-4"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-bold"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reports.detail.first_reported_at_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs"
+                                            },
+                                            "text": "{{report_detail?.data?.first_reported_at ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-px h-4 bg-gray-300 dark:bg-gray-600"
+                                    }
+                                },
+                                {
+                                    "id": "target_status_info",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{report_detail?.data?.target_status}}",
+                                    "props": {
+                                        "className": "flex items-center gap-1.5 text-gray-900 dark:text-white"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "w-4 h-4"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-bold"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reports.detail.target_status_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-600 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                            },
+                                            "text": "{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{report_detail?.data?.target_status === 'blinded' && report_detail?.data?.blind_trigger_type_label}}",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "({{report_detail?.data?.blind_trigger_type_label}})"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "reported_content_grid",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 lg:grid-cols-2 gap-4"
+                    },
+                    "children": [
+                        {
+                            "id": "field_author",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}"
+                                },
+                                {
+                                    "comment": "회원 작성자: ActionMenu로 사용자 정보 드롭다운",
+                                    "type": "composite",
+                                    "name": "ActionMenu",
+                                    "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}",
+                                    "props": {
+                                        "triggerLabel": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}",
+                                        "triggerIconName": "",
+                                        "position": "right",
+                                        "items": [
+                                            {
+                                                "id": "view_author",
+                                                "label": "$t:sirsoft-board.admin.reports.detail.user_info",
+                                                "iconName": "user"
+                                            }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onItemClick",
+                                            "type": "click",
+                                            "handler": "switch",
+                                            "value": "{{$args[0]}}",
+                                            "cases": {
+                                                "view_author": {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users/{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid}}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "비회원 작성자: 이름 + 배지 (드롭다운 없음)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "props": {
+                                                "color": "yellow",
+                                                "size": "sm"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.reports.guest_badge"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(report_detail?.data?.target_type === 'post' && report_detail?.data?.post?.author?.email) || (report_detail?.data?.target_type === 'comment' && report_detail?.data?.comment?.author?.email)}}",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                    },
+                                    "text": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.email : report_detail?.data?.comment?.author?.email}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_board",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.detail.board_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{report_detail?.data?.board?.slug}}",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                            },
+                                            "text": "{{report_detail?.data?.board?.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-up-right-from-square",
+                                                "className": "w-3 h-3"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!report_detail?.data?.board?.slug}}",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{report_detail?.data?.board?.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-400 dark:text-gray-500/80"
+                                            },
+                                            "text": "($t:sirsoft-board.admin.reports.detail.board_deleted)"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_post_title",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{report_detail?.data?.target_type === 'comment'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.detail.post_title_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{report_detail?.data?.board?.slug && report_detail?.data?.post?.id}}",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                            },
+                                            "text": "{{report_detail?.data?.post?.title}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-up-right-from-square",
+                                                "className": "w-3 h-3 transform translate-x-0 group-hover:translate-x-0.5 transition-all"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{report_detail?.data?.post?.title}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_title",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{report_detail?.data?.target_type === 'post'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.detail.title_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{report_detail?.data?.board?.slug && report_detail?.data?.post?.id}}",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "border-b border-transparent group-hover:border-blue-600 dark:group-hover:border-blue-400 transition-all"
+                                            },
+                                            "text": "{{report_detail?.data?.post?.title}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-up-right-from-square",
+                                                "className": "w-3 h-3 transform translate-x-0 group-hover:translate-x-0.5 transition-all"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{report_detail?.data?.post?.title}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_created_at",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                    },
+                                    "text": "{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.post_created_at_label' : '$t:sirsoft-board.admin.reports.detail.comment_created_at_label'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2 text-sm text-gray-900 dark:text-white"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "clock",
+                                                "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.created_at : report_detail?.data?.comment?.created_at}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "reported_content_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "pt-4 mt-4 border-t border-gray-200 dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.detail.reported_content_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "HtmlContent",
+                                    "props": {
+                                        "content": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}",
+                                        "isHtml": "{{report_detail?.data?.target_type === 'post' && (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}",
+                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "reporters_list_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-4"
+            },
+            "children": [
+                {
+                    "id": "reporters_list_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-bold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.detail.reports_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{report_detail?.data}}",
+                            "props": {
+                                "className": "inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.detail.report_count_with_unit|count={{reporters_list?.data?.pagination?.total ?? report_detail?.data?.report_count ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "reporters_list_container",
+                    "type": "basic",
+                    "name": "Div",
+                    "blur_until_loaded": "{{_local.reporters_loading}}",
+                    "props": {
+                        "className": "flex flex-col gap-3"
+                    },
+                    "iteration": {
+                                "source": "reporters_list?.data?.data ?? report_detail?.data?.reporters ?? []",
+                                "item_var": "reporter"
+                            },
+                            "children": [
+                                {
+                                    "id": "reporter_item_card",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "card_inner_grid",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "grid grid-cols-2 lg:grid-cols-5 gap-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "reporter_field",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.detail.reporter_label"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "ActionMenu",
+                                                            "if": "{{reporter.reporter}}",
+                                                            "props": {
+                                                                "triggerLabel": "{{reporter.reporter?.name ?? '-'}}",
+                                                                "triggerIconName": "",
+                                                                "position": "right",
+                                                                "items": [
+                                                                    {
+                                                                        "id": "view_reporter",
+                                                                        "label": "$t:sirsoft-board.admin.reports.detail.user_info",
+                                                                        "iconName": "user"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "actions": [
+                                                                {
+                                                                    "event": "onItemClick",
+                                                                    "type": "click",
+                                                                    "handler": "switch",
+                                                                    "value": "{{$args[0]}}",
+                                                                    "cases": {
+                                                                        "view_reporter": {
+                                                                            "handler": "navigate",
+                                                                            "params": {
+                                                                                "path": "/admin/users/{{reporter.reporter?.uuid}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!reporter.reporter}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.detail.deleted_user"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{reporter.reporter?.email}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                            },
+                                                            "text": "{{reporter.reporter?.email}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "reported_at_field",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.detail.reported_at_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "{{reporter.reported_at}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "reason_type_field",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.detail.reason_type_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                            },
+                                                            "text": "$t:sirsoft-board.enums.report_reason_type.{{reporter.reason_type}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "reporter_item_reason",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "md:col-span-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.detail.reason_detail_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-3"
+                                                            },
+                                                            "text": "{{reporter.reason_detail}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                },
+                {
+                    "id": "reporters_pagination",
+                    "type": "composite",
+                    "name": "Pagination",
+                    "if": "{{(reporters_list?.data?.pagination?.last_page ?? 1) > 1}}",
+                    "props": {
+                        "currentPage": "{{reporters_list?.data?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{reporters_list?.data?.pagination?.last_page ?? 1}}",
+                        "className": "mt-4 justify-end"
+                    },
+                    "actions": [
+                        {
+                            "event": "onPageChange",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "reporters_page": "{{$args[0]}}",
+                                        "reporters_loading": true
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "reporters_list"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "reporters_loading": false
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

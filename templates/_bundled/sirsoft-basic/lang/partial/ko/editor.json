@@ -1,0 +1,18 @@
+{
+  "toolbar": {
+    "bold": "굵게",
+    "italic": "기울임",
+    "underline": "밑줄",
+    "strike": "취소선",
+    "code": "코드",
+    "bullet_list": "글머리 기호",
+    "ordered_list": "번호 목록",
+    "blockquote": "인용",
+    "link": "링크",
+    "code_view": "코드보기"
+  },
+  "link_modal": {
+    "title": "링크 삽입",
+    "insert": "삽입"
+  }
+}

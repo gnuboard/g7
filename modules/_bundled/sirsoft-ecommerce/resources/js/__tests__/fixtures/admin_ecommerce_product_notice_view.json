@@ -1,0 +1,195 @@
+{
+  "version": "1.0",
+  "layout_name": "admin_ecommerce_product_notice_view",
+  "meta": {
+    "title": "Product Notice Template View Panel Test Fixture",
+    "description": "상품정보제공고시 보기 패널 테스트용"
+  },
+  "initLocal": {
+    "viewLocale": "ko"
+  },
+  "initGlobal": {
+    "selectedTemplateId": 1,
+    "panelMode": "view",
+    "selectedTemplate": {
+      "id": 1,
+      "name": {
+        "ko": "의류",
+        "en": "Clothing"
+      },
+      "fields": [
+        {
+          "name": { "ko": "제조사", "en": "Manufacturer" },
+          "content": { "ko": "(주)테스트", "en": "Test Inc." }
+        },
+        {
+          "name": { "ko": "원산지", "en": "Country of Origin" },
+          "content": { "ko": "대한민국", "en": "Korea" }
+        }
+      ],
+      "fields_count": 2,
+      "is_active": true
+    }
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "view_panel",
+        "type": "basic",
+        "name": "Div",
+        "if": "{{_global.selectedTemplateId && _global.panelMode === 'view'}}",
+        "children": [
+          {
+            "id": "template_name_display",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "flex items-center gap-3 mb-4"
+            },
+            "children": [
+              {
+                "type": "basic",
+                "name": "H2",
+                "props": {
+                  "className": "text-lg font-semibold"
+                },
+                "text": "{{$localized(_global.selectedTemplate?.name)}}"
+              },
+              {
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-xs"
+                },
+                "text": "{{_global.selectedTemplate?.fields_count ?? 0}}"
+              }
+            ]
+          },
+          {
+            "id": "language_tabs",
+            "type": "composite",
+            "name": "TabNavigation",
+            "props": {
+              "tabs": [
+                { "id": "ko", "label": "한국어" },
+                { "id": "en", "label": "English" }
+              ],
+              "activeTabId": "{{_local.viewLocale ?? 'ko'}}",
+              "variant": "underline"
+            },
+            "actions": [
+              {
+                "type": "onTabChange",
+                "handler": "setState",
+                "params": {
+                  "target": "local",
+                  "viewLocale": "{{$event}}"
+                }
+              }
+            ]
+          },
+          {
+            "id": "tab_content_ko",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.viewLocale ?? 'ko') === 'ko'}}",
+            "children": [
+              {
+                "type": "basic",
+                "name": "Table",
+                "props": {
+                  "className": "w-full",
+                  "data-testid": "table-ko"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Tbody",
+                    "iteration": {
+                      "source": "{{_global.selectedTemplate?.fields ?? []}}",
+                      "item_var": "field",
+                      "index_var": "fieldIndex"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Tr",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{fieldIndex + 1}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{field.name?.ko ?? '-'}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{field.content?.ko ?? '-'}}"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "tab_content_en",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.viewLocale === 'en'}}",
+            "children": [
+              {
+                "type": "basic",
+                "name": "Table",
+                "props": {
+                  "className": "w-full",
+                  "data-testid": "table-en"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Tbody",
+                    "iteration": {
+                      "source": "{{_global.selectedTemplate?.fields ?? []}}",
+                      "item_var": "field",
+                      "index_var": "fieldIndex"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Tr",
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{fieldIndex + 1}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{field.name?.en ?? '-'}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Td",
+                            "text": "{{field.content?.en ?? '-'}}"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

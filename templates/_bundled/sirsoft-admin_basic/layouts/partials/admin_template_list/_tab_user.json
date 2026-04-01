@@ -1,0 +1,859 @@
+{
+  "layout_name": "tab_user",
+  "id": "tab_user",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{route.type === 'user'}}",
+  "children": [
+    {
+      "id": "section_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-start justify-between gap-4 mb-6"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "flex flex-col gap-4 mb-6"
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "H2",
+              "props": {
+                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+              },
+              "text": "$t:admin.templates.user_section.title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "mt-1 text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:admin.templates.user_section.description"
+            }
+          ]
+        },
+        {
+          "id": "search_bar",
+          "type": "composite",
+          "name": "SearchBar",
+          "props": {
+            "placeholder": "$t:admin.templates.search_placeholder",
+            "value": "{{_local.searchQuery || ''}}",
+            "className": "w-64"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "w-full"
+              }
+            }
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "searchQuery": "{{$event.target.value}}"
+              }
+            },
+            {
+              "type": "submit",
+              "handler": "navigate",
+              "params": {
+                "path": "/admin/templates/user",
+                "query": {
+                  "search": "{{_local.searchQuery || undefined}}",
+                  "page": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "content_area",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "id": "template_card_grid",
+          "type": "composite",
+          "name": "CardGrid",
+          "blur_until_loaded": true,
+          "props": {
+            "data": "{{templates?.data?.data ?? []}}",
+            "gridColumns": 1,
+            "gap": 4,
+            "idField": "identifier",
+            "pagination": true,
+            "alwaysShowPagination": true,
+            "serverSidePagination": true,
+            "serverCurrentPage": "{{templates?.data?.current_page ?? 1}}",
+            "serverTotalPages": "{{templates?.data?.last_page ?? 1}}",
+            "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
+            "cardColumns": [
+              {
+                "id": "template_content",
+                "cellChildren": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "flex items-start gap-4"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                              "name": "palette",
+                              "className": "text-2xl text-gray-600 dark:text-gray-400"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "flex-1 min-w-0 flex items-start justify-between gap-4"
+                        },
+                        "responsive": {
+                          "portable": {
+                            "props": {
+                              "className": "flex-1 min-w-0 flex flex-col gap-3"
+                            }
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "flex-1 min-w-0"
+                            },
+                            "children": [
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                  "className": "flex items-center gap-2 flex-wrap"
+                                },
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                      "className": "font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{row.name}}"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{row.status === 'active'}}",
+                                    "props": {
+                                      "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                                    },
+                                    "text": "$t:admin.templates.status.active"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{row.status === 'inactive'}}",
+                                    "props": {
+                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                    },
+                                    "text": "$t:admin.templates.status.inactive"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{row.status === 'uninstalled'}}",
+                                    "props": {
+                                      "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
+                                    },
+                                    "text": "$t:admin.templates.status.not_installed"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                    },
+                                    "text": "v{{row.version}}"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{row.update_available && row.status !== 'uninstalled'}}",
+                                    "props": {
+                                      "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
+                                    },
+                                    "text": "$t:admin.templates.status.update_available"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{row.update_available && row.latest_version && row.status !== 'uninstalled'}}",
+                                    "props": {
+                                      "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:defer:admin.templates.version_available|version={{row.latest_version ?? ''}}"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{row.dependencies_met === false}}",
+                                    "props": {
+                                      "className": "flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 rounded"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                          "name": "exclamation-triangle",
+                                          "className": "w-3 h-3"
+                                        }
+                                      },
+                                      {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.dependencies_warning"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                  "className": "mt-1 text-sm text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "{{row.description}}"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                  "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500"
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"
+                                    }
+                                  }
+                                },
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:defer:admin.templates.vendor|vendor={{row.vendor}}"
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(row.dependencies?.modules && row.dependencies.modules.length > 0) || (row.dependencies?.plugins && row.dependencies.plugins.length > 0)}}",
+                                    "props": {
+                                      "className": "flex items-center gap-1 flex-wrap"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.dependencies_label"
+                                      },
+                                      {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "iteration": {
+                                          "source": "{{[...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])]}}",
+                                          "item_var": "dep",
+                                          "index_var": "depIndex"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                              "className": "inline-flex items-center gap-0.5 align-middle"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{dep.type === 'module'}}",
+                                                "props": {
+                                                  "name": "cube",
+                                                  "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                }
+                                              },
+                                              {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{dep.type === 'plugin'}}",
+                                                "props": {
+                                                  "name": "puzzle-piece",
+                                                  "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+                                                }
+                                              },
+                                              {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{dep.name}}"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{depIndex < [...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])].length - 1}}",
+                                            "text": ",",
+                                            "props": {
+                                              "className": "ml-0 mr-1"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(!row.dependencies?.modules || row.dependencies.modules.length === 0) && (!row.dependencies?.plugins || row.dependencies.plugins.length === 0)}}",
+                                    "text": "$t:admin.templates.no_dependencies"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                              "className": "flex items-center gap-3 shrink-0"
+                            },
+                            "children": [
+                              {
+                                "id": "edit_layouts_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.status === 'active'}}",
+                                "props": {
+                                  "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                  "disabled": "{{row.abilities?.can_edit_layouts === false}}"
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }
+                                  }
+                                },
+                                "actions": [
+                                  {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                      "path": "/admin/templates/{{row.identifier}}/edit"
+                                    }
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                      "name": "edit",
+                                      "className": "w-4 h-4"
+                                    }
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.actions.edit_layouts"
+                                  }
+                                ]
+                              },
+                              {
+                                "id": "wysiwyg_edit_button",
+                                "type": "basic",
+                                "name": "A",
+                                "if": "false",
+                                "props": {
+                                  "href": "/?mode=edit&template={{row.identifier}}",
+                                  "target": "_blank",
+                                  "className": "flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors"
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors w-full"
+                                    }
+                                  }
+                                },
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                      "name": "eye",
+                                      "className": "w-4 h-4"
+                                    }
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.actions.wysiwyg_edit"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.status === 'uninstalled'}}",
+                                "props": {
+                                  "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                  "disabled": "{{row.abilities?.can_install !== true}}"
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"
+                                    }
+                                  }
+                                },
+                                "actions": [
+                                  {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                      {
+                                        "handler": "setState",
+                                        "params": {
+                                          "target": "global",
+                                          "selectedTemplate": "{{row}}"
+                                        }
+                                      },
+                                      {
+                                        "handler": "openModal",
+                                        "target": "template_install_modal"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                      "name": "download",
+                                      "className": "w-4 h-4"
+                                    }
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.actions.install"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "composite",
+                                "name": "Toggle",
+                                "if": "{{row.status !== 'uninstalled'}}",
+                                "props": {
+                                  "checked": "{{row.status === 'active'}}",
+                                  "disabled": "{{row.status === 'active' || row.abilities?.can_activate !== true}}",
+                                  "size": "sm"
+                                },
+                                "actions": [
+                                  {
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                      {
+                                        "handler": "setState",
+                                        "params": {
+                                          "target": "global",
+                                          "selectedTemplate": "{{row}}"
+                                        }
+                                      },
+                                      {
+                                        "handler": "openModal",
+                                        "target": "{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.update_available && row.status !== 'uninstalled'}}",
+                                "props": {
+                                  "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                  "type": "button",
+                                  "disabled": "{{row.abilities?.can_install !== true}}"
+                                },
+                                "actions": [
+                                  {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                      {
+                                        "handler": "setState",
+                                        "params": {
+                                          "target": "global",
+                                          "selectedTemplate": "{{row}}",
+                                          "templateLayoutStrategy": "overwrite",
+                                          "hasModifiedLayouts": false,
+                                          "modifiedLayoutsCount": 0,
+                                          "modifiedLayouts": []
+                                        }
+                                      },
+                                      {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/admin/templates/{{row.identifier}}/check-modified-layouts",
+                                        "params": {
+                                          "method": "GET"
+                                        },
+                                        "onSuccess": [
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "hasModifiedLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                              "modifiedLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                              "modifiedLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/admin/templates/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&from_version={{row.version}}&to_version={{row.latest_version}}",
+                                        "params": {
+                                          "method": "GET"
+                                        },
+                                        "onSuccess": [
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "updateChangelog": "{{response.data.changelog ?? []}}"
+                                            }
+                                          },
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "templateUpdateError": null
+                                            }
+                                          },
+                                          {
+                                            "handler": "openModal",
+                                            "target": "template_update_modal"
+                                          }
+                                        ],
+                                        "onError": [
+                                          {
+                                            "handler": "setState",
+                                            "params": {
+                                              "target": "global",
+                                              "updateChangelog": [],
+                                              "templateUpdateError": null
+                                            }
+                                          },
+                                          {
+                                            "handler": "openModal",
+                                            "target": "template_update_modal"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                      "name": "refresh",
+                                      "className": "w-4 h-4"
+                                    }
+                                  },
+                                  {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.actions.update"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                  "className": ""
+                                },
+                                "responsive": {
+                                  "portable": {
+                                    "props": {
+                                      "className": "absolute right-0 top-0"
+                                    }
+                                  }
+                                },
+                                "children": [
+                                  {
+                                    "type": "composite",
+                                    "name": "ActionMenu",
+                                    "props": {
+                                      "triggerLabel": "",
+                                      "items": [
+                                        {
+                                          "id": "view_detail",
+                                          "label": "$t:admin.templates.actions.view_detail",
+                                          "iconName": "info-circle"
+                                        },
+                                        {
+                                          "id": "refresh_layouts",
+                                          "label": "$t:admin.templates.actions.refresh_layouts",
+                                          "iconName": "refresh",
+                                          "disabled": "{{row.status !== 'active' || row.abilities?.can_activate !== true}}"
+                                        },
+                                        {
+                                          "id": "uninstall",
+                                          "label": "$t:admin.templates.actions.uninstall",
+                                          "iconName": "trash",
+                                          "variant": "danger",
+                                          "disabled": "{{row.status === 'active' || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"
+                                        }
+                                      ]
+                                    },
+                                    "actions": [
+                                      {
+                                        "event": "onItemClick",
+                                        "type": "action",
+                                        "handler": "switch",
+                                        "cases": {
+                                          "view_detail": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                              {
+                                                "handler": "setState",
+                                                "params": {
+                                                  "target": "global",
+                                                  "selectedTemplate": "{{row}}"
+                                                }
+                                              },
+                                              {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/templates/{{row.identifier}}/changelog",
+                                                "params": {
+                                                  "method": "GET"
+                                                },
+                                                "onSuccess": [
+                                                  {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                      "target": "global",
+                                                      "templateChangelog": "{{response.data.changelog ?? []}}"
+                                                    }
+                                                  },
+                                                  {
+                                                    "handler": "openModal",
+                                                    "target": "template_detail_modal"
+                                                  }
+                                                ],
+                                                "onError": [
+                                                  {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                      "target": "global",
+                                                      "templateChangelog": []
+                                                    }
+                                                  },
+                                                  {
+                                                    "handler": "openModal",
+                                                    "target": "template_detail_modal"
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          "refresh_layouts": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                              {
+                                                "handler": "setState",
+                                                "params": {
+                                                  "target": "global",
+                                                  "selectedTemplate": "{{row}}"
+                                                }
+                                              },
+                                              {
+                                                "handler": "openModal",
+                                                "target": "template_refresh_layouts_modal"
+                                              }
+                                            ]
+                                          },
+                                          "uninstall": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                              {
+                                                "handler": "setState",
+                                                "params": {
+                                                  "target": "global",
+                                                  "selectedTemplate": "{{row}}",
+                                                  "templateUninstallInfo": null
+                                                }
+                                              },
+                                              {
+                                                "handler": "openModal",
+                                                "target": "template_uninstall_modal"
+                                              },
+                                              {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/templates/{{row.identifier}}/uninstall-info",
+                                                "params": {
+                                                  "method": "GET"
+                                                },
+                                                "onSuccess": [
+                                                  {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                      "target": "global",
+                                                      "templateUninstallInfo": "{{response.data}}"
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "actions": [
+            {
+              "event": "onPageChange",
+              "type": "change",
+              "handler": "navigate",
+              "params": {
+                "path": "/admin/templates/user",
+                "mergeQuery": true,
+                "query": {
+                  "page": "{{$args[0]}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "pagination_info",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4 text-sm text-gray-600 dark:text-gray-400 text-center"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:admin.templates.pagination_info|total={{templates?.data?.total ?? 0}}|from={{((templates?.data?.current_page ?? 1) - 1) * (templates?.data?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.current_page ?? 1) * (templates?.data?.per_page ?? 12), templates?.data?.total ?? 0)}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "info_message",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "info-circle",
+                "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "font-medium text-blue-900 dark:text-blue-100"
+                  },
+                  "text": "$t:admin.templates.user_info.title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-1 text-sm text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:admin.templates.user_info.description"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

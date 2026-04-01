@@ -1,0 +1,9 @@
+{
+  "unauthorized_preset_access": "You do not have access to the preset ':preset_name'.",
+  "stock_mismatch": "Stock mismatch for product ':product_name'. Expected: :expected, Actual: :actual",
+  "currency_setting_locked": "Currency ':currency' setting is locked and cannot be changed. Reason: :reason",
+  "product_notice_template_not_found": "Product notice template not found.",
+  "product_notice_template_has_notices": "This template is being used by :count products. Please change the product notices first.",
+  "product_common_info_not_found": "Product common info not found.",
+  "order_cancel_not_allowed": "Payment cancellation cannot be recorded in the current order status."
+}

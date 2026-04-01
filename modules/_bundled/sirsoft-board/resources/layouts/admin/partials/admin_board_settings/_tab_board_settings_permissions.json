@@ -1,0 +1,398 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 > 권한 탭"
+  },
+  "id": "permissions",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_permissions",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-2 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.permissions"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+          },
+          "text": "$t:sirsoft-board.admin.settings.permissions_table.description"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 p-3 mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "circle-info",
+                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0",
+                "size": "sm"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-blue-700 dark:text-blue-300" },
+              "text": "$t:sirsoft-board.admin.settings.permissions_table.bulk_apply_notice"
+            }
+          ]
+        },
+        {
+          "id": "permissions_admin_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mb-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => !k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "checkbox",
+                    "className": "checkbox flex-shrink-0 pointer-events-none",
+                    "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "shield",
+                    "size": "sm",
+                    "className": "text-purple-500 dark:text-purple-400 pointer-events-none"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100 pointer-events-none"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.permissions_table.admin_section"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "$computed.adminPermissions ?? []",
+                    "item_var": "perm"
+                  },
+                  "props": {
+                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-start gap-2 pointer-events-none"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "className": "checkbox flex-shrink-0 mt-0.5",
+                            "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex flex-col gap-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                              },
+                              "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "pl-6"
+                      },
+                      "children": [
+                        {
+                          "id": "perm_tag_admin_{{perm?.[0]}}",
+                          "type": "composite",
+                          "name": "TagInput",
+                          "props": {
+                            "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
+                            "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
+                            "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",
+                            "className": "w-full",
+                            "defaultVariant": "purple",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.basic_defaults.default_board_permissions": "{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "permissions_user_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "checkbox",
+                    "className": "checkbox flex-shrink-0 pointer-events-none",
+                    "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "users",
+                    "size": "sm",
+                    "className": "text-blue-500 dark:text-blue-400 pointer-events-none"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100 pointer-events-none"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.permissions_table.user_section"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "$computed.userPermissions ?? []",
+                    "item_var": "perm"
+                  },
+                  "props": {
+                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors cursor-pointer"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-start gap-2 pointer-events-none"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "className": "checkbox flex-shrink-0 mt-0.5",
+                            "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex flex-col gap-0.5"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                              },
+                              "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "pl-6"
+                      },
+                      "children": [
+                        {
+                          "id": "perm_tag_user_{{perm?.[0]}}",
+                          "type": "composite",
+                          "name": "TagInput",
+                          "props": {
+                            "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
+                            "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
+                            "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",
+                            "className": "w-full",
+                            "defaultVariant": "blue",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.basic_defaults.default_board_permissions": "{{Object.fromEntries(Object.entries(_local.form.basic_defaults.default_board_permissions ?? {}).map(([k,v]) => k === perm?.[0] ? [k, $event.target.value] : [k, v]))}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

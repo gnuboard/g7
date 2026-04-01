@@ -1,0 +1,32 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Detail Panel - View/Form Container"
+    },
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "col-span-2-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+    },
+    "children": [
+        {
+            "id": "empty_state_panel",
+            "type": "composite",
+            "name": "EmptyState",
+            "if": "{{!_global.selectedId && _global.panelMode !== 'create' && _global.panelMode !== 'edit' && _global.panelMode !== 'copy'}}",
+            "props": {
+                "icon": "info-circle",
+                "title": "$t:sirsoft-ecommerce.admin.common_info.empty_state.title",
+                "description": "$t:sirsoft-ecommerce.admin.common_info.empty_state.description",
+                "className": "py-16"
+            }
+        },
+        {
+            "partial": "_panel_view.json"
+        },
+        {
+            "partial": "_panel_form.json"
+        }
+    ]
+}

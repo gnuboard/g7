@@ -1,0 +1,9 @@
+{
+  "meta": { "is_partial": true, "description": "검색 결과 - 상품 카드 (ProductCard 컴포넌트 사용)" },
+  "type": "composite",
+  "name": "ProductCard",
+  "props": {
+    "product": "{{product}}",
+    "shopBase": "{{_global.shopBase ?? '/shop'}}"
+  }
+}

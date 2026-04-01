@@ -1,0 +1,21 @@
+{
+    "identifier": "sirsoft-board",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "게시판",
+        "en": "Board"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "게시판 관리를 위한 모듈",
+        "en": "Module for board management"
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md"
+}

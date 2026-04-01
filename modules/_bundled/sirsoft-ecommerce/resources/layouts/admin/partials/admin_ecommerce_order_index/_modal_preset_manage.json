@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Search Preset Management Modal"
+  },
+  "id": "modal_preset_manage",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-secondary text-sm mb-6"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-col gap-3"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.today_payment"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-icon btn-ghost"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "edit",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-icon btn-ghost"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "trash-2",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-primary font-medium"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.preset.bank_pending"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-icon btn-ghost"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "edit",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-icon btn-ghost"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "trash-2",
+                        "className": "w-4 h-4"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "btn btn-primary w-full mt-4"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.modal.preset_manage.add_preset",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "closeModal"
+        },
+        {
+          "type": "click",
+          "handler": "openModal",
+          "params": {
+            "modalId": "modal_preset_save"
+          }
+        }
+      ]
+    }
+  ]
+}

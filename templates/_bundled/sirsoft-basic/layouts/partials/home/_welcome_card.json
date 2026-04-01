@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "홈 환영 카드 - 로그인 시 사용자명 표시"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "col-span-2 bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl px-6 py-10 text-white"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-2 mb-2" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "sparkles", "className": "w-5 h-5" } },
+        { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium opacity-90" }, "text": "Welcome" }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "H2",
+      "props": { "className": "text-xl font-bold mb-2" },
+      "text": "{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix"
+    },
+    {
+      "type": "basic",
+      "name": "P",
+      "props": { "className": "text-sm opacity-90 mb-4" },
+      "text": "{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-3" },
+      "children": [
+        {
+          "id": "register_button",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{!_global.currentUser?.uuid}}",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
+          },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/register" } }],
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:home.get_started" },
+            { "type": "basic", "name": "Icon", "props": { "name": "arrow-right", "className": "w-4 h-4" } }
+          ]
+        },
+        {
+          "id": "dashboard_button",
+          "type": "basic",
+          "name": "Button",
+          "if": "{{_global.currentUser?.uuid}}",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
+          },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/mypage" } }],
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:home.go_to_mypage" },
+            { "type": "basic", "name": "Icon", "props": { "name": "arrow-right", "className": "w-4 h-4" } }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
+          },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/page/about" } }],
+          "text": "$t:home.learn_more"
+        }
+      ]
+    }
+  ]
+}

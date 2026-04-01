@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "상품 1:1 문의 삭제 확인 모달"
+  },
+  "id": "inquiry_delete_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "{{(_global.qnaDeleteIsReply ?? false) ? $t('shop.qna.reply_delete_modal_title') : ((_global.qnaDeleteIsAdmin ?? false) ? $t('shop.qna.admin_delete_modal_title') : $t('shop.qna.delete_modal_title'))}}",
+    "size": "sm",
+    "closeOnBackdropClick": false
+  },
+  "children": [
+    {
+      "comment": "삭제 안내 아이콘 + 문구",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex flex-col items-center gap-4 py-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "triangle-exclamation", "className": "text-red-500 dark:text-red-400 text-xl" }
+            }
+          ]
+        },
+        {
+          "comment": "답변 삭제 안내 문구",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!!(_global.qnaDeleteIsReply ?? false)}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed" },
+          "text": "$t:shop.qna.reply_delete_modal_message"
+        },
+        {
+          "comment": "관리자 미답변 문의 삭제 안내 문구",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!(_global.qnaDeleteIsReply ?? false) && !!(_global.qnaDeleteIsAdmin ?? false) && !_global.qnaDeleteIsAnswered}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed" },
+          "text": "$t:shop.qna.admin_delete_modal_message_pending"
+        },
+        {
+          "comment": "관리자 답변완료 문의 삭제 안내 문구",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!(_global.qnaDeleteIsReply ?? false) && !!(_global.qnaDeleteIsAdmin ?? false) && !!_global.qnaDeleteIsAnswered}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed" },
+          "text": "$t:shop.qna.admin_delete_modal_message_answered"
+        },
+        {
+          "comment": "사용자 미답변 문의 안내 문구",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!(_global.qnaDeleteIsReply ?? false) && !(_global.qnaDeleteIsAdmin ?? false) && !_global.qnaDeleteIsAnswered}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed" },
+          "text": "$t:shop.qna.delete_modal_message_pending"
+        },
+        {
+          "comment": "사용자 답변완료 문의 안내 문구",
+          "type": "basic",
+          "name": "P",
+          "if": "{{!(_global.qnaDeleteIsReply ?? false) && !(_global.qnaDeleteIsAdmin ?? false) && !!_global.qnaDeleteIsAnswered}}",
+          "props": { "className": "text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed" },
+          "text": "$t:shop.qna.delete_modal_message_answered"
+        }
+      ]
+    },
+    {
+      "comment": "버튼 영역",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4" },
+      "children": [
+        {
+          "comment": "취소 버튼",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "qnaDeleteId": null, "qnaDeleteIsAnswered": false, "qnaDeleteSource": null, "qnaDeleteIsReply": false, "qnaDeleteIsAdmin": false }
+                },
+                { "handler": "closeModal" }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "삭제 확인 버튼",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.qnaDeleting ?? false}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.qnaDeleting ?? false}}",
+              "props": { "name": "spinner", "className": "text-sm animate-spin mr-1" }
+            },
+            { "type": "basic", "name": "Span", "text": "$t:shop.qna.delete_modal_confirm" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "qnaDeleting": true }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "{{(_global.qnaDeleteIsAdmin ?? false) ? ((_global.qnaDeleteIsReply ?? false) ? '/api/modules/sirsoft-ecommerce/admin/inquiries/' + _global.qnaDeleteId + '/reply' : '/api/modules/sirsoft-ecommerce/admin/inquiries/' + _global.qnaDeleteId) : ((_global.qnaDeleteIsReply ?? false) ? '/api/modules/sirsoft-ecommerce/user/inquiries/' + _global.qnaDeleteId + '/reply' : '/api/modules/sirsoft-ecommerce/user/inquiries/' + _global.qnaDeleteId)}}",
+                  "params": {
+                    "method": "DELETE"
+                  },
+                  "onSuccess": [
+                    { "handler": "setState", "params": { "target": "global", "qnaDeleting": false, "qnaDeleteId": null, "qnaDeleteIsAnswered": false, "qnaDeleteSource": null, "qnaDeleteIsReply": false, "qnaDeleteIsAdmin": false } },
+                    { "handler": "closeModal" },
+                    { "handler": "toast", "params": { "message": "$t:shop.qna.delete_success", "type": "success" } },
+                    {
+                      "comment": "마이페이지에서 삭제한 경우",
+                      "handler": "sequence",
+                      "if": "{{_global.qnaDeleteSource === 'mypage'}}",
+                      "actions": [
+                        { "handler": "setState", "params": { "target": "local", "openedInquiryId": null } },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "myInquiries" } }
+                      ]
+                    },
+                    {
+                      "comment": "상품 상세에서 삭제한 경우",
+                      "handler": "sequence",
+                      "if": "{{_global.qnaDeleteSource === 'product'}}",
+                      "actions": [
+                        { "handler": "setState", "params": { "target": "local", "qnaOpenId": null } },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "qna" } }
+                      ]
+                    }
+                  ],
+                  "onError": [
+                    { "handler": "setState", "params": { "target": "global", "qnaDeleting": false } },
+                    { "handler": "toast", "params": { "message": "$t:shop.qna.delete_failed", "type": "error" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "상품명, 카테고리, 찜하기"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-start justify-between"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "{{product.data?.category_name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 mt-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H1",
+                  "props": {
+                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                  },
+                  "text": "{{product.data?.name_localized}}"
+                },
+                {
+                  "comment": "라벨 뱃지",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{product.data?.labels?.length > 0}}",
+                  "props": {
+                    "className": "flex items-center gap-1 flex-wrap"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "iteration": {
+                        "source": "{{product.data?.labels ?? []}}",
+                        "item_var": "labelItem"
+                      },
+                      "props": {
+                        "className": "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
+                        "style": "background-color: {{labelItem.color ?? '#6B7280'}}"
+                      },
+                      "text": "{{labelItem.name}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_local.wishlistLoading}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "heart",
+                "iconStyle": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'solid' : 'regular'}}",
+                "size": "xl",
+                "className": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? 'text-red-500' : ''}} transition-colors"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "conditions",
+              "conditions": [
+                {
+                  "comment": "비회원: 로그인 필요 안내",
+                  "if": "{{!_global.currentUser?.uuid}}",
+                  "then": {
+                    "handler": "toast",
+                    "params": {
+                      "type": "warning",
+                      "message": "$t:shop.wishlist_login_required"
+                    }
+                  }
+                },
+                {
+                  "comment": "회원: 찜하기 토글",
+                  "then": {
+                    "handler": "sequence",
+                    "actions": [
+                      {
+                        "comment": "낙관적 UI: 즉시 아이콘 토글 + 로딩 상태",
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "wishlistLoading": true,
+                          "isWishlisted": "{{!(_local.isWishlisted ?? product.data?.is_wishlisted)}}"
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_mode": "required",
+                        "target": "/api/modules/sirsoft-ecommerce/wishlist/toggle",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "product_id": "{{product.data?.id}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "wishlistLoading": false,
+                              "isWishlisted": "{{response.data.added}}"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "product"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "success",
+                              "message": "{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "comment": "실패 시 원래 상태로 복원",
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "wishlistLoading": false,
+                              "isWishlisted": "{{product.data?.is_wishlisted}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

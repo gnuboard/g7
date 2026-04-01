@@ -1,0 +1,1979 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 드라이버 탭 콘텐츠"
+  },
+  "id": "tab_content_drivers",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab) === 'drivers'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "card_storage_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.storage.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.storage.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_storage_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.storage.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.storage_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "local" },
+                      "text": "$t:admin.settings.drivers.storage.options.local"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "s3" },
+                      "text": "$t:admin.settings.drivers.storage.options.s3"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s3_settings",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.drivers?.storage_driver === 's3'}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_bucket"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "drivers.s3_bucket",
+                        "placeholder": "my-bucket",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_region"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.s3_region",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "props": { "value": "ap-northeast-2" },
+                          "text": "$t:admin.settings.drivers.storage.regions.ap_northeast_2"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "props": { "value": "ap-northeast-1" },
+                          "text": "$t:admin.settings.drivers.storage.regions.ap_northeast_1"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "props": { "value": "us-east-1" },
+                          "text": "$t:admin.settings.drivers.storage.regions.us_east_1"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "props": { "value": "us-west-2" },
+                          "text": "$t:admin.settings.drivers.storage.regions.us_west_2"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Option",
+                          "props": { "value": "eu-west-1" },
+                          "text": "$t:admin.settings.drivers.storage.regions.eu_west_1"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_access_key"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "drivers.s3_access_key",
+                        "placeholder": "AKIAIOSFODNN7EXAMPLE",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_secret_key"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "password",
+                        "name": "drivers.s3_secret_key",
+                        "placeholder": "********",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_url"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "drivers.s3_url",
+                        "placeholder": "https://my-bucket.s3.ap-northeast-2.amazonaws.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                      },
+                      "text": "$t:admin.settings.drivers.storage.s3_url_desc"
+                    }
+                  ]
+                },
+                {
+                  "id": "s3_test_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3 flex items-center gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 's3')}}",
+                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver !== 's3'}}",
+                          "props": {
+                            "name": "plug",
+                            "className": "w-4 h-4"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver === 's3'}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "w-4 h-4 animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_local.testingDriver === 's3' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            { "handler": "setState", "params": { "target": "local", "testingDriver": "s3" } },
+                            { "handler": "setState", "params": { "target": "local", "driverTestResults.s3": null } },
+                            {
+                              "handler": "apiCall",
+                              "target": "/api/admin/settings/test-driver",
+                              "auth_required": true,
+                              "params": {
+                                "method": "POST",
+                                "body": {
+                                  "storage_driver": "s3",
+                                  "s3_bucket": "{{_local.form.drivers?.s3_bucket}}",
+                                  "s3_region": "{{_local.form.drivers?.s3_region}}",
+                                  "s3_access_key": "{{_local.form.drivers?.s3_access_key}}",
+                                  "s3_secret_key": "{{_local.form.drivers?.s3_secret_key}}"
+                                }
+                              },
+                              "onSuccess": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.s3": "{{result.data.results.s3}}" } },
+                                { "handler": "toast", "params": { "type": "{{result.data.results.s3.success ? 'success' : 'error'}}", "message": "{{result.data.results.s3.message}}" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ],
+                              "onError": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.s3": { "success": false, "message": "Connection test failed" } } },
+                                { "handler": "toast", "params": { "type": "error", "message": "$t:admin.settings.drivers.test_failed" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.driverTestResults?.s3}}",
+                      "props": {
+                        "className": "{{_local.driverTestResults.s3.success ? 'flex items-center gap-2 text-green-600 dark:text-green-400' : 'flex items-center gap-2 text-red-600 dark:text-red-400'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_local.driverTestResults.s3.success ? 'check-circle' : 'x-circle'}}",
+                            "className": "w-5 h-5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium"
+                          },
+                          "text": "{{_local.driverTestResults.s3.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_cache_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.cache.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.cache.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_cache_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.cache.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.cache_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "file" },
+                      "text": "$t:admin.settings.drivers.cache.options.file"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "redis" },
+                      "text": "$t:admin.settings.drivers.cache.options.redis"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "redis_settings",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.drivers?.cache_driver === 'redis'}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.redis_host"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "drivers.redis_host",
+                            "placeholder": "127.0.0.1",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.redis_port"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "drivers.redis_port",
+                            "placeholder": "6379",
+                            "min": 1,
+                            "max": 65535,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.redis_password"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "password",
+                            "name": "drivers.redis_password",
+                            "placeholder": "$t:admin.settings.drivers.common.optional",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.redis_database"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "drivers.redis_database",
+                            "placeholder": "0",
+                            "min": 0,
+                            "max": 15,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "redis_test_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3 flex items-center gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}",
+                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver !== 'redis'}}",
+                          "props": {
+                            "name": "plug",
+                            "className": "w-4 h-4"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver === 'redis'}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "w-4 h-4 animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_local.testingDriver === 'redis' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            { "handler": "setState", "params": { "target": "local", "testingDriver": "redis" } },
+                            { "handler": "setState", "params": { "target": "local", "driverTestResults.redis": null } },
+                            {
+                              "handler": "apiCall",
+                              "target": "/api/admin/settings/test-driver",
+                              "auth_required": true,
+                              "params": {
+                                "method": "POST",
+                                "body": {
+                                  "cache_driver": "redis",
+                                  "redis_host": "{{_local.form.drivers?.redis_host}}",
+                                  "redis_port": "{{_local.form.drivers?.redis_port}}",
+                                  "redis_password": "{{_local.form.drivers?.redis_password}}",
+                                  "redis_database": "{{_local.form.drivers?.redis_database}}"
+                                }
+                              },
+                              "onSuccess": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.redis": "{{result.data.results.redis}}" } },
+                                { "handler": "toast", "params": { "type": "{{result.data.results.redis.success ? 'success' : 'error'}}", "message": "{{result.data.results.redis.message}}" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ],
+                              "onError": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.redis": { "success": false, "message": "Connection test failed" } } },
+                                { "handler": "toast", "params": { "type": "error", "message": "$t:admin.settings.drivers.test_failed" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.driverTestResults?.redis}}",
+                      "props": {
+                        "className": "{{_local.driverTestResults.redis.success ? 'flex items-center gap-2 text-green-600 dark:text-green-400' : 'flex items-center gap-2 text-red-600 dark:text-red-400'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_local.driverTestResults.redis.success ? 'check-circle' : 'x-circle'}}",
+                            "className": "w-5 h-5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium"
+                          },
+                          "text": "{{_local.driverTestResults.redis.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "memcached_settings",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.drivers?.cache_driver === 'memcached'}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.memcached_host"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "drivers.memcached_host",
+                            "placeholder": "127.0.0.1",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.cache.memcached_port"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "drivers.memcached_port",
+                            "placeholder": "11211",
+                            "min": 1,
+                            "max": 65535,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "memcached_test_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3 flex items-center gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}",
+                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver !== 'memcached'}}",
+                          "props": {
+                            "name": "plug",
+                            "className": "w-4 h-4"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver === 'memcached'}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "w-4 h-4 animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_local.testingDriver === 'memcached' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            { "handler": "setState", "params": { "target": "local", "testingDriver": "memcached" } },
+                            { "handler": "setState", "params": { "target": "local", "driverTestResults.memcached": null } },
+                            {
+                              "handler": "apiCall",
+                              "target": "/api/admin/settings/test-driver",
+                              "auth_required": true,
+                              "params": {
+                                "method": "POST",
+                                "body": {
+                                  "cache_driver": "memcached",
+                                  "memcached_host": "{{_local.form.drivers?.memcached_host}}",
+                                  "memcached_port": "{{_local.form.drivers?.memcached_port}}"
+                                }
+                              },
+                              "onSuccess": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.memcached": "{{result.data.results.memcached}}" } },
+                                { "handler": "toast", "params": { "type": "{{result.data.results.memcached.success ? 'success' : 'error'}}", "message": "{{result.data.results.memcached.message}}" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ],
+                              "onError": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.memcached": { "success": false, "message": "Connection test failed" } } },
+                                { "handler": "toast", "params": { "type": "error", "message": "$t:admin.settings.drivers.test_failed" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.driverTestResults?.memcached}}",
+                      "props": {
+                        "className": "{{_local.driverTestResults.memcached.success ? 'flex items-center gap-2 text-green-600 dark:text-green-400' : 'flex items-center gap-2 text-red-600 dark:text-red-400'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_local.driverTestResults.memcached.success ? 'check-circle' : 'x-circle'}}",
+                            "className": "w-5 h-5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium"
+                          },
+                          "text": "{{_local.driverTestResults.memcached.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_search_engine_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.search_engine.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.search_engine.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_search_engine_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.search_engine.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.search_engine_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "mysql-fulltext" },
+                      "text": "$t:admin.settings.drivers.search_engine.options.mysql_fulltext"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "mt-2 text-xs text-gray-400 dark:text-gray-500"
+                  },
+                  "text": "$t:admin.settings.drivers.search_engine.driver_desc"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "circle-info",
+                    "className": "w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:admin.settings.drivers.search_engine.plugin_notice"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_session_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.session.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.session.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_session_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.session.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.session_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "file" },
+                      "text": "$t:admin.settings.drivers.session.options.file"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "database" },
+                      "text": "$t:admin.settings.drivers.session.options.database"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "redis" },
+                      "text": "$t:admin.settings.drivers.session.options.redis"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_local.form?.drivers?.session_driver === 'redis'}}",
+                  "props": {
+                    "className": "text-xs text-blue-500 dark:text-blue-400 mt-2 flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "info-circle",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.drivers.session.redis_shared_notice"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_session_lifetime",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.session.lifetime"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "drivers.session_lifetime",
+                        "placeholder": "120",
+                        "min": 1,
+                        "max": 43200,
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.drivers.session.minutes"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_queue_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.queue.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.queue.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_queue_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.queue.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.queue_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "sync" },
+                      "text": "$t:admin.settings.drivers.queue.options.sync"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "database" },
+                      "text": "$t:admin.settings.drivers.queue.options.database"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "redis" },
+                      "text": "$t:admin.settings.drivers.queue.options.redis"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.form?.drivers?.queue_driver === 'database' || _local.form?.drivers?.queue_driver === 'redis'}}",
+                  "props": {
+                    "className": "mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-start gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "triangle-exclamation",
+                            "className": "w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-xs text-amber-700 dark:text-amber-300"
+                              },
+                              "text": "$t:admin.settings.drivers.queue.worker_notice"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Code",
+                              "props": {
+                                "className": "block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-amber-800 dark:text-amber-200"
+                              },
+                              "text": "php artisan queue:work"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{_local.form?.drivers?.queue_driver === 'redis'}}",
+                  "props": {
+                    "className": "text-xs text-blue-500 dark:text-blue-400 mt-2 flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "info-circle",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.drivers.queue.redis_shared_notice"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_log_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.log.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.log.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_log_driver",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.log.driver"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.log_driver",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "single" },
+                      "text": "$t:admin.settings.drivers.log.options.single"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "daily" },
+                      "text": "$t:admin.settings.drivers.log.options.daily"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_log_level",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.drivers.log.level"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "drivers.log_level",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "debug" },
+                      "text": "$t:admin.settings.drivers.log.levels.debug"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "info" },
+                      "text": "$t:admin.settings.drivers.log.levels.info"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "notice" },
+                      "text": "$t:admin.settings.drivers.log.levels.notice"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "warning" },
+                      "text": "$t:admin.settings.drivers.log.levels.warning"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "error" },
+                      "text": "$t:admin.settings.drivers.log.levels.error"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "critical" },
+                      "text": "$t:admin.settings.drivers.log.levels.critical"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "alert" },
+                      "text": "$t:admin.settings.drivers.log.levels.alert"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Option",
+                      "props": { "value": "emergency" },
+                      "text": "$t:admin.settings.drivers.log.levels.emergency"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                  },
+                  "text": "$t:admin.settings.drivers.log.level_desc"
+                }
+              ]
+            },
+            {
+              "id": "log_days_settings",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.drivers?.log_driver === 'daily'}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.log.retention_days"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "drivers.log_days",
+                            "placeholder": "14",
+                            "min": 1,
+                            "max": 365,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.settings.drivers.log.days"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                      },
+                      "text": "$t:admin.settings.drivers.log.retention_desc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "info-circle",
+                        "className": "w-3 h-3"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.drivers.log.path_info"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_websocket_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.drivers.websocket.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.drivers.websocket.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "toggle_websocket_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.drivers.websocket.enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.drivers.websocket.enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "drivers.websocket_enabled",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "websocket_settings_detail",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.drivers?.websocket_enabled}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "$t:admin.settings.drivers.websocket.app_key"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "drivers.websocket_app_key",
+                        "placeholder": "my-app-key",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.websocket.host"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "drivers.websocket_host",
+                            "placeholder": "localhost",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.websocket.port"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "drivers.websocket_port",
+                            "placeholder": "8080",
+                            "min": 1,
+                            "max": 65535,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "text": "$t:admin.settings.drivers.websocket.scheme"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Select",
+                          "props": {
+                            "name": "drivers.websocket_scheme",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Option",
+                              "props": { "value": "https" },
+                              "text": "HTTPS"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Option",
+                              "props": { "value": "http" },
+                              "text": "HTTP"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-start gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "triangle-exclamation",
+                            "className": "w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": {
+                                "className": "text-xs text-amber-700 dark:text-amber-300"
+                              },
+                              "text": "$t:admin.settings.drivers.websocket.reverb_notice"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Code",
+                              "props": {
+                                "className": "block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-amber-800 dark:text-amber-200"
+                              },
+                              "text": "php artisan reverb:start"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "websocket_test_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "py-3 flex items-center gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}",
+                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver !== 'websocket'}}",
+                          "props": {
+                            "name": "plug",
+                            "className": "w-4 h-4"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "if": "{{_local.testingDriver === 'websocket'}}",
+                          "props": {
+                            "name": "spinner",
+                            "className": "w-4 h-4 animate-spin"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "{{_local.testingDriver === 'websocket' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "sequence",
+                          "actions": [
+                            { "handler": "setState", "params": { "target": "local", "testingDriver": "websocket" } },
+                            { "handler": "setState", "params": { "target": "local", "driverTestResults.websocket": null } },
+                            {
+                              "handler": "apiCall",
+                              "target": "/api/admin/settings/test-driver",
+                              "auth_required": true,
+                              "params": {
+                                "method": "POST",
+                                "body": {
+                                  "websocket_enabled": true,
+                                  "websocket_host": "{{_local.form.drivers?.websocket_host}}",
+                                  "websocket_port": "{{_local.form.drivers?.websocket_port}}",
+                                  "websocket_scheme": "{{_local.form.drivers?.websocket_scheme}}"
+                                }
+                              },
+                              "onSuccess": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.websocket": "{{result.data.results.websocket}}" } },
+                                { "handler": "toast", "params": { "type": "{{result.data.results.websocket.success ? 'success' : 'error'}}", "message": "{{result.data.results.websocket.message}}" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ],
+                              "onError": [
+                                { "handler": "setState", "params": { "target": "local", "driverTestResults.websocket": { "success": false, "message": "Connection test failed" } } },
+                                { "handler": "toast", "params": { "type": "error", "message": "$t:admin.settings.drivers.test_failed" } },
+                                { "handler": "setState", "params": { "target": "local", "testingDriver": null } }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{_local.driverTestResults?.websocket}}",
+                      "props": {
+                        "className": "{{_local.driverTestResults.websocket.success ? 'flex items-center gap-2 text-green-600 dark:text-green-400' : 'flex items-center gap-2 text-red-600 dark:text-red-400'}}"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "{{_local.driverTestResults.websocket.success ? 'check-circle' : 'x-circle'}}",
+                            "className": "w-5 h-5"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium"
+                          },
+                          "text": "{{_local.driverTestResults.websocket.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "driver_save_warning",
+      "type": "basic",
+      "name": "Div",
+      "conditions": {
+        "or": [
+          { "and": ["{{_local.form?.drivers?.storage_driver === 's3'}}", "{{!_local.driverTestResults?.s3?.success}}"] },
+          { "and": ["{{_local.form?.drivers?.cache_driver === 'redis'}}", "{{!_local.driverTestResults?.redis?.success}}"] },
+          { "and": ["{{_local.form?.drivers?.cache_driver === 'memcached'}}", "{{!_local.driverTestResults?.memcached?.success}}"] },
+          { "and": ["{{_local.form?.drivers?.session_driver === 'redis'}}", "{{!_local.driverTestResults?.redis?.success}}"] },
+          { "and": ["{{_local.form?.drivers?.queue_driver === 'redis'}}", "{{!_local.driverTestResults?.redis?.success}}"] },
+          { "and": ["{{_local.form?.drivers?.websocket_enabled}}", "{{!_local.driverTestResults?.websocket?.success}}"] }
+        ]
+      },
+      "props": {
+        "className": "mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-amber-700 dark:text-amber-300"
+              },
+              "text": "$t:admin.settings.drivers.test_before_save"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

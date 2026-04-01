@@ -1,0 +1,1016 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_post_detail",
+    "permissions": [
+        "sirsoft-board.boards.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title",
+        "description": "{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
+    },
+    "data_sources": [
+        {
+            "id": "post",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{route.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive",
+            "errorHandling": {
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "403": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        },
+                        {
+                            "handler": "navigateBack"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "computed": {
+        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "post_detail_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title",
+                            "description": "{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}/post/{{route?.id}}",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "back_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{route.slug}}"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-left",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.back"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "post_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-8"
+                                },
+                                "children": [
+                                    {
+                                        "partial": "partials/admin_board_post_detail/_post_card_content.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "replies_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(post?.data?.replies ?? []).length > 0}}",
+                        "children": [
+                            {
+                                "id": "replies_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "comments",
+                                            "className": "w-5 h-5 text-blue-600 dark:text-blue-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-board.admin.posts.detail.replies_title|count={{(post?.data?.replies ?? []).length}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "replies_list",
+                                "type": "basic",
+                                "name": "Div",
+                                "iteration": {
+                                    "source": "post?.data?.replies ?? []",
+                                    "item_var": "item"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/admin_board_post_detail/_reply_card_content.json"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "meta": {
+                "description": "Universal Delete Modal (Post/Reply/Comment)"
+            },
+            "id": "delete_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                            },
+                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}",
+                            "if": "{{_global.modal_data?.type !== 'post'}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.deleteModalLoading}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "trigger": "admin",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "deleteModalLoading": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.modal_data?.id : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.modal_data?.id}}",
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deleteModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post"
+                                                    },
+                                                    "if": "{{_global.modal_data?.type === 'comment'}}"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{_global.modal_data?.type === 'post' ? '/admin/board/' + route.slug : '/admin/board/' + route.slug + '/post/' + route.id}}",
+                                                        "mergeQuery": "{{_global.modal_data?.type === 'post'}}"
+                                                    },
+                                                    "if": "{{_global.modal_data?.type !== 'comment'}}"
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.success_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.success_post'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deleteModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.deleteModalLoading ? '$t:common.loading' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "meta": {
+                "description": "Universal Report Modal (Post/Comment)"
+            },
+            "id": "report_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}",
+                "size": "medium"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.modal_data?.type === 'comment'}}",
+                            "props": {
+                                "className": "mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.report_target"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "report_reason_type": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": ""
+                                            },
+                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "iteration": {
+                                                "source": "post?.data?.board?.report_types ?? []",
+                                                "item_var": "type",
+                                                "index_var": "idx"
+                                            },
+                                            "props": {
+                                                "value": "{{type.value}}"
+                                            },
+                                            "text": "{{type.label}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "props": {
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                        "rows": 4,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "input",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "report_reason": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reportSubmitting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{!_local.report_reason_type || _local.report_reason_type === ''}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_required"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && !_local.report_reason?.trim()}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_required"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
+                                            "params": {
+                                                "target": "global",
+                                                "reportSubmitting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "if": "{{_local.report_reason_type && _local.report_reason_type !== '' && _local.report_reason?.trim()}}",
+                                            "auth_required": true,
+                                            "target": "{{_global.modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/boards/' + route?.slug + '/comments/' + _global.modal_data?.id + '/reports' : '/api/modules/sirsoft-board/boards/' + route?.slug + '/posts/' + post?.data?.id + '/reports'}}",
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "reason_type": "{{_local.report_reason_type}}",
+                                                    "reason_detail": "{{_local.report_reason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reportSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "report_reason_type": "",
+                                                        "report_reason": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.success_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.success'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reportSubmitting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.reportSubmitting}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "meta": {
+                "description": "Blind Modal (Post/Comment)"
+            },
+            "id": "blind_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}",
+                "size": "medium"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                            },
+                            "text": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.posts.modals.blind_reason_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-400 dark:text-gray-500 ml-1"
+                                    },
+                                    "text": "$t:sirsoft-board.common.optional"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "props": {
+                                "id": "blind_reason",
+                                "rows": 3,
+                                "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "blindReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.blindModalLoading}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "trigger": "admin",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "blindModalLoading": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "{{_global.blind_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.blind_modal_data?.id + '/blind' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.blind_modal_data?.id + '/blind'}}",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "reason": "{{_global.blindReason}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "blindModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_success' : '$t:sirsoft-board.admin.posts.modals.blind_success'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "blindModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.blindModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.blind'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "meta": {
+                "description": "Restore Modal (Post/Comment)"
+            },
+            "id": "restore_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                            },
+                            "text": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.restoreModalLoading}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "trigger": "admin",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "restoreModalLoading": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "{{_global.restore_modal_data?.type === 'comment' ? '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + route.id + '/comments/' + _global.restore_modal_data?.id + '/restore' : '/api/modules/sirsoft-board/admin/board/' + route.slug + '/posts/' + _global.restore_modal_data?.id + '/restore'}}",
+                                            "params": {
+                                                "method": "PATCH"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "restoreModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_success' : '$t:sirsoft-board.admin.posts.modals.restore_success'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "restoreModalLoading": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.restoreModalLoading ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.actions.restore'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

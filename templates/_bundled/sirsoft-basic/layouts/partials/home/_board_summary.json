@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 요약 카드"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "block w-full text-left bg-white dark:bg-gray-800 rounded-xl pt-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between mb-2 px-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer" },
+          "text": "{{item.name}}",
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{item.slug}}" } }]
+        },
+        { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{item.posts_count}}" }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "px-4 pb-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{item.recent_posts && item.recent_posts.length > 0}}",
+          "props": { "className": "space-y-1" },
+          "iteration": { "source": "{{item.recent_posts ?? []}}", "item_var": "post" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center justify-between w-full hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors gap-2" },
+              "children": [
+                {
+                  "comment": "왼쪽: 배지 + 제목 + 댓글",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-2 flex-1 min-w-0" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post.is_notice}}",
+                      "props": { "className": "text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0" },
+                      "text": "$t:board.notice"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post.category && !post.is_notice}}",
+                      "props": { "className": "text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0" },
+                      "text": "{{post.category}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{post.is_secret}}",
+                      "props": { "name": "lock", "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0" }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": { "className": "text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer" },
+                      "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{item.slug}}/{{post.id}}" } }],
+                      "text": "{{post.title}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post.is_new}}",
+                      "props": { "className": "px-1.5 py-0.5 text-xs bg-red-500 text-white rounded shrink-0" },
+                      "text": "N"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{post.comment_count > 0}}",
+                      "props": { "className": "text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0" },
+                      "text": "[{{post.comment_count}}]"
+                    }
+                  ]
+                },
+                {
+                  "comment": "오른쪽: 날짜",
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0", "title": "{{post.created_at ?? ''}}" },
+                  "text": "{{post.created_at_formatted ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!item.recent_posts || item.recent_posts.length === 0}}",
+          "props": { "className": "py-10 my-1 text-center text-sm text-gray-400 dark:text-gray-500" },
+          "children": [
+            { "type": "basic", "name": "Span", "text": "$t:home.no_posts" }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "=== 더보기 버튼 ===",
+      "type": "basic",
+      "name": "Button",
+      "props": { "className": "w-full px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer border-t border-gray-100 dark:border-gray-700" },
+      "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{item.slug}}" } }],
+      "children": [
+        { "type": "basic", "name": "Span", "text": "$t:common.more" },
+        { "type": "basic", "name": "Icon", "props": { "name": "arrow-right", "className": "w-4 h-4 inline-block ml-1" } }
+      ]
+    }
+  ]
+}

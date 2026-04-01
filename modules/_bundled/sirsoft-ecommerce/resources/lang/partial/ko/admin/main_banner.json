@@ -1,0 +1,97 @@
+{
+  "title": "메인배너 관리",
+  "description": "홈페이지 메인 배너를 관리하고 순서를 변경할 수 있습니다.",
+  "actions": {
+    "create": "등록",
+    "preview_close": "미리보기 닫기"
+  },
+  "preview": {
+    "title": "고객 화면 미리보기",
+    "info": "총 {{count}}개의 배너 · {{interval}}초 간격 자동 전환",
+    "carousel_placeholder": "Carousel 컴포넌트 개발 필요"
+  },
+  "list": {
+    "title": "배너",
+    "tabs": {
+      "all": "전체",
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "empty": "등록된 배너가 없습니다.",
+    "drag_placeholder": "DragList 컴포넌트 개발 필요",
+    "period_always": "상시 노출",
+    "status_ended": "종료"
+  },
+  "detail": {
+    "title": "배너 정보",
+    "preview": "배너 미리보기",
+    "language": {
+      "ko": "한국어",
+      "en": "English",
+      "ja": "日本語",
+      "zh": "中文"
+    },
+    "field": {
+      "banner_title": "제목",
+      "banner_content": "내용",
+      "style_settings": "스타일 설정",
+      "title_style": "제목",
+      "content_style": "내용",
+      "show": "표시",
+      "hide": "숨김",
+      "color": "색상",
+      "position": "위치",
+      "position_left": "왼쪽",
+      "position_center": "중앙",
+      "position_right": "오른쪽",
+      "banner_image": "배너 이미지",
+      "image_upload_hint": "이미지를 드래그하거나, 클릭하여 파일을 선택하세요.",
+      "image_size_hint": "권장 사이즈: 1200x200px, 최대 5MB",
+      "image_placeholder": "이미지가 등록되지 않았습니다",
+      "image_upload_placeholder": "ImageUpload 컴포넌트 개발 필요",
+      "link_url": "링크 URL",
+      "link_url_placeholder": "/promotion/sale",
+      "link_url_hint": "배너 클릭 시 이동할 URL을 입력하세요",
+      "exposure_period": "노출 기간",
+      "start_date": "시작일시",
+      "end_date": "종료일시",
+      "period_hint": "기간을 설정하지 않으면 상시 노출됩니다",
+      "status": "상태",
+      "status_active": "활성화",
+      "status_inactive": "비활성화",
+      "created_at": "생성일",
+      "color_picker_placeholder": "ColorPicker 컴포넌트 개발 필요"
+    },
+    "actions": {
+      "edit": "편집",
+      "delete": "삭제"
+    }
+  },
+  "form": {
+    "add_title": "배너 추가",
+    "edit_title": "배너 수정",
+    "cancel": "취소",
+    "save": "저장"
+  },
+  "modal": {
+    "delete": {
+      "title": "확인",
+      "message": "선택한 배너를 삭제하시겠습니까?",
+      "cancel": "취소",
+      "confirm": "확인"
+    },
+    "edit_cancel": {
+      "title": "수정 중입니다",
+      "message": "수정 중인 내용이 저장되지 않습니다.",
+      "sub_message": "정말로 취소하고 다른 배너를 선택하시겠습니까?",
+      "cancel": "계속 수정",
+      "confirm": "취소하고 이동"
+    },
+    "status_change": {
+      "title": "배너 상태 일괄 변경",
+      "message": "선택한 배너의 상태를 변경합니다.",
+      "cancel": "취소",
+      "confirm": "변경"
+    }
+  }
+}

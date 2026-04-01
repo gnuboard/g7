@@ -1,0 +1,422 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "입금 처리이력 모달"
+  },
+  "id": "modal_process_history",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.title",
+    "description": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.description",
+    "size": "lg"
+  },
+  "children": [
+    {
+      "id": "deposit_info_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label text-xs"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-primary font-medium mt-1"
+                  },
+                  "text": "김철수"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-label text-xs"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-blue-600 dark:text-blue-400 font-semibold mt-1"
+                  },
+                  "text": "\\89,000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-label text-xs"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.order_number"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-primary font-medium mt-1"
+              },
+              "text": "ORD20240127-001"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timeline_section",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "text-label text-sm font-medium mb-4"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.timeline_title"
+        },
+        {
+          "id": "timeline_list",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "timeline_item_success",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "zap",
+                            "className": "w-4 h-4 icon-muted"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary font-medium"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.system_pg_webhook"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "badge-status badge-status-success"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.match_complete"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-sm"
+                          },
+                          "text": "2024-01-27 15:20:00"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-sm mt-1"
+                          },
+                          "text": "주문번호 20240127-001과 자동 매칭 완료"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "timeline_item_failed",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "code",
+                            "className": "w-4 h-4 icon-muted"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-primary font-medium"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.webhook_receive"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "badge-status badge-status-error"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.failed"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-secondary text-sm"
+                              },
+                              "text": "404"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-sm"
+                          },
+                          "text": "2024-01-27 10:40:30"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-secondary text-sm mt-1"
+                          },
+                          "text": "https://api.pg.com/v1/webhook/notification"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm"
+                          },
+                          "text": "주문번호가 존재하지 않습니다"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "mt-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "flex items-center gap-1 text-sm text-secondary hover:text-primary"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "chevron-up",
+                                    "className": "w-4 h-4"
+                                  }
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.toggle_detail_close"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "detail_section",
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "mt-3 space-y-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-label text-xs mb-1"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.request_data"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Pre",
+                                      "props": {
+                                        "className": "text-primary whitespace-pre-wrap"
+                                      },
+                                      "text": "{\n  \"transactionId\": \"PG2024012700004\"\n}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-label text-xs mb-1"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.deposit.modal.process_history.response_data"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Pre",
+                                      "props": {
+                                        "className": "text-primary whitespace-pre-wrap"
+                                      },
+                                      "text": "{\n  \"success\": false,\n  \"error\": \"주문을 찾을 수 없습니다\"\n}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": []
+}

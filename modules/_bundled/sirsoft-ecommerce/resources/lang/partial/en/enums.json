@@ -1,0 +1,213 @@
+{
+  "order_status": {
+    "pending_order": "Pending Order",
+    "pending_payment": "Pending Payment",
+    "payment_complete": "Payment Complete",
+    "shipping_hold": "Shipping Hold",
+    "preparing": "Preparing",
+    "shipping_ready": "Ready to Ship",
+    "shipping": "Shipping",
+    "delivered": "Delivered",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled"
+  },
+  "payment_status": {
+    "ready": "Pending",
+    "in_progress": "In Progress",
+    "waiting_deposit": "Awaiting Deposit",
+    "paid": "Paid",
+    "partial_cancelled": "Partially Cancelled",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "expired": "Expired"
+  },
+  "payment_method": {
+    "card": "Credit Card",
+    "vbank": "Virtual Account",
+    "dbank": "Bank Deposit",
+    "bank": "Bank Transfer",
+    "phone": "Mobile Payment",
+    "point": "Points",
+    "deposit": "Store Credit",
+    "free": "Free"
+  },
+  "shipping_type": {
+    "domestic_parcel": "Domestic Parcel",
+    "domestic_express": "Domestic Express",
+    "domestic_quick": "Quick Service",
+    "international_ems": "International EMS",
+    "international_standard": "International Standard",
+    "pickup": "Store Pickup",
+    "cvs": "Convenience Store",
+    "digital": "Digital Product"
+  },
+  "shipping_status": {
+    "pending": "Pending",
+    "preparing": "Preparing",
+    "ready": "Ready to Ship",
+    "shipped": "Shipped",
+    "in_transit": "In Transit",
+    "out_for_delivery": "Out for Delivery",
+    "delivered": "Delivered",
+    "failed": "Failed",
+    "returned": "Returned",
+    "pickup_ready": "Ready for Pickup",
+    "pickup_complete": "Picked Up"
+  },
+  "sales_status": {
+    "on_sale": "On Sale",
+    "suspended": "Suspended",
+    "sold_out": "Sold Out",
+    "coming_soon": "Coming Soon"
+  },
+  "display_status": {
+    "visible": "Visible",
+    "hidden": "Hidden"
+  },
+  "tax_status": {
+    "taxable": "Taxable",
+    "tax_free": "Tax Free"
+  },
+  "target_screen": {
+    "products": "Products",
+    "orders": "Orders",
+    "customers": "Customers"
+  },
+  "price_type": {
+    "list_price": "List Price",
+    "selling_price": "Selling Price",
+    "supply_price": "Supply Price"
+  },
+  "image_collection": {
+    "main": "Main Image",
+    "gallery": "Gallery",
+    "detail": "Detail Image"
+  },
+  "date_type": {
+    "created_at": "Created At",
+    "updated_at": "Updated At"
+  },
+  "order_date_type": {
+    "ordered_at": "Order Date",
+    "paid_at": "Payment Date",
+    "confirmed_at": "Confirmation Date",
+    "delivered_at": "Delivery Date",
+    "cancelled_at": "Cancellation Date"
+  },
+  "device_type": {
+    "pc": "PC",
+    "mobile": "Mobile",
+    "app_ios": "iOS App",
+    "app_android": "Android App",
+    "admin": "Admin",
+    "api": "API"
+  },
+  "option_status": {
+    "ordered": "Ordered",
+    "confirmed": "Confirmed",
+    "preparing": "Preparing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "refund_requested": "Refund Requested",
+    "refund_complete": "Refunded",
+    "return_requested": "Return Requested",
+    "return_complete": "Returned",
+    "exchange_requested": "Exchange Requested",
+    "exchange_complete": "Exchanged"
+  },
+  "order_option_status": {
+    "pending": "Pending",
+    "payment_complete": "Payment Complete",
+    "preparing": "Preparing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "return_requested": "Return Requested",
+    "return_complete": "Return Complete",
+    "exchange_requested": "Exchange Requested",
+    "exchange_complete": "Exchange Complete",
+    "refund_complete": "Refund Complete"
+  },
+  "order_option_source_type": {
+    "order": "Original Order",
+    "exchange": "Exchange",
+    "split": "Quantity Split"
+  },
+  "tax_invoice_status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "issued": "Issued",
+    "failed": "Failed",
+    "cancelled": "Cancelled"
+  },
+  "coupon_target_type": {
+    "product_amount": "Product Amount",
+    "order_amount": "Order Amount",
+    "shipping_fee": "Shipping Fee"
+  },
+  "coupon_discount_type": {
+    "fixed": "Fixed",
+    "rate": "Rate"
+  },
+  "coupon_issue_status": {
+    "issuing": "Issuing",
+    "stopped": "Stopped"
+  },
+  "coupon_issue_method": {
+    "direct": "Direct Issue",
+    "download": "Download",
+    "auto": "Automatic"
+  },
+  "coupon_issue_condition": {
+    "manual": "Manual Issue",
+    "signup": "Sign Up",
+    "first_purchase": "First Purchase",
+    "birthday": "Birthday"
+  },
+  "coupon_use_status": {
+    "available": "Available",
+    "used": "Used",
+    "expired": "Expired",
+    "cancelled": "Cancelled"
+  },
+  "shipping_method": {
+    "parcel": "Parcel",
+    "collect": "Collect on Delivery",
+    "quick": "Quick Service",
+    "direct": "Direct Delivery",
+    "pickup": "Pickup",
+    "other": "Other"
+  },
+  "carrier": {
+    "cj": "CJ Logistics",
+    "logen": "Logen",
+    "ems": "EMS",
+    "dhl": "DHL",
+    "fedex": "FedEx",
+    "other": "Other"
+  },
+  "charge_policy": {
+    "free": "Free",
+    "fixed": "Fixed",
+    "conditional_free": "Conditional Free",
+    "range_amount": "Range by Amount",
+    "range_quantity": "Range by Quantity",
+    "range_weight": "Range by Weight",
+    "range_volume": "Range by Volume",
+    "range_volume_weight": "Range by Volume+Weight",
+    "api": "Calculation API",
+    "per_quantity": "Per Quantity",
+    "per_weight": "Per Weight",
+    "per_volume": "Per Volume",
+    "per_volume_weight": "Per Volume Weight",
+    "per_amount": "Per Amount"
+  },
+  "shipping_country": {
+    "KR": "Korea",
+    "US": "USA",
+    "CN": "China",
+    "JP": "Japan"
+  }
+}

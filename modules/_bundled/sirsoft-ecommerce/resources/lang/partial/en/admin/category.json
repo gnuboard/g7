@@ -1,0 +1,91 @@
+{
+  "title": "Category Management",
+  "description": "Manage e-commerce product categories.",
+  "tree": {
+    "title": "Category List",
+    "add": "Add Category",
+    "empty": "No categories registered"
+  },
+  "empty": {
+    "title": "Select a category",
+    "description": "Select a category from the list or add a new one"
+  },
+  "form": {
+    "new_category_title": "New Category",
+    "edit_category_title": "Edit Category",
+    "name": "Category Name",
+    "name_placeholder": "Enter category name",
+    "slug": "Slug",
+    "slug_placeholder": "category-slug",
+    "slug_hint": "Slug must start with a lowercase letter and can only contain lowercase letters, numbers, and hyphens (-).",
+    "description": "Description",
+    "description_placeholder": "Enter category description",
+    "parent_category": "Parent Category",
+    "parent_category_placeholder": "Search for parent category",
+    "parent_category_hint": "Select a parent category or choose 'Top Level'.",
+    "parent_top_level": "Top Level",
+    "sort_order": "Sort Order",
+    "sort_order_hint": "Display order within the same level (lower numbers appear first)",
+    "is_active": "Active",
+    "image": "Category Image",
+    "meta_title": "SEO Meta Title",
+    "meta_description": "SEO Meta Description",
+    "confirm_remove_image_title": "Delete Image",
+    "confirm_remove_image_message": "The image will be deleted immediately. This action cannot be undone regardless of saving the category."
+  },
+  "info": {
+    "title": "Category Information",
+    "basic": "Basic Information",
+    "name": "Category Name",
+    "slug": "Slug",
+    "depth": "Depth Level",
+    "order": "Order",
+    "path": "Path",
+    "status": "Status",
+    "description": "Description",
+    "image": "Image",
+    "image_click_to_enlarge": "Click image to enlarge.",
+    "no_image": "No image available.",
+    "products_count": "Products",
+    "hierarchy_info": "Hierarchy Info",
+    "parent_category": "Parent Category",
+    "top_level": "Top Level",
+    "child_categories": "Child Categories",
+    "no_children": "No child categories",
+    "children_count": "{{count}}",
+    "seo": "SEO Information",
+    "meta_title": "Meta Title",
+    "meta_description": "Meta Description",
+    "system": "System Information",
+    "created_at": "Created At",
+    "updated_at": "Updated At",
+    "statistics": "Statistics",
+    "product_count": "Products",
+    "subcategory_count": "Subcategories"
+  },
+  "delete_modal": {
+    "title": "Delete Category",
+    "message_can_delete": " category. Are you sure you want to delete it?",
+    "message_cannot_delete": " category cannot be deleted.",
+    "message_suffix": " category. Are you sure?",
+    "cannot_delete_title": "Cannot Delete",
+    "has_children_cannot_delete": "This category has {count} child category(ies). Please delete child categories first.",
+    "has_products_cannot_delete": "This category has {count} linked product(s). Please change the category of products first.",
+    "irreversible_warning": "This action cannot be undone. Are you sure you want to delete?"
+  },
+  "modal": {
+    "image_preview": {
+      "title": "Image Preview",
+      "close": "Close"
+    }
+  },
+  "messages": {
+    "created": "Category created successfully.",
+    "updated": "Category updated successfully.",
+    "deleted": "Category deleted successfully.",
+    "order_updated": "Category order updated successfully.",
+    "order_update_failed": "Failed to update category order.",
+    "status_changed": "Category status changed successfully.",
+    "image_delete_failed": "Failed to delete image."
+  }
+}

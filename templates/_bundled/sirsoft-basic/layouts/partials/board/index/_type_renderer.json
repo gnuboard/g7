@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "유형별 index 렌더러. 새 유형 추가: 1) types/새유형/index.json 생성, 2) 아래 유형 블록 추가, 3) basic 블록 !includes 배열에 새 유형 추가"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "comment": "basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'basic' || !['gallery','card'].includes(posts?.data?.board?.type ?? 'basic')}}",
+      "children": [
+        {
+          "partial": "../types/basic/index.json"
+        }
+      ]
+    },
+    {
+      "comment": "gallery 유형",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'gallery'}}",
+      "children": [
+        {
+          "partial": "../types/gallery/index.json"
+        }
+      ]
+    },
+    {
+      "comment": "card 유형",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{posts?.data?.board?.type === 'card'}}",
+      "children": [
+        {
+          "partial": "../types/card/index.json"
+        }
+      ]
+    }
+  ]
+}

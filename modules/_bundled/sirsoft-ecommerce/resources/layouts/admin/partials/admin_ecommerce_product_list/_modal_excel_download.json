@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Excel Download Modal"
+  },
+  "id": "modal_excel_download",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.title",
+    "description": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.description",
+    "size": "md"
+  },
+  "children": [
+    {
+      "id": "excel_download_options",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-3"
+      },
+      "children": [
+        {
+          "id": "option_search",
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "radio",
+                "name": "excelDownloadType",
+                "value": "search",
+                "className": "radio mt-0.5"
+              },
+              "bindings": {
+                "checked": "excelDownloadType === 'search'"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "key": "excelDownloadType",
+                    "value": "search"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "총 12개의 상품이 다운로드됩니다."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "option_selected",
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "radio",
+                "name": "excelDownloadType",
+                "value": "selected",
+                "className": "radio mt-0.5"
+              },
+              "bindings": {
+                "checked": "excelDownloadType === 'selected'"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "key": "excelDownloadType",
+                    "value": "selected"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block font-medium text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "block text-sm text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "10개의 상품만 다운로드됩니다."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "excel_download_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "download",
+                "className": "w-4 h-4 mr-2"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.download"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

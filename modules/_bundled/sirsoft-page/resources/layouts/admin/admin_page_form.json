@@ -1,0 +1,1045 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_page_form",
+    "permissions": [
+        "sirsoft-page.pages.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
+        "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
+    },
+    "data_sources": [
+        {
+            "id": "pageData",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/pages/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{route?.id}}",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": null
+            }
+        }
+    ],
+    "computed": {
+        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
+    },
+    "init_actions": [
+        {
+            "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화)",
+            "if": "{{!route?.id}}",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form": {
+                    "slug": "{{query.slug ?? ''}}",
+                    "published": false,
+                    "content_mode": "html"
+                }
+            }
+        },
+        {
+            "comment": "tempKey 생성 (신규/수정 모두 - 취소 시 임시파일 정리 목적)",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "tempKey": "{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "page_form_content",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "dataKey": "form",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
+                            "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
+                        },
+                        "children": [
+                            {
+                                "id": "header_cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigateBack"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "header_save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{!_computed.isReadOnly}}",
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_local.saving}}",
+                                    "className": "{{_local.saving ? 'px-4 py-2 bg-blue-400 text-white rounded-lg font-medium cursor-not-allowed' : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors'}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "comment": "생성 모드에서 슬러그 중복확인 필수 체크",
+                                                "if": "{{!route?.id && !_local.slugChecked}}",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "errors": {
+                                                                "slug": ["$t:sirsoft-page.admin.page.form.fields.slug_check_required"]
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "수정 모드이거나 중복확인 완료된 경우 저장 진행",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "saving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "FileUploader 업로드 트리거",
+                                                        "handler": "emitEvent",
+                                                        "params": {
+                                                            "event": "upload:page_attachments"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
+                                                        "params": {
+                                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                            "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "saving": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "{{route?.id ? '$t:sirsoft-page.admin.page.form.update_success' : '$t:sirsoft-page.admin.page.form.create_success'}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/pages/{{route?.id ?? response.data.id}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "saving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:sirsoft-page.admin.page.form.validation_error"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.saving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.saving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "error_message_box",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors && Object.keys(_local.errors).length > 0}}",
+                        "props": {
+                            "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-start gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "circle-exclamation",
+                                            "className": "text-red-500 dark:text-red-400 mt-0.5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-red-800 dark:text-red-300"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.validation_error"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "mt-2 text-sm text-red-700 dark:text-red-400 space-y-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.slug}}",
+                                                        "props": {
+                                                            "className": "block"
+                                                        },
+                                                        "text": "{{_local.errors?.slug?.[0]}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['title.ko'] || _local.errors?.title}}",
+                                                        "props": {
+                                                            "className": "block"
+                                                        },
+                                                        "text": "{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0]}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.['content.ko'] || _local.errors?.content}}",
+                                                        "props": {
+                                                            "className": "block"
+                                                        },
+                                                        "text": "{{_local.errors?.['content.ko']?.[0] ?? _local.errors?.content?.[0]}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.published}}",
+                                                        "props": {
+                                                            "className": "block"
+                                                        },
+                                                        "text": "{{_local.errors?.published?.[0]}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isReadOnly}}",
+                        "props": {
+                            "className": "mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg flex items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-yellow-600 dark:text-yellow-400"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-yellow-800 dark:text-yellow-300"
+                                },
+                                "text": "$t:sirsoft-page.admin.page.form.read_only_message"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_basic_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "basic_info_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "file-lines",
+                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.form.sections.basic_info"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "basic_info_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-6"
+                                },
+                                "children": [
+                                    {
+                                        "id": "slug_published_grid",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid grid-cols-2 gap-6"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "grid grid-cols-1 gap-4"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                    {
+                                        "id": "slug_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "slug_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
+                                                            "value": "{{_local.form?.slug ?? ''}}",
+                                                            "disabled": "{{!!route?.id || _computed.isReadOnly}}",
+                                                            "className": "{{route?.id ? 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed' : _local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.slug": "{{$event.target.value}}",
+                                                                    "slugChecked": false,
+                                                                    "slugAvailable": false,
+                                                                    "slugChecking": false,
+                                                                    "slugError": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "slug_check_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "if": "{{!route?.id && !_computed.isReadOnly}}",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
+                                                            "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "slugChecking": true,
+                                                                            "slugChecked": false,
+                                                                            "slugError": ""
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "apiCall",
+                                                                        "auth_required": true,
+                                                                        "target": "/api/modules/sirsoft-page/admin/pages/check-slug",
+                                                                        "params": {
+                                                                            "method": "POST",
+                                                                            "body": {
+                                                                                "slug": "{{_local.form?.slug}}",
+                                                                                "exclude_id": "{{route?.id}}"
+                                                                            }
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "slugChecking": false,
+                                                                                    "slugChecked": true,
+                                                                                    "slugAvailable": "{{!response.data?.exists}}",
+                                                                                    "slugError": ""
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "onError": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "slugChecking": false,
+                                                                                    "slugChecked": true,
+                                                                                    "slugAvailable": false,
+                                                                                    "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.slugChecking}}",
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_check"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{_local.slugChecking}}",
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_checking"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!route?.id}}",
+                                                        "props": {
+                                                            "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_format_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.slugChecked && _local.slugAvailable}}",
+                                                "props": {
+                                                    "className": "block text-xs text-green-600 dark:text-green-400"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_available"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.slugChecked && !_local.slugAvailable && _local.slugError}}",
+                                                "props": {
+                                                    "className": "block text-xs text-red-500 dark:text-red-400"
+                                                },
+                                                "text": "{{_local.slugError}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.slugChecked && !_local.slugAvailable && !_local.slugError}}",
+                                                "props": {
+                                                    "className": "block text-xs text-red-500 dark:text-red-400"
+                                                },
+                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_unavailable"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.slug && !_local.slugChecked}}",
+                                                "props": {
+                                                    "className": "block text-xs text-red-500 dark:text-red-400"
+                                                },
+                                                "text": "{{_local.errors?.slug?.[0]}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "published_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.published"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "published_select",
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "value": "{{String(_local.form?.published ?? false)}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:sirsoft-page.admin.page.published_status.published",
+                                                            "value": "true"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-page.admin.page.published_status.unpublished",
+                                                            "value": "false"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.published": "{{$event.target.value === 'true'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                        ]
+                                    },
+                                    {
+                                        "id": "title_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.title"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "title_input",
+                                                "type": "composite",
+                                                "name": "MultilingualInput",
+                                                "props": {
+                                                    "name": "title",
+                                                    "value": "{{_local.form?.title ?? {}}}",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.title_placeholder",
+                                                    "required": true,
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "layout": "tabs",
+                                                    "error": "{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0] ?? ''}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.title": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "content_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "content_editor",
+                                                "type": "composite",
+                                                "name": "HtmlEditor",
+                                                "props": {
+                                                    "name": "content",
+                                                    "multilingual": true,
+                                                    "value": "{{_local.form?.content}}",
+                                                    "isHtml": "{{_local.form?.content_mode === 'html'}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "rows": 15,
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.content": "{{$event.target.value}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "isHtmlChange",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.errors?.['content.ko'] || _local.errors?.content}}",
+                                                "props": {
+                                                    "className": "block text-xs text-red-500 dark:text-red-400"
+                                                },
+                                                "text": "{{_local.errors?.['content.ko']?.[0] ?? _local.errors?.content?.[0] ?? ''}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_attachments",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "attachments_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "paperclip",
+                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.form.attachments"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "file_uploader",
+                                "type": "composite",
+                                "name": "FileUploader",
+                                "props": {
+                                    "collection": "page_attachments",
+                                    "maxFiles": 5,
+                                    "maxSize": 10,
+                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
+                                    "initialFiles": "{{pageData?.data?.attachments ?? []}}",
+                                    "autoUpload": false,
+                                    "uploadTriggerEvent": "upload:page_attachments",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "compact": true,
+                                    "confirmBeforeRemove": true,
+                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
+                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
+                                    "uploadParams": {
+                                        "temp_key": "{{_local.tempKey}}"
+                                    },
+                                    "apiEndpoints": {
+                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
+                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
+                                        "reorder": "/api/modules/sirsoft-page/admin/attachments/reorder"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "section_seo",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "seo_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "magnifying-glass",
+                                            "className": "text-lg text-gray-600 dark:text-gray-400"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-page.admin.page.form.seo.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "seo_fields",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "seo_title_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.seo.seo_title"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.title ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.seo_meta.title": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "seo_description_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.seo.seo_description"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Textarea",
+                                                "props": {
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.description ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "rows": 3,
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.seo_meta.description": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "seo_keywords_field",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.form.seo.seo_keywords"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.seo_meta.keywords": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

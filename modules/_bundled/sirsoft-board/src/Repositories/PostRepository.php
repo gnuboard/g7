@@ -1,0 +1,1372 @@
+<?php
+
+namespace Modules\Sirsoft\Board\Repositories;
+
+use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Models\Comment;
+use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
+
+/**
+ * 게시글 Repository
+ *
+ * 게시글 데이터 접근 계층을 담당합니다.
+ */
+class PostRepository implements PostRepositoryInterface
+{
+    use ChecksBoardPermission;
+    use FormatsBoardDate;
+
+    /**
+     * 게시판의 게시글 목록을 페이지네이션하여 조회합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array  $filters  필터 조건
+     * @param  int  $perPage  페이지당 항목 수 (일반 게시글 기준)
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @return LengthAwarePaginator 페이지네이션된 게시글 목록
+     */
+    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false): LengthAwarePaginator
+    {
+        $currentPage = $filters['page'] ?? request()->input('page', 1);
+
+        // buildSortedPostList를 사용하여 페이지네이션된 목록 조회
+        return $this->buildSortedPostList(
+            slug: $slug,
+            columns: ['*'],
+            withTrashed: $withTrashed,
+            relations: ['user', 'attachments'],
+            withCount: ['comments', 'attachments', 'replies'],
+            filters: $filters,
+            perPage: $perPage,
+            currentPage: $currentPage
+        );
+    }
+
+    /**
+     * 쿼리에 필터를 적용합니다.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  array  $filters  필터 조건
+     */
+    private function applyFilters($query, array $filters): void
+    {
+        // 검색
+        if (! empty($filters['search'])) {
+            $keyword = $this->escapeLikeKeyword($filters['search']);
+            $searchField = $filters['search_field'] ?? 'all';
+
+            $query->where(function ($q) use ($keyword, $searchField) {
+                if ($searchField === 'all' || $searchField === 'title') {
+                    $q->orWhere('title', 'like', "%{$keyword}%");
+                }
+
+                if ($searchField === 'all' || $searchField === 'content') {
+                    $q->orWhere('content', 'like', "%{$keyword}%");
+                }
+
+                if ($searchField === 'all' || $searchField === 'author' || $searchField === 'author_name') {
+                    $q->orWhere('author_name', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', function ($uq) use ($keyword) {
+                            $uq->where('name', 'like', "%{$keyword}%")
+                                ->orWhere('email', 'like', "%{$keyword}%");
+                        });
+                }
+            });
+        }
+
+        // 상태 필터
+        if (! empty($filters['status'])) {
+            if ($filters['status'] === 'secret') {
+                // 비밀글 필터
+                $query->where('is_secret', true);
+            } else {
+                // 일반 상태 필터 (published, blinded, deleted)
+                $query->where('status', $filters['status']);
+            }
+        }
+
+        // 분류 필터
+        if (isset($filters['category']) && $filters['category'] !== '' && $filters['category'] !== null) {
+            if ($filters['category'] === 'unclassified') {
+                // 미분류: category가 NULL/빈 문자열이거나, 게시판 설정에 등록되지 않은 분류
+                $boardCategories = $filters['board_categories'] ?? [];
+                $query->where(function ($q) use ($boardCategories) {
+                    $q->whereNull('category')->orWhere('category', '');
+                    if (! empty($boardCategories)) {
+                        $q->orWhereNotIn('category', $boardCategories);
+                    }
+                });
+            } else {
+                $query->where('category', $filters['category']);
+            }
+        }
+
+        // 공지사항 필터
+        if (isset($filters['is_notice'])) {
+            $query->where('is_notice', $filters['is_notice']);
+        }
+
+        // 작성자 필터
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        // 작성일 필터 (시작일~종료일, 시작일~, ~종료일 모두 가능)
+        if (! empty($filters['created_at_from']) && $filters['created_at_from'] !== '') {
+            // 시작일 00:00:00부터 검색
+            $query->where('created_at', '>=', $filters['created_at_from'].' 00:00:00');
+        }
+
+        if (! empty($filters['created_at_to']) && $filters['created_at_to'] !== '') {
+            // 종료일 23:59:59까지 검색
+            $query->where('created_at', '<=', $filters['created_at_to'].' 23:59:59');
+        }
+    }
+
+    /**
+     * 게시글을 생성합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array  $data  게시글 생성 데이터
+     * @return Post 생성된 게시글 모델
+     */
+    public function create(string $slug, array $data): Post
+    {
+        return Post::create($data);
+    }
+
+    /**
+     * ID로 게시글을 조회합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     */
+    public function find(string $slug, int $id): ?Post
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        return Post::withTrashed()->with(['user'])->where('board_id', $board?->id)->find($id);
+    }
+
+    /**
+     * ID로 게시글을 조회하며, 없으면 예외를 발생시킵니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function findOrFail(string $slug, int $id): Post
+    {
+        $board = Board::where('slug', $slug)->firstOrFail();
+
+        return Post::withTrashed()->with(['user'])->where('board_id', $board->id)->findOrFail($id);
+    }
+
+    /**
+     * 게시글을 수정합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  array  $data  수정할 데이터
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function update(string $slug, int $id, array $data): Post
+    {
+        $post = $this->findOrFail($slug, $id);
+        $post->update($data);
+
+        return $post->fresh();
+    }
+
+    /**
+     * 게시글을 삭제합니다 (소프트 삭제).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function delete(string $slug, int $id): bool
+    {
+        $post = $this->findOrFail($slug, $id);
+
+        return $post->delete();
+    }
+
+    /**
+     * 게시글을 영구 삭제합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function forceDelete(string $slug, int $id): bool
+    {
+        $post = $this->findOrFail($slug, $id);
+
+        return $post->forceDelete();
+    }
+
+    /**
+     * 게시글 상태를 변경합니다 (블라인드/삭제/복원).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  string  $status  변경할 상태 (published/blinded/deleted)
+     * @param  array  $actionLog  작업 이력 데이터
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function updateStatus(string $slug, int $id, string $status, array $actionLog, ?string $triggerType = null): Post
+    {
+        $post = $this->findOrFail($slug, $id);
+
+        // 기존 작업 이력 가져오기
+        $actionLogs = $post->action_logs ?? [];
+        $actionLogs[] = $actionLog;
+
+        $updateData = [
+            'status' => $status,
+            'action_logs' => $actionLogs,
+        ];
+
+        // trigger_type이 지정된 경우 함께 업데이트
+        if ($triggerType !== null) {
+            $updateData['trigger_type'] = $triggerType;
+        }
+
+        $post->update($updateData);
+
+        // deleted → published 또는 deleted → blinded 변경 시 deleted_at 복원
+        if ($status !== 'deleted' && $post->trashed()) {
+            $post->restore();
+        }
+
+        $post->refresh();
+
+        return $post;
+    }
+
+    /**
+     * 조회수를 증가시킵니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @return int 증가된 조회수
+     */
+    public function incrementViewCount(string $slug, int $id): int
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        Post::where('board_id', $board?->id)
+            ->where('id', $id)
+            ->increment('view_count');
+
+        $post = $this->find($slug, $id);
+
+        return $post?->view_count ?? 0;
+    }
+
+    /**
+     * 신고 처리를 위한 게시글 상태를 일괄 업데이트합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  array  $updates  업데이트할 데이터 (status, trigger_type, deleted_at, action_log)
+     * @return Post 수정된 게시글
+     *
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function updateStatusBulk(string $slug, int $id, array $updates): Post
+    {
+        $board = Board::where('slug', $slug)->firstOrFail();
+
+        $post = Post::withTrashed()->where('board_id', $board->id)->findOrFail($id);
+
+        // action_log가 있으면 기존 이력에 추가
+        if (isset($updates['action_log'])) {
+            $actionLogs = $post->action_logs ?? [];
+            $actionLogs[] = $updates['action_log'];
+            $updates['action_logs'] = $actionLogs;
+            unset($updates['action_log']);
+        }
+
+        // trigger_type 컬럼에 저장 (action_log 내 trigger 값 사용)
+        if (isset($updates['trigger_type'])) {
+            // trigger_type은 그대로 update에 포함됨
+        }
+
+        // deleted_at 처리 (SoftDeletes)
+        $shouldDelete = isset($updates['deleted_at']) && $updates['deleted_at'] !== null;
+        $shouldRestore = isset($updates['deleted_at']) && $updates['deleted_at'] === null;
+
+        // deleted_at은 update에서 제외 (별도 처리)
+        unset($updates['deleted_at']);
+
+        // 상태 및 기타 필드 업데이트
+        $post->update($updates);
+
+        // SoftDelete 처리
+        if ($shouldDelete && ! $post->trashed()) {
+            $post->delete();
+        } elseif ($shouldRestore && $post->trashed()) {
+            $post->restore();
+        }
+
+        return $post->fresh();
+    }
+
+    /**
+     * ID로 게시글을 조회하며 댓글/첨부파일 카운트를 포함합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @return Post|null 게시글 모델 (카운트 포함)
+     */
+    public function findWithCounts(string $slug, int $id): ?Post
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        $boardId = $board?->id;
+
+        $post = Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->with([
+                'user',
+                'comments' => function ($query) use ($slug, $boardId) {
+                    // Eager loading에서 board_id 조건 명시적 바인딩
+                    $query->where('board_id', $boardId);
+
+                    // 삭제된 댓글은 관리자 권한(control/manage)이 있을 때만 포함
+                    $hasDeletePermission = $this->checkBoardPermission($slug, 'admin.control')
+                        || $this->checkBoardPermission($slug, 'admin.manage');
+
+                    if ($hasDeletePermission) {
+                        $query->withTrashed();
+                    }
+
+                    $query->with('user')
+                        ->withCount([
+                            'replies' => function ($q) use ($hasDeletePermission, $boardId) {
+                                $q->where('board_id', $boardId);
+                                // 관리자 권한이 있으면 삭제된 답글도 카운트에 포함
+                                if ($hasDeletePermission) {
+                                    $q->withTrashed();
+                                } else {
+                                    // 일반 사용자는 삭제되지 않은 답글만 카운트
+                                    $q->whereNull('deleted_at');
+                                }
+                            },
+                        ])
+                        ->orderBy('id', 'ASC');
+                },
+                'parent' => function ($query) {
+                    $query->withTrashed()
+                        ->with('user');
+                },
+                'attachments' => function ($query) use ($boardId) {
+                    $query->where('board_id', $boardId);
+                },
+            ])
+            ->withCount([
+                'comments' => function ($query) use ($boardId) {
+                    $query->where('board_id', $boardId);
+                },
+                'attachments' => function ($query) use ($boardId) {
+                    $query->where('board_id', $boardId);
+                },
+            ])
+            ->find($id);
+
+        // 댓글을 트리 구조로 정렬
+        if ($post && $post->comments) {
+            $post->setRelation('comments', $this->buildCommentTree($post->comments));
+        }
+
+        // 모든 하위 답글을 재귀적으로 로드하여 트리 구조로 설정
+        if ($post) {
+            // 삭제된 답글은 관리자 권한(control/manage)이 있을 때만 포함
+            $hasDeletePermission = $this->checkBoardPermission($slug, 'admin.control')
+                || $this->checkBoardPermission($slug, 'admin.manage');
+            $allReplies = $this->loadAllDescendantReplies($post->id, $board, $hasDeletePermission);
+            $post->setRelation('replies', $allReplies);
+        }
+
+        return $post;
+    }
+
+    /**
+     * 댓글을 트리 구조로 정렬합니다 (parent-child 그룹화).
+     *
+     * CommentRepository의 sortByParentChild 로직과 동일하게 구현합니다.
+     *
+     * @param  \Illuminate\Support\Collection  $comments  댓글 컬렉션
+     * @return \Illuminate\Support\Collection 트리 구조로 정렬된 댓글
+     */
+    private function buildCommentTree($comments)
+    {
+        $result = [];
+        $grouped = $comments->groupBy('parent_id');
+
+        // parent_id가 null인 최상위 댓글들을 먼저 처리
+        foreach ($grouped->get(null, collect()) as $parent) {
+            $result[] = $parent;
+
+            // 해당 부모의 답글들을 바로 다음에 추가
+            $this->addRepliesRecursively($result, $grouped, $parent->id);
+        }
+
+        // Eloquent Collection으로 변환하여 모델 속성 유지
+        return $comments->make($result);
+    }
+
+    /**
+     * 재귀적으로 답글들을 결과 배열에 추가합니다.
+     *
+     * @param  array  &$result  결과 배열 (참조)
+     * @param  \Illuminate\Support\Collection  $grouped  parent_id로 그룹화된 댓글 컬렉션
+     * @param  int  $parentId  부모 댓글 ID
+     */
+    private function addRepliesRecursively(array &$result, $grouped, int $parentId): void
+    {
+        // 해당 parent_id를 가진 답글들 가져오기
+        $replies = $grouped->get($parentId, collect());
+
+        foreach ($replies as $reply) {
+            $result[] = $reply;
+
+            // 답글의 답글도 재귀적으로 추가
+            $this->addRepliesRecursively($result, $grouped, $reply->id);
+        }
+    }
+
+    /**
+     * 특정 게시글의 모든 하위 답글을 재귀적으로 로드합니다.
+     *
+     * 직접 자식뿐 아니라 손자, 증손자 등 모든 후손 답글을 한 번의 쿼리로 가져온 후
+     * 트리 구조(직접 자식만)로 필터링하여 반환합니다.
+     *
+     * @param  int  $postId  부모 게시글 ID
+     * @param  Board|null  $board  게시판 모델
+     * @param  bool  $withTrashed  삭제된 답글 포함 여부 (관리자 권한 시 true)
+     * @return \Illuminate\Database\Eloquent\Collection 직접 자식 답글 (각 답글에 하위 replies 관계 설정됨)
+     */
+    private function loadAllDescendantReplies(int $postId, ?Board $board, bool $withTrashed = false): \Illuminate\Database\Eloquent\Collection
+    {
+        // 모든 하위 답글을 한 번에 가져오기 (재귀 쿼리 대신 반복 방식)
+        $allReplies = collect();
+        $parentIds = [$postId];
+
+        while (! empty($parentIds)) {
+            $query = Post::query()
+                ->whereIn('parent_id', $parentIds)
+                ->when($board, fn ($q) => $q->where('board_id', $board->id))
+                ->with('user')
+                ->withCount([
+                    'comments' => function ($q) use ($board) {
+                        $q->where('board_id', $board?->id);
+                    },
+                    'attachments' => function ($q) use ($board) {
+                        $q->where('board_id', $board?->id);
+                    },
+                ]);
+
+            if ($withTrashed) {
+                $query->withTrashed();
+            }
+
+            $batch = $query->get();
+
+            if ($batch->isEmpty()) {
+                break;
+            }
+
+            $allReplies = $allReplies->merge($batch);
+            $parentIds = $batch->pluck('id')->toArray();
+        }
+
+        // 트리 구조로 조합: 각 답글에 하위 replies 관계 설정
+        $grouped = $allReplies->groupBy('parent_id');
+
+        foreach ($allReplies as $reply) {
+            $children = $grouped->get($reply->id, collect());
+            $reply->setRelation('replies', $children);
+        }
+
+        // 직접 자식만 반환 (PostResource에서 재귀적으로 replies를 직렬화)
+        return new \Illuminate\Database\Eloquent\Collection(
+            $grouped->get($postId, collect())->all()
+        );
+    }
+
+    /**
+     * 전체 일반 게시글(원글) 수를 조회합니다.
+     * 필터가 적용된 경우 필터 조건을 만족하는 일반 게시글 수를 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array  $filters  필터 조건
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @return int 일반 게시글 수 (답글, 공지 제외)
+     */
+    public function countNormalPosts(string $slug, array $filters = [], bool $withTrashed = false): int
+    {
+        $board = Board::where('slug', $slug)->first();
+
+        // 권한 스코프 필터링용 permission identifier (Service에서 컨텍스트 기반으로 전달)
+        $scopePermission = $filters['scope_permission'] ?? "sirsoft-board.{$slug}.admin.posts.read";
+        unset($filters['scope_permission']);
+
+        $query = Post::query()
+            ->where('board_id', $board?->id)
+            ->where('is_notice', false)  // 공지글 제외
+            ->whereNull('parent_id');    // 원글만 (답글 제외)
+
+        // 권한 스코프 필터링
+        PermissionHelper::applyPermissionScope($query, $scopePermission);
+
+        if ($withTrashed) {
+            $query->withTrashed();
+        }
+
+        // 필터 적용
+        $this->applyFilters($query, $filters);
+
+        return $query->count();
+    }
+
+    /**
+     * 이전/다음 게시글을 조회합니다.
+     * buildSortedPostList 메서드를 사용하여 목록 정렬 방식과 동일하게 처리합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  현재 게시글 ID
+     * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부 (기본: false)
+     * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
+     */
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false): array
+    {
+        // 목록 정렬 로직을 재사용하여 전체 게시글 리스트 생성
+        // withTrashed=false이면 블라인드/삭제된 게시글 제외
+        $allItems = $this->buildSortedPostList(
+            slug: $slug,
+            columns: ['id', 'title', 'parent_id', 'is_notice', 'status'],
+            withTrashed: $withTrashed,
+            filters: $filters
+        );
+
+        // 현재 게시글의 위치 찾기
+        $currentIndex = $allItems->search(function ($item) use ($id) {
+            return $item->id === $id;
+        });
+
+        if ($currentIndex === false) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        // 이전/다음 게시글 반환
+        $prev = $currentIndex > 0 ? $allItems->get($currentIndex - 1) : null;
+        $next = $currentIndex < $allItems->count() - 1 ? $allItems->get($currentIndex + 1) : null;
+
+        return [
+            'prev' => $prev,
+            'next' => $next,
+        ];
+    }
+
+    /**
+     * 목록 정렬 방식대로 게시글 리스트를 생성합니다.
+     * (공지 + 원글 + 답글을 정렬된 순서로 반환)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  array  $columns  조회할 컬럼 목록
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  array  $relations  Eager Load 관계
+     * @param  array  $withCount  카운트 관계
+     * @param  array  $filters  필터 조건 (검색, 상태, 분류 등)
+     * @param  int|null  $perPage  페이지당 원글 수 (null이면 전체 조회)
+     * @param  int  $currentPage  현재 페이지 번호
+     * @return \Illuminate\Support\Collection|\Illuminate\Pagination\LengthAwarePaginator 정렬된 게시글 컬렉션 또는 페이지네이터
+     */
+    private function buildSortedPostList(
+        string $slug,
+        array $columns = ['*'],
+        bool $withTrashed = false,
+        array $relations = [],
+        array $withCount = [],
+        array $filters = [],
+        ?int $perPage = null,
+        int $currentPage = 1
+    ) {
+        $board = Board::where('slug', $slug)->first();
+        $boardId = $board?->id;
+
+        // Eager loading(with)의 관계에 board_id 조건을 명시적으로 바인딩
+        // (모델 관계 정의에서 $this->board_id를 사용하면 Eager loading 시 null이 되는 문제 해결)
+        $relations = $this->bindBoardIdToRelations($relations, $boardId);
+
+        // withCount의 comments/replies에도 board_id 조건을 명시적으로 바인딩
+        if (in_array('comments', $withCount)) {
+            unset($withCount[array_search('comments', $withCount)]);
+            $withCount['comments'] = function ($query) use ($boardId) {
+                $query->where('board_id', $boardId);
+            };
+        }
+        if (in_array('replies', $withCount)) {
+            unset($withCount[array_search('replies', $withCount)]);
+            $withCount['replies'] = function ($query) use ($boardId) {
+                $query->where('board_id', $boardId);
+            };
+        }
+        if (in_array('attachments', $withCount)) {
+            unset($withCount[array_search('attachments', $withCount)]);
+            $withCount['attachments'] = function ($query) use ($boardId) {
+                $query->where('board_id', $boardId);
+            };
+        }
+
+        // 권한 스코프 필터링용 permission identifier (Service에서 컨텍스트 기반으로 전달)
+        $postPermission = $filters['scope_permission'] ?? "sirsoft-board.{$slug}.admin.posts.read";
+        unset($filters['scope_permission']);
+
+        // 1단계: 공지글 조회 (첫 페이지에만 표시, 필터 미적용)
+        $notices = collect([]);
+        if ($currentPage == 1) {
+            $noticeQuery = Post::query()
+                ->where('board_id', $boardId)
+                ->where('is_notice', true)
+                ->whereNull('parent_id')
+                ->orderBy('created_at', 'desc');
+
+            // 권한 스코프 필터링
+            PermissionHelper::applyPermissionScope($noticeQuery, $postPermission);
+
+            // withTrashed를 사용하지 않으면 삭제되지 않은 것만 조회
+            if ($withTrashed) {
+                $noticeQuery->withTrashed();
+            } else {
+                $noticeQuery->whereNull('deleted_at');
+            }
+
+            if (! empty($relations)) {
+                $noticeQuery->with($relations);
+            }
+            if (! empty($withCount)) {
+                $noticeQuery->withCount($withCount);
+            }
+
+            $notices = $noticeQuery->get($columns);
+        }
+
+        // 2단계: 원글 조회 (공지 제외)
+        $parentQuery = Post::query()
+            ->where('board_id', $boardId)
+            ->where('is_notice', false)
+            ->whereNull('parent_id');
+
+        // 권한 스코프 필터링
+        PermissionHelper::applyPermissionScope($parentQuery, $postPermission);
+
+        // withTrashed를 사용하지 않으면 삭제되지 않은 것만 조회
+        if ($withTrashed) {
+            $parentQuery->withTrashed();
+        } else {
+            $parentQuery->whereNull('deleted_at');
+        }
+
+        // 필터 적용 (원글만 검색, 답글은 3단계에서 별도 필터링)
+        $this->applyFilters($parentQuery, $filters);
+
+        // 정렬 (order_by 파라미터 사용, 기본값: id)
+        $orderBy = $filters['order_by'] ?? 'id';
+        $orderDirection = $filters['order_direction'] ?? 'desc';
+
+        // Enum 객체를 문자열로 변환
+        if ($orderBy instanceof \BackedEnum) {
+            $orderBy = $orderBy->value;
+        }
+        if ($orderDirection instanceof \BackedEnum) {
+            $orderDirection = $orderDirection->value;
+        }
+
+        // 허용된 정렬 컬럼 목록 (보안을 위한 화이트리스트)
+        $allowedOrderColumns = ['id', 'view_count', 'created_at', 'title', 'author_name'];
+
+        // Enum 값 → 실제 DB 컬럼 매핑 (author → author_name)
+        $columnMapping = [
+            'author' => 'author_name',
+        ];
+        if (isset($columnMapping[$orderBy])) {
+            $orderBy = $columnMapping[$orderBy];
+        }
+
+        if (! in_array($orderBy, $allowedOrderColumns)) {
+            $orderBy = 'id'; // 기본값으로 폴백
+        }
+
+        // 정렬 방향 검증 (asc 또는 desc만 허용)
+        $orderDirection = strtolower($orderDirection);
+        if (! in_array($orderDirection, ['asc', 'desc'])) {
+            $orderDirection = 'desc'; // 기본값으로 폴백
+        }
+
+        // 정렬 적용
+        $parentQuery->orderBy($orderBy, $orderDirection);
+
+        if (! empty($relations)) {
+            $parentQuery->with($relations);
+        }
+        if (! empty($withCount)) {
+            $parentQuery->withCount($withCount);
+        }
+
+        // 페이지네이션 여부에 따라 분기
+        if ($perPage !== null) {
+            // 페이지네이션 사용
+            $paginator = $parentQuery->paginate($perPage, $columns, 'page', $currentPage);
+            $parents = $paginator->getCollection();
+        } else {
+            // 전체 조회
+            $parents = $parentQuery->get($columns);
+            $paginator = null;
+        }
+
+        // 3단계: 모든 하위 답글 조회 (모든 depth 처리 — depth-1만이 아닌 depth-2+ 포함)
+        $parentIds = $parents->pluck('id')->toArray();
+        $allReplies = collect([]);
+
+        if (! empty($parentIds)) {
+            $currentLevelIds = $parentIds;
+
+            while (! empty($currentLevelIds)) {
+                $levelQuery = Post::query()
+                    ->where('board_id', $boardId)
+                    ->whereIn('parent_id', $currentLevelIds)
+                    ->orderBy('id', 'asc');
+
+                if ($withTrashed) {
+                    $levelQuery->withTrashed();
+                } else {
+                    $levelQuery->whereNull('deleted_at');
+                }
+
+                if (! empty($relations)) {
+                    $levelQuery->with($relations);
+                }
+                if (! empty($withCount)) {
+                    $levelQuery->withCount($withCount);
+                }
+
+                $levelReplies = $levelQuery->get($columns);
+
+                if ($levelReplies->isEmpty()) {
+                    break;
+                }
+
+                $allReplies = $allReplies->merge($levelReplies);
+                $currentLevelIds = $levelReplies->pluck('id')->toArray();
+            }
+        }
+
+        $replies = $allReplies;
+
+        // 4단계: 병합 (원글 + 모든 하위 답글을 깊이 우선 순으로)
+        $mergedItems = collect([]);
+
+        $appendReplies = function (int $postId) use (&$appendReplies, &$mergedItems, $replies): void {
+            $directReplies = $replies->where('parent_id', $postId)->sortBy('id');
+            foreach ($directReplies as $reply) {
+                $mergedItems->push($reply);
+                $appendReplies($reply->id);
+            }
+        };
+
+        foreach ($parents as $parent) {
+            $mergedItems->push($parent);
+            $appendReplies($parent->id);
+        }
+
+        // 5단계: 공지글을 맨 앞에 추가
+        $finalItems = $notices->merge($mergedItems);
+
+        // 페이지네이션 사용 시 paginator에 최종 컬렉션 설정
+        if ($paginator !== null) {
+            $paginator->setCollection($finalItems);
+
+            return $paginator;
+        }
+
+        // 전체 조회 시 컬렉션 반환
+        return $finalItems;
+    }
+
+    /**
+     * 사용자의 게시판 활동 통계를 조회합니다.
+     *
+     * 작성한 게시글 수, 작성한 댓글 수, 총 조회수를 반환합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @return array{total_posts: int, total_comments: int, total_views: int} 활동 통계
+     */
+    public function getUserActivityStats(int $userId): array
+    {
+        // 단일 테이블 단일 쿼리
+        $totalPosts = Post::where('user_id', $userId)->count();
+
+        // 삭제된 게시글·비활성 게시판의 댓글 제외 (목록 API와 동일 기준)
+        $totalComments = (int) Comment::where('board_comments.user_id', $userId)
+            ->join('board_posts', function ($join) {
+                $join->on('board_posts.id', '=', 'board_comments.post_id')
+                    ->whereNull('board_posts.deleted_at');
+            })
+            ->join('boards', function ($join) {
+                $join->on('boards.id', '=', 'board_comments.board_id')
+                    ->where('boards.is_active', true);
+            })
+            ->count();
+
+        $totalViews = (int) Post::where('user_id', $userId)->sum('view_count');
+
+        return [
+            'total_posts' => $totalPosts,
+            'total_comments' => $totalComments,
+            'total_views' => $totalViews,
+        ];
+    }
+
+    /**
+     * 사용자의 공개 게시글/댓글 통계를 조회합니다 (공개 프로필용).
+     *
+     * 기존 getUserActivityStats()와 다른 점:
+     * - status='published' 조건 적용
+     * - comments_count = 실제 작성한 댓글 수 (댓글 단 게시글 수가 아님)
+     *
+     * @param  int  $userId  사용자 ID
+     * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
+     */
+    public function getUserPublicStats(int $userId): array
+    {
+        // 단일 테이블 단일 쿼리
+        $postsCount = Post::where('user_id', $userId)
+            ->where('status', PostStatus::Published->value)
+            ->count();
+
+        $commentsCount = Comment::where('user_id', $userId)
+            ->where('status', PostStatus::Published->value)
+            ->count();
+
+        return [
+            'posts_count' => $postsCount,
+            'comments_count' => $commentsCount,
+        ];
+    }
+
+    /**
+     * 사용자의 게시글 활동 목록을 조회합니다.
+     *
+     * 사용자가 작성한 게시글, 댓글을 단 게시글을 통합하여 반환합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, is_public)
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 게시글 활동 목록
+     */
+    public function getUserActivities(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $boardSlugFilter = $filters['board_slug'] ?? null;
+        $search = $filters['search'] ?? null;
+        $activityType = $filters['activity_type'] ?? 'authored';
+        $sort = $filters['sort'] ?? 'latest'; // latest, oldest, views
+        $isPublic = $filters['is_public'] ?? false; // 공개 프로필용 필터 (비밀글 제외, 공개 게시글만)
+        $excludeBoardSlugs = $filters['exclude_board_slugs'] ?? [];
+
+        // board_slug 필터용 board_id 조회
+        $boardIdFilter = null;
+        if ($boardSlugFilter) {
+            $boardIdFilter = Board::where('slug', $boardSlugFilter)->value('id');
+        }
+
+        // exclude_board_slugs → board_id 목록으로 변환
+        $excludeBoardIds = [];
+        if (! empty($excludeBoardSlugs)) {
+            $excludeBoardIds = Board::whereIn('slug', $excludeBoardSlugs)->pluck('id')->all();
+        }
+
+        // DB 레벨 정렬 컬럼 결정
+        $orderColumn = match ($sort) {
+            'views' => 'board_posts.view_count',
+            'oldest' => 'board_posts.created_at',
+            default => 'board_posts.created_at',
+        };
+        $orderDirection = $sort === 'oldest' ? 'asc' : 'desc';
+
+        if ($activityType === 'commented' && ! $isPublic) {
+            return $this->getUserCommentedActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $orderColumn, $orderDirection, $perPage);
+        }
+
+        // authored (기본값, 공개 프로필 포함)
+        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isPublic, $orderColumn, $orderDirection, $perPage);
+    }
+
+    /**
+     * 사용자가 작성한 게시글 활동을 DB 레벨 페이지네이션으로 조회합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int|null  $boardIdFilter  게시판 ID 필터
+     * @param  string|null  $search  검색 키워드
+     * @param  bool  $isPublic  공개 프로필 여부 (비밀글 제외)
+     * @param  string  $orderColumn  정렬 컬럼
+     * @param  string  $orderDirection  정렬 방향
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator
+     */
+    private function getUserAuthoredActivities(
+        int $userId,
+        ?int $boardIdFilter,
+        array $excludeBoardIds,
+        ?string $search,
+        bool $isPublic,
+        string $orderColumn,
+        string $orderDirection,
+        int $perPage
+    ): LengthAwarePaginator {
+        $query = Post::query()
+            ->join('boards', function ($join) {
+                $join->on('boards.id', '=', 'board_posts.board_id')
+                    ->where('boards.is_active', true);
+            })
+            ->where('board_posts.user_id', $userId)
+            ->with('board')
+            ->withCount('comments')
+            ->orderBy($orderColumn, $orderDirection);
+
+        if ($boardIdFilter) {
+            $query->where('board_posts.board_id', $boardIdFilter);
+        }
+
+        if (! empty($excludeBoardIds)) {
+            $query->whereNotIn('board_posts.board_id', $excludeBoardIds);
+        }
+
+        if ($isPublic) {
+            $query->where('board_posts.status', PostStatus::Published->value)
+                ->where('board_posts.is_secret', false);
+        }
+
+        if ($search) {
+            $keyword = $this->escapeLikeKeyword($search);
+            $query->where(function ($q) use ($keyword) {
+                $q->where('board_posts.title', 'like', "%{$keyword}%")
+                    ->orWhere('board_posts.content', 'like', "%{$keyword}%");
+            });
+        }
+
+        $paginator = $query->paginate($perPage);
+
+        // paginate 후 10건에만 PHP 가공 적용 (N+1 아님)
+        $paginator->through(function ($post) {
+            return [
+                'id'                  => $post->id,
+                'board_slug'          => $post->board?->slug,
+                'board_name'          => $post->board?->getLocalizedName() ?? '',
+                'activity_type'       => 'authored',
+                'activity_count'      => 0,
+                'title'               => $post->title,
+                'is_secret'           => (bool) $post->is_secret,
+                'status'              => $post->status?->value,
+                'view_count'          => $post->view_count,
+                'comments_count'      => (int) ($post->comments_count ?? 0),
+                'created_at'           => $this->formatCreatedAt($post->created_at),
+                'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
+                'content_plain'       => ($post->content_mode ?? 'text') === 'html'
+                    ? $this->stripHtmlToPlainText($post->content ?? '')
+                    : ($post->content ?? ''),
+            ];
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * 사용자가 댓글을 단 게시글 활동을 DB 레벨 페이지네이션으로 조회합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int|null  $boardIdFilter  게시판 ID 필터
+     * @param  array  $excludeBoardIds  제외할 게시판 ID 목록
+     * @param  string|null  $search  검색 키워드
+     * @param  string  $orderColumn  정렬 컬럼
+     * @param  string  $orderDirection  정렬 방향
+     * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator
+     */
+    private function getUserCommentedActivities(
+        int $userId,
+        ?int $boardIdFilter,
+        array $excludeBoardIds,
+        ?string $search,
+        string $orderColumn,
+        string $orderDirection,
+        int $perPage
+    ): LengthAwarePaginator {
+        // DB::raw() / whereRaw() 내부 raw SQL은 prefix 자동 적용이 안 되므로 명시적으로 처리
+        // DB::raw()를 from()/join()에 사용하면 테이블명 prefix 자동 추가를 우회할 수 있음
+        // 단, ->where() / ->whereNull() 은 컬럼명 앞 테이블명에도 prefix를 붙이므로
+        // alias 참조는 반드시 whereRaw()로 처리해야 함
+        $prefix = DB::getTablePrefix();
+        $commentsTable = $prefix.'board_comments';
+        $postsTable = $prefix.'board_posts';
+
+        $latestCommentSub = DB::table(DB::raw("{$commentsTable} as bc_outer"))
+            ->selectRaw('bc_outer.post_id, bc_outer.content, bc_outer.created_at')
+            ->whereRaw("bc_outer.id = (
+                SELECT bc2.id FROM {$commentsTable} bc2
+                WHERE bc2.post_id = bc_outer.post_id
+                  AND bc2.user_id = ?
+                  AND bc2.deleted_at IS NULL
+                ORDER BY bc2.created_at DESC
+                LIMIT 1
+            ) AND bc_outer.user_id = ? AND bc_outer.deleted_at IS NULL", [$userId, $userId]);
+
+        $query = Post::query()
+            ->join(DB::raw("{$commentsTable} AS uc"), function ($join) use ($userId, $postsTable) {
+                $join->on(DB::raw("{$postsTable}.id"), '=', DB::raw('uc.post_id'))
+                    ->whereRaw('uc.user_id = ?', [$userId])
+                    ->whereRaw('uc.deleted_at IS NULL');
+            })
+            ->leftJoinSub($latestCommentSub, 'lc', 'board_posts.id', '=', 'lc.post_id')
+            ->select([
+                'board_posts.*',
+                DB::raw('COUNT(DISTINCT uc.id) as activity_count'),
+                DB::raw("(SELECT COUNT(*) FROM {$commentsTable} ac WHERE ac.post_id = {$postsTable}.id AND ac.deleted_at IS NULL) as comments_count"),
+                'lc.content as comment_content',
+                'lc.created_at as comment_created_at',
+            ])
+            ->with('board')
+            ->groupBy('board_posts.id', 'board_posts.board_id', 'lc.content', 'lc.created_at')
+            ->orderBy($orderColumn, $orderDirection);
+
+        if ($boardIdFilter) {
+            $query->where('board_posts.board_id', $boardIdFilter);
+        }
+
+        if (! empty($excludeBoardIds)) {
+            $query->whereNotIn('board_posts.board_id', $excludeBoardIds);
+        }
+
+        if ($search) {
+            $keyword = $this->escapeLikeKeyword($search);
+            $query->where('uc.content', 'like', "%{$keyword}%");
+        }
+
+        $paginator = $query->paginate($perPage);
+
+        // paginate 후 10건에만 PHP 가공 적용
+        $paginator->through(function ($post) {
+            return [
+                'id'                   => $post->id,
+                'board_slug'           => $post->board?->slug,
+                'board_name'           => $post->board?->getLocalizedName() ?? '',
+                'activity_type'        => 'commented',
+                'activity_count'       => (int) ($post->activity_count ?? 0),
+                'title'                => $post->title,
+                'is_secret'            => (bool) $post->is_secret,
+                'status'               => $post->status?->value,
+                'view_count'           => $post->view_count,
+                'comments_count'       => (int) ($post->comments_count ?? 0),
+                'created_at'           => $this->formatCreatedAt($post->created_at),
+                'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
+                'content_plain'        => ($post->content_mode ?? 'text') === 'html'
+                    ? $this->stripHtmlToPlainText($post->content ?? '')
+                    : ($post->content ?? ''),
+            ];
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * 게시판에서 키워드로 게시글을 검색합니다.
+     *
+     * 공개 게시글(published, 비밀글 제외)만 대상으로 제목/본문 LIKE 검색을 수행합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $keyword  검색 키워드
+     * @param  string  $orderBy  정렬 컬럼
+     * @param  string  $direction  정렬 방향 (asc, desc)
+     * @param  int  $limit  조회할 최대 항목 수
+     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     */
+    public function searchByKeyword(string $slug, string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array
+    {
+        $query = $this->buildPublicSearchQuery($slug, $keyword);
+        $total = $query->count();
+
+        $board = Board::where('slug', $slug)->first();
+        $items = $query->with('user')
+            ->withCount([
+                'comments' => function ($q) use ($board) {
+                    $q->where('board_id', $board?->id);
+                },
+            ])
+            ->orderBy($orderBy, $direction)
+            ->limit($limit)
+            ->get();
+
+        return [
+            'total' => $total,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * 게시판에서 키워드와 일치하는 게시글 수를 조회합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $keyword  검색 키워드
+     * @return int 일치하는 게시글 수
+     */
+    public function countByKeyword(string $slug, string $keyword): int
+    {
+        return $this->buildPublicSearchQuery($slug, $keyword)->count();
+    }
+
+    /**
+     * 여러 게시판에서 키워드로 게시글을 검색합니다 (단일 쿼리, DB 페이지네이션).
+     *
+     * @param  array  $boardIds  검색 대상 게시판 ID 목록
+     * @param  string  $keyword  검색 키워드
+     * @param  string  $orderBy  정렬 컬럼
+     * @param  string  $direction  정렬 방향 (asc, desc)
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int  $page  페이지 번호
+     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     */
+    public function searchAcrossBoards(array $boardIds, string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $perPage = 10, int $page = 1): array
+    {
+        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword);
+        $total = $query->count();
+
+        $items = (clone $query)
+            ->with('user', 'board')
+            ->withCount('comments')
+            ->orderBy($orderBy, $direction)
+            ->forPage($page, $perPage)
+            ->get();
+
+        return [
+            'total' => $total,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * 여러 게시판에서 키워드와 일치하는 게시글 수를 조회합니다 (단일 쿼리).
+     *
+     * @param  array  $boardIds  검색 대상 게시판 ID 목록
+     * @param  string  $keyword  검색 키워드
+     * @return int
+     */
+    public function countAcrossBoards(array $boardIds, string $keyword): int
+    {
+        return $this->buildPublicSearchQueryByIds($boardIds, $keyword)->count();
+    }
+
+    /**
+     * 공개 게시글 검색용 기본 쿼리를 생성합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $keyword  검색 키워드
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function buildPublicSearchQuery(string $slug, string $keyword)
+    {
+        $board = Board::where('slug', $slug)->first();
+        $escapedKeyword = $this->escapeLikeKeyword($keyword);
+
+        return Post::query()
+            ->where('board_id', $board?->id)
+            ->where('status', \Modules\Sirsoft\Board\Enums\PostStatus::Published->value)
+            ->where('is_secret', false)
+            ->where(function ($q) use ($escapedKeyword) {
+                $q->where('title', 'like', "%{$escapedKeyword}%")
+                    ->orWhere('content', 'like', "%{$escapedKeyword}%");
+            });
+    }
+
+    /**
+     * 여러 게시판 ID를 대상으로 공개 게시글 검색용 기본 쿼리를 생성합니다.
+     *
+     * @param  array  $boardIds  게시판 ID 목록
+     * @param  string  $keyword  검색 키워드
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function buildPublicSearchQueryByIds(array $boardIds, string $keyword)
+    {
+        $escapedKeyword = $this->escapeLikeKeyword($keyword);
+
+        return Post::query()
+            ->whereIn('board_id', $boardIds)
+            ->where('status', \Modules\Sirsoft\Board\Enums\PostStatus::Published->value)
+            ->where('is_secret', false)
+            ->where(function ($q) use ($escapedKeyword) {
+                $q->where('title', 'like', "%{$escapedKeyword}%")
+                    ->orWhere('content', 'like', "%{$escapedKeyword}%");
+            });
+    }
+
+    /**
+     * LIKE 쿼리용 키워드를 이스케이프합니다.
+     * MySQL LIKE 와일드카드 문자(%, _)를 이스케이프하여 특수문자 검색을 가능하게 합니다.
+     *
+     * @param  string  $keyword  검색 키워드
+     * @return string 이스케이프된 키워드
+     */
+    private function escapeLikeKeyword(string $keyword): string
+    {
+        // MySQL LIKE 와일드카드 문자 이스케이프
+        $keyword = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $keyword);
+
+        return $keyword;
+    }
+
+    /**
+     * HTML 콘텐츠를 일반 텍스트로 변환합니다.
+     * 블록 요소(p, div, br, li 등)는 공백으로 치환하여 자연스러운 줄바꿈을 유지합니다.
+     *
+     * @param  string  $html  HTML 콘텐츠
+     * @return string 일반 텍스트
+     */
+    private function stripHtmlToPlainText(string $html): string
+    {
+        // HTML 엔티티 디코딩
+        $text = html_entity_decode($html, ENT_QUOTES, 'UTF-8');
+
+        // 블록 요소 태그를 공백으로 치환 (줄바꿈 효과)
+        $text = preg_replace('/<\/(p|div|li|tr|h[1-6])>/i', ' ', $text);
+        $text = preg_replace('/<br\s*\/?>/i', ' ', $text);
+
+        // 나머지 HTML 태그 제거
+        $text = strip_tags($text);
+
+        // 연속된 공백을 하나로 정리
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        // 앞뒤 공백 제거
+        return trim($text);
+    }
+
+    /**
+     * 게시판 ID와 게시글 ID로 게시글을 조회합니다 (삭제 포함).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $id  게시글 ID
+     * @return Post|null 게시글 또는 null
+     */
+    public function findByBoardId(int $boardId, int $id): ?Post
+    {
+        return Post::query()
+            ->where('board_id', $boardId)
+            ->withTrashed()
+            ->with(['user'])
+            ->find($id);
+    }
+
+    /**
+     * 게시판 ID 기준으로 게시글을 일괄 소프트 삭제합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 삭제된 게시글 수
+     */
+    public function softDeleteByBoardId(int $boardId): int
+    {
+        return Post::where('board_id', $boardId)->delete();
+    }
+
+    /**
+     * Eager loading 관계에 board_id 조건을 명시적으로 바인딩합니다.
+     *
+     * 모델 관계 정의에서 $this->board_id를 사용하면 Eager loading 시
+     * null이 되는 문제를 해결하기 위해, 문자열 관계명을 클로저로 변환합니다.
+     *
+     * @param  array  $relations  Eager loading 관계 배열
+     * @param  int|null  $boardId  게시판 ID
+     * @return array board_id 조건이 바인딩된 관계 배열
+     */
+    private function bindBoardIdToRelations(array $relations, ?int $boardId): array
+    {
+        $boardIdRelations = ['comments', 'attachments', 'replies'];
+
+        $result = [];
+        foreach ($relations as $key => $value) {
+            // 클로저가 이미 있는 경우 (예: 'comments' => function() {})는 그대로 유지
+            if (is_string($key) && is_callable($value)) {
+                $result[$key] = $value;
+
+                continue;
+            }
+
+            // 문자열 관계명인 경우 board_id 조건 클로저로 변환
+            if (is_string($value) && in_array($value, $boardIdRelations)) {
+                $result[$value] = function ($query) use ($boardId) {
+                    $query->where('board_id', $boardId);
+                };
+
+                continue;
+            }
+
+            // 그 외 (예: 'user')는 그대로 유지
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
+
+    /**
+     * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).
+     *
+     * @param  int  $id  게시글 ID
+     * @return Post|null 게시글 모델 (board 관계 포함) 또는 null
+     */
+    public function findWithBoard(int $id): ?Post
+    {
+        return Post::with('board')->find($id);
+    }
+
+    /**
+     * ID 배열로 게시글 목록을 조회합니다 (board, user, attachments, replies 관계 포함).
+     *
+     * @param  array<int>  $ids  게시글 ID 배열
+     * @return \Illuminate\Database\Eloquent\Collection<int, Post> 게시글 컬렉션
+     */
+    public function findByIdsWithRelations(array $ids): \Illuminate\Database\Eloquent\Collection
+    {
+        return Post::whereIn('id', $ids)
+            ->with(['board', 'user', 'attachments', 'replies'])
+            ->get();
+    }
+
+    /**
+     * 부모 게시글 ID로 첫 번째 자식(답변) 게시글을 조회합니다 (board 관계 포함).
+     *
+     * @param  int  $parentPostId  부모 게시글 ID
+     * @return Post|null 첫 번째 자식 게시글 (board 관계 포함) 또는 null
+     */
+    public function findFirstReplyWithBoard(int $parentPostId): ?Post
+    {
+        return Post::with('board')
+            ->where('parent_id', $parentPostId)
+            ->oldest()
+            ->first();
+    }
+}

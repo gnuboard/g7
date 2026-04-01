@@ -1,0 +1,56 @@
+{
+    "version": "1.0.0",
+    "layout_name": "maintenance",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:errors.maintenance.title",
+        "is_error_layout": true,
+        "error_code": 503
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "maintenance_container",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex flex-col items-center justify-center min-h-[60vh] text-center p-8"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "gear",
+                            "className": "w-24 h-24 text-blue-500 dark:text-blue-400 mb-6 animate-spin"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                            "className": "text-3xl font-bold text-gray-900 dark:text-white mb-4"
+                        },
+                        "text": "$t:errors.maintenance.title"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-lg text-gray-600 dark:text-gray-400 mb-2 max-w-md"
+                        },
+                        "text": "$t:errors.maintenance.message"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-500 max-w-md"
+                        },
+                        "text": "$t:errors.maintenance.description"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "drag_or_click": "Drag files or click to upload",
+  "error": {
+    "file_too_large": "File size exceeds {{max}}MB.",
+    "invalid_type": "Unsupported file type.",
+    "max_files": "Maximum {{max}} files can be uploaded."
+  }
+}

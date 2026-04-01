@@ -1,0 +1,71 @@
+{
+  "base_layout_title": "Gnuboard7",
+  "base_layout_description": "Gnuboard7 Community",
+  "menu": "Menu",
+  "search_placeholder": "Enter search term",
+  "profile": {
+    "page_title": "User Profile",
+    "posts_page_title": "Posts",
+    "user_not_found": "User not found.",
+    "joined_at": "Joined:",
+    "posts_count": "Posts",
+    "comments_count": "Comments",
+    "recent_posts": "Recent Posts",
+    "posts_suffix": "'s Posts",
+    "total_posts": "Total {{count}} posts",
+    "no_posts": "No posts yet.",
+    "view_all": "View All",
+    "back_to_profile": "Profile",
+    "post_board": "Board",
+    "post_title": "Title",
+    "post_views": "Views",
+    "post_date": "Date",
+    "badge_blinded": "Blinded"
+  },
+  "nav": {
+    "home": "Home",
+    "popular": "Popular",
+    "boards": "Boards",
+    "shop": "Shop",
+    "products": "Products",
+    "cart": "Cart",
+    "mypage": "My Page"
+  },
+  "footer": {
+    "info": "Info",
+    "about": "About Us",
+    "faq": "FAQ",
+    "contact": "Contact Us",
+    "policy": "Policy",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "refund": "Refund Policy"
+  },
+  "page": {
+    "page_title": "Page",
+    "not_found_title": "Page Not Found",
+    "not_found_description": "The page you requested does not exist or has been deleted.",
+    "back_to_home": "Back to Home",
+    "admin_edit": "Edit",
+    "status_active": "Active",
+    "status_draft": "Draft",
+    "status_archived": "Archived",
+    "published_at": "Published",
+    "create_page": "Create Page",
+    "attachments": "Attachments",
+    "download": "Download"
+  },
+  "mypage": {
+    "page_title": "My Page",
+    "profile_title": "Profile",
+    "profile_edit_title": "Edit Profile",
+    "change_password_title": "Change Password",
+    "orders_title": "Order History",
+    "order_detail_title": "Order Details",
+    "wishlist_title": "Wishlist",
+    "addresses_title": "Address Management",
+    "notifications_title": "Notifications",
+    "board_title": "Board Activity",
+    "inquiries_title": "Product Inquiries"
+  }
+}

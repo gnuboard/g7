@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "장바구니 상품 목록"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "space-y-4" },
+  "children": [
+    {
+      "comment": "전체 선택 카드",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{cartItems.data.items && cartItems.data.items.length > 0}}",
+      "props": { "className": "bg-gray-100 dark:bg-gray-700 rounded-lg shadow p-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center justify-between" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Checkbox",
+                  "props": {
+                    "id": "selectAll",
+                    "name": "selectAll",
+                    "checked": "{{_local.allSelected}}",
+                    "className": "w-5 h-5 rounded border-gray-300 accent-gray-900 focus:ring-gray-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "selectAllCartItems",
+                      "params": {
+                        "allItemIds": "{{cartItems.data.items?.map(item => item.id) ?? []}}",
+                        "isSelected": "{{!_local.allSelected}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "htmlFor": "selectAll", "className": "text-sm text-gray-700 dark:text-gray-300 cursor-pointer" },
+                  "text": "$t:shop.cart.select_all"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "({{_local.selectedCount}}/{{cartItems.data.items.length}})"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
+              },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-4 h-4" } },
+                { "type": "basic", "name": "Span", "text": "$t:shop.cart.delete_selected" }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "deleteModal": { "visible": true, "targetIds": "{{_local.selectedItems}}" }
+                      }
+                    },
+                    {
+                      "handler": "openModal",
+                      "target": "cart_delete_confirm_modal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "장바구니 목록 카드",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{cartItems.data.items && cartItems.data.items.length > 0}}",
+          "props": { "className": "divide-y divide-gray-200 dark:divide-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "iteration": { "source": "{{cartItems.data.items ?? []}}", "item_var": "item", "index_var": "index" },
+              "children": [
+                { "partial": "_cart_item.json" }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "장바구니 비어있음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!cartItems.data.items || cartItems.data.items.length === 0}}",
+          "props": { "className": "text-center py-16" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "shopping-cart", "className": "w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" } },
+            { "type": "basic", "name": "P", "props": { "className": "text-gray-500 dark:text-gray-400 mb-4" }, "text": "$t:shop.cart.empty" },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "arrow-left", "className": "w-4 h-4" } },
+                { "type": "basic", "name": "Span", "text": "$t:shop.cart.continue_shopping" }
+              ],
+              "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products" } }]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

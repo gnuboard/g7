@@ -1,0 +1,303 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "리뷰 작성 모달 - 상품 정보 + 별점 + 리뷰 내용 + 이미지 첨부"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "modal_write_review",
+  "props": {
+    "width": "560px",
+    "className": "max-w-full",
+    "title": "$t:mypage.order_detail.review_modal.title"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "p-5 space-y-5" },
+      "children": [
+        {
+          "comment": "상품 정보",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Img",
+                  "props": {
+                    "src": "{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}",
+                    "alt": "{{$parent._local.reviewTarget?.product_name ?? ''}}",
+                    "className": "w-full h-full object-cover"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex-1 min-w-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm font-medium text-gray-900 dark:text-white line-clamp-1" },
+                  "text": "{{$parent._local.reviewTarget?.product_name ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{$parent._local.reviewTarget?.option_name}}",
+                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
+                  "text": "{{$parent._local.reviewTarget?.option_name ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "별점 선택 — _local에 저장 (취소 모달 패턴과 동일)",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+              "text": "$t:mypage.order_detail.review_modal.rating_label"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex gap-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                  },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 1 } }],
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                  },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 2 } }],
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                  },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 3 } }],
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                  },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 4 } }],
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                  },
+                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "_local", "reviewRating": 5 } }],
+                  "children": [{ "type": "basic", "name": "Icon", "props": { "name": "star", "prefix": "fas", "className": "w-7 h-7" } }]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일)",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+              "text": "$t:mypage.order_detail.review_modal.content_label"
+            },
+            {
+              "type": "basic",
+              "name": "Textarea",
+              "props": {
+                "value": "{{_local.reviewContent ?? ''}}",
+                "placeholder": "$t:mypage.order_detail.review_modal.content_placeholder",
+                "rows": 5,
+                "maxLength": 2000,
+                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              },
+              "actions": [
+                {
+                  "type": "input",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "reviewContent": "{{$event.target.value}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex justify-between mt-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                  "text": "$t:mypage.order_detail.review_modal.content_min_length"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                  "text": "{{(_local.reviewContent ?? '').length}}/2000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "이미지 첨부",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+              "text": "$t:mypage.order_detail.review_modal.image_label"
+            },
+            {
+              "type": "composite",
+              "name": "FileUploader",
+              "props": {
+                "autoUpload": false,
+                "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                "maxFiles": 5,
+                "maxSize": 10
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "reviewImages": "{{$event.target.files ?? []}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "에러 메시지",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!_local.reviewError}}",
+          "props": { "className": "flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "circle-exclamation", "className": "w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-red-600 dark:text-red-400" },
+              "text": "{{_local.reviewError ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "버튼 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex gap-3 pt-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "comment": "등록 버튼 — 데이터를 params로 핸들러에 직접 전달 (취소 모달 패턴과 동일)",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                "disabled": "{{_local.isSubmittingReview === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sirsoft-ecommerce.submitReview",
+                  "params": {
+                    "orderId": "{{$parent._local.reviewTarget?.orderId ?? ''}}",
+                    "optionId": "{{$parent._local.reviewTarget?.id ?? ''}}",
+                    "productId": "{{$parent._local.reviewTarget?.product_id ?? ''}}",
+                    "rating": "{{_local.reviewRating ?? 5}}",
+                    "content": "{{_local.reviewContent ?? ''}}",
+                    "images": "{{_local.reviewImages ?? []}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isSubmittingReview}}",
+                  "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_local.isSubmittingReview ? '$t:common.processing' : '$t:mypage.order_detail.review_modal.submit_button'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

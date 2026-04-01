@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Preset Save Modal"
+  },
+  "id": "modal_preset_save",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.title",
+    "description": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.description",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "id": "preset_name_input",
+      "type": "basic",
+      "name": "Input",
+      "props": {
+        "type": "text",
+        "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder",
+        "className": "input w-full",
+        "value": "{{_local.presetName}}"
+      },
+      "actions": [
+        {
+          "type": "input",
+          "handler": "setState",
+          "params": {
+            "target": "local",
+            "presetName": "{{$event.target.value}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "preset_save_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-secondary"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-primary",
+            "disabled": "{{!_local.presetName || _local.presetName.trim() === ''}}"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.save",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/modules/sirsoft-ecommerce/admin/presets",
+              "params": {
+                "method": "POST",
+                "body": {
+                  "target_screen": "products",
+                  "name": "{{_local.presetName}}",
+                  "conditions": {
+                    "searchField": "{{_global.savingPresetConditions.searchField || 'all'}}",
+                    "searchKeyword": "{{_global.savingPresetConditions.searchKeyword || ''}}",
+                    "category1": "{{_global.savingPresetConditions.category1 || ''}}",
+                    "category2": "{{_global.savingPresetConditions.category2 || ''}}",
+                    "category3": "{{_global.savingPresetConditions.category3 || ''}}",
+                    "category4": "{{_global.savingPresetConditions.category4 || ''}}",
+                    "noCategoryRegistered": "{{_global.savingPresetConditions.noCategoryRegistered || false}}",
+                    "dateType": "{{_global.savingPresetConditions.dateType || 'created_at'}}",
+                    "startDate": "{{_global.savingPresetConditions.startDate || ''}}",
+                    "endDate": "{{_global.savingPresetConditions.endDate || ''}}",
+                    "dateQuick": "{{_global.savingPresetConditions.dateQuick || ''}}",
+                    "salesStatus": "{{_global.savingPresetConditions.salesStatus || []}}",
+                    "displayStatus": "{{_global.savingPresetConditions.displayStatus || 'all'}}",
+                    "brandId": "{{_global.savingPresetConditions.brandId || ''}}",
+                    "noBrandRegistered": "{{_global.savingPresetConditions.noBrandRegistered || false}}",
+                    "taxStatus": "{{_global.savingPresetConditions.taxStatus || 'all'}}",
+                    "priceType": "{{_global.savingPresetConditions.priceType || 'selling_price'}}",
+                    "minPrice": "{{_global.savingPresetConditions.minPrice || ''}}",
+                    "maxPrice": "{{_global.savingPresetConditions.maxPrice || ''}}",
+                    "minStock": "{{_global.savingPresetConditions.minStock || ''}}",
+                    "maxStock": "{{_global.savingPresetConditions.maxStock || ''}}",
+                    "shippingPolicy": "{{_global.savingPresetConditions.shippingPolicy || ''}}"
+                  }
+                }
+              },
+              "onSuccess": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "presetName": ""
+                  }
+                },
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "presets"
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:sirsoft-ecommerce.messages.presets.created"
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ],
+              "onError": {
+                "handler": "toast",
+                "params": {
+                  "type": "error",
+                  "message": "{{error.message}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

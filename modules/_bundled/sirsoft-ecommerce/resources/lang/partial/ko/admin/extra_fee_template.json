@@ -1,0 +1,130 @@
+{
+    "title": "추가배송비 템플릿 관리",
+    "description": "도서산간 지역 추가배송비 템플릿을 관리합니다.",
+    "add": "템플릿 등록",
+    "import": "일괄 등록",
+
+    "search": {
+        "placeholder": "우편번호 또는 지역명 검색..."
+    },
+
+    "filter": {
+        "zipcode": "우편번호",
+        "region": "지역명",
+        "is_active": "사용여부",
+        "all": "전체",
+        "active": "사용",
+        "inactive": "미사용"
+    },
+
+    "table": {
+        "column": {
+            "zipcode": "우편번호",
+            "fee": "추가배송비",
+            "region": "지역명",
+            "description": "설명",
+            "is_active": "사용여부",
+            "created_at": "등록일",
+            "actions": "작업"
+        }
+    },
+
+    "form": {
+        "zipcode": "우편번호",
+        "zipcode_placeholder": "우편번호를 입력하세요 (예: 63000)",
+        "fee": "추가 배송비",
+        "fee_placeholder": "배송비를 입력하세요",
+        "region": "지역명",
+        "region_placeholder": "지역명을 입력하세요 (예: 제주도)",
+        "description": "설명",
+        "description_placeholder": "설명을 입력하세요 (예: 도서산간 지역)",
+        "is_active": "사용여부"
+    },
+
+    "action": {
+        "edit": "수정",
+        "delete": "삭제",
+        "search": "검색",
+        "reset": "초기화",
+        "bulk_delete": "선택 삭제",
+        "bulk_toggle": "사용여부 변경",
+        "bulk_import": "CSV 업로드"
+    },
+
+    "bulk": {
+        "selected_count": "{{count}}개 선택됨",
+        "toggle_active": "사용",
+        "toggle_inactive": "미사용"
+    },
+
+    "modal": {
+        "delete": {
+            "title": "템플릿 삭제",
+            "message": "선택한 템플릿을 삭제하시겠습니까?",
+            "warning": "삭제된 템플릿은 복구할 수 없습니다.",
+            "confirm": "삭제"
+        },
+        "bulk_delete": {
+            "title": "템플릿 일괄 삭제",
+            "message": "선택한 {{count}}개의 템플릿을 삭제하시겠습니까?",
+            "warning": "삭제된 템플릿은 복구할 수 없습니다.",
+            "confirm": "삭제"
+        },
+        "bulk_toggle": {
+            "title": "사용여부 일괄 변경",
+            "message": "선택한 {{count}}개의 템플릿의 사용여부를 변경하시겠습니까?",
+            "confirm": "변경"
+        },
+        "import": {
+            "title": "CSV 일괄 등록",
+            "message": "CSV 파일을 업로드하여 추가배송비 템플릿을 일괄 등록합니다.",
+            "format_info": "CSV 형식: 우편번호, 배송비, 지역명, 설명 (헤더 포함)",
+            "confirm": "업로드"
+        }
+    },
+
+    "empty": {
+        "title": "등록된 템플릿이 없습니다.",
+        "message": "추가배송비 템플릿을 등록하여 도서산간 지역 배송비를 관리하세요.",
+        "no_results": "검색 결과가 없습니다.",
+        "no_results_message": "다른 검색어로 시도해 보세요."
+    },
+
+    "sort": {
+        "created_at_desc": "최신순",
+        "created_at_asc": "오래된순",
+        "zipcode_asc": "우편번호순",
+        "fee_desc": "배송비높은순",
+        "fee_asc": "배송비낮은순",
+        "region_asc": "지역명순"
+    },
+
+    "validation": {
+        "zipcode_required": "우편번호를 입력해 주세요.",
+        "zipcode_unique": "이미 등록된 우편번호입니다.",
+        "zipcode_max": "우편번호는 최대 10자까지 입력 가능합니다.",
+        "fee_required": "배송비를 입력해 주세요.",
+        "fee_numeric": "배송비는 숫자만 입력 가능합니다.",
+        "fee_min": "배송비는 0 이상이어야 합니다.",
+        "ids_required": "선택된 항목이 없습니다.",
+        "ids_array": "잘못된 요청 형식입니다.",
+        "ids_min": "최소 1개 이상 선택해야 합니다.",
+        "id_not_found": "존재하지 않는 템플릿이 포함되어 있습니다.",
+        "is_active_required": "사용여부를 선택해 주세요.",
+        "is_active_boolean": "사용여부는 true 또는 false 값이어야 합니다.",
+        "items_required": "등록할 항목이 없습니다.",
+        "items_array": "잘못된 요청 형식입니다.",
+        "items_min": "최소 1개 이상의 항목이 필요합니다.",
+        "items_max": "한 번에 최대 1000개까지 등록 가능합니다.",
+        "item_zipcode_required": "우편번호는 필수 항목입니다.",
+        "item_fee_required": "배송비는 필수 항목입니다."
+    },
+
+    "statistics": {
+        "total": "전체",
+        "active": "사용중",
+        "inactive": "미사용",
+        "regions": "지역",
+        "avg_fee": "평균 배송비"
+    }
+}

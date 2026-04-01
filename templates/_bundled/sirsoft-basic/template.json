@@ -1,0 +1,84 @@
+{
+    "identifier": "sirsoft-basic",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "Basic",
+        "en": "Basic"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "그누보드7 기본 사용자 템플릿",
+        "en": "Gnuboard7 default user template"
+    },
+    "type": "user",
+    "locales": ["ko", "en"],
+    "author": {
+        "name": "sirsoft",
+        "email": "contact@sirsoft.com",
+        "url": "https://sirsoft.com"
+    },
+    "release_date": "2026-01-07",
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {
+            "sirsoft-board": ">=0.1.1",
+            "sirsoft-ecommerce": ">=0.1.1",
+            "sirsoft-page": ">=0.1.1"
+        },
+        "plugins": {
+            "sirsoft-daum_postcode": ">=0.1.1"
+        }
+    },
+    "assets": {
+        "css": ["dist/css/components.css"],
+        "js": ["dist/js/components.iife.js"],
+        "fonts": [],
+        "images": []
+    },
+    "components": {
+        "basic": [
+            "a", "button", "checkbox", "div", "form",
+            "h1", "h2", "h3", "h4", "hr", "icon", "img", "input",
+            "label", "li", "nav", "p", "section",
+            "select", "span", "svg", "table", "tbody",
+            "td", "textarea", "th", "thead", "tr", "ul"
+        ],
+        "composite": [
+            "header", "footer", "mobile-nav",
+            "product-card", "rich-text-editor", "image-gallery",
+            "quantity-selector", "post-reactions", "social-login-buttons",
+            "file-uploader", "card", "modal", "toast", "pagination",
+            "stat-card", "status-badge", "tab-navigation", "empty-state",
+            "loading-spinner", "breadcrumb", "search-bar", "dropdown"
+        ],
+        "layout": [
+            "container", "flex", "grid", "section"
+        ]
+    },
+    "preview": {
+        "thumbnail": "preview/thumbnail.png",
+        "screenshots": [
+            "preview/screenshot1.png",
+            "preview/screenshot2.png"
+        ]
+    },
+    "error_config": {
+        "layouts": {
+            "401": "401",
+            "404": "404",
+            "403": "403",
+            "500": "500",
+            "503": "503",
+            "maintenance": "maintenance"
+        }
+    },
+    "features": {
+        "dark_mode": true,
+        "responsive": true,
+        "multi_language": true,
+        "multi_currency": true
+    },
+    "github_url": "https://github.com/gnuboard/g7-template-sirsoft-basic",
+    "github_changelog_url": "https://github.com/gnuboard/g7-template-sirsoft-basic/blob/main/CHANGELOG.md"
+}

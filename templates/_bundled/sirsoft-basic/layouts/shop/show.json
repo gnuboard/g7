@@ -1,0 +1,509 @@
+{
+    "version": "1.0.0",
+    "layout_name": "shop/show",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "seo": {
+            "enabled": true,
+            "data_sources": ["product", "popularProducts", "reviews"],
+            "page_type": "product",
+            "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_product_detail",
+            "vars": {
+                "product_name": "{{product.data.name ?? ''}}",
+                "product_description": "{{product.data.short_description ?? product.data.description ?? ''}}",
+                "commerce_name": "$module_settings:sirsoft-ecommerce:basic_info.shop_name",
+                "site_name": "$core_settings:general.site_name",
+                "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
+            },
+            "priority": 0.8,
+            "changefreq": "daily",
+            "og": {
+                "type": "product",
+                "title": "{{product.data.name ?? ''}}",
+                "description": "{{product.data.description ?? ''}}",
+                "image": "{{product.data.thumbnail_url ?? ''}}"
+            },
+            "structured_data": {
+                "@type": "Product",
+                "name": "{{product.data.name ?? ''}}",
+                "description": "{{product.data.description ?? ''}}",
+                "image": "{{product.data.thumbnail_url ?? ''}}",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "{{product.data.selling_price ?? ''}}",
+                    "priceCurrency": "KRW"
+                },
+                "aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": "{{reviews.data.rating_stats.avg ?? ''}}",
+                    "reviewCount": "{{reviews.data.reviews.total ?? ''}}",
+                    "bestRating": "5",
+                    "worstRating": "1"
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "loadFromLocalStorage",
+            "params": {
+                "key": "recentProductIds",
+                "defaultValue": []
+            },
+            "resultTo": {
+                "target": "_global",
+                "key": "recentProductIds"
+            }
+        },
+        {
+            "handler": "saveToLocalStorage",
+            "params": {
+                "key": "recentProductIds",
+                "value": "{{[Number(route.id), ...(_global.recentProductIds ?? []).filter(id => id !== Number(route.id))].slice(0, 20)}}"
+            }
+        },
+        {
+            "comment": "이전 페이지에서 열린 모달 닫기",
+            "handler": "closeModal"
+        },
+        {
+            "comment": "장바구니 이동 로딩 상태 초기화",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "isNavigatingToCart": false
+            }
+        },
+        {
+            "comment": "옵션 선택 상태 초기화",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "selectedOptionItems": [],
+                "currentSelection": {},
+                "noOptionQuantity": 1,
+                "additionalOptions": {},
+                "wishlistLoading": false,
+                "isOrdering": false,
+                "downloadableCoupons": null,
+                "downloadableCouponsLoading": false,
+                "downloadableCouponsPage": 1,
+                "selectedCouponForDownload": null,
+                "reviewsPage": 1,
+                "reviewSortBy": "created_at_desc",
+                "reviewPhotoOnly": false,
+                "reviewRating": "",
+                "reviewOptionFilters": {},
+                "activeTab": "{{query.tab ?? 'info'}}",
+                "starNums": [5, 4, 3, 2, 1],
+                "starList": [1, 2, 3, 4, 5]
+            }
+        }
+    ],
+    "errorHandling": {
+        "401": {
+            "comment": "비로그인 시 current_user 401은 정상 — 무시 (상품 상세는 비로그인 접근 허용)",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "productAccessDenied": false
+            }
+        },
+        "403": {
+            "comment": "인증된 사용자 상품 조회 권한 없음 — 에러 페이지 표시",
+            "handler": "showErrorPage",
+            "params": {
+                "errorCode": 403,
+                "target": "content"
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "product",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": null
+            }
+        },
+        {
+            "id": "reviews",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/reviews",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "params": {
+                "page": "{{_local.reviewsPage ?? 1}}",
+                "sort": "{{_local.reviewSortBy ?? 'created_at_desc'}}",
+                "photo_only": "{{_local.reviewPhotoOnly ?? false}}",
+                "rating": "{{_local.reviewRating ?? ''}}",
+                "option_filters": "{{JSON.stringify(_local.reviewOptionFilters ?? null)}}"
+            },
+            "loading_strategy": "progressive",
+            "fallback": {
+                "reviews": {
+                    "data": [],
+                    "meta": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 10,
+                        "total": 0
+                    }
+                },
+                "rating_stats": {
+                    "avg": 0,
+                    "1": { "count": 0, "percent": 0 },
+                    "2": { "count": 0, "percent": 0 },
+                    "3": { "count": 0, "percent": 0 },
+                    "4": { "count": 0, "percent": 0 },
+                    "5": { "count": 0, "percent": 0 }
+                }
+            }
+        },
+        {
+            "id": "qna",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/inquiries",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{_local.qnaPage ?? 1}}",
+                "per_page": 10,
+                "exclude_secret": "{{_local.qnaExcludeSecret ?? false}}"
+            },
+            "fallback": {
+                "items": [],
+                "meta": {
+                    "inquiry_available": false,
+                    "board_settings": {
+                        "secret_mode": "disabled",
+                        "categories": [],
+                        "use_file_upload": false,
+                        "max_file_count": 5,
+                        "max_file_size": 10485760,
+                        "allowed_extensions": [],
+                        "min_title_length": 2,
+                        "max_title_length": 200,
+                        "min_content_length": 10,
+                        "max_content_length": 10000
+                    },
+                    "total": 0,
+                    "current_page": 1,
+                    "per_page": 10,
+                    "last_page": 1
+                }
+            }
+        },
+        {
+            "id": "productDownloadableCoupons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/{{route.id}}/downloadable-coupons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "popularProducts",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/products/popular?limit=8",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "modals": [
+        {
+            "partial": "partials/shop/detail/_modal_cart_added.json"
+        },
+        { "partial": "partials/shop/_modal_coupon_download.json" },
+        { "partial": "partials/shop/detail/_modal_login_required.json" },
+        { "partial": "partials/shop/detail/_modal_coupon_download_confirm.json" },
+        { "partial": "partials/shop/detail/_modal_review_image.json" },
+        { "partial": "partials/shop/detail/_modal_qna_write.json" },
+        { "partial": "partials/shop/detail/_modal_qna_reply.json" },
+        { "partial": "partials/shop/detail/_modal_inquiry_delete.json" }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-4"
+                },
+                "responsive": {
+                    "desktop": {
+                        "props": {
+                            "className": "py-8"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "comment": "뒤로가기 버튼",
+                        "type": "basic",
+                        "name": "Button",
+                        "props": {
+                            "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer"
+                        },
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "chevron-left",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:shop.back"
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "{{_global.shopBase}}/products"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "상품 정보 영역 - PC: 2열, 모바일: 1열",
+                        "type": "basic",
+                        "name": "Div",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "product"
+                        },
+                        "props": {
+                            "className": "flex flex-col mb-8"
+                        },
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "flex flex-row gap-8 mb-8"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "comment": "이미지 갤러리 영역",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "w-full mb-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
+                                },
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "w-1/2 mb-0 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "ProductImageViewer",
+                                        "props": {
+                                            "images": "{{product.data?.images ?? []}}"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "상품 정보 + 구매 카드 영역 - responsive로 mobile/desktop 분기",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "w-full space-y-4"
+                                },
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "w-1/2 space-y-6"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "comment": "상품 정보 영역 (주문 중 블러 처리)",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
+                                        },
+                                        "responsive": {
+                                            "desktop": {
+                                                "props": {
+                                                    "className": "space-y-6 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "comment": "상품 헤더 (카테고리, 상품명, 찜)",
+                                                "partial": "partials/shop/detail/_header.json"
+                                            },
+                                            {
+                                                "comment": "모바일 전용: 가격 표시",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{true}}",
+                                                "responsive": {
+                                                    "desktop": {
+                                                        "if": "{{false}}"
+                                                    }
+                                                },
+                                                "children": [
+                                                    {
+                                                        "partial": "partials/shop/detail/_price_mobile.json"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "상품 정보 요약",
+                                                "partial": "partials/shop/detail/_info_summary.json"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "구매 카드",
+                                        "partial": "partials/shop/detail/_purchase_card.json"
+                                    },
+                                    {
+                                        "comment": "판매상태 안내 (품절/판매중지/출시예정)",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{product.data?.sales_status !== 'on_sale'}}",
+                                        "props": {
+                                            "className": "flex items-center gap-3 px-4 py-3 rounded-lg border {{product.data?.sales_status === 'sold_out' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : product.data?.sales_status === 'suspended' ? 'bg-gray-100 border-gray-300 dark:bg-gray-700/50 dark:border-gray-600' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}",
+                                                    "size": "lg",
+                                                    "className": "{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-gray-500 dark:text-gray-400' : 'text-blue-500 dark:text-blue-400'}} shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": { "className": "text-sm font-medium {{product.data?.sales_status === 'sold_out' ? 'text-red-700 dark:text-red-300' : product.data?.sales_status === 'suspended' ? 'text-gray-700 dark:text-gray-300' : 'text-blue-700 dark:text-blue-300'}}" },
+                                                "text": "{{product.data?.sales_status === 'sold_out' ? $t('shop.product.status_message_sold_out') : product.data?.sales_status === 'suspended' ? $t('shop.product.status_message_suspended') : $t('shop.product.status_message_coming_soon')}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "탭 네비게이션",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "props": {
+                            "tabs": [
+                                {
+                                    "id": "info",
+                                    "label": "$t:shop.tabs.detail_info",
+                                    "iconName": "file-text"
+                                },
+                                {
+                                    "id": "reviews",
+                                    "label": "$t:shop.tabs.reviews",
+                                    "badge": "{{reviews.data?.total_count ?? 0}}",
+                                    "iconName": "star"
+                                },
+                                {
+                                    "id": "qna",
+                                    "label": "$t:shop.tabs.qna",
+                                    "badge": "{{qna.data.meta.total ?? 0}}",
+                                    "iconName": "comment"
+                                }
+                            ],
+                            "hiddenTabIds": "{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}",
+                            "activeTabId": "{{_local.activeTab ?? 'info'}}",
+                            "variant": "underline"
+                        },
+                        "actions": [
+                            {
+                                "event": "onTabChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "{{$args[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "replaceUrl",
+                                        "params": {
+                                            "query": {
+                                                "tab": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/shop/detail/_tab_detail.json"
+                    },
+                    {
+                        "partial": "partials/shop/detail/_tab_reviews.json"
+                    },
+                    {
+                        "partial": "partials/shop/detail/_tab_qna.json"
+                    },
+                    {
+                        "comment": "인기 상품 섹션",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-12"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/shop/list/_popular_products.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "name": "plugins/sirsoft-verification",
+    "description": "Identity verification plugin for Gnuboard7 platform",
+    "type": "library",
+    "version": "1.0.0-beta.1",
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Sirsoft\\Verification\\": ["src/", "./"]
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

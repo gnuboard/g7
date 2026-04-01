@@ -1,0 +1,186 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Shipping Policy Bulk Toggle Status Modal"
+    },
+    "id": "bulk_toggle_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_toggle.message|count={{(_global.bulkSelectedItems || []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.filter.is_active_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "{{_global.bulkToggleValue === 'true' ? 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}}"
+                                    },
+                                    "text": "{{_global.bulkToggleValue === 'true' ? '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active' : '$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_inactive'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkToggling}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkToggling}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isBulkToggling}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "w-4 h-4 animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isBulkToggling ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.changing' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.change'}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isBulkToggling": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active",
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "ids": "{{_global.bulkSelectedItems}}",
+                                            "is_active": "{{_global.bulkToggleValue === 'true'}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkToggling": false,
+                                                "bulkSelectedItems": [],
+                                                "bulkToggleValue": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "shipping_policies"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_toggled"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkToggling": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

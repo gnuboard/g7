@@ -1,0 +1,15 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "마케팅 동의 플러그인 환경설정 기본값 및 프론트엔드 스키마"
+    },
+    "frontend_schema": {
+        "marketing_consent_enabled": { "type": "boolean", "expose": true },
+        "marketing_consent_terms_slug": { "type": "string", "expose": false },
+        "third_party_consent_enabled": { "type": "boolean", "expose": true },
+        "third_party_consent_terms_slug": { "type": "string", "expose": false },
+        "info_disclosure_enabled": { "type": "boolean", "expose": true },
+        "info_disclosure_terms_slug": { "type": "string", "expose": false },
+        "channels": { "type": "string", "expose": false }
+    }
+}

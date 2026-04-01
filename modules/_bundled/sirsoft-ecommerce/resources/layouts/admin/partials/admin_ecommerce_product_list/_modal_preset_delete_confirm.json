@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Index - Preset Delete Confirm Modal"
+  },
+  "id": "modal_preset_delete_confirm",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "id": "preset_delete_message",
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-body"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}"
+    },
+    {
+      "id": "preset_delete_footer",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-2 mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-secondary"
+          },
+          "text": "$t:common.cancel",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-danger"
+          },
+          "text": "$t:common.delete",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}",
+              "params": {
+                "method": "DELETE"
+              },
+              "onSuccess": [
+                {
+                  "handler": "refetchDataSource",
+                  "params": {
+                    "dataSourceId": "presets"
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "success",
+                    "message": "$t:sirsoft-ecommerce.messages.presets.deleted"
+                  }
+                },
+                {
+                  "handler": "closeModal"
+                }
+              ],
+              "onError": {
+                "handler": "toast",
+                "params": {
+                  "type": "error",
+                  "message": "{{error.message}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

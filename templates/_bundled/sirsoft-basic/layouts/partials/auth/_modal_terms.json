@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "이용약관 모달"
+  },
+  "id": "termsModal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:policy.terms.title",
+    "size": "lg",
+    "className": "overflow-hidden"
+  },
+  "children": [
+    {
+      "comment": "내부 레이아웃 (flex column, Body 스크롤 비활성화)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex flex-col" },
+      "children": [
+        {
+          "comment": "로딩 상태",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{termsContent?.loading}}",
+          "props": { "className": "flex justify-center items-center py-12" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" }
+            }
+          ]
+        },
+        {
+          "comment": "발행일 (고정)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!termsContent?.loading && termsContent?.data?.published_at}}",
+          "props": { "className": "flex-shrink-0 flex items-center gap-2 mb-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+              "text": "$t:policy.published_at: {{termsContent?.data?.published_at | date}}"
+            }
+          ]
+        },
+        {
+          "comment": "약관 내용 (스크롤)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!termsContent?.loading && termsContent?.data}}",
+          "props": { "className": "flex-1 overflow-y-auto min-h-0 max-h-96" },
+          "children": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{termsContent?.data?.content ?? ''}}",
+                "isHtml": "{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}",
+                "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
+              }
+            }
+          ]
+        },
+        {
+          "comment": "내용 없음",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!termsContent?.loading && !termsContent?.data}}",
+          "props": { "className": "py-8 text-center text-gray-500 dark:text-gray-400" },
+          "text": "$t:policy.no_content"
+        },
+        {
+          "comment": "푸터 버튼 (고정)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100" },
+              "text": "$t:common.close",
+              "actions": [
+                { "type": "click", "handler": "closeModal" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

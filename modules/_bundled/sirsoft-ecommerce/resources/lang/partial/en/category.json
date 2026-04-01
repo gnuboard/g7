@@ -1,0 +1,5 @@
+{
+  "name": "Category Name",
+  "parent": "Parent Category",
+  "order": "Sort Order"
+}

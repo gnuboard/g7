@@ -1,0 +1,84 @@
+{
+  "title": "마일리지/예치금 설정",
+  "description": "마일리지 및 예치금 정책을 설정합니다.",
+  "view_mileage_history": "마일리지 내역 보기",
+  "view_deposit_history": "예치금 내역 보기",
+  "tabs": {
+    "mileage": "마일리지",
+    "deposit": "예치금"
+  },
+  "mileage": {
+    "basic_settings": {
+      "title": "기본 설정",
+      "use_mileage": "마일리지 사용",
+      "use_mileage_description": "마일리지 적립 및 사용 기능을 활성화합니다.",
+      "default_earn_rate": "기본 적립률",
+      "purchase_amount": "구매금액의",
+      "percent_earn": "% 적립",
+      "earn_rate_hint": "상품 등록시 기본값으로 셋팅됩니다.",
+      "earn_timing": "적립 시점",
+      "earn_timing_delivery_complete": "배송완료",
+      "earn_timing_order_complete": "주문완료",
+      "after": "후",
+      "days_after_earn": "일 경과 시 적립"
+    },
+    "currency_usage": {
+      "title": "통화별 사용 단위",
+      "add_currency": "통화 추가",
+      "currency": "통화",
+      "point_value": "1점당 금액",
+      "min_use_amount": "최소 사용 금액",
+      "use_unit": "사용 단위",
+      "max_use_limit": "최대 사용한도",
+      "delete": "삭제",
+      "default_currency": "기본 통화",
+      "point": "점",
+      "total_payment_percent": "총 결제 금액의",
+      "max_amount": "최대 금액",
+      "won": "원"
+    },
+    "validity": {
+      "title": "유효기간",
+      "validity_setting": "유효기간 설정",
+      "days_expire": "일이 되는 시점에 소멸",
+      "expiry_notification": "소멸 예정 알림",
+      "days_before_expiry": "유효기간이 만료되기",
+      "days_before": "일 전에 대상자에게 알림 이메일 발송"
+    },
+    "notification": {
+      "title": "소멸 예정 알림톡",
+      "alimtalk_plugin": "알림톡 플러그인",
+      "expiry_notification": "소멸 예정 알림",
+      "days_before_expiry": "유효기간이 만료되기",
+      "days_before": "일 전에 대상자에게 알림톡 발송",
+      "template_management": "템플릿 관리"
+    }
+  },
+  "deposit": {
+    "basic_settings": {
+      "title": "기본 설정",
+      "use_deposit": "예치금 사용",
+      "use_deposit_description": "예치금 기능을 활성화합니다.",
+      "use_charge": "충전 기능 사용",
+      "use_charge_description": "사용자가 마이페이지에서 결제수단을 통해 예치금을 충전하는 기능을 허용할지 결정합니다.",
+      "refund_to_deposit": "주문취소/환불 시 예치금으로 환불",
+      "refund_to_deposit_description": "취소/환불 시 발생한 환불금을 예치금으로 자동 적립할 수 있도록 사용자가 신청 단계에서 선택할 수 있습니다."
+    },
+    "charge_refund_settings": {
+      "title": "충전/환불 설정",
+      "description": "고객이 예치금을 충전하고 환불받을 수 있는 조건을 설정합니다.",
+      "min_charge_amount": "최소 충전 금액",
+      "max_charge_amount": "최대 충전 금액",
+      "min_charge_hint": "한 번에 충전할 수 있는 최소 금액",
+      "max_charge_hint": "한 번에 충전할 수 있는 최대 금액",
+      "charge_bonus": "충전 시 보너스 지급",
+      "charge_bonus_description": "충전 금액에 따라 보너스 예치금을 추가 지급합니다.",
+      "bonus_threshold": "보너스 지급 기준 금액",
+      "bonus_threshold_suffix": "이상",
+      "bonus_rate": "보너스 지급률",
+      "bonus_rate_suffix": "% 추가 지급",
+      "allow_refund": "환불 신청 허용",
+      "allow_refund_description": "예치금 잔액에 대한 출금(환불) 신청 기능을 허용합니다."
+    }
+  }
+}

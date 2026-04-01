@@ -1,0 +1,21 @@
+{
+    "identifier": "sirsoft-page",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "페이지",
+        "en": "Page"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "정적 페이지(정보/정책/안내) 관리 모듈",
+        "en": "Static page (info/policy/guide) management module"
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-module-sirsoft-page",
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-page/blob/main/CHANGELOG.md"
+}

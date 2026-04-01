@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "회원탈퇴 확인 모달"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "withdrawModal",
+  "props": {
+    "title": "$t:mypage.withdraw.modal_title",
+    "size": "sm",
+    "closeOnBackdropClick": false
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "text-center py-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "size": "2x",
+                "className": "text-red-600 dark:text-red-400"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-2"
+          },
+          "text": "$t:mypage.withdraw.confirm_title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
+          },
+          "text": "$t:mypage.withdraw.confirm_message"
+        },
+        {
+          "type": "basic",
+          "name": "Ul",
+          "props": {
+            "className": "text-left text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Li",
+              "props": {
+                "className": "flex items-center gap-2 mb-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "x",
+                    "size": "sm",
+                    "className": "text-red-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.withdraw.warning_posts"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Li",
+              "props": {
+                "className": "flex items-center gap-2 mb-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "x",
+                    "size": "sm",
+                    "className": "text-red-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.withdraw.warning_orders"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Li",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "x",
+                    "size": "sm",
+                    "className": "text-red-500"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.withdraw.warning_points"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2 mb-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Checkbox",
+              "props": {
+                "name": "confirmWithdraw",
+                "checked": "{{_local.form?.confirmWithdraw ?? false}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "confirmWithdraw": "{{$event.target.checked}}"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300"
+              },
+              "text": "$t:mypage.withdraw.confirm_checkbox"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}"
+              },
+              "children": [
+                {
+                  "if": "{{_local.isWithdrawing}}",
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "spinner",
+                    "size": "sm",
+                    "className": "animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:mypage.withdraw.confirm_button"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isWithdrawing": true
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/me",
+                      "params": {
+                        "method": "DELETE"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isWithdrawing": false
+                          }
+                        },
+                        {
+                          "handler": "closeModal"
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "currentUser": null,
+                            "isAuthenticated": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:mypage.withdraw.success"
+                          }
+                        },
+                        {
+                          "handler": "navigate",
+                          "params": {
+                            "url": "/"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isWithdrawing": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

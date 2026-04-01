@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "배송설정 - 배송가능국가 모바일 카드 뷰"
+  },
+  "id": "country_cards_container",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-3"
+  },
+  "children": [
+    {
+      "id": "country_card",
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "(_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))",
+        "item_var": "country",
+        "index_var": "countryIndex"
+      },
+      "props": {
+        "className": "excel-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded text-lg'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card-title font-mono"
+                      },
+                      "text": "{{country.code}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-tertiary truncate"
+                      },
+                      "text": "{{$localized(country.name)}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Toggle",
+                  "props": {
+                    "checked": "{{country.is_active ?? false}}",
+                    "size": "sm",
+                    "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) && country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "if": "{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.available_countries": "{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "fa-solid fa-trash",
+                        "className": "text-sm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}",
+                  "props": {
+                    "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

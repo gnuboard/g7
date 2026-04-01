@@ -1,0 +1,1897 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_user_list",
+    "permissions": [
+        "core.users.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.users.page_title",
+        "description": "$t:admin.users.page_description"
+    },
+    "state": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "users",
+            "type": "api",
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page}}",
+                "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
+                "filters[0][value]": "{{query['filters[0][value]']}}",
+                "filters[0][operator]": "{{query['filters[0][operator]']}}",
+                "sort_by": "{{query.sort_by}}",
+                "sort_order": "{{query.sort_order}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 20,
+                    "total": 0
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchUsers": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/users",
+                "mergeQuery": true,
+                "query": {
+                    "filters[0][field]": "{{_local.searchField || 'all'}}",
+                    "filters[0][value]": "{{_local.searchQuery || undefined}}",
+                    "filters[0][operator]": "like"
+                }
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "user_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.users.title",
+                            "description": "$t:admin.users.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_user_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{users?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/create"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.users.add_user"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-row gap-3 items-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_field_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{_local.searchField || 'all'}}",
+                                            "className": "w-32 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500",
+                                            "options": [
+                                                {
+                                                    "label": "$t:admin.users.search_fields.all",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.search_fields.name",
+                                                    "value": "name"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.search_fields.email",
+                                                    "value": "email"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchField": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "$t:admin.users.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "keypress",
+                                                "key": "Enter",
+                                                "actionRef": "searchUsers"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "column_selector",
+                                        "type": "composite",
+                                        "name": "ColumnSelector",
+                                        "props": {
+                                            "id": "admin_user_list_columns",
+                                            "columns": [
+                                                {
+                                                    "field": "id",
+                                                    "header": "$t:admin.users.columns.id",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "name",
+                                                    "header": "$t:admin.users.columns.name",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "role",
+                                                    "header": "$t:admin.users.columns.role",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "email",
+                                                    "header": "$t:admin.users.columns.email",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "language",
+                                                    "header": "$t:admin.users.columns.language"
+                                                },
+                                                {
+                                                    "field": "status",
+                                                    "header": "$t:admin.users.columns.status"
+                                                },
+                                                {
+                                                    "field": "created_at",
+                                                    "header": "$t:admin.users.columns.created_at"
+                                                },
+                                                {
+                                                    "field": "last_login_at",
+                                                    "header": "$t:admin.users.columns.last_login_at"
+                                                }
+                                            ],
+                                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                                            "triggerLabel": "$t:common.column_selector",
+                                            "menuTitle": "$t:common.column_selector_title",
+                                            "menuDescription": "$t:common.column_selector_description",
+                                            "position": "right",
+                                            "defaultColumns": [
+                                                "id",
+                                                "name",
+                                                "role",
+                                                "email"
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onColumnVisibilityChange",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "visibleColumns_admin_users": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "actionRef": "searchUsers"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.search"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "flex flex-col gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "mobile_search_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-row gap-2 items-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "mobile_search_field_select",
+                                                        "type": "composite",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "value": "{{_local.searchField || 'all'}}",
+                                                            "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:admin.users.search_fields.all",
+                                                                    "value": "all"
+                                                                },
+                                                                {
+                                                                    "label": "$t:admin.users.search_fields.name",
+                                                                    "value": "name"
+                                                                },
+                                                                {
+                                                                    "label": "$t:admin.users.search_fields.email",
+                                                                    "value": "email"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "searchField": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "mobile_search_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "placeholder": "$t:admin.users.search_placeholder",
+                                                            "value": "{{_local.searchQuery || ''}}",
+                                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "searchQuery": "{{$event.target.value}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "keypress",
+                                                                "key": "Enter",
+                                                                "actionRef": "searchUsers"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "mobile_action_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-row gap-2 items-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "mobile_column_selector",
+                                                        "type": "composite",
+                                                        "name": "ColumnSelector",
+                                                        "props": {
+                                                            "id": "admin_user_list_columns",
+                                                            "columns": [
+                                                                {
+                                                                    "field": "id",
+                                                                    "header": "$t:admin.users.columns.id",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "name",
+                                                                    "header": "$t:admin.users.columns.name",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "role",
+                                                                    "header": "$t:admin.users.columns.role",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "email",
+                                                                    "header": "$t:admin.users.columns.email",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "language",
+                                                                    "header": "$t:admin.users.columns.language"
+                                                                },
+                                                                {
+                                                                    "field": "status",
+                                                                    "header": "$t:admin.users.columns.status"
+                                                                },
+                                                                {
+                                                                    "field": "created_at",
+                                                                    "header": "$t:admin.users.columns.created_at"
+                                                                },
+                                                                {
+                                                                    "field": "last_login_at",
+                                                                    "header": "$t:admin.users.columns.last_login_at"
+                                                                }
+                                                            ],
+                                                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                                                            "triggerLabel": "$t:common.column_selector",
+                                                            "menuTitle": "$t:common.column_selector_title",
+                                                            "menuDescription": "$t:common.column_selector_description",
+                                                            "position": "right",
+                                                            "defaultColumns": [
+                                                                "id",
+                                                                "name",
+                                                                "role",
+                                                                "email"
+                                                            ],
+                                                            "iconOnly": true
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "event": "onColumnVisibilityChange",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "visibleColumns_admin_users": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "mobile_search_button",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "className": "flex-1 px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "actionRef": "searchUsers"
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:admin.users.search"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{users?.data?.abilities?.can_update === true}}",
+                        "props": {
+                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-700 dark:text-gray-300 font-medium"
+                                },
+                                "text": "$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}"
+                            },
+                            {
+                                "id": "status_change_label",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "상태 변경"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "bulk_activate",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_activate_confirm_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_activate"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_deactivate",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_deactivate_confirm_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_deactivate"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_block",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_block_confirm_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_block"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_withdraw",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_withdraw_confirm_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.bulk_withdraw"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "mobile_selected_count",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300 font-medium"
+                                        },
+                                        "text": "$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}"
+                                    },
+                                    {
+                                        "id": "mobile_bulk_action_dropdown",
+                                        "type": "composite",
+                                        "name": "Dropdown",
+                                        "props": {
+                                            "label": "$t:admin.users.bulk_action_select",
+                                            "items": [
+                                                {
+                                                    "value": "activate",
+                                                    "label": "$t:admin.users.bulk_activate"
+                                                },
+                                                {
+                                                    "value": "deactivate",
+                                                    "label": "$t:admin.users.bulk_deactivate"
+                                                },
+                                                {
+                                                    "value": "block",
+                                                    "label": "$t:admin.users.bulk_block"
+                                                },
+                                                {
+                                                    "value": "withdraw",
+                                                    "label": "$t:admin.users.bulk_withdraw"
+                                                }
+                                            ],
+                                            "position": "bottom-right",
+                                            "className": "ml-auto"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onItemClick",
+                                                "type": "action",
+                                                "handler": "switch",
+                                                "cases": {
+                                                    "activate": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_activate_confirm_modal"
+                                                    },
+                                                    "deactivate": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_deactivate_confirm_modal"
+                                                    },
+                                                    "block": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_block_confirm_modal"
+                                                    },
+                                                    "withdraw": {
+                                                        "handler": "openModal",
+                                                        "target": "bulk_withdraw_confirm_modal"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "list_toolbar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "total_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "id": "list_options",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "sort_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                            "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                            "options": [
+                                                {
+                                                    "label": "$t:admin.users.sort.created_at_desc",
+                                                    "value": "created_at_desc"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.sort.created_at_asc",
+                                                    "value": "created_at_asc"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.sort.last_login_at_desc",
+                                                    "value": "last_login_at_desc"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.sort.last_login_at_asc",
+                                                    "value": "last_login_at_asc"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "per_page_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{query.per_page || '10'}}",
+                                            "className": "px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500",
+                                            "options": [
+                                                {
+                                                    "label": "$t:admin.users.per_page|count=10",
+                                                    "value": "10"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.per_page|count=20",
+                                                    "value": "20"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.per_page|count=50",
+                                                    "value": "50"
+                                                },
+                                                {
+                                                    "label": "$t:admin.users.per_page|count=100",
+                                                    "value": "100"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "per_page": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "users_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "columns": [
+                                {
+                                    "field": "name",
+                                    "header": "$t:admin.users.columns.name",
+                                    "sortable": true,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.name}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.nickname}}",
+                                                    "if": "{{row.nickname}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "role",
+                                    "header": "$t:admin.users.columns.role",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-wrap gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "row.roles",
+                                                        "item_var": "role"
+                                                    },
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                    },
+                                                    "text": "{{role.name}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "email",
+                                    "header": "$t:admin.users.columns.email",
+                                    "sortable": true,
+                                    "required": true
+                                },
+                                {
+                                    "hidden": true,
+                                    "field": "country",
+                                    "header": "$t:admin.users.columns.country",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{row.country}}",
+                                            "props": {
+                                                "className": "inline-flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{'fi fi-' + row.country.toLowerCase() + ' fis rounded'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{row.country_name}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "language",
+                                    "header": "$t:admin.users.columns.language",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{row.language_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "status",
+                                    "header": "$t:admin.users.columns.status",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.status_variant === 'success' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.status_variant === 'secondary' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : row.status_variant === 'danger' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}}"
+                                            },
+                                            "text": "{{row.status_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:admin.users.columns.created_at",
+                                    "sortable": true
+                                },
+                                {
+                                    "field": "last_login_at",
+                                    "header": "$t:admin.users.columns.last_login_at",
+                                    "sortable": true
+                                }
+                            ],
+                            "data": "{{users?.data?.data}}",
+                            "sortable": true,
+                            "sortField": "{{query.sort_by}}",
+                            "sortDirection": "{{query.sort_order || 'asc'}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 15,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{users?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{users?.data?.pagination?.last_page ?? 1}}",
+                            "selectable": "{{users?.data?.abilities?.can_update === true}}",
+                            "selectedIds": "{{_global.selectedIds_admin_users || []}}",
+                            "idField": "uuid",
+                            "showColumnSelector": false,
+                            "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                            "responsiveBreakpoint": 768,
+                            "rowActions": [
+                                {
+                                    "id": "view",
+                                    "label": "$t:admin.users.actions.view",
+                                    "iconName": "eye"
+                                },
+                                {
+                                    "id": "edit",
+                                    "label": "$t:admin.users.actions.edit",
+                                    "iconName": "pencil",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:admin.users.actions.delete",
+                                    "iconName": "trash",
+                                    "variant": "danger",
+                                    "disabledField": "abilities.can_delete"
+                                }
+                            ],
+                            "actionsColumnHeader": "$t:common.actions"
+                        },
+                        "actions": [
+                            {
+                                "event": "onSelectionChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_admin_users": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onColumnVisibilityChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "visibleColumns_admin_users": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onSortChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/users",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "sort_by": "{{$args[0]}}",
+                                        "sort_order": "{{$args[1]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/users",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "event": "onRowAction",
+                                "type": "action",
+                                "handler": "switch",
+                                "cases": {
+                                    "view": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1].uuid}}"
+                                        }
+                                    },
+                                    "edit": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/users/{{$args[1].uuid}}/edit"
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "modal_data": "{{$args[1]}}"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "bulk_activate_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.modals.bulk_activate_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/bulk-status",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_users}}",
+                                                    "status": "active"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "selectedIds_admin_users": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.modals.bulk_activate_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "error_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bulk_deactivate_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.modals.bulk_deactivate_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/bulk-status",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_users}}",
+                                                    "status": "inactive"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "selectedIds_admin_users": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.modals.bulk_deactivate_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "error_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.modals.delete_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.modals.delete_confirm"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/{{_global.modal_data.uuid}}",
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "users"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.modals.delete_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isDeleting}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bulk_block_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.modals.bulk_block_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/bulk-status",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_users}}",
+                                                    "status": "blocked"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "selectedIds_admin_users": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.modals.bulk_block_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "error_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bulk_withdraw_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.modals.bulk_withdraw_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "disabled": "{{_global.isProcessing}}",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProcessing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/admin/users/bulk-status",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_users}}",
+                                                    "status": "withdrawn"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "selectedIds_admin_users": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/users",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.modals.bulk_withdraw_success"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isProcessing": false,
+                                                        "errorMessage": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "error_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isProcessing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

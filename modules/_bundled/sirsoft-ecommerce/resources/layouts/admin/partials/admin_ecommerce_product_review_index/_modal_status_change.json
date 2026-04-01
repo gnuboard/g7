@@ -1,0 +1,150 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Product Review Status Change Confirm Modal"
+    },
+    "id": "modal_status_change",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-base text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.message|count={{(_global.reviewBatchIds ?? []).length}}|status={{_global.reviewBatchAction === 'visible' ? '전시중' : '숨김'}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-outline"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal",
+                                    "target": "modal_status_change"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "batchAction": ""
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_local.isBatchProcessing ?? false}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!(_local.isBatchProcessing ?? false)}}",
+                            "text": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.confirm"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isBatchProcessing ?? false}}",
+                            "text": "$t:common.loading"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isBatchProcessing": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "ids": "{{_global.reviewBatchIds ?? []}}",
+                                            "action": "change_status",
+                                            "status": "{{_global.reviewBatchAction}}"
+                                        }
+                                    },
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/reviews/bulk",
+                                    "auth_required": true,
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isBatchProcessing": false,
+                                                "batchAction": "",
+                                                "selectedReviews": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "reviews"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "modal_status_change"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isBatchProcessing": false
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

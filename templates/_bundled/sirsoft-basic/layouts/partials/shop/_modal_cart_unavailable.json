@@ -1,0 +1,139 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "장바구니 구매불가 상품 안내 모달"
+  },
+  "id": "cart_unavailable_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_title' : '$t:shop.cart.unavailable_title'}}",
+    "size": "md",
+    "showCloseButton": false,
+    "closeOnOverlayClick": false
+  },
+  "children": [
+    {
+      "comment": "모달 내용",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "p-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-3 mb-4" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "w-6 h-6 text-amber-500" } },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-gray-700 dark:text-gray-300" },
+              "text": "{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_message' : '$t:shop.cart.unavailable_message'}}"
+            }
+          ]
+        },
+        {
+          "comment": "문제 상품 목록",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-2" },
+              "iteration": {
+                "source": "{{$parent._local.unavailableModal.items ?? []}}",
+                "item_var": "unavailableItem",
+                "index_var": "unavailableIdx"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center gap-3 p-2 bg-white dark:bg-gray-800 rounded" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0" },
+                      "children": [
+                        { "type": "basic", "name": "Img", "props": { "src": "{{unavailableItem.thumbnail}}", "alt": "{{unavailableItem.name}}", "className": "w-full h-full object-cover" } }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex-1 min-w-0" },
+                      "children": [
+                        { "type": "basic", "name": "P", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white truncate" }, "text": "{{unavailableItem.name}}" },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.option}}",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                          "text": "{{unavailableItem.option}}"
+                        },
+                        {
+                          "comment": "재고부족 표시",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.reason === 'stock'}}",
+                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                          "text": "$t:shop.cart.insufficient_stock_item|name={{unavailableItem.name}}|option={{unavailableItem.option}}|stock={{unavailableItem.stock}}|quantity={{unavailableItem.quantity}}"
+                        },
+                        {
+                          "comment": "판매중지 표시",
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{unavailableItem.reason === 'status'}}",
+                          "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                          "text": "$t:shop.cart.not_on_sale"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "모달 푸터",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+          },
+          "text": "$t:shop.cart.go_to_cart",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "closeModal",
+                  "target": "cart_unavailable_modal"
+                },
+                {
+                  "handler": "navigate",
+                  "params": {
+                    "path": "{{_global.shopBase}}/cart"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

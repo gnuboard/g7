@@ -1,0 +1,35 @@
+{
+  "product": {
+    "index": {
+      "title": "Products",
+      "description": "Browse our products",
+      "empty_title": "No products available",
+      "empty_description": "No products are currently available"
+    },
+    "detail": {
+      "title": "Product Details",
+      "description": "Product details",
+      "placeholder": "Product details will be displayed here"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "description": "Items in your cart",
+    "empty_title": "Your cart is empty",
+    "empty_description": "Add some products to your cart"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "description": "Enter order and payment information",
+    "placeholder": "Checkout form will be displayed here"
+  },
+  "review": {
+    "validation": {
+      "rating_required": "Please select a rating.",
+      "content_min": "Review content must be at least 10 characters."
+    },
+    "image_upload_partial_fail": "Some images failed to upload.",
+    "submit_success": "Review has been submitted.",
+    "submit_failed": "Failed to submit review."
+  }
+}

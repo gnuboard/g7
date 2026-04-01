@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "로그인 폼 (이메일/비밀번호)"
+  },
+  "type": "basic",
+  "name": "Form",
+  "props": { "className": "space-y-6" },
+  "children": [
+    {
+      "comment": "API 에러 메시지 표시",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.loginError}}",
+      "props": {
+        "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-sm text-red-600 dark:text-red-400" },
+          "text": "{{_global.loginError}}"
+        }
+      ]
+    },
+    {
+      "comment": "이메일 입력 필드",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3" },
+          "text": "$t:auth.email"
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "email",
+            "name": "email",
+            "placeholder": "$t:auth.email_placeholder",
+            "className": "{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}",
+            "required": true,
+            "disabled": "{{_global.isLoggingIn}}"
+          }
+        },
+        {
+          "comment": "이메일 필드 에러 메시지",
+          "type": "basic",
+          "name": "P",
+          "if": "{{_global.loginErrors?.email}}",
+          "props": { "className": "mt-1 text-sm text-red-600 dark:text-red-400" },
+          "text": "{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}"
+        }
+      ]
+    },
+    {
+      "comment": "비밀번호 입력 필드",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3" },
+          "text": "$t:auth.password"
+        },
+        {
+          "type": "basic",
+          "name": "PasswordInput",
+          "props": {
+            "name": "password",
+            "placeholder": "$t:auth.password_placeholder",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
+            "required": true,
+            "disabled": "{{_global.isLoggingIn}}",
+            "showToggle": true,
+            "error": "{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"
+          }
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "submit",
+        "className": "w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+        "disabled": "{{_global.isLoggingIn}}"
+      },
+      "children": [
+        {
+          "comment": "버튼 내 스피너",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_global.isLoggingIn}}",
+          "props": { "className": "w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{!_global.isLoggingIn}}",
+          "text": "$t:auth.login"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{_global.isLoggingIn}}",
+          "text": "$t:auth.login_processing"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "submit",
+      "handler": "sequence",
+      "actions": [
+        {
+          "handler": "setState",
+          "params": {
+            "target": "local",
+            "isLoginAction": true
+          }
+        },
+        {
+          "handler": "setState",
+          "params": {
+            "target": "global",
+            "isLoggingIn": true,
+            "loginError": null,
+            "loginErrors": null
+          }
+        },
+        {
+          "handler": "login",
+          "target": "user",
+          "params": {
+            "body": {
+              "email": "{{form.email}}",
+              "password": "{{form.password}}"
+            }
+          },
+          "onSuccess": [
+            { "handler": "setState", "params": { "target": "global", "currentUser": "{{response.user}}" } },
+            { "handler": "setState", "params": { "target": "global", "isLoggingIn": false } },
+            { "handler": "toast", "params": { "type": "success", "message": "$t:auth.login_success" } },
+            { "handler": "navigate", "params": { "path": "{{query.redirect ?? '/'}}" } }
+          ],
+          "onError": [
+            { "handler": "setState", "params": { "target": "global", "isLoggingIn": false, "loginError": "{{error.message}}", "loginErrors": "{{error.errors}}" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

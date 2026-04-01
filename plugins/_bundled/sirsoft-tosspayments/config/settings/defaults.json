@@ -1,0 +1,24 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "토스페이먼츠 PG 플러그인 환경설정"
+    },
+    "defaults": {
+        "is_test_mode": true,
+        "test_client_key": "",
+        "test_secret_key": "",
+        "live_client_key": "",
+        "live_secret_key": "",
+        "redirect_success_url": "/shop/orders/{orderId}/complete",
+        "redirect_fail_url": "/shop/checkout"
+    },
+    "frontend_schema": {
+        "is_test_mode": { "expose": false },
+        "test_client_key": { "expose": false },
+        "test_secret_key": { "expose": false },
+        "live_client_key": { "expose": false },
+        "live_secret_key": { "expose": false },
+        "redirect_success_url": { "expose": false },
+        "redirect_fail_url": { "expose": false }
+    }
+}

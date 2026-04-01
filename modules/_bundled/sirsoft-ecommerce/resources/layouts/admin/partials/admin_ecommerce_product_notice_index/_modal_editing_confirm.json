@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Notice Template Editing Discard Confirmation Modal"
+  },
+  "id": "editing_confirm_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.title",
+    "size": "medium"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-shrink-0 mt-0.5"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "triangle-exclamation",
+                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-base text-gray-900 dark:text-white mb-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.message"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.confirm_message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.continue"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "panelMode": "view",
+                    "selectedTemplateId": null,
+                    "selectedTemplate": null
+                  }
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.discard"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

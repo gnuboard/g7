@@ -1,0 +1,333 @@
+{
+  "_meta": {
+    "version": "1.2.0",
+    "description": "이커머스 모듈 환경설정",
+    "categories": ["basic_info", "language_currency", "order_settings", "shipping", "seo", "review_settings", "inquiry"]
+  },
+  "defaults": {
+    "basic_info": {
+      "shop_name": "",
+      "route_path": "shop",
+      "no_route": false,
+      "company_name": "",
+      "business_number": "",
+      "ceo_name": "",
+      "business_type": "",
+      "business_category": "",
+      "zipcode": "",
+      "base_address": "",
+      "detail_address": "",
+      "phone": "",
+      "fax": "",
+      "email": "",
+      "privacy_officer": "",
+      "privacy_officer_email": "",
+      "mail_order_number": "",
+      "telecom_number": ""
+    },
+    "language_currency": {
+      "default_language": "ko",
+      "default_currency": "KRW",
+      "currencies": [
+        {
+          "code": "KRW",
+          "name": {
+            "ko": "KRW (원)",
+            "en": "KRW (Won)"
+          },
+          "exchange_rate": null,
+          "rounding_unit": "1",
+          "rounding_method": "floor",
+          "decimal_places": 0,
+          "is_default": true
+        },
+        {
+          "code": "USD",
+          "name": {
+            "ko": "USD (달러)",
+            "en": "USD (Dollar)"
+          },
+          "exchange_rate": 0.85,
+          "rounding_unit": "0.01",
+          "rounding_method": "round",
+          "decimal_places": 2,
+          "is_default": false
+        },
+        {
+          "code": "JPY",
+          "name": {
+            "ko": "JPY (엔)",
+            "en": "JPY (Yen)"
+          },
+          "exchange_rate": 115.00,
+          "rounding_unit": "1",
+          "rounding_method": "floor",
+          "decimal_places": 0,
+          "is_default": false
+        },
+        {
+          "code": "CNY",
+          "name": {
+            "ko": "CNY (위안)",
+            "en": "CNY (Yuan)"
+          },
+          "exchange_rate": 5.80,
+          "rounding_unit": "0.01",
+          "rounding_method": "round",
+          "decimal_places": 2,
+          "is_default": false
+        },
+        {
+          "code": "EUR",
+          "name": {
+            "ko": "EUR (유로)",
+            "en": "EUR (Euro)"
+          },
+          "exchange_rate": 0.78,
+          "rounding_unit": "0.01",
+          "rounding_method": "round",
+          "decimal_places": 2,
+          "is_default": false
+        }
+      ]
+    },
+    "order_settings": {
+      "default_pg_provider": null,
+      "payment_methods": [
+        {
+          "id": "card",
+          "pg_provider": null,
+          "sort_order": 1,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "payment_complete",
+          "_cached_name": { "ko": "신용카드", "en": "Credit Card" },
+          "_cached_description": { "ko": "신용카드로 안전하게 결제", "en": "Pay securely with credit card" },
+          "_cached_icon": "credit-card",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "vbank",
+          "pg_provider": null,
+          "sort_order": 2,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "payment_complete",
+          "_cached_name": { "ko": "가상계좌", "en": "Virtual Account" },
+          "_cached_description": { "ko": "가상계좌로 입금", "en": "Pay via virtual account" },
+          "_cached_icon": "money-check",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "dbank",
+          "pg_provider": null,
+          "sort_order": 3,
+          "is_active": true,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "order_placed",
+          "_cached_name": { "ko": "무통장입금", "en": "Bank Transfer" },
+          "_cached_description": { "ko": "지정 계좌로 직접 입금", "en": "Direct bank transfer" },
+          "_cached_icon": "building-columns",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "bank",
+          "pg_provider": null,
+          "sort_order": 4,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "payment_complete",
+          "_cached_name": { "ko": "계좌이체", "en": "Account Transfer" },
+          "_cached_description": { "ko": "실시간 계좌이체", "en": "Real-time bank transfer" },
+          "_cached_icon": "building-columns",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "phone",
+          "pg_provider": null,
+          "sort_order": 5,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "payment_complete",
+          "_cached_name": { "ko": "휴대폰결제", "en": "Mobile Payment" },
+          "_cached_description": { "ko": "휴대폰 소액결제", "en": "Mobile phone payment" },
+          "_cached_icon": "mobile-screen-button",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "point",
+          "pg_provider": null,
+          "sort_order": 6,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "order_placed",
+          "_cached_name": { "ko": "포인트결제", "en": "Points" },
+          "_cached_description": { "ko": "적립 포인트로 결제", "en": "Pay with points" },
+          "_cached_icon": "coins",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "deposit",
+          "pg_provider": null,
+          "sort_order": 7,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "order_placed",
+          "_cached_name": { "ko": "예치금결제", "en": "Store Credit" },
+          "_cached_description": { "ko": "예치금으로 결제", "en": "Pay with store credit" },
+          "_cached_icon": "wallet",
+          "_cached_source": "builtin"
+        },
+        {
+          "id": "free",
+          "pg_provider": null,
+          "sort_order": 8,
+          "is_active": false,
+          "min_order_amount": 0,
+          "stock_deduction_timing": "order_placed",
+          "_cached_name": { "ko": "무료", "en": "Free" },
+          "_cached_description": { "ko": "결제 없이 주문 완료", "en": "Order without payment" },
+          "_cached_icon": "gift",
+          "_cached_source": "builtin"
+        }
+      ],
+      "banks": [
+        { "code": "004", "name": { "ko": "국민은행", "en": "Kookmin Bank" } },
+        { "code": "088", "name": { "ko": "신한은행", "en": "Shinhan Bank" } },
+        { "code": "020", "name": { "ko": "우리은행", "en": "Woori Bank" } },
+        { "code": "081", "name": { "ko": "하나은행", "en": "Hana Bank" } },
+        { "code": "003", "name": { "ko": "IBK기업은행", "en": "IBK Industrial Bank" } },
+        { "code": "011", "name": { "ko": "NH농협은행", "en": "NH Nonghyup Bank" } },
+        { "code": "071", "name": { "ko": "우체국", "en": "Korea Post" } },
+        { "code": "031", "name": { "ko": "DGB대구은행", "en": "DGB Daegu Bank" } },
+        { "code": "032", "name": { "ko": "BNK부산은행", "en": "BNK Busan Bank" } },
+        { "code": "034", "name": { "ko": "광주은행", "en": "Kwangju Bank" } },
+        { "code": "035", "name": { "ko": "제주은행", "en": "Jeju Bank" } },
+        { "code": "037", "name": { "ko": "전북은행", "en": "Jeonbuk Bank" } },
+        { "code": "039", "name": { "ko": "BNK경남은행", "en": "BNK Kyongnam Bank" } },
+        { "code": "045", "name": { "ko": "새마을금고", "en": "MG Community Credit Cooperatives" } },
+        { "code": "048", "name": { "ko": "신협", "en": "KFCC" } },
+        { "code": "090", "name": { "ko": "카카오뱅크", "en": "Kakao Bank" } },
+        { "code": "092", "name": { "ko": "토스뱅크", "en": "Toss Bank" } }
+      ],
+      "bank_accounts": [
+        { "bank_code": "004", "account_number": "", "account_holder": "", "is_active": false, "is_default": false }
+      ],
+      "auto_cancel_expired": true,
+      "auto_cancel_days": 3,
+      "vbank_due_days": 3,
+      "dbank_due_days": 7,
+      "cart_expiry_days": 30,
+      "stock_restore_on_cancel": true,
+      "cancellable_statuses": ["payment_complete"],
+      "confirmable_statuses": ["shipping", "delivered"]
+    },
+    "shipping": {
+      "default_country": "KR",
+      "available_countries": [
+        { "code": "KR", "name": { "ko": "대한민국", "en": "South Korea" }, "is_active": true },
+        { "code": "US", "name": { "ko": "미국", "en": "United States" }, "is_active": false },
+        { "code": "JP", "name": { "ko": "일본", "en": "Japan" }, "is_active": false },
+        { "code": "CN", "name": { "ko": "중국", "en": "China" }, "is_active": false },
+        { "code": "SG", "name": { "ko": "싱가포르", "en": "Singapore" }, "is_active": false },
+        { "code": "HK", "name": { "ko": "홍콩", "en": "Hong Kong" }, "is_active": false },
+        { "code": "TW", "name": { "ko": "대만", "en": "Taiwan" }, "is_active": false },
+        { "code": "VN", "name": { "ko": "베트남", "en": "Vietnam" }, "is_active": false },
+        { "code": "TH", "name": { "ko": "태국", "en": "Thailand" }, "is_active": false },
+        { "code": "MY", "name": { "ko": "말레이시아", "en": "Malaysia" }, "is_active": false }
+      ],
+      "international_shipping_enabled": false,
+      "domestic_shipping_types": ["domestic_parcel", "domestic_express", "pickup"],
+      "international_shipping_types": ["international_ems", "international_standard"],
+      "default_domestic_shipping_type": "domestic_parcel",
+      "default_international_shipping_type": "international_standard",
+      "remote_area_enabled": true,
+      "remote_area_extra_fee": 3000,
+      "island_extra_fee": 5000,
+      "free_shipping_threshold": 50000,
+      "free_shipping_enabled": true,
+      "address_validation_enabled": false,
+      "address_api_provider": "kakao"
+    },
+    "seo": {
+      "meta_category_title": "{commerce_name} - {category_name}",
+      "meta_category_description": "",
+      "meta_search_title": "{commerce_name} - {keyword_name}",
+      "meta_search_description": "",
+      "meta_product_title": "{commerce_name} - {product_name}",
+      "meta_product_description": "",
+      "seo_category": true,
+      "seo_search_result": true,
+      "seo_product_detail": true
+    },
+    "review_settings": {
+      "write_deadline_days": 90,
+      "max_images": 5,
+      "max_image_size_mb": 10
+    },
+    "inquiry": {
+      "board_slug": null
+    }
+  },
+  "frontend_schema": {
+    "basic_info": {
+      "expose": true,
+      "_comment": "route_path, no_route만 프론트엔드(user-side routes.json, _user_base.json)에서 참조",
+      "fields": {
+        "shop_name": { "expose": false },
+        "route_path": { "expose": true },
+        "no_route": { "expose": true },
+        "company_name": { "expose": false },
+        "business_number": { "expose": false },
+        "ceo_name": { "expose": false },
+        "business_type": { "expose": false },
+        "business_category": { "expose": false },
+        "zipcode": { "expose": false },
+        "base_address": { "expose": false },
+        "detail_address": { "expose": false },
+        "phone": { "expose": false },
+        "fax": { "expose": false },
+        "email": { "expose": false },
+        "privacy_officer": { "expose": false },
+        "privacy_officer_email": { "expose": false },
+        "mail_order_number": { "expose": false },
+        "telecom_number": { "expose": false }
+      }
+    },
+    "language_currency": {
+      "expose": true,
+      "_comment": "currencies, default_currency만 admin 상품목록/폼에서 참조",
+      "fields": {
+        "default_language": { "expose": false },
+        "default_currency": { "expose": true },
+        "currencies": { "expose": true }
+      }
+    },
+    "order_settings": {
+      "expose": false,
+      "_comment": "프론트엔드에서 미참조 — 서버 사이드 전용"
+    },
+    "shipping": {
+      "expose": false,
+      "_comment": "프론트엔드에서 미참조 — 서버 사이드 전용"
+    },
+    "seo": {
+      "expose": false,
+      "_comment": "프론트엔드에서 미참조 — SeoMiddleware/SeoRenderer 서버 사이드 전용"
+    },
+    "review_settings": {
+      "expose": false,
+      "fields": {
+        "write_deadline_days": { "expose": false },
+        "max_images": { "expose": false },
+        "max_image_size_mb": { "expose": false }
+      }
+    },
+    "inquiry": {
+      "expose": true,
+      "fields": {
+        "board_slug": { "expose": true }
+      }
+    }
+  }
+}

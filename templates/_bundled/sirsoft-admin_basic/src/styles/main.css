@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import "./ui-system/index.css";
+
+@variant dark (.dark &);
+
+/**
+ * 레이아웃 JSON에서 동적으로 사용되는 클래스들을 위한 safelist
+ * Tailwind가 자동 스캔하지 못하는 JSON 파일의 클래스들은 safelist.txt에 정의
+ */
+@source "./safelist.txt";
+
+/*
+ * flag-icons CSS
+ * Tailwind CSS v4가 사용되지 않는 CSS 속성을 purge하기 때문에
+ * flag-icons의 기본 스타일(.fi)이 손실될 수 있습니다.
+ * 따라서 필수 스타일을 명시적으로 정의합니다.
+ */
+@import "flag-icons/css/flag-icons.min.css";
+
+/* flag-icons 필수 기본 스타일 (Tailwind purge 방지) */
+.fi {
+  position: relative;
+  display: inline-block;
+  width: 1.333333em;
+  line-height: 1em;
+  background-size: contain;
+  background-position: 50%;
+  background-repeat: no-repeat;
+}
+
+.fi:before {
+  content: "\00a0";
+}
+
+.fi.fis {
+  width: 1em;
+}
+
+/* sirsoft-admin_basic 템플릿 커스텀 스타일 */
+
+/*
+ * 필요한 경우 아래에 커스텀 스타일을 추가하세요.
+ * Tailwind의 유틸리티 클래스를 우선적으로 사용하는 것을 권장합니다.
+ */
+
+/* 사이드바 스크롤바 스타일 - 호버 시에만 표시 */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.sidebar-scrollbar:hover {
+  scrollbar-color: rgb(209 213 219) transparent;
+}
+
+.dark .sidebar-scrollbar:hover {
+  scrollbar-color: rgb(75 85 99) transparent;
+}
+
+/* WebKit 브라우저 (Chrome, Safari, Edge) */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgb(209 213 219);
+}
+
+.dark .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99);
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+
+.dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 114 128);
+}

@@ -1,0 +1,323 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "배송사 관리 - Mobile 카드 뷰"
+  },
+  "id": "carrier_cards_container",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-3"
+  },
+  "children": [
+    {
+      "id": "carrier_card",
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "(_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))",
+        "item_var": "carrier",
+        "index_var": "cIdx"
+      },
+      "props": {
+        "className": "excel-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card-title font-mono"
+                      },
+                      "text": "{{carrier.code}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-tertiary truncate"
+                      },
+                      "text": "{{typeof carrier.name === 'object' ? $localized(carrier.name) : (carrier.name ?? '')}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Toggle",
+                  "props": {
+                    "checked": "{{carrier.is_active ?? false}}",
+                    "size": "sm",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== carrier._idx)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "fa-solid fa-trash",
+                        "className": "text-sm"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-body"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{carrier.code ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
+                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code'] ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, code: $event.target.value} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']?.[0] ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name"
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "value": "{{carrier.name ?? {}}}",
+                    "layout": "compact",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
+                    "error": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + carrier._idx + '.name']?.[0] ?? ''}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, name: $event.target.value} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{carrier.type ?? 'domestic'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
+                    "options": [
+                      {
+                        "value": "domestic",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic"
+                      },
+                      {
+                        "value": "international",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international"
+                      }
+                    ],
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, type: $event.target.value} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "form-group"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{carrier.tracking_url ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
+                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url'] ? 'input input-error w-full' : 'input w-full'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']?.[0] ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

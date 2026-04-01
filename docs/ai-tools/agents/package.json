@@ -1,0 +1,38 @@
+{
+  "name": "g7-agent-system",
+  "version": "1.0.0",
+  "description": "Gnuboard7 Multi-Agent System using Claude Agent SDK",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "interactive": "tsx src/interactive.ts",
+    "agent": "tsx src/index.ts single",
+    "mcp": "tsx src/mcp/index.ts",
+    "mcp:agents": "tsx src/mcp/index.ts",
+    "mcp:devtools": "tsx src/mcp/g7-devtools-server.ts"
+  },
+  "bin": {
+    "g7-agents-mcp": "./src/mcp/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.74",
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "dotenv": "^16.4.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Gnuboard7 Team",
+  "license": "MIT"
+}

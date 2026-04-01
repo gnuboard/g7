@@ -1,0 +1,218 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 환경설정 기본 설정 탭 콘텐츠 (전역 즉시 적용 설정)"
+  },
+  "id": "tab_content_general",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "general_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H2",
+          "props": {
+            "className": "text-base font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.general"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.general_description"
+        },
+        {
+          "id": "date_display_format_field",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.date_display_format"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+              },
+              "text": "$t:sirsoft-board.admin.settings.fields.date_display_format_hint"
+            },
+            {
+              "id": "date_format_option_standard",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "...": "{{_local.form}}",
+                      "display": {
+                        "...": "{{_local.form?.display}}",
+                        "date_display_format": "standard"
+                      }
+                    },
+                    "hasChanges": true
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "display.date_display_format",
+                    "value": "standard",
+                    "className": "mt-0.5 h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 flex-shrink-0 pointer-events-none",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'standard'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.standard"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.standard_description"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs font-mono text-blue-600 dark:text-blue-400 mt-1.5 bg-blue-50 dark:bg-blue-900/30 rounded px-2 py-1"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.standard_example"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "date_format_option_relative",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative' ? 'flex items-start gap-4 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-pointer' : 'flex items-start gap-4 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600'}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "...": "{{_local.form}}",
+                      "display": {
+                        "...": "{{_local.form?.display}}",
+                        "date_display_format": "relative"
+                      }
+                    },
+                    "hasChanges": true
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "radio",
+                    "name": "display.date_display_format",
+                    "value": "relative",
+                    "className": "mt-0.5 h-4 w-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 flex-shrink-0 pointer-events-none",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "checked": "{{(_local.form?.display?.date_display_format ?? 'standard') === 'relative'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-sm font-semibold text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.relative"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.relative_description"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs font-mono text-blue-600 dark:text-blue-400 mt-1.5 bg-blue-50 dark:bg-blue-900/30 rounded px-2 py-1"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.options.date_display_format.relative_example"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

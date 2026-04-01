@@ -1,0 +1,70 @@
+{
+  "common": {
+    "system": "System"
+  },
+  "boards": {
+    "menu_added_success": "Successfully added to admin menu.",
+    "menu_add_failed": "Failed to add menu.",
+    "menu_already_exists": "Menu already added.",
+    "module_not_found": "Board module not found."
+  },
+  "post": {
+    "notice": "Notice",
+    "reply": "Reply",
+    "action": {
+      "blind": "Blinded",
+      "delete": "Deleted",
+      "restore": "Restored"
+    },
+    "deleted_post_title": "This post has been deleted",
+    "deleted_post_content": "This post has been deleted.",
+    "blinded_post_title": "This post has been blinded",
+    "blinded_post_content": "This post has been blinded."
+  },
+  "comment": {
+    "create_success": "Comment has been created.",
+    "update_success": "Comment has been updated.",
+    "delete_success": "Comment has been deleted.",
+    "blind_success": "Comment has been blinded.",
+    "restore_success": "Comment has been restored.",
+    "not_found": "Comment not found.",
+    "not_guest_comment": "This is not a guest comment.",
+    "invalid_password": "Password does not match.",
+    "password_verified": "Password has been verified.",
+    "verify_password_failed": "Password verification failed.",
+    "deleted_comment_content": "This comment has been deleted.",
+    "blinded_comment_content": "This comment has been blinded.",
+    "view_original": "View Original",
+    "hide_original": "Hide Original",
+    "post_blinded": "Comments cannot be posted on a blinded post.",
+    "post_deleted": "Comments cannot be posted on a deleted post."
+  },
+  "reports": {
+    "create_success": "Report has been submitted.",
+    "create_failed": "Failed to submit report.",
+    "duplicate_report": "You have already reported this.",
+    "report_disabled": "Reporting is disabled for this board.",
+    "target_not_reportable": "This target cannot be reported."
+  },
+  "board_type": {
+    "list": "Board types retrieved successfully.",
+    "created": "Board type has been created.",
+    "updated": "Board type has been updated.",
+    "deleted": "Board type has been deleted.",
+    "default_set": "Default board type has been set.",
+    "not_found": "Board type not found.",
+    "in_use": "Cannot delete a board type that is in use.",
+    "delete_in_use": "Cannot delete this board type. It is used by :count board(s)."
+  },
+  "settings": {
+    "fetch_success": "Settings loaded successfully.",
+    "fetch_failed": "Failed to load settings.",
+    "save_success": "Settings saved successfully.",
+    "save_failed": "Failed to save settings.",
+    "save_error": "An error occurred while saving settings.",
+    "bulk_apply_success": "Settings applied to :count boards.",
+    "bulk_apply_failed": "Failed to bulk apply settings.",
+    "clear_cache_success": "Settings cache cleared successfully.",
+    "clear_cache_error": "An error occurred while clearing settings cache."
+  }
+}

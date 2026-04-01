@@ -1,0 +1,432 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Copy Product Modal"
+  },
+  "id": "modal_copy_product",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.product.modal.copy.title",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "id": "copy_source_info",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{$parent._local.form.images?.length > 0}}",
+                  "props": {
+                    "className": "w-12 h-12 rounded-lg overflow-hidden flex-shrink-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Img",
+                      "props": {
+                        "src": "{{$parent._local.form.images?.[0]?.download_url}}",
+                        "alt": "{{$localized($parent._local.form.name)}}",
+                        "className": "w-full h-full object-cover"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{!$parent._local.form.images?.length}}",
+                  "props": {
+                    "className": "w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "image",
+                        "className": "w-6 h-6 text-gray-400 dark:text-gray-500"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "font-medium text-gray-900 dark:text-white truncate"
+                      },
+                      "text": "{{$localized($parent._local.form.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{$parent._local.form.product_code ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "copy_options_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.options_label"
+            },
+            {
+              "id": "copy_option_images",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_images", "checked": "{{$parent._local.ui.copyOptions?.images ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.images": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_images"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_options",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_options", "checked": "{{$parent._local.ui.copyOptions?.options ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.options": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_product_options"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_categories",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_categories", "checked": "{{$parent._local.ui.copyOptions?.categories ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.categories": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_categories"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_sales_info",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_sales_info", "checked": "{{$parent._local.ui.copyOptions?.sales_info ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.sales_info": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_sales_info"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_description",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_description", "checked": "{{$parent._local.ui.copyOptions?.description ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.description": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_description"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_notice",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_notice", "checked": "{{$parent._local.ui.copyOptions?.notice ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.notice": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_notice"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_common_info",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_common_info", "checked": "{{$parent._local.ui.copyOptions?.common_info ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.common_info": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_common_info"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_other_info",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_other_info", "checked": "{{$parent._local.ui.copyOptions?.other_info ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.other_info": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_other_info"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_shipping",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_shipping", "checked": "{{$parent._local.ui.copyOptions?.shipping ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.shipping": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_shipping"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_seo",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_seo", "checked": "{{$parent._local.ui.copyOptions?.seo ?? false}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.seo": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_seo"
+                }
+              ]
+            },
+            {
+              "id": "copy_option_identification",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Checkbox",
+                  "props": { "name": "copy_identification", "checked": "{{$parent._local.ui.copyOptions?.identification ?? true}}" },
+                  "actions": [{ "type": "change", "handler": "setState", "params": { "target": "$parent._local", "ui.copyOptions.identification": "{{$event.target.checked}}" } }]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 cursor-pointer" },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.option_identification"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "copy_note",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-start gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "info-circle",
+                    "className": "w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-blue-700 dark:text-blue-300"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.note"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-3 mt-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_global.isCopyingProduct}}"
+              },
+              "actions": [{ "type": "click", "handler": "closeModal", "target": "modal_copy_product" }],
+              "children": [{ "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.common.cancel" }]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_global.isCopyingProduct}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      { "handler": "setState", "params": { "target": "global", "isCopyingProduct": true } },
+                      { "handler": "sirsoft-ecommerce.copyProduct" }
+                    ]
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.isCopyingProduct}}",
+                  "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_global.isCopyingProduct ? '$t:sirsoft-ecommerce.common.processing' : '$t:sirsoft-ecommerce.admin.product.modal.copy.submit'}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

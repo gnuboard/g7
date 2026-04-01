@@ -1,0 +1,130 @@
+{
+    "title": "Extra Fee Template Management",
+    "description": "Manage extra shipping fee templates for remote areas.",
+    "add": "Add Template",
+    "import": "Bulk Import",
+
+    "search": {
+        "placeholder": "Search by zipcode or region..."
+    },
+
+    "filter": {
+        "zipcode": "Zipcode",
+        "region": "Region",
+        "is_active": "Status",
+        "all": "All",
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+
+    "table": {
+        "column": {
+            "zipcode": "Zipcode",
+            "fee": "Extra Fee",
+            "region": "Region",
+            "description": "Description",
+            "is_active": "Status",
+            "created_at": "Created At",
+            "actions": "Actions"
+        }
+    },
+
+    "form": {
+        "zipcode": "Zipcode",
+        "zipcode_placeholder": "Enter zipcode (e.g., 63000)",
+        "fee": "Extra Shipping Fee",
+        "fee_placeholder": "Enter fee amount",
+        "region": "Region Name",
+        "region_placeholder": "Enter region name (e.g., Jeju Island)",
+        "description": "Description",
+        "description_placeholder": "Enter description (e.g., Remote island area)",
+        "is_active": "Active Status"
+    },
+
+    "action": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "search": "Search",
+        "reset": "Reset",
+        "bulk_delete": "Delete Selected",
+        "bulk_toggle": "Change Status",
+        "bulk_import": "CSV Upload"
+    },
+
+    "bulk": {
+        "selected_count": "{{count}} selected",
+        "toggle_active": "Active",
+        "toggle_inactive": "Inactive"
+    },
+
+    "modal": {
+        "delete": {
+            "title": "Delete Template",
+            "message": "Are you sure you want to delete this template?",
+            "warning": "This action cannot be undone.",
+            "confirm": "Delete"
+        },
+        "bulk_delete": {
+            "title": "Delete Templates",
+            "message": "Are you sure you want to delete {{count}} templates?",
+            "warning": "This action cannot be undone.",
+            "confirm": "Delete"
+        },
+        "bulk_toggle": {
+            "title": "Change Status",
+            "message": "Are you sure you want to change the status of {{count}} templates?",
+            "confirm": "Change"
+        },
+        "import": {
+            "title": "CSV Bulk Import",
+            "message": "Upload a CSV file to bulk import extra fee templates.",
+            "format_info": "CSV format: Zipcode, Fee, Region, Description (with header)",
+            "confirm": "Upload"
+        }
+    },
+
+    "empty": {
+        "title": "No templates found.",
+        "message": "Add extra fee templates to manage shipping fees for remote areas.",
+        "no_results": "No search results.",
+        "no_results_message": "Try a different search term."
+    },
+
+    "sort": {
+        "created_at_desc": "Newest First",
+        "created_at_asc": "Oldest First",
+        "zipcode_asc": "By Zipcode",
+        "fee_desc": "Highest Fee",
+        "fee_asc": "Lowest Fee",
+        "region_asc": "By Region"
+    },
+
+    "validation": {
+        "zipcode_required": "Please enter a zipcode.",
+        "zipcode_unique": "This zipcode is already registered.",
+        "zipcode_max": "Zipcode can be up to 10 characters.",
+        "fee_required": "Please enter a fee amount.",
+        "fee_numeric": "Fee must be a number.",
+        "fee_min": "Fee must be 0 or greater.",
+        "ids_required": "No items selected.",
+        "ids_array": "Invalid request format.",
+        "ids_min": "Please select at least one item.",
+        "id_not_found": "Some templates do not exist.",
+        "is_active_required": "Please select a status.",
+        "is_active_boolean": "Status must be true or false.",
+        "items_required": "No items to register.",
+        "items_array": "Invalid request format.",
+        "items_min": "At least one item is required.",
+        "items_max": "Maximum 1000 items can be registered at once.",
+        "item_zipcode_required": "Zipcode is required.",
+        "item_fee_required": "Fee is required."
+    },
+
+    "statistics": {
+        "total": "Total",
+        "active": "Active",
+        "inactive": "Inactive",
+        "regions": "Regions",
+        "avg_fee": "Avg. Fee"
+    }
+}

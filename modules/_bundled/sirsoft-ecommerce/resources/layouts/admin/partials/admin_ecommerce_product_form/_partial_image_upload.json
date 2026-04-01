@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Image Upload Section"
+  },
+  "id": "section_images",
+  "type": "basic",
+  "name": "Section",
+  "props": {
+    "id": "images",
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "images_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
+        {
+          "id": "images_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": { "target": "local", "ui.imagesExpanded": "{{!_local.ui.imagesExpanded}}" }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "images",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.images"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400 ml-2"
+                  },
+                  "text": "({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "images_body",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-body p-6 space-y-4 {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}"
+          },
+          "children": [
+            {
+              "id": "images_uploader_wrapper",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}"
+              },
+              "children": [
+                {
+                  "id": "images_uploader",
+                  "type": "composite",
+                  "name": "FileUploader",
+                  "props": {
+                    "collection": "main",
+                    "maxFiles": 20,
+                    "maxSize": "{{_global.settings?.upload?.max_file_size ?? 10}}",
+                    "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                    "imageCompression": {
+                      "maxSizeMB": 1,
+                      "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? 1200}}"
+                    },
+                    "initialFiles": "{{product?.data?.images ?? copy_source?.data?.images ?? []}}",
+                    "autoUpload": false,
+                    "uploadTriggerEvent": "upload:product_images",
+                    "confirmBeforeRemove": true,
+                    "enablePrimarySelection": true,
+                    "primaryFileId": "{{_local.form.thumbnail_hash}}",
+                    "apiEndpoints": {
+                      "upload": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/' + product.data.id + '/images' : '/api/modules/sirsoft-ecommerce/admin/products/images'}}",
+                      "delete": "/api/modules/sirsoft-ecommerce/admin/products/images/:id",
+                      "reorder": "{{product?.data?.id ? '/api/modules/sirsoft-ecommerce/admin/products/images/reorder' : ''}}"
+                    },
+                    "uploadParams": "{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}",
+                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                  },
+                  "actions": [
+                    {
+                      "event": "onFilesChange",
+                      "handler": "setState",
+                      "params": { "target": "local", "ui.pendingImageCount": "{{($args[0] ?? []).length}}" }
+                    },
+                    {
+                      "event": "onPrimaryChange",
+                      "handler": "setState",
+                      "params": { "target": "local", "form.thumbnail_hash": "{{$args[0]}}" }
+                    },
+                    {
+                      "event": "onUploadComplete",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          { "handler": "setState", "params": { "target": "local", "ui.pendingImageCount": 0, "ui.uploadedImageCount": "{{(_local.ui.uploadedImageCount ?? 0) + ($args[0] ?? []).length}}", "form.images": "{{product?.data?.id ? [...(_local.form?.images ?? []), ...($args[0] ?? [])] : (_local.form?.images ?? [])}}" } },
+                          { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-ecommerce.admin.product.images.upload_complete" } }
+                        ]
+                      }
+                    },
+                    {
+                      "event": "onUploadError",
+                      "handler": "toast",
+                      "params": { "type": "error", "message": "{{$args[0]}}" }
+                    },
+                    {
+                      "event": "onReorder",
+                      "handler": "setState",
+                      "params": { "target": "local", "form.images": "{{$args[0] ?? []}}" }
+                    },
+                    {
+                      "event": "onRemove",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "form.images": "{{(_local.form?.images ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": { "type": "info", "message": "$t:sirsoft-ecommerce.admin.product.images.deleted" }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.images}}",
+              "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+              "text": "{{_local.errors?.images?.[0]}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 space-y-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "text": "$t:sirsoft-ecommerce.admin.product.images.drag_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "text": "$t:sirsoft-ecommerce.admin.product.images.thumbnail_hint"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "text": "$t:sirsoft-ecommerce.admin.product.images.format_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

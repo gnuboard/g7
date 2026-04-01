@@ -1,0 +1,13 @@
+{
+  "drop_or_click": "Drag files or click to upload",
+  "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
+  "delete_confirm_title": "Delete Attachment",
+  "delete_confirm_message": "Are you sure you want to delete this file?",
+  "deleting": "Deleting...",
+  "attached_count": "{{count}}/{{max}} attached",
+  "max_size": "Max {{size}}MB",
+  "reorder_failed": "Failed to reorder files",
+  "drag_to_reorder": "Drag to reorder",
+  "primary_image": "Primary image",
+  "set_as_primary": "Set as primary image"
+}

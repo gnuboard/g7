@@ -1,0 +1,502 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_role_list",
+    "permissions": [
+        "core.permissions.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.roles.page_title",
+        "description": "$t:admin.roles.page_description"
+    },
+    "state": {
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "params": {
+                "search": "{{query.search}}",
+                "page": "{{query.page ?? 1}}",
+                "per_page": 20
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "role_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.roles.title",
+                            "description": "$t:admin.roles.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "roles"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "size": "lg"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_role_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "disabled": "{{roles?.data?.abilities?.can_create !== true}}",
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles/create"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "lg"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.roles.add_role"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_bar_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "mb-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "search_bar",
+                                "type": "composite",
+                                "name": "SearchBar",
+                                "props": {
+                                    "placeholder": "$t:admin.roles.search_placeholder",
+                                    "value": "{{_local.searchQuery || ''}}",
+                                    "className": "w-64"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "w-full"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "searchQuery": "{{$event.target.value}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "submit",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles",
+                                            "query": {
+                                                "search": "{{_local.searchQuery || undefined}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "roles_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "columns": [
+                                {
+                                    "field": "name",
+                                    "header": "$t:admin.roles.columns.name",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.name}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{row.extension_type === 'core'}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "shield",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.roles.badges.core"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{row.extension_type === 'module'}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "cube",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{row.extension_name ?? '$t:admin.roles.badges.module'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{row.extension_type === 'plugin'}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "plug",
+                                                                "size": "sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{row.extension_name ?? '$t:admin.roles.badges.plugin'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "description",
+                                    "header": "$t:admin.roles.columns.description",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-600 dark:text-gray-400 text-sm line-clamp-1"
+                                            },
+                                            "text": "{{row.description ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "users_count",
+                                    "header": "$t:admin.roles.columns.users_count",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "users",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{row.users_count ?? 0}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "is_active",
+                                    "header": "$t:admin.roles.columns.status",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "checked": "{{row.is_active}}",
+                                                "disabled": "{{row.abilities?.can_toggle_status !== true}}",
+                                                "size": "sm"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "apiCall",
+                                                    "auth_required": true,
+                                                    "target": "/api/admin/roles/{{row.id}}/toggle-status",
+                                                    "params": {
+                                                        "method": "PATCH"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "parallel",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{$event.target.checked ? '$t:admin.roles.activate_success' : '$t:admin.roles.deactivate_success'}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "roles"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:admin.roles.toggle_status_failed"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:admin.roles.columns.created_at",
+                                    "sortable": false
+                                }
+                            ],
+                            "data": "{{roles?.data?.data}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{roles?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{roles?.data?.pagination?.last_page ?? 1}}",
+                            "pageSize": 20,
+                            "alwaysShowPagination": true,
+                            "idField": "id",
+                            "responsiveBreakpoint": 768,
+                            "rowActions": [
+                                {
+                                    "id": "edit",
+                                    "label": "$t:common.edit",
+                                    "iconName": "pencil",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "clone",
+                                    "label": "$t:admin.roles.actions.clone",
+                                    "iconName": "copy",
+                                    "disabledField": "abilities.can_create"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:common.delete",
+                                    "iconName": "trash",
+                                    "variant": "danger",
+                                    "disabledField": "abilities.can_delete"
+                                }
+                            ],
+                            "actionsColumnHeader": "$t:common.actions"
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/roles",
+                                    "replace": true,
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "event": "onRowAction",
+                                "type": "action",
+                                "handler": "switch",
+                                "cases": {
+                                    "edit": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles/{{$args[1].id}}/edit"
+                                        }
+                                    },
+                                    "clone": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles/create",
+                                            "query": {
+                                                "clone_from": "{{$args[1].id}}"
+                                            }
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deleteTargetId": "{{$args[1].id}}",
+                                                    "deleteTargetName": "{{$args[1].name}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_role_list/_modal_delete.json"
+        }
+    ]
+}

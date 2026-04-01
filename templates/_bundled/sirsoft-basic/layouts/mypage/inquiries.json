@@ -1,0 +1,137 @@
+{
+  "version": "1.0.0",
+  "layout_name": "mypage/inquiries",
+  "extends": "_user_base",
+  "permissions": [],
+  "transition_overlay": {
+    "enabled": true,
+    "style": "skeleton",
+    "target": "mypage_tab_content",
+    "fallback_target": "main_content_area",
+    "skeleton": {
+      "component": "PageSkeleton",
+      "animation": "pulse",
+      "iteration_count": 5
+    }
+  },
+  "computed": {
+    "currentTab": "inquiries"
+  },
+  "modals": [
+    { "partial": "partials/shop/detail/_modal_qna_write.json" },
+    { "partial": "partials/shop/detail/_modal_inquiry_delete.json" }
+  ],
+  "data_sources": [
+    {
+      "id": "myInquiries",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-ecommerce/user/inquiries",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "blur_until_loaded": true,
+      "params": {
+        "page": "{{_local.inquiriesPage ?? query.page ?? 1}}",
+        "per_page": 10,
+        "search": "{{_local.inquiriesSearch ?? ''}}",
+        "is_answered": "{{_local.inquiriesFilter ?? ''}}"
+      },
+      "onSuccess": {
+        "handler": "conditions",
+        "conditions": [
+          {
+            "if": "{{response.data.data.meta.inquiry_available === false}}",
+            "then": {
+              "handler": "showErrorPage",
+              "params": { "errorCode": 404, "target": "content" }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "inquiriesPage": "{{query.page ?? 1}}",
+        "inquiriesSearch": "",
+        "inquiriesFilter": ""
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+        },
+        "children": [
+          {
+            "type": "layout",
+            "name": "Container",
+            "props": {
+              "className": "py-8"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "py-4"
+                }
+              }
+            },
+            "children": [
+              {
+                "comment": "페이지 제목",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "flex items-center gap-2 mb-6"
+                },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "user",
+                      "size": "xl",
+                      "className": "text-gray-900 dark:text-white"
+                    }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.title"
+                  }
+                ]
+              },
+              {
+                "comment": "탭 네비게이션",
+                "partial": "partials/mypage/_tab_navigation.json"
+              },
+              {
+                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                "type": "basic",
+                "name": "Div",
+                "id": "mypage_tab_content",
+                "children": [
+                  {
+                    "comment": "문의내역",
+                    "partial": "partials/mypage/inquiries/_list.json"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

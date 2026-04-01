@@ -1,0 +1,340 @@
+{
+  "title": "Shipping Policy Management",
+  "title_create": "Create Shipping Policy",
+  "title_edit": "Edit Shipping Policy",
+  "description": "Manage shipping policy list.",
+  "add": "Add Shipping Policy",
+
+  "enums": {
+    "shipping_method": {
+      "parcel": "Parcel",
+      "freight": "Freight",
+      "express": "Express",
+      "economy": "Economy",
+      "ems": "EMS",
+      "direct": "Direct Delivery",
+      "pickup": "Pickup"
+    },
+    "carrier": {
+      "cj": "CJ Logistics",
+      "hanjin": "Hanjin Express",
+      "lotte": "Lotte Global Logistics",
+      "logen": "Logen",
+      "ups": "UPS",
+      "fedex": "FedEx",
+      "dhl": "DHL",
+      "ems": "EMS",
+      "sf": "SF Express",
+      "yamato": "Yamato Transport",
+      "sagawa": "Sagawa Express",
+      "other": "Other"
+    },
+    "charge_policy": {
+      "free": "Free Shipping",
+      "fixed": "Fixed Fee",
+      "conditional_free": "Conditional Free Shipping",
+      "range_amount": "Amount-based Range",
+      "range_quantity": "Quantity-based Range",
+      "range_weight": "Weight-based Range",
+      "range_volume": "Volume-based Range",
+      "range_volume_weight": "Volumetric Weight Range",
+      "per_quantity": "Per Quantity",
+      "per_weight": "Per Weight",
+      "per_volume": "Per Volume",
+      "per_volume_weight": "Per Volumetric Weight",
+      "per_amount": "Per Amount",
+      "api": "External API"
+    }
+  },
+
+  "search": {
+    "placeholder": "Search policy name..."
+  },
+
+  "filter": {
+    "name": "Policy Name",
+    "name_label": "Policy Name:",
+    "shipping_method": "Shipping Method",
+    "shipping_method_label": "Shipping Method:",
+    "carrier": "Carrier",
+    "carrier_label": "Carrier:",
+    "charge_policy": "Charge Policy",
+    "charge_policy_label": "Charge Policy:",
+    "country": "Country",
+    "is_active": "Status",
+    "is_active_label": "Status:",
+    "all": "All",
+    "active": "Active",
+    "inactive": "Inactive",
+    "search_type": {
+      "name": "Policy Name"
+    }
+  },
+
+  "table": {
+    "column": {
+      "is_default_header": "Default",
+      "name": "Policy Name",
+      "shipping_method": "Method",
+      "carrier": "Carrier",
+      "charge_policy": "Charge Policy",
+      "countries": "Countries",
+      "currency": "Currency",
+      "extra_fee": "Extra Fee",
+      "is_active": "Status",
+      "actions": "Actions",
+      "fee_summary": "Fee Summary"
+    },
+    "no_country_settings": "No country settings",
+    "per_unit": "per unit",
+    "range_based": "Range-based",
+    "free_above": "Free above",
+    "extra_fee_badge": "Remote Area",
+    "inactive": "Inactive",
+    "summary": {
+      "total": "Total {{count}}",
+      "active": "Active {{count}}",
+      "inactive": "Inactive {{count}}"
+    }
+  },
+
+  "action": {
+    "edit": "Edit",
+    "copy": "Copy",
+    "delete": "Delete",
+    "search": "Search",
+    "reset": "Reset",
+    "bulk_delete": "Delete Selected",
+    "bulk_toggle": "Change Status",
+    "bulk_apply": "Apply"
+  },
+
+  "bulk": {
+    "selected_count": "{{count}} selected",
+    "toggle_active": "Active",
+    "toggle_inactive": "Inactive",
+    "select_status": "Select Status"
+  },
+
+  "fee_summary": {
+    "label": "Shipping:",
+    "free": "Free Shipping",
+    "fixed": "Shipping: {{fee}}",
+    "conditional": "Under {{threshold}}: {{fee}} / {{threshold}}+: Free",
+    "range_prefix": {
+      "amount": "",
+      "quantity": "pcs",
+      "weight": "kg",
+      "volume": "cm³"
+    },
+    "api": "External API (Real-time calculation)",
+    "per_quantity": "{{fee}} per {{unit}} items",
+    "per_weight": "{{fee}} per {{unit}}kg",
+    "per_volume": "{{fee}} per {{unit}}L",
+    "per_volume_weight": "{{fee}} per {{unit}}kg",
+    "per_amount": "{{fee}} per {{unit}}"
+  },
+
+  "fee_details": {
+    "base_fee": "Shipping Fee",
+    "free_threshold": "Free Shipping Threshold",
+    "range_header": "Tiered Shipping Fees",
+    "extra_fee": "Extra Fee (Remote Areas)"
+  },
+
+  "modal": {
+    "copy": {
+      "title": "Copy Shipping Policy",
+      "message": "Would you like to copy this shipping policy?",
+      "note": "You can modify the data before saving in the registration form.",
+      "confirm": "Copy",
+      "policy_name": "Policy Name:",
+      "country_count": "Country Settings:",
+      "country_count_value": "{{count}} countries"
+    },
+    "delete": {
+      "title": "Delete Shipping Policy",
+      "message": "Are you sure you want to delete this shipping policy?",
+      "warning": "Deleted policies cannot be recovered.",
+      "product_warning": "Products using this policy will have their shipping policy unset.",
+      "confirm": "Delete"
+    },
+    "bulk_delete": {
+      "title": "Bulk Delete Shipping Policies",
+      "message": "Are you sure you want to delete {{count}} shipping policies?",
+      "warning": "Deleted policies cannot be recovered.",
+      "product_warning": "Products using these policies will have their shipping policy unset.",
+      "confirm": "Delete"
+    },
+    "bulk_toggle": {
+      "title": "Change Status",
+      "message": "Change the status of {{count}} shipping policies?",
+      "confirm": "Change"
+    },
+    "set_default": {
+      "title": "Set Default Shipping Policy",
+      "message": "Do you want to set the following policy as default?",
+      "confirm": "Set",
+      "cancel": "Cancel",
+      "success": "Default shipping policy has been set."
+    }
+  },
+
+  "form": {
+    "section_basic": "Basic Information",
+    "section_country_settings": "Country Shipping Settings",
+    "section_country_basic": "Basic Shipping Settings",
+    "section_charge": "Charge Settings",
+    "section_extra_fee": "Remote Area Fee",
+    "name": "Policy Name",
+    "name_placeholder": "Enter policy name",
+    "is_active": "Active Status",
+    "is_default": "Default Policy",
+    "countries": "Shipping Countries",
+    "countries_placeholder": "Select shipping countries",
+    "country_tab_add": "Add Country",
+    "country_tab_remove": "Remove Country",
+    "country_tab_remove_confirm": "Remove settings for this country?",
+    "country_select_placeholder": "Select a country",
+    "no_country_settings": "Add country settings",
+    "country_is_active": "Country Active",
+    "country_active": "Country Active",
+    "extra_fee_kr_only": "Remote Area Fee (Korea only)",
+    "shipping_method": "Shipping Method",
+    "carrier": "Carrier",
+    "carrier_placeholder": "Select carrier",
+    "currency_code": "Base Currency",
+    "currency_code_placeholder": "Select currency",
+    "charge_policy": "Charge Policy",
+    "base_fee": "Shipping Fee",
+    "free_threshold": "Free Shipping Threshold",
+    "free_threshold_hint": "Free shipping for orders at or above this amount",
+    "range_tiers": "Range-based Fees",
+    "range_min": "Min",
+    "range_max": "Max",
+    "range_fee": "Fee",
+    "range_unlimited": "Unlimited",
+    "range_add": "Add Range",
+    "range_error_first_min": "First range must start from 0.",
+    "range_error_last_max": "Last range must have unlimited end value.",
+    "range_error_continuity": "Ranges are not continuous.",
+    "range_error_min_max": "Min value must be less than max value.",
+    "range_error_fee": "Fee must be 0 or greater.",
+    "range_error_min_one": "At least one range is required.",
+    "per_unit_value": "Unit Value",
+    "per_unit_hint": "The shipping fee above will be charged per unit",
+    "api_endpoint": "API Endpoint",
+    "api_endpoint_placeholder": "https://api.example.com/shipping/calculate",
+    "api_endpoint_hint": "Enter the URL for shipping fee calculation API",
+    "api_request_fields": "API Request Fields",
+    "api_request_fields_placeholder": "Enter field name and press Enter",
+    "api_request_fields_hint": "Enter field names to send with API calls (e.g., weight, volume, quantity)",
+    "api_response_fee_field": "Response Fee Field",
+    "api_response_fee_field_placeholder": "shipping_fee",
+    "api_response_fee_field_hint": "Field name containing the fee in API response",
+    "extra_fee_enabled": "Enable Remote Area Fee",
+    "extra_fee_multiply": "Multiply Per Unit",
+    "extra_fee_multiply_hint": "Apply remote area fee per unit when using per-unit shipping",
+    "extra_fee_zipcode": "Zipcode",
+    "extra_fee_zipcode_placeholder": "63000 or 63000-63644",
+    "extra_fee_amount": "Extra Fee",
+    "extra_fee_region": "Region",
+    "extra_fee_add": "Add Zipcode",
+    "extra_fee_load": "Load Template",
+    "extra_fee_settings": "Extra Fee by Zipcode",
+    "extra_fee_enabled_hint": "Apply extra shipping fees for remote areas",
+    "no_extra_fee": "No extra fees. Add a zipcode to get started.",
+    "template_applied": "Remote area fee template has been applied.",
+    "sort_order": "Sort Order",
+    "carrier_none": "None",
+    "no_ranges": "Add a range to get started",
+    "api_settings": "API Settings",
+    "free_threshold_placeholder": "e.g., 50000",
+    "description": "Enter shipping policy information.",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "back_to_list": "Back to List"
+  },
+
+  "modal_extra_fee": {
+    "title": "Remote Area Fee Templates",
+    "search_placeholder": "Search zipcode or region",
+    "region": "Region",
+    "region_all": "All",
+    "status": "Status",
+    "status_all": "All",
+    "active": "Active",
+    "inactive": "Inactive",
+    "zipcode": "Zipcode",
+    "fee": "Fee",
+    "manage": "Manage",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add_section": "Add/Edit Template",
+    "description": "Description",
+    "description_placeholder": "Description (optional)",
+    "reset": "Reset",
+    "add_btn": "Add",
+    "save_btn": "Save",
+    "selected_count": "{{count}} selected",
+    "bulk_delete": "Delete Selected",
+    "apply_all": "Apply All Active",
+    "apply_selected": "Apply Selected",
+    "close": "Close",
+    "apply_confirm": "Existing settings will be overwritten. Continue?",
+    "delete_confirm": "Delete this template?",
+    "bulk_delete_confirm": "Delete {{count}} selected templates?",
+    "no_templates": "No templates found.",
+    "items_count": "items",
+    "apply": "Apply"
+  },
+
+  "empty": {
+    "title": "No shipping policies",
+    "message": "Create a new shipping policy to apply to products.",
+    "no_results": "No results found",
+    "no_results_message": "Try a different search term.",
+    "button": "Add Shipping Policy",
+    "reset_filter": "Reset Filters"
+  },
+
+  "sort": {
+    "created_at_desc": "Newest",
+    "created_at_asc": "Oldest",
+    "name_asc": "Name (A-Z)",
+    "name_desc": "Name (Z-A)",
+    "sort_order_asc": "Sort Order"
+  },
+
+  "pagination": {
+    "total": "Total {{count}}"
+  },
+
+  "messages": {
+    "list_retrieved": "Shipping policies retrieved.",
+    "retrieved": "Shipping policy retrieved.",
+    "created": "Shipping policy created.",
+    "updated": "Shipping policy updated.",
+    "deleted": "Shipping policy deleted.",
+    "toggled": "Status changed.",
+    "bulk_deleted": "Selected shipping policies deleted.",
+    "bulk_toggled": "Status of selected shipping policies changed.",
+    "active_list_retrieved": "Active shipping policies retrieved.",
+    "not_found": "Shipping policy not found.",
+    "template_saved": "Extra fee template saved successfully.",
+    "template_deleted": "Extra fee template deleted successfully.",
+    "template_bulk_deleted": "Selected extra fee templates deleted successfully."
+  },
+
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "change": "Change",
+    "changing": "Changing...",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

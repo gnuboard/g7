@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "배송지명 중복 덮어쓰기 확인 모달"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "confirmOverwriteModal",
+  "props": {
+    "title": "$t:mypage.addresses.overwrite_title",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start gap-3" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "triangle-exclamation", "className": "w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+              "text": "$t:mypage.addresses.overwrite_message"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700" },
+          "responsive": {
+            "portable": {
+              "props": { "className": "flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700" }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  }
+                }
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                { "type": "click", "handler": "closeModal" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "type": "button",
+                    "className": "flex-1 px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                  }
+                }
+              },
+              "text": "$t:mypage.addresses.overwrite_confirm",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    { "handler": "closeModal" },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "{{_global.editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _global.editingAddress.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}",
+                      "params": {
+                        "method": "{{_global.editingAddress?.id ? 'PUT' : 'POST'}}",
+                        "body": {
+                          "force_overwrite": true,
+                          "name": "{{_global.editingAddress?.name ?? ''}}",
+                          "recipient_name": "{{_global.editingAddress?.recipient_name ?? ''}}",
+                          "recipient_phone": "{{_global.editingAddress?.recipient_phone ?? ''}}",
+                          "zipcode": "{{_global.editingAddress?.zipcode ?? ''}}",
+                          "address": "{{_global.editingAddress?.address ?? ''}}",
+                          "address_detail": "{{_global.editingAddress?.address_detail ?? ''}}",
+                          "is_default": "{{_global.editingAddress?.is_default ?? false}}"
+                        }
+                      },
+                      "onSuccess": [
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "addresses" } },
+                        {
+                          "handler": "toast",
+                          "params": { "type": "success", "message": "$t:mypage.addresses.updated" }
+                        },
+                        { "handler": "closeModal" }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "toast",
+                          "params": { "type": "error", "message": "{{error.message}}" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

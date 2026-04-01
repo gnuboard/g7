@@ -1,0 +1,297 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Product Notice Template List Panel - Left Sidebar with Search"
+  },
+  "id": "template_list_panel",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+  },
+  "lifecycle": {
+    "onMount": [
+      {
+        "type": "click",
+        "handler": "sirsoft-ecommerce.initNoticeFromUrl"
+      }
+    ]
+  },
+  "children": [
+    {
+      "id": "template_list_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "file-alt",
+                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              },
+              "text": "{{templates?.data?.data?.length ?? 0}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search_area",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "SearchBar",
+          "props": {
+            "placeholder": "$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder",
+            "value": "{{query.search || ''}}",
+            "className": "w-full"
+          },
+          "actions": [
+            {
+              "type": "submit",
+              "handler": "navigate",
+              "params": {
+                "path": "/admin/ecommerce/product-notices",
+                "mergeQuery": true,
+                "query": {
+                  "search": "{{$event.target.search.value}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "template_list",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(templates?.data?.data?.length ?? 0) > 0}}",
+      "props": {
+        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
+      },
+      "actions": [
+        {
+          "type": "scroll",
+          "debounce": 200,
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "switch",
+              "params": {
+                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
+              },
+              "cases": {
+                "true": {
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "infiniteScroll.isLoadingMore": true
+                      }
+                    },
+                    {
+                      "handler": "scrollIntoView",
+                      "params": {
+                        "selector": "#loading_indicator",
+                        "scrollContainer": "#template_list",
+                        "behavior": "smooth",
+                        "block": "end",
+                        "waitForElement": true,
+                        "timeout": 2000
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
+                      "params": {
+                        "method": "GET",
+                        "query": {
+                          "page": "{{_global.infiniteScroll.currentPage + 1}}",
+                          "per_page": 20,
+                          "search": "{{query.search || ''}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "appendDataSource",
+                          "params": {
+                            "dataSourceId": "templates",
+                            "dataPath": "data",
+                            "newData": "{{response.data}}"
+                          }
+                        },
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
+                            "infiniteScroll.hasMore": "{{(response.data?.length ?? 0) >= 20}}",
+                            "infiniteScroll.isLoadingMore": false
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "infiniteScroll.isLoadingMore": false
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "id": "template_list_items",
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{templates?.data?.data ?? []}}",
+            "item_var": "template"
+          },
+          "children": [
+            {
+              "id": "template_item_{{template.id}}",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{_global.selectedTemplateId === template.id ? 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500' : 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedTemplateId": "{{template.id}}",
+                        "selectedTemplate": "{{template}}",
+                        "panelMode": "view"
+                      }
+                    },
+                    {
+                      "handler": "replaceUrl",
+                      "params": {
+                        "query": { "id": "{{template.id}}", "mode": "view" }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-gray-900 dark:text-white font-medium"
+                      },
+                      "text": "{{$localized(template.name)}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "{{template.fields_count ?? 0}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "loading_indicator",
+          "type": "composite",
+          "name": "LoadingSpinner",
+          "if": "{{_global.infiniteScroll.isLoadingMore}}",
+          "props": {
+            "size": "sm",
+            "text": "$t:sirsoft-ecommerce.common.loading",
+            "color": "text-blue-600 dark:text-blue-400",
+            "className": "py-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "empty_template_state",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
+      "props": {
+        "className": "flex-1 flex items-center justify-center gap-3 px-4 py-8"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": {
+            "name": "file-alt",
+            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+        }
+      ]
+    }
+  ]
+}

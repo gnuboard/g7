@@ -1,0 +1,1383 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_page_list",
+    "permissions": [
+        "sirsoft-page.pages.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-page.admin.page.page_title",
+        "description": "$t:sirsoft-page.admin.page.page_description"
+    },
+    "state": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_pages": [],
+                "isBulkPublishing": false,
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "pages",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/pages",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page}}",
+                "published": "{{query.published}}",
+                "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
+                "filters[0][value]": "{{query['filters[0][value]']}}",
+                "filters[0][operator]": "{{query['filters[0][operator]']}}",
+                "sort_by": "{{query.sort_by}}",
+                "sort_order": "{{query.sort_order}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "page_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-page.admin.page.title",
+                            "description": "$t:sirsoft-page.admin.page.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_page_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{pages?.data?.abilities?.can_create !== true}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages/create"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-page.admin.page.add_page"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "filter_tabs_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-4 flex flex-wrap gap-4"
+                        },
+                        "children": [
+                            {
+                                "id": "published_filter_tabs",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1"
+                                },
+                                "children": [
+                                    {
+                                        "id": "published_all",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "{{!query.published && query.published !== '0' ? 'px-3 py-1.5 text-sm font-medium rounded-md bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-100' : 'px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "published": "",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.published_filter.all"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "published_true",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "{{query.published === '1' ? 'px-3 py-1.5 text-sm font-medium rounded-md bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200' : 'px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "published": "1",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.published_filter.published"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "published_false",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "{{query.published === '0' ? 'px-3 py-1.5 text-sm font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-500 dark:text-gray-100' : 'px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "published": "0",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.published_filter.unpublished"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-row gap-3 items-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_field_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{_local.searchField || 'all'}}",
+                                            "className": "w-28 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                            "options": [
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.search_fields.all",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.search_fields.title",
+                                                    "value": "title"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.search_fields.slug",
+                                                    "value": "slug"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchField": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "$t:sirsoft-page.admin.page.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "keypress",
+                                                "key": "Enter",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                        "filters[0][value]": "{{$event.target.value}}",
+                                                        "filters[0][operator]": "like",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                        "filters[0][value]": "{{_local.searchQuery || ''}}",
+                                                        "filters[0][operator]": "like",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.search"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "flex flex-col gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "mobile_search_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-row gap-2 items-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "mobile_search_field_select",
+                                                        "type": "composite",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "value": "{{_local.searchField || 'all'}}",
+                                                            "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-page.admin.page.search_fields.all",
+                                                                    "value": "all"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-page.admin.page.search_fields.title",
+                                                                    "value": "title"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-page.admin.page.search_fields.slug",
+                                                                    "value": "slug"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "searchField": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "mobile_search_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "placeholder": "$t:sirsoft-page.admin.page.search_placeholder",
+                                                            "value": "{{_local.searchQuery || ''}}",
+                                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "searchQuery": "{{$event.target.value}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "keypress",
+                                                                "key": "Enter",
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "/admin/pages",
+                                                                    "mergeQuery": true,
+                                                                    "query": {
+                                                                        "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                                        "filters[0][value]": "{{$event.target.value}}",
+                                                                        "filters[0][operator]": "like",
+                                                                        "page": 1
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "mobile_search_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "className": "w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/pages",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "filters[0][field]": "{{_local.searchField || 'all'}}",
+                                                                "filters[0][value]": "{{_local.searchQuery || ''}}",
+                                                                "filters[0][operator]": "like",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-page.admin.page.search"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "list_toolbar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "total_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}"
+                            },
+                            {
+                                "id": "list_options",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "sort_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                            "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                            "options": [
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.sort.created_at_desc",
+                                                    "value": "created_at_desc"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.sort.created_at_asc",
+                                                    "value": "created_at_asc"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.sort.published_at_desc",
+                                                    "value": "published_at_desc"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.sort.published_at_asc",
+                                                    "value": "published_at_asc"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "per_page_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{query.per_page || '20'}}",
+                                            "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                            "options": [
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.per_page|count=10",
+                                                    "value": "10"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.per_page|count=20",
+                                                    "value": "20"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.per_page|count=50",
+                                                    "value": "50"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-page.admin.page.per_page|count=100",
+                                                    "value": "100"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/pages",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "per_page": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-700 dark:text-gray-300 font-medium"
+                                },
+                                "text": "$t:sirsoft-page.admin.page.selected_count|count={{(_global.selectedIds_admin_pages || []).length}}"
+                            },
+                            {
+                                "id": "bulk_status_label",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-page.admin.page.bulk_status_change"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "bulk_publish",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_pages || _global.selectedIds_admin_pages.length === 0 || pages?.data?.abilities?.can_update !== true}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_publish_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.bulk_publish"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_unpublish",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{!_global.selectedIds_admin_pages || _global.selectedIds_admin_pages.length === 0 || pages?.data?.abilities?.can_update !== true}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_unpublish_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-page.admin.page.bulk_unpublish"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pages_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "columns": [
+                                {
+                                    "field": "title",
+                                    "header": "$t:sirsoft-page.admin.page.columns.title",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.title ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "/page/{{row.slug}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "slug",
+                                    "header": "$t:sirsoft-page.admin.page.columns.slug",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400 font-mono"
+                                            },
+                                            "text": "{{row.slug}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "published",
+                                    "header": "$t:sirsoft-page.admin.page.columns.published",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.published ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                            },
+                                            "text": "{{row.published ? '$t:sirsoft-page.admin.page.published_status.published' : '$t:sirsoft-page.admin.page.published_status.unpublished'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "current_version",
+                                    "header": "$t:sirsoft-page.admin.page.columns.current_version",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "v{{row.current_version}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-page.admin.page.columns.created_at",
+                                    "sortable": true
+                                },
+                                {
+                                    "field": "published_at",
+                                    "header": "$t:sirsoft-page.admin.page.columns.published_at",
+                                    "sortable": true
+                                }
+                            ],
+                            "data": "{{pages?.data?.data}}",
+                            "sortable": true,
+                            "sortField": "{{query.sort_by}}",
+                            "sortDirection": "{{query.sort_order || 'desc'}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 20,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{pages?.data?.meta?.current_page ?? 1}}",
+                            "serverTotalPages": "{{pages?.data?.meta?.last_page ?? 1}}",
+                            "selectable": true,
+                            "selectedCountText": "",
+                            "selectedIds": "{{_global.selectedIds_admin_pages || []}}",
+                            "idField": "id",
+                            "responsiveBreakpoint": 768,
+                            "rowActions": [
+                                {
+                                    "id": "view",
+                                    "label": "$t:sirsoft-page.admin.page.actions.view",
+                                    "iconName": "eye"
+                                },
+                                {
+                                    "id": "edit",
+                                    "label": "$t:sirsoft-page.admin.page.actions.edit",
+                                    "iconName": "pencil",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "delete",
+                                    "label": "$t:sirsoft-page.admin.page.actions.delete",
+                                    "iconName": "trash",
+                                    "variant": "danger",
+                                    "disabledField": "abilities.can_delete"
+                                }
+                            ],
+                            "actionsColumnHeader": "$t:common.actions"
+                        },
+                        "actions": [
+                            {
+                                "event": "onSelectionChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds_admin_pages": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onSortChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/pages",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "sort_by": "{{$args[0]}}",
+                                        "sort_order": "{{$args[1]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/pages",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            },
+                            {
+                                "event": "onRowAction",
+                                "type": "action",
+                                "handler": "switch",
+                                "cases": {
+                                    "view": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages/{{$args[1].id}}"
+                                        }
+                                    },
+                                    "edit": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/pages/{{$args[1].id}}/edit"
+                                        }
+                                    },
+                                    "delete": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "deletePageId": "{{$args[1].id}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "bulk_publish_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.modals.bulk_publish_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.bulk_publish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isBulkPublishing}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isBulkPublishing}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkPublishing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_pages}}",
+                                                    "published": true
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isBulkPublishing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedIds_admin_pages": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/pages",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-page.admin.page.modals.bulk_publish_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isBulkPublishing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isBulkPublishing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bulk_unpublish_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_confirm|count={{(_global.selectedIds_admin_pages || []).length}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isBulkPublishing}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isBulkPublishing}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkPublishing": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-page/admin/pages/bulk-publish",
+                                            "params": {
+                                                "method": "PATCH",
+                                                "body": {
+                                                    "ids": "{{_global.selectedIds_admin_pages}}",
+                                                    "published": false
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isBulkPublishing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedIds_admin_pages": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/pages",
+                                                        "mergeQuery": true,
+                                                        "query": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-page.admin.page.modals.bulk_unpublish_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isBulkPublishing": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isBulkPublishing}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isBulkPublishing ? '$t:common.processing' : '$t:common.confirm'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-page.admin.page.modals.delete_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-page.admin.page.modals.delete_confirm"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingPage}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeletingPage}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeletingPage": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/modules/sirsoft-page/admin/pages/{{_global.deletePageId}}",
+                                            "params": {
+                                                "method": "DELETE"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingPage": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deletePageId": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "pages"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-page.admin.page.modals.delete_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isDeletingPage": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-page.admin.page.errors.delete_failed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isDeletingPage}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-4 h-4 animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isDeletingPage ? '$t:common.deleting' : '$t:common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

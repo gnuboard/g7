@@ -1,0 +1,5 @@
+{
+  "admin": {
+    "$partial": "partial/ko/admin.json"
+  }
+}

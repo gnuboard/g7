@@ -1,0 +1,37 @@
+{
+    "identifier": "sirsoft-ecommerce",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "이커머스",
+        "en": "Ecommerce"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
+        "en": "Gnuboard7 Ecommerce Module - Product, Order, Payment Management"
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce",
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-ecommerce/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/module.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/module.css"
+        },
+        "handlers": true,
+        "static": "resources/assets/"
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

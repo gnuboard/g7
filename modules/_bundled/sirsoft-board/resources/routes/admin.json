@@ -1,0 +1,89 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/boards/settings",
+            "layout": "admin_board_settings",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.settings.title",
+                "permission": "sirsoft-board.settings.read"
+            }
+        },
+        {
+            "path": "*/admin/boards",
+            "layout": "admin_board_index",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.board.index.title"
+            }
+        },
+        {
+            "path": "*/admin/boards/create",
+            "layout": "admin_board_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.board.create.title"
+            }
+        },
+        {
+            "path": "*/admin/boards/:id/edit",
+            "layout": "admin_board_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.board.edit.title"
+            }
+        },
+        {
+            "path": "*/admin/board/:slug/create",
+            "layout": "admin_board_post_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.posts.create.title"
+            }
+        },
+        {
+            "path": "*/admin/board/:slug/:id/edit",
+            "layout": "admin_board_post_form",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.posts.form.edit_title"
+            }
+        },
+        {
+            "path": "*/admin/board/:slug/post/:id",
+            "layout": "admin_board_post_detail",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.posts.detail.title"
+            }
+        },
+        {
+            "path": "*/admin/board/:slug",
+            "layout": "admin_board_posts_index",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.posts.page_title",
+                "description": "$t:sirsoft-board.admin.posts.page_description"
+            }
+        },
+        {
+            "path": "*/admin/boards/reports",
+            "layout": "admin_board_reports_index",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.reports.page_title",
+                "description": "$t:sirsoft-board.admin.reports.page_description"
+            }
+        },
+        {
+            "path": "*/admin/boards/reports/:id",
+            "layout": "admin_board_reports_detail",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.reports.detail.page_title",
+                "description": "$t:sirsoft-board.admin.reports.detail.page_description"
+            }
+        }
+    ]
+}

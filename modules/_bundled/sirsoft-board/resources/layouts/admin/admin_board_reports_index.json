@@ -1,0 +1,2782 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_board_reports_index",
+    "permissions": [
+        "sirsoft-board.reports.view"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-board.admin.reports.page_title",
+        "description": "$t:sirsoft-board.admin.reports.page_description"
+    },
+    "state": {
+        "searchField": "all",
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchField": "{{query['filters[0][field]'] || 'all'}}",
+                    "searchQuery": "{{query['filters[0][value]'] || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "reports",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/reports",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 15}}",
+                "sort_by": "{{query.sort_by || 'last_reported_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "status": "{{query['status[]']}}",
+                "target_type": "{{query['type[]']}}",
+                "target_status": "{{query['target_status[]']}}",
+                "reported_at_from": "{{query.reported_at_from}}",
+                "reported_at_to": "{{query.reported_at_to}}",
+                "filters[0][field]": "{{query['filters[0][field]'] || 'all'}}",
+                "filters[0][value]": "{{query['filters[0][value]']}}",
+                "filters[0][operator]": "{{query['filters[0][operator]']}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchBoardReports": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/boards/reports",
+                "mergeQuery": false,
+                "query": {
+                    "filters[0][field]": "{{_local.searchField || 'all'}}",
+                    "filters[0][value]": "{{_local.searchQuery || ''}}",
+                    "filters[0][operator]": "like",
+                    "status": "{{((_global.statusFilter ?? query['status[]'] ?? []) || []).length > 0 ? (_global.statusFilter ?? query['status[]']) : null}}",
+                    "type": "{{((_global.typeFilter ?? query['type[]'] ?? []) || []).length > 0 ? (_global.typeFilter ?? query['type[]']) : null}}",
+                    "target_status": "{{((_global.targetStatusFilter ?? query['target_status[]'] ?? []) || []).length > 0 ? (_global.targetStatusFilter ?? query['target_status[]']) : null}}",
+                    "reported_at_from": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
+                    "reported_at_to": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
+                    "sort_by": "{{query.sort_by || 'last_reported_at'}}",
+                    "sort_order": "{{query.sort_order || 'desc'}}"
+                }
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "board_reports_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-board.admin.reports.page_title",
+                            "description": "$t:sirsoft-board.admin.reports.page_description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrows-rotate",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "search_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-row gap-3 items-center"
+                                },
+                                "children": [
+                                    {
+                                        "id": "search_field_select",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{_local.searchField || 'all'}}",
+                                            "className": "w-32 shrink-0 px-3 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm",
+                                            "options": [
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.all",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.post_title",
+                                                    "value": "post_title"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.board_name",
+                                                    "value": "board_name"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.author_name",
+                                                    "value": "author_name"
+                                                },
+                                                {
+                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.reporter_name",
+                                                    "value": "reporter_name"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "searchField": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "$t:sirsoft-board.admin.reports.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "keypress",
+                                                "key": "Enter",
+                                                "actionRef": "searchBoardReports"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "column_selector",
+                                        "type": "composite",
+                                        "name": "ColumnSelector",
+                                        "props": {
+                                            "id": "admin_board_reports_columns",
+                                            "columns": [
+                                                {
+                                                    "field": "created_at",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.reported_at"
+                                                },
+                                                {
+                                                    "field": "status",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.status"
+                                                },
+                                                {
+                                                    "field": "target_status",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.target_status"
+                                                },
+                                                {
+                                                    "field": "target_type",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.type",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "snapshot_board_name",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.board_name",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "snapshot_target_title",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.post_title",
+                                                    "required": true
+                                                },
+                                                {
+                                                    "field": "snapshot_author_name",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.author_name"
+                                                },
+                                                {
+                                                    "field": "reporter_id",
+                                                    "header": "$t:sirsoft-board.admin.reports.columns.reporter_name"
+                                                }
+                                            ],
+                                            "visibleColumns": "{{_global.visibleColumns_reports}}",
+                                            "triggerLabel": "$t:common.column_selector",
+                                            "requiredText": "$t:common.required",
+                                            "menuTitle": "$t:common.column_selector_title",
+                                            "menuDescription": "$t:common.column_selector_description",
+                                            "position": "right",
+                                            "defaultColumns": [
+                                                "created_at",
+                                                "status",
+                                                "target_status",
+                                                "target_type",
+                                                "snapshot_board_name",
+                                                "snapshot_target_title",
+                                                "snapshot_author_name",
+                                                "reporter_id"
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onColumnVisibilityChange",
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "visibleColumns_reports": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "advanced_search_toggle",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.advanced_search"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
+                                                    "className": "w-4 h-4 text-white dark:text-gray-300"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "flex flex-col gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "mobile_search_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-row gap-2 items-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "mobile_search_field_select",
+                                                        "type": "composite",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "value": "{{_local.searchField || 'all'}}",
+                                                            "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.all",
+                                                                    "value": "all"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.post_title",
+                                                                    "value": "post_title"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.board_name",
+                                                                    "value": "board_name"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.author_name",
+                                                                    "value": "author_name"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-board.admin.reports.search_fields.reporter_name",
+                                                                    "value": "reporter_name"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "searchField": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "mobile_search_input",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "placeholder": "$t:sirsoft-board.admin.reports.search_placeholder",
+                                                            "value": "{{_local.searchQuery || ''}}",
+                                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "searchQuery": "{{$event.target.value}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "keypress",
+                                                                "key": "Enter",
+                                                                "actionRef": "searchBoardReports"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "mobile_action_row",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-row gap-2 items-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "mobile_column_selector",
+                                                        "type": "composite",
+                                                        "name": "ColumnSelector",
+                                                        "props": {
+                                                            "id": "admin_board_reports_columns",
+                                                            "columns": [
+                                                                {
+                                                                    "field": "created_at",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.reported_at"
+                                                                },
+                                                                {
+                                                                    "field": "status",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.status"
+                                                                },
+                                                                {
+                                                                    "field": "target_status",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.target_status"
+                                                                },
+                                                                {
+                                                                    "field": "target_type",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.type",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "snapshot_board_name",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.board_name",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "snapshot_target_title",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.post_title",
+                                                                    "required": true
+                                                                },
+                                                                {
+                                                                    "field": "snapshot_author_name",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.author_name"
+                                                                },
+                                                                {
+                                                                    "field": "reporter_id",
+                                                                    "header": "$t:sirsoft-board.admin.reports.columns.reporter_name"
+                                                                }
+                                                            ],
+                                                            "visibleColumns": "{{_global.visibleColumns_reports}}",
+                                                            "triggerLabel": "$t:common.column_selector",
+                                                            "requiredText": "$t:common.required",
+                                                            "menuTitle": "$t:common.column_selector_title",
+                                                            "menuDescription": "$t:common.column_selector_description",
+                                                            "position": "right",
+                                                            "defaultColumns": [
+                                                                "created_at",
+                                                                "status",
+                                                                "target_status",
+                                                                "target_type",
+                                                                "snapshot_board_name",
+                                                                "snapshot_target_title",
+                                                                "snapshot_author_name",
+                                                                "reporter_id"
+                                                            ],
+                                                            "iconOnly": true
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "event": "onColumnVisibilityChange",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "visibleColumns_reports": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "mobile_advanced_search_toggle",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 border-0 rounded-lg text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "showAdvancedSearch": "{{!_global.showAdvancedSearch}}"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.advanced_search"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "{{_global.showAdvancedSearch ? 'chevron-up' : 'chevron-down'}}",
+                                                                    "className": "w-4 h-4 text-white dark:text-gray-300"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "id": "advanced_filters",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-3 mt-4"
+                                },
+                                "if": "{{_global.showAdvancedSearch}}",
+                                "children": [
+                                    {
+                                        "id": "status_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-1"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.reports.filters.status_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.statusFilter ?? query['status[]']) || []).includes('pending')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusFilter": "{{((_global.statusFilter ?? query['status[]']) || []).includes('pending') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'pending') : [...((_global.statusFilter ?? query['status[]']) || []), 'pending']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.status_pending"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.statusFilter ?? query['status[]']) || []).includes('review')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusFilter": "{{((_global.statusFilter ?? query['status[]']) || []).includes('review') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'review') : [...((_global.statusFilter ?? query['status[]']) || []), 'review']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.status_review"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.statusFilter ?? query['status[]']) || []).includes('rejected')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusFilter": "{{((_global.statusFilter ?? query['status[]']) || []).includes('rejected') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'rejected') : [...((_global.statusFilter ?? query['status[]']) || []), 'rejected']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.status_rejected"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.statusFilter ?? query['status[]']) || []).includes('suspended')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusFilter": "{{((_global.statusFilter ?? query['status[]']) || []).includes('suspended') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'suspended') : [...((_global.statusFilter ?? query['status[]']) || []), 'suspended']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.status_suspended"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.statusFilter ?? query['status[]']) || []).includes('deleted')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusFilter": "{{((_global.statusFilter ?? query['status[]']) || []).includes('deleted') ? ((_global.statusFilter ?? query['status[]']) || []).filter(v => v !== 'deleted') : [...((_global.statusFilter ?? query['status[]']) || []), 'deleted']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.status_deleted"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "type_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-1"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.reports.filters.type_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.typeFilter ?? query['type[]']) || []).includes('post')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "typeFilter": "{{((_global.typeFilter ?? query['type[]']) || []).includes('post') ? ((_global.typeFilter ?? query['type[]']) || []).filter(v => v !== 'post') : [...((_global.typeFilter ?? query['type[]']) || []), 'post']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.type_post"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.typeFilter ?? query['type[]']) || []).includes('comment')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "typeFilter": "{{((_global.typeFilter ?? query['type[]']) || []).includes('comment') ? ((_global.typeFilter ?? query['type[]']) || []).filter(v => v !== 'comment') : [...((_global.typeFilter ?? query['type[]']) || []), 'comment']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.type_comment"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "target_status_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-1"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.reports.filters.target_status_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('published')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "targetStatusFilter": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('published') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'published') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'published']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.target_status_published"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('blinded')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "targetStatusFilter": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('blinded') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'blinded') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'blinded']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.target_status_blinded"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1.5 cursor-pointer text-sm text-gray-600 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('deleted')}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "targetStatusFilter": "{{((_global.targetStatusFilter ?? query['target_status[]']) || []).includes('deleted') ? ((_global.targetStatusFilter ?? query['target_status[]']) || []).filter(v => v !== 'deleted') : [...((_global.targetStatusFilter ?? query['target_status[]']) || []), 'deleted']}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.target_status_deleted"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "date_filter_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start gap-3"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "flex flex-col gap-1"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs font-medium text-gray-500 dark:text-gray-400 w-20 shrink-0 pt-2"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.reports.filters.reported_at_label"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-wrap items-center gap-2"
+                                                },
+                                                "children": [
+                                                            {
+                                                                "id": "date_from",
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "date",
+                                                                    "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
+                                                                    "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateFrom": "{{$event.target.value}}",
+                                                                            "dateQuick": ""
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "~"
+                                                            },
+                                                            {
+                                                                "id": "date_to",
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "date",
+                                                                    "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
+                                                                    "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateTo": "{{$event.target.value}}",
+                                                                            "dateQuick": ""
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "date_quick_buttons",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex flex-wrap gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_today",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "today",
+                                                                            "dateFrom": "{{new Date().toISOString().slice(0, 10)}}",
+                                                                            "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_3days",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "3days",
+                                                                            "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0, 10); })()}}",
+                                                                            "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_week",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "week",
+                                                                            "dateFrom": "{{(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0, 10); })()}}",
+                                                                            "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_month",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "month",
+                                                                            "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); })()}}",
+                                                                            "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_3months",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "3months",
+                                                                            "dateFrom": "{{(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}}",
+                                                                            "dateTo": "{{new Date().toISOString().slice(0, 10)}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "{{_global.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.reports.filters.date_quick_all",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "dateQuick": "all",
+                                                                            "dateFrom": "",
+                                                                            "dateTo": ""
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "search_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex justify-center gap-2 mt-4"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "grid grid-cols-2 gap-2 mt-4"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "id": "reset_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                                                }
+                                            }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "searchField": "all",
+                                                    "searchQuery": "",
+                                                    "statusFilter": "{{[]}}",
+                                                    "typeFilter": "{{[]}}",
+                                                    "targetStatusFilter": "{{[]}}",
+                                                    "dateFrom": "",
+                                                    "dateTo": "",
+                                                    "dateQuick": ""
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/boards/reports",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.reset"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                                                }
+                                            }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "actionRef": "searchBoardReports"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.search"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_actions_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "id": "selected_count",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-700 dark:text-gray-300 font-medium"
+                                },
+                                "text": "$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}"
+                            },
+                            {
+                                "id": "status_change_label",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-board.admin.reports.status_change_label"
+                            },
+                            {
+                                "id": "bulk_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "bulk_review",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkActionType": "review",
+                                                    "bulkActionReason": "",
+                                                    "statusCountsData": null,
+                                                    "statusCountsLoading": true
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds}}",
+                                                        "target_status": "review"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsData": "{{result.data}}",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.actions.review"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_reject",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkActionType": "rejected",
+                                                    "bulkActionReason": "",
+                                                    "statusCountsData": null,
+                                                    "statusCountsLoading": true
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds}}",
+                                                        "target_status": "rejected"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsData": "{{result.data}}",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.actions.reject"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_suspend",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkActionType": "suspended",
+                                                    "bulkActionReason": "",
+                                                    "statusCountsData": null,
+                                                    "statusCountsLoading": true
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds}}",
+                                                        "target_status": "suspended"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsData": "{{result.data}}",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.actions.suspend"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "bulk_delete",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-3 py-1.5 bg-gray-600 text-white rounded hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "bulkActionType": "deleted",
+                                                    "bulkActionReason": "",
+                                                    "statusCountsData": null,
+                                                    "statusCountsLoading": true
+                                                }
+                                            },
+                                            {
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds}}",
+                                                        "target_status": "deleted"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsData": "{{result.data}}",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "statusCountsLoading": false
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.reports.actions.delete"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "mobile_selected_count",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300 font-medium"
+                                        },
+                                        "text": "$t:sirsoft-board.admin.reports.selected_count|count={{(_global.selectedIds || []).length}}"
+                                    },
+                                    {
+                                        "id": "mobile_bulk_action_dropdown",
+                                        "type": "composite",
+                                        "name": "Dropdown",
+                                        "props": {
+                                            "label": "$t:sirsoft-board.admin.reports.bulk_action_select",
+                                            "items": [
+                                                {
+                                                    "value": "review",
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.review"
+                                                },
+                                                {
+                                                    "value": "rejected",
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.reject"
+                                                },
+                                                {
+                                                    "value": "suspended",
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.suspend"
+                                                },
+                                                {
+                                                    "value": "deleted",
+                                                    "label": "$t:sirsoft-board.admin.reports.actions.delete"
+                                                }
+                                            ],
+                                            "position": "bottom-right",
+                                            "className": "ml-auto"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onItemClick",
+                                                                                                "handler": "switch",
+                                                "cases": {
+                                                    "review": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "bulkActionType": "review",
+                                                                    "bulkActionReason": "",
+                                                                    "statusCountsData": null,
+                                                                    "statusCountsLoading": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "ids": "{{_global.selectedIds}}",
+                                                                        "target_status": "review"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsData": "{{result.data}}",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "rejected": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "bulkActionType": "rejected",
+                                                                    "bulkActionReason": "",
+                                                                    "statusCountsData": null,
+                                                                    "statusCountsLoading": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "ids": "{{_global.selectedIds}}",
+                                                                        "target_status": "rejected"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsData": "{{result.data}}",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "suspended": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "bulkActionType": "suspended",
+                                                                    "bulkActionReason": "",
+                                                                    "statusCountsData": null,
+                                                                    "statusCountsLoading": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "ids": "{{_global.selectedIds}}",
+                                                                        "target_status": "suspended"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsData": "{{result.data}}",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "deleted": {
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "bulkActionType": "deleted",
+                                                                    "bulkActionReason": "",
+                                                                    "statusCountsData": null,
+                                                                    "statusCountsLoading": true
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "/api/modules/sirsoft-board/admin/reports/status-counts",
+                                                                "params": {
+                                                                    "method": "POST",
+                                                                    "body": {
+                                                                        "ids": "{{_global.selectedIds}}",
+                                                                        "target_status": "deleted"
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsData": "{{result.data}}",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "{{result.data.all_unchangeable ? 'all_unchangeable_warning_modal' : 'status_change_modal'}}"
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "statusCountsLoading": false
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "id": "reports_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "columns": [
+                                {
+                                    "field": "created_at",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.reported_at",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col gap-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.is_reactivated ? (row.last_activated_at ?? row.created_at) : row.created_at}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{row.last_reported_at && (row.report_count ?? 0) > 1}}",
+                                                    "props": {
+                                                        "className": "flex items-center gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.columns.last_reported_at_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{row.last_reported_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "status",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.status",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : row.status === 'review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : row.status === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : row.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : row.status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                            },
+                                            "text": "{{row.status_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "target_status",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.target_status",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{row.target_status}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.target_status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.target_status === 'blinded' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : row.target_status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                            },
+                                            "text": "{{row.target_status_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "target_type",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.type",
+                                    "sortable": true,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.target_type === 'post' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}}"
+                                            },
+                                            "text": "{{row.target_type_label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "snapshot_board_name",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.board_name",
+                                    "sortable": true,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm"
+                                            },
+                                            "text": "{{row.board?.name}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "snapshot_target_title",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.post_title",
+                                    "sortable": true,
+                                    "required": true,
+                                    "cellClassName": "max-w-xs",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium truncate"
+                                                    },
+                                                    "text": "{{row.board?.title}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.report_count && row.report_count > 1}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-500 dark:text-red-400"
+                                                    },
+                                                    "text": "[{{row.report_count}}]"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "snapshot_author_name",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.author_name",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "{{row.author?.name ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{row.author?.is_guest}}",
+                                                            "props": {
+                                                                "color": "yellow",
+                                                                "size": "sm"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.reports.guest_badge"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.author?.email}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "({{row.author?.email}})"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "reporter_id",
+                                    "header": "$t:sirsoft-board.admin.reports.columns.reporter_name",
+                                    "sortable": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{row.reporter?.name}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{row.reporter?.email}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "({{row.reporter?.email}})"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "data": "{{reports?.data?.data}}",
+                            "sortable": true,
+                            "sortField": "{{query.sort_by}}",
+                            "sortDirection": "{{query.sort_order || 'desc'}}",
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 20,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{reports?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{reports?.data?.pagination?.last_page ?? 1}}",
+                            "selectable": true,
+                            "selectedIds": "{{_global.selectedIds || []}}",
+                            "idField": "id",
+                            "showColumnSelector": false,
+                            "visibleColumns": "{{_global.visibleColumns_reports}}",
+                            "responsiveBreakpoint": 768,
+                            "rowActions": [
+                                {
+                                    "id": "view",
+                                    "label": "$t:sirsoft-board.admin.reports.actions.view",
+                                    "iconName": "eye",
+                                    "disabledField": "abilities.can_view"
+                                },
+                                {
+                                    "id": "go_to_board",
+                                    "label": "$t:sirsoft-board.admin.reports.actions.go_to_board",
+                                    "iconName": "folder"
+                                },
+                                {
+                                    "id": "go_to_post",
+                                    "label": "$t:sirsoft-board.admin.reports.actions.go_to_post",
+                                    "iconName": "file-lines"
+                                }
+                            ],
+                            "showFirstLast": true,
+                            "columnSelectorText": "$t:common.column_selector",
+                            "emptyMessage": "$t:common.no_data",
+                            "actionsColumnHeader": "$t:common.actions",
+                            "requiredText": "$t:common.required",
+                            "selectedCountText": ""
+                        },
+                        "actions": [
+                            {
+                                "event": "onSelectionChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "selectedIds": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onColumnVisibilityChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "visibleColumns_reports": "{{$args[0]}}"
+                                }
+                            },
+                            {
+                                "event": "onSortChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "sort_by": "{{$args[0]}}",
+                                                "sort_order": "{{$args[1]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedIds": []
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "event": "onRowAction",
+                                                                "handler": "switch",
+                                "value": "{{$args[0]}}",
+                                "cases": {
+                                    "view": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/boards/reports/{{$args[1]?.id}}"
+                                        }
+                                    },
+                                    "go_to_board": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{$args[1]?.board?.slug}}"
+                                        }
+                                    },
+                                    "go_to_post": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/board/{{$args[1]?.board?.slug}}/post/{{$args[1]?.post_id}}"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pagination_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 text-sm text-gray-600 dark:text-gray-400 text-center"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.admin.reports.pagination_info|total={{reports?.data?.pagination?.total ?? 0}}|from={{reports?.data?.pagination?.from ?? 0}}|to={{reports?.data?.pagination?.to ?? 0}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "status_change_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "{{_global.bulkActionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.bulkActionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.bulkActionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!_global.statusCountsLoading && _global.statusCountsData?.unchangeable_count > 0}}",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.changeable_warning_with_deleted|count={{_global.statusCountsData?.changeable_count ?? 0}}|status={{_global.statusCountsData?.target_status_label ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!_global.statusCountsLoading && (!_global.statusCountsData?.unchangeable_count || _global.statusCountsData?.unchangeable_count === 0)}}",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.changeable_warning_no_deleted|count={{_global.statusCountsData?.changeable_count ?? 0}}|status={{_global.statusCountsData?.target_status_label ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!_global.statusCountsLoading && _global.bulkActionType === 'deleted' && _global.statusCountsData?.changeable_count > 0}}",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400 mb-4"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.permanent_delete_warning"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.statusCountsLoading && _global.statusCountsData?.deleted_count > 0}}",
+                            "props": {
+                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-md"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "exclamation-triangle",
+                                        "className": "w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-red-700 dark:text-red-300"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.deleted_warning|count={{_global.statusCountsData?.deleted_count}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.statusCountsLoading && _global.statusCountsData?.same_status_count > 0}}",
+                            "props": {
+                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-md"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "exclamation-triangle",
+                                        "className": "w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.same_status_warning|count={{_global.statusCountsData?.same_status_count}}|status={{_global.statusCountsData?.target_status_label ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.statusCountsLoading && _global.bulkActionType === 'rejected' && (_global.statusCountsData?.restorable_blind_count ?? 0) > 0}}",
+                            "props": {
+                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "eye",
+                                        "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-orange-700 dark:text-orange-300"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count={{_global.statusCountsData?.restorable_blind_count}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.statusCountsLoading}}",
+                            "props": {
+                                "className": "mb-4 flex items-center justify-center p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin mr-2"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.loading_status"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.statusCountsLoading && _global.statusCountsData && _global.statusCountsData.changeable_count > 0}}",
+                            "props": {
+                                "className": "mb-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-400 mb-2"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.reports.modals.selected_status_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.statusCountsData?.changeable_status_counts?.pending}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                                            },
+                                            "text": "{{_global.statusCountsData?.changeable_status_counts?.pending?.label}} $t:sirsoft-board.admin.reports.modals.count_unit|count={{_global.statusCountsData?.changeable_status_counts?.pending?.count}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.statusCountsData?.changeable_status_counts?.review}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                                            },
+                                            "text": "{{_global.statusCountsData?.changeable_status_counts?.review?.label}} $t:sirsoft-board.admin.reports.modals.count_unit|count={{_global.statusCountsData?.changeable_status_counts?.review?.count}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.statusCountsData?.changeable_status_counts?.rejected}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                                            },
+                                            "text": "{{_global.statusCountsData?.changeable_status_counts?.rejected?.label}} $t:sirsoft-board.admin.reports.modals.count_unit|count={{_global.statusCountsData?.changeable_status_counts?.rejected?.count}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.statusCountsData?.changeable_status_counts?.suspended}}",
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+                                            },
+                                            "text": "{{_global.statusCountsData?.changeable_status_counts?.suspended?.label}} $t:sirsoft-board.admin.reports.modals.count_unit|count={{_global.statusCountsData?.changeable_status_counts?.suspended?.count}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.reason_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "props": {
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "rows": 3,
+                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
+                                "value": "{{_global.bulkActionReason || ''}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkActionReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.bulkActionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "disabled": "{{_global.bulkStatusLoading}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkStatusLoading": true
+                                    }
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/modules/sirsoft-board/admin/reports/bulk-status",
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "ids": "{{_global.selectedIds}}",
+                                            "status": "{{_global.bulkActionType}}",
+                                            "process_note": "{{_global.bulkActionReason}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkStatusLoading": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedIds": [],
+                                                "bulkActionReason": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "reports"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{result.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "bulkStatusLoading": false,
+                                                "errorMessage": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "error_modal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.bulkStatusLoading}}",
+                                    "text": "$t:common.confirm"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.bulkStatusLoading}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "w-4 h-4 animate-spin"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.reports.modals.processing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "error_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:common.error",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.errorMessage || $t:common.error_occurred}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "all_deleted_warning_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.reports.modals.all_deleted_warning_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.all_deleted_warning_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "all_unchangeable_warning_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_title",
+                "size": "small"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-board.admin.reports.modals.all_unchangeable_warning_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

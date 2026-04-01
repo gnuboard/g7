@@ -1,0 +1,703 @@
+{
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "card"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-header"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "card-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.section_title"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{!_local.isAddingCarrier}}",
+              "props": {
+                "type": "button",
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingCarrier": true,
+                    "carrierForm": {
+                      "code": "",
+                      "name": {
+                        "ko": "",
+                        "en": ""
+                      },
+                      "type": "domestic",
+                      "tracking_url": "",
+                      "is_active": true,
+                      "sort_order": 0
+                    },
+                    "carrierFormErrors": null
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "text-xs"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.add_button"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.isAddingCarrier}}",
+      "props": {
+        "className": "p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{_local.carrierForm?.code ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
+                    "className": "{{_local.carrierFormErrors?.code ? 'input input-error w-full' : 'input w-full'}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "carrierForm.code": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.carrierFormErrors?.code}}",
+                  "props": {
+                    "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.validation.code_required"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name"
+                },
+                {
+                  "type": "composite",
+                  "name": "MultilingualInput",
+                  "props": {
+                    "value": "{{_local.carrierForm?.name ?? {}}}",
+                    "layout": "inline",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
+                    "error": "{{_local.carrierFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.carriers.validation.name_required' : ''}}",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "carrierForm.name": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "value": "{{_local.carrierForm?.type ?? 'domestic'}}",
+                    "className": "w-full",
+                    "options": [
+                      {
+                        "value": "domestic",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic"
+                      },
+                      {
+                        "value": "international",
+                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international"
+                      }
+                    ],
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "carrierForm.type": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "sm:col-span-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{_local.carrierForm?.tracking_url ?? ''}}",
+                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
+                    "className": "input w-full",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "carrierForm.tracking_url": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_help"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 mt-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isAddingCarrier": false,
+                    "carrierForm": null,
+                    "carrierFormErrors": null
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.cancel"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "conditions",
+                  "conditions": [
+                    {
+                      "if": "{{(_local.carrierForm?.code ?? '').trim() && (_local.carrierForm?.name?.ko ?? '').trim()}}",
+                      "then": {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "form.shipping.carriers": "{{[...(_local.form?.shipping?.carriers ?? []), _local.carrierForm]}}",
+                          "isAddingCarrier": false,
+                          "carrierForm": null,
+                          "carrierFormErrors": null,
+                          "hasChanges": true
+                        }
+                      }
+                    },
+                    {
+                      "then": {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "carrierFormErrors": {
+                            "code": "{{!(_local.carrierForm?.code ?? '').trim() ? true : null}}",
+                            "name_ko": "{{!(_local.carrierForm?.name?.ko ?? '').trim() ? true : null}}"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.add_button"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier}}",
+      "props": {
+        "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.empty"
+    },
+    {
+      "id": "carrier_list",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(_local.form?.shipping?.carriers ?? []).length > 0}}",
+      "props": {
+        "className": "overflow-x-auto"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": ""
+          },
+          "children": [
+            {
+              "partial": "_shipping_carrier_cards.json"
+            }
+          ]
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Table",
+          "props": {
+            "className": "w-full"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Thead",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-28"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-56"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-28"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-left text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 max-w-xs"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.is_active"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "text-center text-xs font-medium text-gray-500 dark:text-gray-400 px-4 py-2 w-16"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.actions"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Tbody",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "iteration": {
+                    "source": "(_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))",
+                    "item_var": "carrier",
+                    "index_var": "cIdx"
+                  },
+                  "props": {
+                    "className": "border-t border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "value": "{{carrier.code ?? ''}}",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
+                            "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code'] ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, code: $event.target.value} : c)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']?.[0] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "MultilingualInput",
+                          "props": {
+                            "value": "{{carrier.name ?? {}}}",
+                            "layout": "compact",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
+                            "error": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + carrier._idx + '.name']?.[0] ?? ''}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, name: $event.target.value} : c)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Select",
+                          "props": {
+                            "value": "{{carrier.type ?? 'domestic'}}",
+                            "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
+                            "options": [
+                              {
+                                "value": "domestic",
+                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_domestic"
+                              },
+                              {
+                                "value": "international",
+                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.type_international"
+                              }
+                            ],
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, type: $event.target.value} : c)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 max-w-xs"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "value": "{{carrier.tracking_url ?? ''}}",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
+                            "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url'] ? 'input input-error w-full' : 'input w-full'}}",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']?.[0] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Toggle",
+                          "props": {
+                            "checked": "{{carrier.is_active ?? false}}",
+                            "size": "sm",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "px-4 py-2 text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                            "title": "$t:common.delete",
+                            "disabled": "{{_computed.isReadOnly}}"
+                          },
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete",
+                              "params": {
+                                "target": "local",
+                                "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== carrier._idx)}}",
+                                "hasChanges": true
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "fa-solid fa-trash",
+                                "className": "text-sm"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "product": {
+    "index": {
+      "title": "상품 목록",
+      "description": "상품을 둘러보세요",
+      "empty_title": "상품이 없습니다",
+      "empty_description": "등록된 상품이 없습니다"
+    },
+    "detail": {
+      "title": "상품 상세",
+      "description": "상품 상세 정보",
+      "placeholder": "상품 상세가 여기에 표시됩니다"
+    }
+  },
+  "cart": {
+    "title": "장바구니",
+    "description": "장바구니에 담긴 상품",
+    "empty_title": "장바구니가 비어있습니다",
+    "empty_description": "상품을 장바구니에 담아주세요"
+  },
+  "checkout": {
+    "title": "주문/결제",
+    "description": "주문 및 결제 정보를 입력합니다",
+    "placeholder": "주문/결제 폼이 여기에 표시됩니다"
+  },
+  "review": {
+    "validation": {
+      "rating_required": "별점을 선택해 주세요.",
+      "content_min": "리뷰 내용을 최소 10자 이상 입력해 주세요."
+    },
+    "image_upload_partial_fail": "일부 이미지 업로드에 실패했습니다.",
+    "submit_success": "리뷰가 등록되었습니다.",
+    "submit_failed": "리뷰 등록에 실패했습니다."
+  }
+}

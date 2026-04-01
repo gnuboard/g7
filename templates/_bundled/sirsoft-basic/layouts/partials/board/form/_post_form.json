@@ -1,0 +1,832 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시글 작성/수정 폼"
+  },
+  "type": "basic",
+  "name": "Form",
+  "props": {
+    "id": "form",
+    "className": "{{!form_meta?.data || !form_data?.data ? 'space-y-6 opacity-50 pointer-events-none' : 'space-y-6'}}"
+  },
+  "children": [
+    {
+      "comment": "전체 에러 메시지 박스",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.errors && (typeof _local.errors === 'string' || Object.keys(_local.errors).length > 0)}}",
+      "props": {
+        "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "triangle-exclamation",
+                "className": "text-red-600 dark:text-red-400 mt-0.5",
+                "size": "lg"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-sm font-semibold text-red-800 dark:text-red-200 mb-2"
+                  },
+                  "text": "$t:common.validation_errors"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "props": {
+                    "className": "list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300"
+                  },
+                  "iteration": {
+                    "source": "typeof _local.errors === 'string' ? [_local.errors] : Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                    "item_var": "message"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "props": {
+                        "className": "text-sm text-red-700 dark:text-red-300"
+                      },
+                      "text": "{{message}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{route.id && form_data?.data?.author}}",
+      "props": {
+        "className": "flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "type": "composite",
+          "name": "Avatar",
+          "props": {
+            "author": "{{form_data?.data?.author}}",
+            "size": "md"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "composite",
+              "name": "UserInfo",
+              "props": {
+                "userId": "{{form_data?.data?.author?.uuid}}",
+                "name": "{{form_data?.data?.author?.name}}",
+                "isGuest": "{{!form_data?.data?.author?.uuid}}",
+                "showDropdown": false,
+                "clickable": false,
+                "className": "text-sm font-medium"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+              },
+              "text": "$t:board.created_at: {{form_data?.data?.created_at}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "게시글 옵션 (공지사항/비밀글)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "comment": "공지사항 카드 (관리자 전용)",
+              "type": "basic",
+              "name": "Label",
+              "if": "{{form_meta?.data?.board?.user_abilities?.can_manage && !_local.form?.parent_id}}",
+              "props": {
+                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "name": "is_notice",
+                        "className": "mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "bell",
+                                "size": "sm",
+                                "className": "text-blue-600 dark:text-blue-400"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                              },
+                              "text": "$t:board.form.is_notice"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:board.form.notice_description"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "비밀글 카드 (enabled 모드)",
+              "type": "basic",
+              "name": "Label",
+              "if": "{{form_meta?.data?.board?.secret_mode === 'enabled'}}",
+              "props": {
+                "className": "block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "name": "is_secret",
+                        "className": "mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "lock",
+                                "size": "sm",
+                                "className": "text-amber-600 dark:text-amber-400"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                              },
+                              "text": "$t:board.form.secret_post"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:board.form.secret_description"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "비밀글 카드 (always 모드 - 비활성 상태)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{form_meta?.data?.board?.secret_mode === 'always'}}",
+              "props": {
+                "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 opacity-75"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "hidden",
+                    "name": "is_secret",
+                    "value": "true"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-start gap-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "checked": true,
+                        "disabled": true,
+                        "className": "mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "props": {
+                                "name": "lock",
+                                "size": "sm",
+                                "className": "text-amber-600 dark:text-amber-400"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                              },
+                              "text": "$t:board.form.secret_post"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:board.form.secret_always_description"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data && !_global.currentUser?.uuid && !route.id}}",
+      "props": {
+        "className": "grid grid-cols-2 gap-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.guest_author_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 ml-1"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "author_name",
+                "placeholder": "$t:board.guest_author_name_placeholder",
+                "className": "w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "if": "{{_local.errors?.author_name}}",
+              "props": {
+                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+              },
+              "text": "{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:board.guest_password"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-red-500 ml-1"
+                  },
+                  "text": "*"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "password",
+                "name": "password",
+                "placeholder": "$t:board.guest_password_placeholder",
+                "className": "w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "if": "{{_local.errors?.password}}",
+              "props": {
+                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+              },
+              "text": "{{_local.errors?.password?.[0] ?? _local.errors?.password}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "카테고리 선택 (카테고리가 있는 게시판만)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.categories?.length > 0}}",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "text": "$t:board.form.category"
+        },
+        {
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "name": "category",
+            "value": "{{_local.form?.category ?? ''}}",
+            "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+            "options": "{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}"
+          },
+          "actions": [
+            {
+              "event": "change",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "key": "form.category",
+                "value": "{{$event.target.value}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "제목 입력",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.form.title"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-red-500 ml-1"
+              },
+              "text": "*"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Input",
+          "props": {
+            "type": "text",
+            "name": "title",
+            "placeholder": "$t:board.form.title_placeholder",
+            "className": "w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"
+          }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "if": "{{_local.errors?.title}}",
+          "props": {
+            "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+          },
+          "text": "{{_local.errors?.title?.[0] ?? _local.errors?.title}}"
+        }
+      ]
+    },
+    {
+      "comment": "내용 에디터 래퍼 (에러 테두리용)",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "{{_local.errors?.content ? '[&_textarea]:!border-red-500 [&_textarea]:dark:!border-red-500 [&_textarea]:focus:!ring-red-500' : ''}}"
+      },
+      "children": [
+        {
+          "comment": "내용 에디터",
+          "type": "composite",
+          "name": "HtmlEditor",
+          "props": {
+            "content": "{{_local.form?.content ?? ''}}",
+            "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
+            "rows": 15,
+            "placeholder": "$t:board.form.content_placeholder",
+            "label": "$t:board.form.content",
+            "showHtmlModeToggle": true,
+            "name": "content"
+          },
+          "actions": [
+            {
+              "event": "onIsHtmlChange",
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "form": {
+                  "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "내용 필드 에러 메시지",
+      "type": "basic",
+      "name": "P",
+      "if": "{{_local.errors?.content}}",
+      "props": {
+        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+      },
+      "text": "{{_local.errors?.content?.[0] ?? _local.errors?.content}}"
+    },
+    {
+      "comment": "파일 첨부 (게시판 설정 + 권한 체크)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{form_meta?.data?.board?.use_file_upload === true && form_meta?.data?.board?.user_abilities?.can_upload}}",
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "paperclip",
+                "size": "sm",
+                "className": "inline mr-1"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:board.form.attachments"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+          },
+          "text": "$t:board.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
+        },
+        {
+          "type": "composite",
+          "name": "FileUploader",
+          "props": {
+            "collection": "post_attachments",
+            "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
+            "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
+            "accept": "{{form_meta?.data?.board?.allowed_extensions ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+            "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
+            "autoUpload": false,
+            "uploadTriggerEvent": "upload:board_attachments",
+            "compact": true,
+            "confirmBeforeRemove": true,
+            "confirmRemoveTitle": "$t:board.posts.form.confirm_remove_attachment_title",
+            "confirmRemoveMessage": "$t:board.posts.form.confirm_remove_attachment_message",
+            "uploadParams": {
+              "temp_key": "{{_local.tempKey}}"
+            },
+            "apiEndpoints": {
+              "upload": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments",
+              "delete": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id",
+              "reorder": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"
+            }
+          },
+          "actions": [
+            {
+              "event": "onFilesChange",
+              "type": "change",
+              "handler": "setState",
+              "if": "{{!_local.hasChanges}}",
+              "params": {
+                "target": "local",
+                "hasChanges": true
+              }
+            },
+            {
+              "event": "onUploadError",
+              "type": "change",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "uploadError": "{{$args[0]}}",
+                    "isSaving": false
+                  }
+                },
+                {
+                  "handler": "toast",
+                  "params": {
+                    "type": "error",
+                    "message": "{{$args[0]}}",
+                    "icon": "triangle-exclamation"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "버튼 영역",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+      },
+      "children": [
+        {
+          "comment": "취소 버튼 (등록: 목록, 수정: 상세)",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}"
+              }
+            }
+          ],
+          "text": "$t:common.cancel"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "disabled": "{{_local?.isSaving}}",
+            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "isSaving": true,
+                    "errors": null
+                  }
+                },
+                {
+                  "handler": "emitEvent",
+                  "params": {
+                    "event": "upload:board_attachments"
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "target": "{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}",
+                  "auth_required": true,
+                  "params": {
+                    "method": "{{route.id ? 'PUT' : 'POST'}}",
+                    "body": "{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}"
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isSaving": false,
+                        "hasChanges": false,
+                        "errors": null
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"
+                      }
+                    },
+                    {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/board/{{route?.slug}}/{{result?.data?.id}}"
+                      }
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isSaving": false,
+                        "errors": "{{error?.errors ?? null}}"
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error?.message ?? '$t:common.error_occurred'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_local?.isSaving}}",
+              "props": {
+                "name": "spinner",
+                "size": "sm",
+                "className": "animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_local?.isSaving ? '$t:common.saving' : (route?.id ? '$t:common.save' : '$t:board.form.submit')}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

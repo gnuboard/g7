@@ -1,0 +1,72 @@
+{
+  "title": "Brand Management",
+  "description": "Manage product brand information",
+  "list": {
+    "title": "Brands",
+    "add": "Add Brand",
+    "search_placeholder": "Search brands...",
+    "sort": {
+      "name_asc": "Name (A-Z)",
+      "name_desc": "Name (Z-A)",
+      "created_desc": "Newest First",
+      "created_asc": "Oldest First"
+    },
+    "products_count": "{{count}} products",
+    "empty": "No brands registered"
+  },
+  "info": {
+    "title": "Brand Information",
+    "basic": "Basic Information",
+    "additional": "Additional Information",
+    "system": "System Information",
+    "name": "Brand Name",
+    "slug": "Slug",
+    "website": "Website",
+    "sort_order": "Sort Order",
+    "status": "Status",
+    "products_count": "Products Count",
+    "statistics": "Statistics"
+  },
+  "form": {
+    "create_title": "Add Brand",
+    "edit_title": "Edit Brand",
+    "name": "Brand Name",
+    "name_placeholder": "Enter brand name",
+    "slug": "Slug",
+    "slug_placeholder": "Start with lowercase letters (e.g., nike)",
+    "slug_hint": "Unique identifier to be used in URLs. Only lowercase letters, numbers, and hyphens (-) are allowed.",
+    "website": "Brand Website",
+    "website_placeholder": "https://www.example.com",
+    "website_hint": "Official brand website URL (optional)",
+    "sort_order": "Sort Order",
+    "sort_order_hint": "Lower numbers are displayed first (default: 0)",
+    "is_active": "Active"
+  },
+  "empty": {
+    "title": "Select a brand",
+    "description": "Select a brand from the left or add a new one"
+  },
+  "delete_modal": {
+    "title": "Delete Brand",
+    "message_suffix": " brand. Are you sure you want to delete it?",
+    "cannot_delete_title": "Cannot Delete",
+    "has_products_cannot_delete": "There are {count} products linked to this brand. Please change the brand of products first.",
+    "irreversible_warning": "This action cannot be undone. Are you sure you want to proceed?"
+  },
+  "messages": {
+    "created": "Brand has been successfully created",
+    "updated": "Brand has been successfully updated",
+    "deleted": "Brand has been successfully deleted",
+    "status_changed": "Brand status has been changed",
+    "status_change_failed": "Failed to change brand status"
+  },
+  "modal": {
+    "editing": {
+      "title": "You have unsaved changes",
+      "message": "There are unsaved changes.",
+      "confirm_message": "Are you sure you want to leave without saving?",
+      "discard": "Discard changes",
+      "continue": "Continue editing"
+    }
+  }
+}

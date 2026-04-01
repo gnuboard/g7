@@ -1,0 +1,95 @@
+{
+    "meta": { "is_partial": true, "description": "코어 변경사항 모달" },
+    "id": "core_changelog_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.info.changelog_title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!$parent._local.coreChangelog || $parent._local.coreChangelog.length === 0}}",
+            "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400" },
+            "text": "$t:admin.settings.info.no_changelog"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{$parent._local.coreChangelog && $parent._local.coreChangelog.length > 0}}",
+            "props": { "className": "max-h-96 overflow-y-auto space-y-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "$parent._local.coreChangelog",
+                        "item_var": "entry",
+                        "index_var": "entryIdx"
+                    },
+                    "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 mb-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
+                                    "text": "v{{entry.version}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{entry.date}}",
+                                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                    "text": "{{entry.date}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "entry.categories",
+                                "item_var": "category",
+                                "index_var": "catIdx"
+                            },
+                            "props": { "className": "mb-2" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" },
+                                    "text": "{{category.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": { "className": "mt-1 list-disc list-inside space-y-0.5" },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "category.items",
+                                                "item_var": "changeItem",
+                                                "index_var": "itemIdx"
+                                            },
+                                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                                            "text": "{{changeItem}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

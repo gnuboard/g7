@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 > 알림 탭"
+  },
+  "id": "notification",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "classMap": {
+    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+    "variants": {
+      "readonly": "opacity-60",
+      "normal": ""
+    }
+  },
+  "children": [
+    {
+      "id": "section_notification",
+      "type": "layout",
+      "name": "SectionLayout",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white pb-3 mb-2 border-b-2 border-gray-200 dark:border-gray-700"
+          },
+          "text": "$t:sirsoft-board.admin.settings.sections.notification"
+        },
+        {
+          "id": "field_notify_author",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors border-b border-gray-200 dark:border-gray-700"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author' && f !== 'notify_author_channels') : [...(_local.bulkApplyFields ?? []), 'notify_author', 'notify_author_channels']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.notify_author" },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
+                          "text": "$t:sirsoft-board.admin.settings.fields.notify_author_description"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "basic_defaults.notify_author",
+                    "className": "flex-shrink-0",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_notify_author_channels",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3 px-3 pb-2 ml-6" },
+              "children": [
+                { "type": "basic", "name": "Label", "props": { "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
+                { "type": "composite", "name": "TagInput", "props": { "name": "basic_defaults.notify_author_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-64 flex-shrink-0" } }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "field_notify_admin_on_post",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}} transition-colors"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-4 px-3 py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post' && f !== 'notify_admin_on_post_channels') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post', 'notify_admin_on_post_channels']}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "className": "checkbox flex-shrink-0 mt-0.5",
+                        "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post" },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" },
+                          "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "basic_defaults.notify_admin_on_post",
+                    "className": "flex-shrink-0",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_notify_admin_channels",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3 px-3 pb-2 ml-6" },
+              "children": [
+                { "type": "basic", "name": "Label", "props": { "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
+                { "type": "composite", "name": "TagInput", "props": { "name": "basic_defaults.notify_admin_on_post_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-64 flex-shrink-0" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 Include 테스트 - Level 2 헤더 섹션"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "p-4 bg-green-50 dark:bg-green-900 rounded-lg border-2 border-green-300 dark:border-green-600"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex items-center gap-2 mb-2"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "text-2xl"
+          },
+          "text": "✅"
+        },
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-bold text-green-900 dark:text-green-100"
+          },
+          "text": "Level 2 Include: 헤더 섹션 로드됨"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-sm text-green-700 dark:text-green-300"
+      },
+      "text": "이 파일은 templates/sirsoft-admin_basic/layouts/includes/_header_section.json 입니다"
+    }
+  ]
+}

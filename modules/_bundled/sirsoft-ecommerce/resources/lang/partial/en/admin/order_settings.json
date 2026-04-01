@@ -1,0 +1,51 @@
+{
+  "title": "Order Settings",
+  "description": "Manage order related settings.",
+  "payment_methods": {
+    "title": "Payment Methods",
+    "description": "Configure available payment methods for the shop. Drag to change display order.",
+    "method": "Payment Method",
+    "min_order_amount": "Min Order Amount",
+    "enabled": "Enabled",
+    "pg_hint": "* Additional payment methods will be automatically registered when PG plugins are installed."
+  },
+  "bank_accounts": {
+    "title": "Bank Account Settings",
+    "description": "Configure bank account information for bank transfer payments.",
+    "add_account": "Add Account",
+    "default": "Default",
+    "bank": "Bank",
+    "account_number": "Account Number",
+    "account_holder": "Account Holder",
+    "enabled": "Enabled",
+    "delete": "Delete",
+    "default_account": "Default Account"
+  },
+  "auto_cancel": {
+    "title": "Auto Cancel Order",
+    "description": "Configure payment waiting period for bank transfer/virtual account payments.",
+    "days_prefix": "Orders with pending payment status will be auto-cancelled after",
+    "days_suffix": "business days from order date.",
+    "hint": "* Payment deadline is determined at the time of order."
+  },
+  "cart_expiry": {
+    "title": "Cart Expiry",
+    "description": "Configure how long items stay in the cart.",
+    "days_prefix": "Cart items will be automatically deleted after",
+    "days_suffix": "days."
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "description": "Configure inventory deduction and restoration policies.",
+    "deduction_timing": "Inventory Deduction Timing",
+    "deduction_suffix": "deducts product inventory.",
+    "deduction_options": {
+      "order_complete": "Order Complete",
+      "payment_complete": "Payment Complete",
+      "shipping_start": "Shipping Start"
+    },
+    "restore_on_cancel": "Restore Inventory on Cancel",
+    "restore_description": "Automatically restore deducted inventory when order is cancelled.",
+    "restore_label": "Restore product inventory after order cancellation."
+  }
+}

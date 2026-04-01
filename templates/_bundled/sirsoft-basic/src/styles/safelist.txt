@@ -1,0 +1,624 @@
+/*
+ * Tailwind CSS Safelist
+ * 레이아웃 JSON에서 동적으로 사용되는 클래스들을 위한 safelist
+ * 이 파일은 Tailwind가 스캔하여 빌드에 포함합니다.
+ */
+
+/* Grid System */
+grid grid-cols-1 grid-cols-2 grid-cols-3 grid-cols-4 grid-cols-5 grid-cols-6
+grid-cols-7 grid-cols-8 grid-cols-9 grid-cols-10 grid-cols-11 grid-cols-12
+grid-rows-1 grid-rows-2 grid-rows-3 grid-rows-4 grid-rows-5 grid-rows-6
+col-span-1 col-span-2 col-span-3 col-span-4 col-span-5 col-span-6
+col-span-7 col-span-8 col-span-9 col-span-10 col-span-11 col-span-12 col-span-full
+row-span-1 row-span-2 row-span-3 row-span-4 row-span-5 row-span-6 row-span-full
+col-start-1 col-start-2 col-start-3 col-start-4 col-start-5 col-start-6
+col-start-7 col-start-8 col-start-9 col-start-10 col-start-11 col-start-12 col-start-13
+col-end-1 col-end-2 col-end-3 col-end-4 col-end-5 col-end-6
+col-end-7 col-end-8 col-end-9 col-end-10 col-end-11 col-end-12 col-end-13
+row-start-1 row-start-2 row-start-3 row-start-4 row-start-5 row-start-6 row-start-7
+row-end-1 row-end-2 row-end-3 row-end-4 row-end-5 row-end-6 row-end-7
+gap-0 gap-1 gap-2 gap-3 gap-4 gap-5 gap-6 gap-8 gap-10 gap-12 gap-16
+gap-x-0 gap-x-1 gap-x-2 gap-x-3 gap-x-4 gap-x-5 gap-x-6 gap-x-8 gap-x-10 gap-x-12
+gap-y-0 gap-y-1 gap-y-2 gap-y-3 gap-y-4 gap-y-5 gap-y-6 gap-y-8 gap-y-10 gap-y-12
+
+/* Flexbox */
+flex flex-row flex-col flex-wrap flex-nowrap flex-1 flex-auto flex-initial flex-none
+justify-start justify-end justify-center justify-between justify-around justify-evenly
+items-start items-end items-center items-baseline items-stretch
+content-start content-end content-center content-between content-around content-evenly
+self-auto self-start self-end self-center self-stretch self-baseline
+order-1 order-2 order-3 order-4 order-5 order-6 order-first order-last order-none
+grow grow-0 shrink shrink-0
+basis-0 basis-1 basis-2 basis-auto basis-full basis-1/2 basis-1/3 basis-2/3 basis-1/4 basis-3/4
+
+/* Sizing */
+w-0 w-1 w-2 w-3 w-4 w-5 w-6 w-8 w-10 w-12 w-16 w-20 w-24 w-32 w-40 w-48 w-52 w-56 w-60 w-64 w-72 w-80 w-96
+w-auto w-px w-full w-screen w-min w-max w-fit
+w-1/2 w-1/3 w-2/3 w-1/4 w-2/4 w-3/4 w-1/5 w-2/5 w-3/5 w-4/5 w-1/6 w-5/6
+min-w-0 min-w-full min-w-min min-w-max min-w-fit
+max-w-0 max-w-none max-w-xs max-w-sm max-w-md max-w-lg max-w-xl max-w-2xl max-w-3xl max-w-4xl max-w-5xl max-w-6xl max-w-7xl max-w-full max-w-min max-w-max max-w-fit max-w-prose max-w-screen-sm max-w-screen-md max-w-screen-lg max-w-screen-xl max-w-screen-2xl
+h-0 h-1 h-2 h-3 h-4 h-5 h-6 h-8 h-10 h-12 h-16 h-20 h-24 h-32 h-40 h-48 h-56 h-64 h-72 h-80 h-96
+h-auto h-px h-full h-screen h-min h-max h-fit
+h-1/2 h-1/3 h-2/3 h-1/4 h-2/4 h-3/4 h-1/5 h-2/5 h-3/5 h-4/5 h-1/6 h-5/6
+min-h-0 min-h-full min-h-screen min-h-min min-h-max min-h-fit
+max-h-0 max-h-none max-h-full max-h-screen max-h-min max-h-max max-h-fit
+
+/* Spacing - Padding */
+p-0 p-1 p-2 p-3 p-4 p-5 p-6 p-8 p-10 p-12 p-16 p-20 p-24
+px-0 px-1 px-2 px-3 px-4 px-5 px-6 px-8 px-10 px-12 px-16
+py-0 py-1 py-2 py-3 py-4 py-5 py-6 py-8 py-10 py-12 py-16
+pt-0 pt-1 pt-2 pt-3 pt-4 pt-5 pt-6 pt-8 pt-10 pt-12 pt-16
+pr-0 pr-1 pr-2 pr-3 pr-4 pr-5 pr-6 pr-8 pr-10 pr-12 pr-16
+pb-0 pb-1 pb-2 pb-3 pb-4 pb-5 pb-6 pb-8 pb-10 pb-12 pb-16
+pl-0 pl-1 pl-2 pl-3 pl-4 pl-5 pl-6 pl-8 pl-10 pl-12 pl-16
+
+/* Spacing - Margin */
+m-0 m-1 m-2 m-3 m-4 m-5 m-6 m-8 m-10 m-12 m-16 m-auto
+mx-0 mx-1 mx-2 mx-3 mx-4 mx-5 mx-6 mx-8 mx-10 mx-12 mx-16 mx-auto
+my-0 my-1 my-2 my-3 my-4 my-5 my-6 my-8 my-10 my-12 my-16 my-auto
+mt-0 mt-1 mt-2 mt-3 mt-4 mt-5 mt-6 mt-8 mt-10 mt-12 mt-16 mt-auto
+mr-0 mr-1 mr-2 mr-3 mr-4 mr-5 mr-6 mr-8 mr-10 mr-12 mr-16 mr-auto
+mb-0 mb-1 mb-2 mb-3 mb-4 mb-5 mb-6 mb-8 mb-10 mb-12 mb-16 mb-auto
+ml-0 ml-1 ml-2 ml-3 ml-4 ml-5 ml-6 ml-8 ml-10 ml-12 ml-16 ml-auto
+-m-1 -m-2 -m-3 -m-4 -m-5 -m-6 -m-8
+-mx-1 -mx-2 -mx-3 -mx-4 -mx-5 -mx-6 -mx-8
+-my-1 -my-2 -my-3 -my-4 -my-5 -my-6 -my-8
+-mt-1 -mt-2 -mt-3 -mt-4 -mt-5 -mt-6 -mt-8
+-mr-1 -mr-2 -mr-3 -mr-4 -mr-5 -mr-6 -mr-8
+-mb-1 -mb-2 -mb-3 -mb-4 -mb-5 -mb-6 -mb-8
+-ml-1 -ml-2 -ml-3 -ml-4 -ml-5 -ml-6 -ml-8
+space-x-0 space-x-1 space-x-2 space-x-3 space-x-4 space-x-5 space-x-6 space-x-8
+space-y-0 space-y-1 space-y-2 space-y-3 space-y-4 space-y-5 space-y-6 space-y-8
+-space-x-1 -space-x-2 -space-y-1 -space-y-2
+
+/* Typography */
+text-xs text-sm text-base text-lg text-xl text-2xl text-3xl text-4xl text-5xl text-6xl text-7xl text-8xl text-9xl
+font-thin font-extralight font-light font-normal font-medium font-semibold font-bold font-extrabold font-black
+leading-none leading-tight leading-snug leading-normal leading-relaxed leading-loose
+leading-3 leading-4 leading-5 leading-6 leading-7 leading-8 leading-9 leading-10
+tracking-tighter tracking-tight tracking-normal tracking-wide tracking-wider tracking-widest
+text-left text-center text-right text-justify text-start text-end
+align-baseline align-top align-middle align-bottom align-text-top align-text-bottom align-sub align-super
+whitespace-normal whitespace-nowrap whitespace-pre whitespace-pre-line whitespace-pre-wrap whitespace-break-spaces
+break-normal break-words break-all break-keep
+truncate text-ellipsis text-clip
+italic not-italic underline overline line-through no-underline
+uppercase lowercase capitalize normal-case
+indent-0 indent-1 indent-2 indent-4 indent-8
+
+/* Text Colors */
+text-transparent text-current text-inherit text-black text-white
+text-slate-50 text-slate-100 text-slate-200 text-slate-300 text-slate-400 text-slate-500 text-slate-600 text-slate-700 text-slate-800 text-slate-900 text-slate-950
+text-gray-50 text-gray-100 text-gray-200 text-gray-300 text-gray-400 text-gray-500 text-gray-600 text-gray-700 text-gray-800 text-gray-900 text-gray-950
+text-zinc-50 text-zinc-100 text-zinc-200 text-zinc-300 text-zinc-400 text-zinc-500 text-zinc-600 text-zinc-700 text-zinc-800 text-zinc-900 text-zinc-950
+text-neutral-50 text-neutral-100 text-neutral-200 text-neutral-300 text-neutral-400 text-neutral-500 text-neutral-600 text-neutral-700 text-neutral-800 text-neutral-900 text-neutral-950
+text-stone-50 text-stone-100 text-stone-200 text-stone-300 text-stone-400 text-stone-500 text-stone-600 text-stone-700 text-stone-800 text-stone-900 text-stone-950
+text-red-50 text-red-100 text-red-200 text-red-300 text-red-400 text-red-500 text-red-600 text-red-700 text-red-800 text-red-900 text-red-950
+text-orange-50 text-orange-100 text-orange-200 text-orange-300 text-orange-400 text-orange-500 text-orange-600 text-orange-700 text-orange-800 text-orange-900 text-orange-950
+text-amber-50 text-amber-100 text-amber-200 text-amber-300 text-amber-400 text-amber-500 text-amber-600 text-amber-700 text-amber-800 text-amber-900 text-amber-950
+text-yellow-50 text-yellow-100 text-yellow-200 text-yellow-300 text-yellow-400 text-yellow-500 text-yellow-600 text-yellow-700 text-yellow-800 text-yellow-900 text-yellow-950
+text-lime-50 text-lime-100 text-lime-200 text-lime-300 text-lime-400 text-lime-500 text-lime-600 text-lime-700 text-lime-800 text-lime-900 text-lime-950
+text-green-50 text-green-100 text-green-200 text-green-300 text-green-400 text-green-500 text-green-600 text-green-700 text-green-800 text-green-900 text-green-950
+text-emerald-50 text-emerald-100 text-emerald-200 text-emerald-300 text-emerald-400 text-emerald-500 text-emerald-600 text-emerald-700 text-emerald-800 text-emerald-900 text-emerald-950
+text-teal-50 text-teal-100 text-teal-200 text-teal-300 text-teal-400 text-teal-500 text-teal-600 text-teal-700 text-teal-800 text-teal-900 text-teal-950
+text-cyan-50 text-cyan-100 text-cyan-200 text-cyan-300 text-cyan-400 text-cyan-500 text-cyan-600 text-cyan-700 text-cyan-800 text-cyan-900 text-cyan-950
+text-sky-50 text-sky-100 text-sky-200 text-sky-300 text-sky-400 text-sky-500 text-sky-600 text-sky-700 text-sky-800 text-sky-900 text-sky-950
+text-blue-50 text-blue-100 text-blue-200 text-blue-300 text-blue-400 text-blue-500 text-blue-600 text-blue-700 text-blue-800 text-blue-900 text-blue-950
+text-indigo-50 text-indigo-100 text-indigo-200 text-indigo-300 text-indigo-400 text-indigo-500 text-indigo-600 text-indigo-700 text-indigo-800 text-indigo-900 text-indigo-950
+text-violet-50 text-violet-100 text-violet-200 text-violet-300 text-violet-400 text-violet-500 text-violet-600 text-violet-700 text-violet-800 text-violet-900 text-violet-950
+text-purple-50 text-purple-100 text-purple-200 text-purple-300 text-purple-400 text-purple-500 text-purple-600 text-purple-700 text-purple-800 text-purple-900 text-purple-950
+text-fuchsia-50 text-fuchsia-100 text-fuchsia-200 text-fuchsia-300 text-fuchsia-400 text-fuchsia-500 text-fuchsia-600 text-fuchsia-700 text-fuchsia-800 text-fuchsia-900 text-fuchsia-950
+text-pink-50 text-pink-100 text-pink-200 text-pink-300 text-pink-400 text-pink-500 text-pink-600 text-pink-700 text-pink-800 text-pink-900 text-pink-950
+text-rose-50 text-rose-100 text-rose-200 text-rose-300 text-rose-400 text-rose-500 text-rose-600 text-rose-700 text-rose-800 text-rose-900 text-rose-950
+
+/* Background Colors */
+bg-transparent bg-current bg-inherit bg-black bg-white
+bg-slate-50 bg-slate-100 bg-slate-200 bg-slate-300 bg-slate-400 bg-slate-500 bg-slate-600 bg-slate-700 bg-slate-800 bg-slate-900 bg-slate-950
+bg-gray-50 bg-gray-100 bg-gray-200 bg-gray-300 bg-gray-400 bg-gray-500 bg-gray-600 bg-gray-700 bg-gray-800 bg-gray-900 bg-gray-950
+bg-zinc-50 bg-zinc-100 bg-zinc-200 bg-zinc-300 bg-zinc-400 bg-zinc-500 bg-zinc-600 bg-zinc-700 bg-zinc-800 bg-zinc-900 bg-zinc-950
+bg-neutral-50 bg-neutral-100 bg-neutral-200 bg-neutral-300 bg-neutral-400 bg-neutral-500 bg-neutral-600 bg-neutral-700 bg-neutral-800 bg-neutral-900 bg-neutral-950
+bg-stone-50 bg-stone-100 bg-stone-200 bg-stone-300 bg-stone-400 bg-stone-500 bg-stone-600 bg-stone-700 bg-stone-800 bg-stone-900 bg-stone-950
+bg-red-50 bg-red-100 bg-red-200 bg-red-300 bg-red-400 bg-red-500 bg-red-600 bg-red-700 bg-red-800 bg-red-900 bg-red-950
+bg-orange-50 bg-orange-100 bg-orange-200 bg-orange-300 bg-orange-400 bg-orange-500 bg-orange-600 bg-orange-700 bg-orange-800 bg-orange-900 bg-orange-950
+bg-amber-50 bg-amber-100 bg-amber-200 bg-amber-300 bg-amber-400 bg-amber-500 bg-amber-600 bg-amber-700 bg-amber-800 bg-amber-900 bg-amber-950
+bg-yellow-50 bg-yellow-100 bg-yellow-200 bg-yellow-300 bg-yellow-400 bg-yellow-500 bg-yellow-600 bg-yellow-700 bg-yellow-800 bg-yellow-900 bg-yellow-950
+bg-lime-50 bg-lime-100 bg-lime-200 bg-lime-300 bg-lime-400 bg-lime-500 bg-lime-600 bg-lime-700 bg-lime-800 bg-lime-900 bg-lime-950
+bg-green-50 bg-green-100 bg-green-200 bg-green-300 bg-green-400 bg-green-500 bg-green-600 bg-green-700 bg-green-800 bg-green-900 bg-green-950
+bg-emerald-50 bg-emerald-100 bg-emerald-200 bg-emerald-300 bg-emerald-400 bg-emerald-500 bg-emerald-600 bg-emerald-700 bg-emerald-800 bg-emerald-900 bg-emerald-950
+bg-teal-50 bg-teal-100 bg-teal-200 bg-teal-300 bg-teal-400 bg-teal-500 bg-teal-600 bg-teal-700 bg-teal-800 bg-teal-900 bg-teal-950
+bg-cyan-50 bg-cyan-100 bg-cyan-200 bg-cyan-300 bg-cyan-400 bg-cyan-500 bg-cyan-600 bg-cyan-700 bg-cyan-800 bg-cyan-900 bg-cyan-950
+bg-sky-50 bg-sky-100 bg-sky-200 bg-sky-300 bg-sky-400 bg-sky-500 bg-sky-600 bg-sky-700 bg-sky-800 bg-sky-900 bg-sky-950
+bg-blue-50 bg-blue-100 bg-blue-200 bg-blue-300 bg-blue-400 bg-blue-500 bg-blue-600 bg-blue-700 bg-blue-800 bg-blue-900 bg-blue-950
+bg-indigo-50 bg-indigo-100 bg-indigo-200 bg-indigo-300 bg-indigo-400 bg-indigo-500 bg-indigo-600 bg-indigo-700 bg-indigo-800 bg-indigo-900 bg-indigo-950
+bg-violet-50 bg-violet-100 bg-violet-200 bg-violet-300 bg-violet-400 bg-violet-500 bg-violet-600 bg-violet-700 bg-violet-800 bg-violet-900 bg-violet-950
+bg-purple-50 bg-purple-100 bg-purple-200 bg-purple-300 bg-purple-400 bg-purple-500 bg-purple-600 bg-purple-700 bg-purple-800 bg-purple-900 bg-purple-950
+bg-fuchsia-50 bg-fuchsia-100 bg-fuchsia-200 bg-fuchsia-300 bg-fuchsia-400 bg-fuchsia-500 bg-fuchsia-600 bg-fuchsia-700 bg-fuchsia-800 bg-fuchsia-900 bg-fuchsia-950
+bg-pink-50 bg-pink-100 bg-pink-200 bg-pink-300 bg-pink-400 bg-pink-500 bg-pink-600 bg-pink-700 bg-pink-800 bg-pink-900 bg-pink-950
+bg-rose-50 bg-rose-100 bg-rose-200 bg-rose-300 bg-rose-400 bg-rose-500 bg-rose-600 bg-rose-700 bg-rose-800 bg-rose-900 bg-rose-950
+
+/* Border */
+border border-0 border-2 border-4 border-8
+border-t border-r border-b border-l
+border-t-0 border-r-0 border-b-0 border-l-0
+border-t-2 border-r-2 border-b-2 border-l-2
+border-t-4 border-r-4 border-b-4 border-l-4
+border-x border-y border-x-0 border-y-0 border-x-2 border-y-2
+border-solid border-dashed border-dotted border-double border-hidden border-none
+border-transparent border-current border-inherit border-black border-white
+border-slate-50 border-slate-100 border-slate-200 border-slate-300 border-slate-400 border-slate-500 border-slate-600 border-slate-700 border-slate-800 border-slate-900 border-slate-950
+border-gray-50 border-gray-100 border-gray-200 border-gray-300 border-gray-400 border-gray-500 border-gray-600 border-gray-700 border-gray-800 border-gray-900 border-gray-950
+border-zinc-50 border-zinc-100 border-zinc-200 border-zinc-300 border-zinc-400 border-zinc-500 border-zinc-600 border-zinc-700 border-zinc-800 border-zinc-900 border-zinc-950
+border-red-50 border-red-100 border-red-200 border-red-300 border-red-400 border-red-500 border-red-600 border-red-700 border-red-800 border-red-900 border-red-950
+border-orange-50 border-orange-100 border-orange-200 border-orange-300 border-orange-400 border-orange-500 border-orange-600 border-orange-700 border-orange-800 border-orange-900 border-orange-950
+border-yellow-50 border-yellow-100 border-yellow-200 border-yellow-300 border-yellow-400 border-yellow-500 border-yellow-600 border-yellow-700 border-yellow-800 border-yellow-900 border-yellow-950
+border-green-50 border-green-100 border-green-200 border-green-300 border-green-400 border-green-500 border-green-600 border-green-700 border-green-800 border-green-900 border-green-950
+border-blue-50 border-blue-100 border-blue-200 border-blue-300 border-blue-400 border-blue-500 border-blue-600 border-blue-700 border-blue-800 border-blue-900 border-blue-950
+border-indigo-50 border-indigo-100 border-indigo-200 border-indigo-300 border-indigo-400 border-indigo-500 border-indigo-600 border-indigo-700 border-indigo-800 border-indigo-900 border-indigo-950
+border-purple-50 border-purple-100 border-purple-200 border-purple-300 border-purple-400 border-purple-500 border-purple-600 border-purple-700 border-purple-800 border-purple-900 border-purple-950
+border-pink-50 border-pink-100 border-pink-200 border-pink-300 border-pink-400 border-pink-500 border-pink-600 border-pink-700 border-pink-800 border-pink-900 border-pink-950
+
+/* Border Radius */
+rounded-none rounded-sm rounded rounded-md rounded-lg rounded-xl rounded-2xl rounded-3xl rounded-full
+rounded-t-none rounded-t-sm rounded-t rounded-t-md rounded-t-lg rounded-t-xl rounded-t-2xl rounded-t-3xl rounded-t-full
+rounded-r-none rounded-r-sm rounded-r rounded-r-md rounded-r-lg rounded-r-xl rounded-r-2xl rounded-r-3xl rounded-r-full
+rounded-b-none rounded-b-sm rounded-b rounded-b-md rounded-b-lg rounded-b-xl rounded-b-2xl rounded-b-3xl rounded-b-full
+rounded-l-none rounded-l-sm rounded-l rounded-l-md rounded-l-lg rounded-l-xl rounded-l-2xl rounded-l-3xl rounded-l-full
+rounded-tl-none rounded-tl-sm rounded-tl rounded-tl-md rounded-tl-lg rounded-tl-xl rounded-tl-2xl rounded-tl-3xl rounded-tl-full
+rounded-tr-none rounded-tr-sm rounded-tr rounded-tr-md rounded-tr-lg rounded-tr-xl rounded-tr-2xl rounded-tr-3xl rounded-tr-full
+rounded-bl-none rounded-bl-sm rounded-bl rounded-bl-md rounded-bl-lg rounded-bl-xl rounded-bl-2xl rounded-bl-3xl rounded-bl-full
+rounded-br-none rounded-br-sm rounded-br rounded-br-md rounded-br-lg rounded-br-xl rounded-br-2xl rounded-br-3xl rounded-br-full
+
+/* Shadow */
+shadow-sm shadow shadow-md shadow-lg shadow-xl shadow-2xl shadow-inner shadow-none
+
+/* Opacity */
+opacity-0 opacity-5 opacity-10 opacity-15 opacity-20 opacity-25 opacity-30 opacity-35 opacity-40 opacity-45 opacity-50
+opacity-55 opacity-60 opacity-65 opacity-70 opacity-75 opacity-80 opacity-85 opacity-90 opacity-95 opacity-100
+
+/* Display */
+visible invisible collapse
+block inline-block inline flex inline-flex table inline-table table-caption table-cell table-column table-column-group
+table-footer-group table-header-group table-row-group table-row flow-root grid inline-grid contents list-item hidden
+
+/* Position */
+static fixed absolute relative sticky
+inset-0 inset-1 inset-2 inset-3 inset-4 inset-5 inset-6 inset-8 inset-auto
+inset-x-0 inset-x-1 inset-x-2 inset-x-3 inset-x-4 inset-x-auto
+inset-y-0 inset-y-1 inset-y-2 inset-y-3 inset-y-4 inset-y-auto
+top-0 top-1 top-2 top-3 top-4 top-5 top-6 top-8 top-10 top-12 top-16 top-auto top-full top-1/2 top-1/3 top-2/3 top-1/4 top-3/4
+right-0 right-1 right-2 right-3 right-4 right-5 right-6 right-8 right-10 right-12 right-16 right-auto right-full right-1/2
+bottom-0 bottom-1 bottom-2 bottom-3 bottom-4 bottom-5 bottom-6 bottom-8 bottom-10 bottom-12 bottom-16 bottom-auto bottom-full bottom-1/2
+left-0 left-1 left-2 left-3 left-4 left-5 left-6 left-8 left-10 left-12 left-16 left-auto left-full left-1/2
+-top-1 -top-2 -top-3 -top-4 -right-1 -right-2 -right-3 -right-4 -bottom-1 -bottom-2 -bottom-3 -bottom-4 -left-1 -left-2 -left-3 -left-4
+z-0 z-10 z-20 z-30 z-40 z-50 z-auto
+
+/* Overflow */
+overflow-auto overflow-hidden overflow-clip overflow-visible overflow-scroll
+overflow-x-auto overflow-x-hidden overflow-x-clip overflow-x-visible overflow-x-scroll
+overflow-y-auto overflow-y-hidden overflow-y-clip overflow-y-visible overflow-y-scroll
+overscroll-auto overscroll-contain overscroll-none
+overscroll-x-auto overscroll-x-contain overscroll-x-none
+overscroll-y-auto overscroll-y-contain overscroll-y-none
+
+/* Object Fit */
+object-contain object-cover object-fill object-none object-scale-down
+object-bottom object-center object-left object-left-bottom object-left-top object-right object-right-bottom object-right-top object-top
+
+/* Float */
+float-start float-end float-right float-left float-none
+clear-start clear-end clear-left clear-right clear-both clear-none
+
+/* Box */
+box-border box-content
+isolate isolation-auto
+aspect-auto aspect-square aspect-video
+
+/* Cursor */
+cursor-auto cursor-default cursor-pointer cursor-wait cursor-text cursor-move cursor-help cursor-not-allowed cursor-none cursor-context-menu cursor-progress cursor-cell cursor-crosshair cursor-vertical-text cursor-alias cursor-copy cursor-no-drop cursor-grab cursor-grabbing cursor-all-scroll cursor-col-resize cursor-row-resize cursor-n-resize cursor-e-resize cursor-s-resize cursor-w-resize cursor-ne-resize cursor-nw-resize cursor-se-resize cursor-sw-resize cursor-ew-resize cursor-ns-resize cursor-nesw-resize cursor-nwse-resize cursor-zoom-in cursor-zoom-out
+pointer-events-none pointer-events-auto
+resize-none resize-y resize-x resize
+select-none select-text select-all select-auto
+touch-auto touch-none touch-pan-x touch-pan-left touch-pan-right touch-pan-y touch-pan-up touch-pan-down touch-pinch-zoom touch-manipulation
+
+/* Scroll */
+scroll-auto scroll-smooth
+snap-start snap-end snap-center snap-align-none
+snap-normal snap-always
+snap-none snap-x snap-y snap-both snap-mandatory snap-proximity
+
+/* List */
+list-inside list-outside list-none list-disc list-decimal
+
+/* Appearance */
+appearance-none appearance-auto
+
+/* Columns */
+columns-1 columns-2 columns-3 columns-4 columns-5 columns-6 columns-7 columns-8 columns-9 columns-10 columns-11 columns-12 columns-auto columns-3xs columns-2xs columns-xs columns-sm columns-md columns-lg columns-xl columns-2xl columns-3xl columns-4xl columns-5xl columns-6xl columns-7xl
+
+/* Break */
+break-after-auto break-after-avoid break-after-all break-after-avoid-page break-after-page break-after-left break-after-right break-after-column
+break-before-auto break-before-avoid break-before-all break-before-avoid-page break-before-page break-before-left break-before-right break-before-column
+break-inside-auto break-inside-avoid break-inside-avoid-page break-inside-avoid-column
+
+/* Auto */
+auto-cols-auto auto-cols-min auto-cols-max auto-cols-fr
+auto-rows-auto auto-rows-min auto-rows-max auto-rows-fr
+grid-flow-row grid-flow-col grid-flow-dense grid-flow-row-dense grid-flow-col-dense
+
+/* Place */
+place-content-center place-content-start place-content-end place-content-between place-content-around place-content-evenly place-content-baseline place-content-stretch
+place-items-start place-items-end place-items-center place-items-baseline place-items-stretch
+place-self-auto place-self-start place-self-end place-self-center place-self-stretch
+
+/* Transition */
+transition-none transition-all transition transition-colors transition-opacity transition-shadow transition-transform
+duration-75 duration-100 duration-150 duration-200 duration-300 duration-500 duration-700 duration-1000
+ease-linear ease-in ease-out ease-in-out
+delay-75 delay-100 delay-150 delay-200 delay-300 delay-500 delay-700 delay-1000
+
+/* Animation */
+animate-none animate-spin animate-ping animate-pulse animate-bounce
+
+/* Transform */
+scale-0 scale-50 scale-75 scale-90 scale-95 scale-100 scale-105 scale-110 scale-125 scale-150
+scale-x-0 scale-x-50 scale-x-75 scale-x-90 scale-x-95 scale-x-100 scale-x-105 scale-x-110 scale-x-125 scale-x-150
+scale-y-0 scale-y-50 scale-y-75 scale-y-90 scale-y-95 scale-y-100 scale-y-105 scale-y-110 scale-y-125 scale-y-150
+rotate-0 rotate-1 rotate-2 rotate-3 rotate-6 rotate-12 rotate-45 rotate-90 rotate-180
+-rotate-1 -rotate-2 -rotate-3 -rotate-6 -rotate-12 -rotate-45 -rotate-90 -rotate-180
+translate-x-0 translate-x-1 translate-x-2 translate-x-3 translate-x-4 translate-x-5 translate-x-6 translate-x-8 translate-x-10 translate-x-12
+translate-x-1/2 translate-x-1/3 translate-x-2/3 translate-x-1/4 translate-x-3/4 translate-x-full
+-translate-x-1 -translate-x-2 -translate-x-3 -translate-x-4 -translate-x-1/2 -translate-x-full
+translate-y-0 translate-y-1 translate-y-2 translate-y-3 translate-y-4 translate-y-5 translate-y-6 translate-y-8 translate-y-10 translate-y-12
+translate-y-1/2 translate-y-1/3 translate-y-2/3 translate-y-1/4 translate-y-3/4 translate-y-full
+-translate-y-1 -translate-y-2 -translate-y-3 -translate-y-4 -translate-y-1/2 -translate-y-full
+skew-x-0 skew-x-1 skew-x-2 skew-x-3 skew-x-6 skew-x-12
+-skew-x-1 -skew-x-2 -skew-x-3 -skew-x-6 -skew-x-12
+skew-y-0 skew-y-1 skew-y-2 skew-y-3 skew-y-6 skew-y-12
+-skew-y-1 -skew-y-2 -skew-y-3 -skew-y-6 -skew-y-12
+origin-center origin-top origin-top-right origin-right origin-bottom-right origin-bottom origin-bottom-left origin-left origin-top-left
+transform transform-cpu transform-gpu transform-none
+
+/* Ring */
+ring-0 ring-1 ring-2 ring ring-4 ring-8 ring-inset
+ring-transparent ring-current ring-inherit ring-black ring-white
+ring-slate-50 ring-slate-100 ring-slate-200 ring-slate-300 ring-slate-400 ring-slate-500 ring-slate-600 ring-slate-700 ring-slate-800 ring-slate-900
+ring-gray-50 ring-gray-100 ring-gray-200 ring-gray-300 ring-gray-400 ring-gray-500 ring-gray-600 ring-gray-700 ring-gray-800 ring-gray-900
+ring-blue-50 ring-blue-100 ring-blue-200 ring-blue-300 ring-blue-400 ring-blue-500 ring-blue-600 ring-blue-700 ring-blue-800 ring-blue-900
+ring-offset-0 ring-offset-1 ring-offset-2 ring-offset-4 ring-offset-8
+ring-offset-transparent ring-offset-current ring-offset-inherit ring-offset-black ring-offset-white
+
+/* Filter */
+blur-none blur-sm blur blur-md blur-lg blur-xl blur-2xl blur-3xl
+brightness-0 brightness-50 brightness-75 brightness-90 brightness-95 brightness-100 brightness-105 brightness-110 brightness-125 brightness-150 brightness-200
+contrast-0 contrast-50 contrast-75 contrast-100 contrast-125 contrast-150 contrast-200
+drop-shadow-sm drop-shadow drop-shadow-md drop-shadow-lg drop-shadow-xl drop-shadow-2xl drop-shadow-none
+grayscale-0 grayscale
+hue-rotate-0 hue-rotate-15 hue-rotate-30 hue-rotate-60 hue-rotate-90 hue-rotate-180
+-hue-rotate-15 -hue-rotate-30 -hue-rotate-60 -hue-rotate-90 -hue-rotate-180
+invert-0 invert
+saturate-0 saturate-50 saturate-100 saturate-150 saturate-200
+sepia-0 sepia
+
+/* Backdrop */
+backdrop-blur-none backdrop-blur-sm backdrop-blur backdrop-blur-md backdrop-blur-lg backdrop-blur-xl backdrop-blur-2xl backdrop-blur-3xl
+backdrop-brightness-0 backdrop-brightness-50 backdrop-brightness-75 backdrop-brightness-90 backdrop-brightness-95 backdrop-brightness-100 backdrop-brightness-105 backdrop-brightness-110 backdrop-brightness-125 backdrop-brightness-150 backdrop-brightness-200
+backdrop-contrast-0 backdrop-contrast-50 backdrop-contrast-75 backdrop-contrast-100 backdrop-contrast-125 backdrop-contrast-150 backdrop-contrast-200
+backdrop-grayscale-0 backdrop-grayscale
+backdrop-hue-rotate-0 backdrop-hue-rotate-15 backdrop-hue-rotate-30 backdrop-hue-rotate-60 backdrop-hue-rotate-90 backdrop-hue-rotate-180
+backdrop-invert-0 backdrop-invert
+backdrop-opacity-0 backdrop-opacity-5 backdrop-opacity-10 backdrop-opacity-20 backdrop-opacity-25 backdrop-opacity-30 backdrop-opacity-40 backdrop-opacity-50 backdrop-opacity-60 backdrop-opacity-70 backdrop-opacity-75 backdrop-opacity-80 backdrop-opacity-90 backdrop-opacity-95 backdrop-opacity-100
+backdrop-saturate-0 backdrop-saturate-50 backdrop-saturate-100 backdrop-saturate-150 backdrop-saturate-200
+backdrop-sepia-0 backdrop-sepia
+
+/* Table */
+table-auto table-fixed
+caption-top caption-bottom
+border-collapse border-separate
+border-spacing-0 border-spacing-1 border-spacing-2 border-spacing-3 border-spacing-4 border-spacing-5 border-spacing-6 border-spacing-8
+
+/* Blend */
+mix-blend-normal mix-blend-multiply mix-blend-screen mix-blend-overlay mix-blend-darken mix-blend-lighten mix-blend-color-dodge mix-blend-color-burn mix-blend-hard-light mix-blend-soft-light mix-blend-difference mix-blend-exclusion mix-blend-hue mix-blend-saturation mix-blend-color mix-blend-luminosity mix-blend-plus-darker mix-blend-plus-lighter
+bg-blend-normal bg-blend-multiply bg-blend-screen bg-blend-overlay bg-blend-darken bg-blend-lighten bg-blend-color-dodge bg-blend-color-burn bg-blend-hard-light bg-blend-soft-light bg-blend-difference bg-blend-exclusion bg-blend-hue bg-blend-saturation bg-blend-color bg-blend-luminosity
+
+/* Gradient */
+bg-none bg-gradient-to-t bg-gradient-to-tr bg-gradient-to-r bg-gradient-to-br bg-gradient-to-b bg-gradient-to-bl bg-gradient-to-l bg-gradient-to-tl
+from-inherit from-current from-transparent from-black from-white
+from-slate-50 from-slate-100 from-slate-200 from-slate-300 from-slate-400 from-slate-500 from-slate-600 from-slate-700 from-slate-800 from-slate-900
+from-gray-50 from-gray-100 from-gray-200 from-gray-300 from-gray-400 from-gray-500 from-gray-600 from-gray-700 from-gray-800 from-gray-900
+from-red-50 from-red-100 from-red-200 from-red-300 from-red-400 from-red-500 from-red-600 from-red-700 from-red-800 from-red-900
+from-orange-50 from-orange-100 from-orange-200 from-orange-300 from-orange-400 from-orange-500 from-orange-600 from-orange-700 from-orange-800 from-orange-900
+from-yellow-50 from-yellow-100 from-yellow-200 from-yellow-300 from-yellow-400 from-yellow-500 from-yellow-600 from-yellow-700 from-yellow-800 from-yellow-900
+from-green-50 from-green-100 from-green-200 from-green-300 from-green-400 from-green-500 from-green-600 from-green-700 from-green-800 from-green-900
+from-blue-50 from-blue-100 from-blue-200 from-blue-300 from-blue-400 from-blue-500 from-blue-600 from-blue-700 from-blue-800 from-blue-900
+from-indigo-50 from-indigo-100 from-indigo-200 from-indigo-300 from-indigo-400 from-indigo-500 from-indigo-600 from-indigo-700 from-indigo-800 from-indigo-900
+from-purple-50 from-purple-100 from-purple-200 from-purple-300 from-purple-400 from-purple-500 from-purple-600 from-purple-700 from-purple-800 from-purple-900
+from-pink-50 from-pink-100 from-pink-200 from-pink-300 from-pink-400 from-pink-500 from-pink-600 from-pink-700 from-pink-800 from-pink-900
+via-inherit via-current via-transparent via-black via-white
+via-slate-50 via-slate-100 via-slate-200 via-slate-300 via-slate-400 via-slate-500 via-slate-600 via-slate-700 via-slate-800 via-slate-900
+via-gray-50 via-gray-100 via-gray-200 via-gray-300 via-gray-400 via-gray-500 via-gray-600 via-gray-700 via-gray-800 via-gray-900
+via-blue-50 via-blue-100 via-blue-200 via-blue-300 via-blue-400 via-blue-500 via-blue-600 via-blue-700 via-blue-800 via-blue-900
+to-inherit to-current to-transparent to-black to-white
+to-slate-50 to-slate-100 to-slate-200 to-slate-300 to-slate-400 to-slate-500 to-slate-600 to-slate-700 to-slate-800 to-slate-900
+to-gray-50 to-gray-100 to-gray-200 to-gray-300 to-gray-400 to-gray-500 to-gray-600 to-gray-700 to-gray-800 to-gray-900
+to-red-50 to-red-100 to-red-200 to-red-300 to-red-400 to-red-500 to-red-600 to-red-700 to-red-800 to-red-900
+to-blue-50 to-blue-100 to-blue-200 to-blue-300 to-blue-400 to-blue-500 to-blue-600 to-blue-700 to-blue-800 to-blue-900
+to-purple-50 to-purple-100 to-purple-200 to-purple-300 to-purple-400 to-purple-500 to-purple-600 to-purple-700 to-purple-800 to-purple-900
+
+/* Divide */
+divide-x divide-x-0 divide-x-2 divide-x-4 divide-x-8 divide-x-reverse
+divide-y divide-y-0 divide-y-2 divide-y-4 divide-y-8 divide-y-reverse
+divide-solid divide-dashed divide-dotted divide-double divide-none
+divide-transparent divide-current divide-inherit divide-black divide-white
+divide-slate-50 divide-slate-100 divide-slate-200 divide-slate-300 divide-slate-400 divide-slate-500 divide-slate-600 divide-slate-700 divide-slate-800 divide-slate-900
+divide-gray-50 divide-gray-100 divide-gray-200 divide-gray-300 divide-gray-400 divide-gray-500 divide-gray-600 divide-gray-700 divide-gray-800 divide-gray-900
+
+/* Outline */
+outline-none outline outline-dashed outline-dotted outline-double
+outline-0 outline-1 outline-2 outline-4 outline-8
+outline-transparent outline-current outline-inherit outline-black outline-white
+outline-offset-0 outline-offset-1 outline-offset-2 outline-offset-4 outline-offset-8
+
+/* Dark Mode */
+dark:text-white dark:text-gray-50 dark:text-gray-100 dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:text-gray-500 dark:text-gray-600 dark:text-gray-700 dark:text-gray-800 dark:text-gray-900
+dark:text-slate-50 dark:text-slate-100 dark:text-slate-200 dark:text-slate-300 dark:text-slate-400 dark:text-slate-500 dark:text-slate-600 dark:text-slate-700 dark:text-slate-800 dark:text-slate-900
+dark:text-blue-50 dark:text-blue-100 dark:text-blue-200 dark:text-blue-300 dark:text-blue-400 dark:text-blue-500 dark:text-blue-600 dark:text-blue-700 dark:text-blue-800 dark:text-blue-900
+dark:text-red-50 dark:text-red-100 dark:text-red-200 dark:text-red-300 dark:text-red-400 dark:text-red-500 dark:text-red-600 dark:text-red-700 dark:text-red-800 dark:text-red-900
+dark:text-green-50 dark:text-green-100 dark:text-green-200 dark:text-green-300 dark:text-green-400 dark:text-green-500 dark:text-green-600 dark:text-green-700 dark:text-green-800 dark:text-green-900
+dark:text-yellow-50 dark:text-yellow-100 dark:text-yellow-200 dark:text-yellow-300 dark:text-yellow-400 dark:text-yellow-500 dark:text-yellow-600 dark:text-yellow-700 dark:text-yellow-800 dark:text-yellow-900
+dark:text-purple-50 dark:text-purple-100 dark:text-purple-200 dark:text-purple-300 dark:text-purple-400 dark:text-purple-500 dark:text-purple-600 dark:text-purple-700 dark:text-purple-800 dark:text-purple-900
+dark:text-pink-50 dark:text-pink-100 dark:text-pink-200 dark:text-pink-300 dark:text-pink-400 dark:text-pink-500 dark:text-pink-600 dark:text-pink-700 dark:text-pink-800 dark:text-pink-900
+dark:text-orange-50 dark:text-orange-100 dark:text-orange-200 dark:text-orange-300 dark:text-orange-400 dark:text-orange-500 dark:text-orange-600 dark:text-orange-700 dark:text-orange-800 dark:text-orange-900
+dark:text-black
+dark:bg-white dark:bg-black
+dark:bg-gray-50 dark:bg-gray-100 dark:bg-gray-200 dark:bg-gray-300 dark:bg-gray-400 dark:bg-gray-500 dark:bg-gray-600 dark:bg-gray-700 dark:bg-gray-800 dark:bg-gray-900 dark:bg-gray-950
+dark:bg-slate-50 dark:bg-slate-100 dark:bg-slate-200 dark:bg-slate-300 dark:bg-slate-400 dark:bg-slate-500 dark:bg-slate-600 dark:bg-slate-700 dark:bg-slate-800 dark:bg-slate-900 dark:bg-slate-950
+dark:bg-blue-50 dark:bg-blue-100 dark:bg-blue-200 dark:bg-blue-300 dark:bg-blue-400 dark:bg-blue-500 dark:bg-blue-600 dark:bg-blue-700 dark:bg-blue-800 dark:bg-blue-900 dark:bg-blue-950
+dark:bg-red-50 dark:bg-red-100 dark:bg-red-200 dark:bg-red-300 dark:bg-red-400 dark:bg-red-500 dark:bg-red-600 dark:bg-red-700 dark:bg-red-800 dark:bg-red-900 dark:bg-red-950
+dark:bg-green-50 dark:bg-green-100 dark:bg-green-200 dark:bg-green-300 dark:bg-green-400 dark:bg-green-500 dark:bg-green-600 dark:bg-green-700 dark:bg-green-800 dark:bg-green-900 dark:bg-green-950
+dark:bg-yellow-50 dark:bg-yellow-100 dark:bg-yellow-200 dark:bg-yellow-300 dark:bg-yellow-400 dark:bg-yellow-500 dark:bg-yellow-600 dark:bg-yellow-700 dark:bg-yellow-800 dark:bg-yellow-900 dark:bg-yellow-950
+dark:bg-purple-50 dark:bg-purple-100 dark:bg-purple-200 dark:bg-purple-300 dark:bg-purple-400 dark:bg-purple-500 dark:bg-purple-600 dark:bg-purple-700 dark:bg-purple-800 dark:bg-purple-900 dark:bg-purple-950
+dark:bg-pink-50 dark:bg-pink-100 dark:bg-pink-200 dark:bg-pink-300 dark:bg-pink-400 dark:bg-pink-500 dark:bg-pink-600 dark:bg-pink-700 dark:bg-pink-800 dark:bg-pink-900 dark:bg-pink-950
+dark:bg-orange-50 dark:bg-orange-100 dark:bg-orange-200 dark:bg-orange-300 dark:bg-orange-400 dark:bg-orange-500 dark:bg-orange-600 dark:bg-orange-700 dark:bg-orange-800 dark:bg-orange-900 dark:bg-orange-950
+dark:bg-indigo-50 dark:bg-indigo-100 dark:bg-indigo-200 dark:bg-indigo-300 dark:bg-indigo-400 dark:bg-indigo-500 dark:bg-indigo-600 dark:bg-indigo-700 dark:bg-indigo-800 dark:bg-indigo-900 dark:bg-indigo-950
+dark:border-white dark:border-black dark:border-transparent
+dark:border-gray-50 dark:border-gray-100 dark:border-gray-200 dark:border-gray-300 dark:border-gray-400 dark:border-gray-500 dark:border-gray-600 dark:border-gray-700 dark:border-gray-800 dark:border-gray-900 dark:border-gray-950
+dark:border-slate-50 dark:border-slate-100 dark:border-slate-200 dark:border-slate-300 dark:border-slate-400 dark:border-slate-500 dark:border-slate-600 dark:border-slate-700 dark:border-slate-800 dark:border-slate-900 dark:border-slate-950
+dark:border-blue-50 dark:border-blue-100 dark:border-blue-200 dark:border-blue-300 dark:border-blue-400 dark:border-blue-500 dark:border-blue-600 dark:border-blue-700 dark:border-blue-800 dark:border-blue-900
+dark:border-red-50 dark:border-red-100 dark:border-red-200 dark:border-red-300 dark:border-red-400 dark:border-red-500 dark:border-red-600 dark:border-red-700 dark:border-red-800 dark:border-red-900
+dark:ring-gray-50 dark:ring-gray-100 dark:ring-gray-200 dark:ring-gray-300 dark:ring-gray-400 dark:ring-gray-500 dark:ring-gray-600 dark:ring-gray-700 dark:ring-gray-800 dark:ring-gray-900
+dark:ring-blue-50 dark:ring-blue-100 dark:ring-blue-200 dark:ring-blue-300 dark:ring-blue-400 dark:ring-blue-500 dark:ring-blue-600 dark:ring-blue-700 dark:ring-blue-800 dark:ring-blue-900
+dark:divide-gray-50 dark:divide-gray-100 dark:divide-gray-200 dark:divide-gray-300 dark:divide-gray-400 dark:divide-gray-500 dark:divide-gray-600 dark:divide-gray-700 dark:divide-gray-800 dark:divide-gray-900
+dark:shadow-sm dark:shadow dark:shadow-md dark:shadow-lg dark:shadow-xl dark:shadow-2xl dark:shadow-inner dark:shadow-none
+dark:opacity-0 dark:opacity-50 dark:opacity-75 dark:opacity-100
+dark:from-gray-50 dark:from-gray-100 dark:from-gray-200 dark:from-gray-300 dark:from-gray-400 dark:from-gray-500 dark:from-gray-600 dark:from-gray-700 dark:from-gray-800 dark:from-gray-900
+dark:to-gray-50 dark:to-gray-100 dark:to-gray-200 dark:to-gray-300 dark:to-gray-400 dark:to-gray-500 dark:to-gray-600 dark:to-gray-700 dark:to-gray-800 dark:to-gray-900
+
+/* Hover States */
+hover:bg-white hover:bg-black hover:bg-transparent
+hover:bg-gray-50 hover:bg-gray-100 hover:bg-gray-200 hover:bg-gray-300 hover:bg-gray-400 hover:bg-gray-500 hover:bg-gray-600 hover:bg-gray-700 hover:bg-gray-800 hover:bg-gray-900
+hover:bg-slate-50 hover:bg-slate-100 hover:bg-slate-200 hover:bg-slate-300 hover:bg-slate-400 hover:bg-slate-500 hover:bg-slate-600 hover:bg-slate-700 hover:bg-slate-800 hover:bg-slate-900
+hover:bg-blue-50 hover:bg-blue-100 hover:bg-blue-200 hover:bg-blue-300 hover:bg-blue-400 hover:bg-blue-500 hover:bg-blue-600 hover:bg-blue-700 hover:bg-blue-800 hover:bg-blue-900
+hover:bg-red-50 hover:bg-red-100 hover:bg-red-200 hover:bg-red-300 hover:bg-red-400 hover:bg-red-500 hover:bg-red-600 hover:bg-red-700 hover:bg-red-800 hover:bg-red-900
+hover:bg-green-50 hover:bg-green-100 hover:bg-green-200 hover:bg-green-300 hover:bg-green-400 hover:bg-green-500 hover:bg-green-600 hover:bg-green-700 hover:bg-green-800 hover:bg-green-900
+hover:bg-yellow-50 hover:bg-yellow-100 hover:bg-yellow-200 hover:bg-yellow-300 hover:bg-yellow-400 hover:bg-yellow-500 hover:bg-yellow-600 hover:bg-yellow-700 hover:bg-yellow-800 hover:bg-yellow-900
+hover:bg-purple-50 hover:bg-purple-100 hover:bg-purple-200 hover:bg-purple-300 hover:bg-purple-400 hover:bg-purple-500 hover:bg-purple-600 hover:bg-purple-700 hover:bg-purple-800 hover:bg-purple-900
+hover:bg-pink-50 hover:bg-pink-100 hover:bg-pink-200 hover:bg-pink-300 hover:bg-pink-400 hover:bg-pink-500 hover:bg-pink-600 hover:bg-pink-700 hover:bg-pink-800 hover:bg-pink-900
+hover:bg-orange-50 hover:bg-orange-100 hover:bg-orange-200 hover:bg-orange-300 hover:bg-orange-400 hover:bg-orange-500 hover:bg-orange-600 hover:bg-orange-700 hover:bg-orange-800 hover:bg-orange-900
+hover:bg-indigo-50 hover:bg-indigo-100 hover:bg-indigo-200 hover:bg-indigo-300 hover:bg-indigo-400 hover:bg-indigo-500 hover:bg-indigo-600 hover:bg-indigo-700 hover:bg-indigo-800 hover:bg-indigo-900
+hover:text-white hover:text-black
+hover:text-gray-50 hover:text-gray-100 hover:text-gray-200 hover:text-gray-300 hover:text-gray-400 hover:text-gray-500 hover:text-gray-600 hover:text-gray-700 hover:text-gray-800 hover:text-gray-900
+hover:text-slate-50 hover:text-slate-100 hover:text-slate-200 hover:text-slate-300 hover:text-slate-400 hover:text-slate-500 hover:text-slate-600 hover:text-slate-700 hover:text-slate-800 hover:text-slate-900
+hover:text-blue-50 hover:text-blue-100 hover:text-blue-200 hover:text-blue-300 hover:text-blue-400 hover:text-blue-500 hover:text-blue-600 hover:text-blue-700 hover:text-blue-800 hover:text-blue-900
+hover:text-red-50 hover:text-red-100 hover:text-red-200 hover:text-red-300 hover:text-red-400 hover:text-red-500 hover:text-red-600 hover:text-red-700 hover:text-red-800 hover:text-red-900
+hover:text-green-50 hover:text-green-100 hover:text-green-200 hover:text-green-300 hover:text-green-400 hover:text-green-500 hover:text-green-600 hover:text-green-700 hover:text-green-800 hover:text-green-900
+hover:text-purple-50 hover:text-purple-100 hover:text-purple-200 hover:text-purple-300 hover:text-purple-400 hover:text-purple-500 hover:text-purple-600 hover:text-purple-700 hover:text-purple-800 hover:text-purple-900
+hover:border-gray-50 hover:border-gray-100 hover:border-gray-200 hover:border-gray-300 hover:border-gray-400 hover:border-gray-500 hover:border-gray-600 hover:border-gray-700 hover:border-gray-800 hover:border-gray-900
+hover:border-blue-50 hover:border-blue-100 hover:border-blue-200 hover:border-blue-300 hover:border-blue-400 hover:border-blue-500 hover:border-blue-600 hover:border-blue-700 hover:border-blue-800 hover:border-blue-900
+hover:shadow-sm hover:shadow hover:shadow-md hover:shadow-lg hover:shadow-xl hover:shadow-2xl hover:shadow-none
+hover:opacity-0 hover:opacity-25 hover:opacity-50 hover:opacity-75 hover:opacity-100
+hover:scale-95 hover:scale-100 hover:scale-105 hover:scale-110
+hover:underline hover:no-underline hover:line-through
+hover:ring-0 hover:ring-1 hover:ring-2 hover:ring-4 hover:ring-8
+hover:ring-blue-500 hover:ring-gray-500 hover:ring-red-500 hover:ring-green-500
+dark:hover:bg-gray-50 dark:hover:bg-gray-100 dark:hover:bg-gray-200 dark:hover:bg-gray-300 dark:hover:bg-gray-400 dark:hover:bg-gray-500 dark:hover:bg-gray-600 dark:hover:bg-gray-700 dark:hover:bg-gray-800 dark:hover:bg-gray-900
+dark:hover:bg-slate-50 dark:hover:bg-slate-100 dark:hover:bg-slate-200 dark:hover:bg-slate-300 dark:hover:bg-slate-400 dark:hover:bg-slate-500 dark:hover:bg-slate-600 dark:hover:bg-slate-700 dark:hover:bg-slate-800 dark:hover:bg-slate-900
+dark:hover:bg-blue-50 dark:hover:bg-blue-100 dark:hover:bg-blue-200 dark:hover:bg-blue-300 dark:hover:bg-blue-400 dark:hover:bg-blue-500 dark:hover:bg-blue-600 dark:hover:bg-blue-700 dark:hover:bg-blue-800 dark:hover:bg-blue-900
+dark:hover:text-white dark:hover:text-black
+dark:hover:text-gray-50 dark:hover:text-gray-100 dark:hover:text-gray-200 dark:hover:text-gray-300 dark:hover:text-gray-400 dark:hover:text-gray-500 dark:hover:text-gray-600 dark:hover:text-gray-700 dark:hover:text-gray-800 dark:hover:text-gray-900
+dark:hover:text-blue-50 dark:hover:text-blue-100 dark:hover:text-blue-200 dark:hover:text-blue-300 dark:hover:text-blue-400 dark:hover:text-blue-500 dark:hover:text-blue-600 dark:hover:text-blue-700 dark:hover:text-blue-800 dark:hover:text-blue-900
+dark:hover:text-red-50 dark:hover:text-red-100 dark:hover:text-red-200 dark:hover:text-red-300 dark:hover:text-red-400 dark:hover:text-red-500 dark:hover:text-red-600 dark:hover:text-red-700 dark:hover:text-red-800 dark:hover:text-red-900
+dark:hover:text-green-50 dark:hover:text-green-100 dark:hover:text-green-200 dark:hover:text-green-300 dark:hover:text-green-400 dark:hover:text-green-500 dark:hover:text-green-600 dark:hover:text-green-700 dark:hover:text-green-800 dark:hover:text-green-900
+dark:hover:border-gray-50 dark:hover:border-gray-100 dark:hover:border-gray-200 dark:hover:border-gray-300 dark:hover:border-gray-400 dark:hover:border-gray-500 dark:hover:border-gray-600 dark:hover:border-gray-700 dark:hover:border-gray-800 dark:hover:border-gray-900
+
+/* Focus States */
+focus:bg-white focus:bg-black focus:bg-transparent
+focus:bg-gray-50 focus:bg-gray-100 focus:bg-gray-200 focus:bg-gray-300 focus:bg-gray-400 focus:bg-gray-500 focus:bg-gray-600 focus:bg-gray-700 focus:bg-gray-800 focus:bg-gray-900
+focus:bg-blue-50 focus:bg-blue-100 focus:bg-blue-200 focus:bg-blue-300 focus:bg-blue-400 focus:bg-blue-500 focus:bg-blue-600 focus:bg-blue-700 focus:bg-blue-800 focus:bg-blue-900
+focus:text-white focus:text-black
+focus:text-gray-50 focus:text-gray-100 focus:text-gray-200 focus:text-gray-300 focus:text-gray-400 focus:text-gray-500 focus:text-gray-600 focus:text-gray-700 focus:text-gray-800 focus:text-gray-900
+focus:text-blue-50 focus:text-blue-100 focus:text-blue-200 focus:text-blue-300 focus:text-blue-400 focus:text-blue-500 focus:text-blue-600 focus:text-blue-700 focus:text-blue-800 focus:text-blue-900
+focus:border-gray-50 focus:border-gray-100 focus:border-gray-200 focus:border-gray-300 focus:border-gray-400 focus:border-gray-500 focus:border-gray-600 focus:border-gray-700 focus:border-gray-800 focus:border-gray-900
+focus:border-blue-50 focus:border-blue-100 focus:border-blue-200 focus:border-blue-300 focus:border-blue-400 focus:border-blue-500 focus:border-blue-600 focus:border-blue-700 focus:border-blue-800 focus:border-blue-900
+focus:border-red-500 focus:border-green-500 focus:border-yellow-500 focus:border-purple-500
+focus:ring-0 focus:ring-1 focus:ring-2 focus:ring-4 focus:ring-8 focus:ring-inset
+focus:ring-transparent focus:ring-current
+focus:ring-gray-50 focus:ring-gray-100 focus:ring-gray-200 focus:ring-gray-300 focus:ring-gray-400 focus:ring-gray-500 focus:ring-gray-600 focus:ring-gray-700 focus:ring-gray-800 focus:ring-gray-900
+focus:ring-blue-50 focus:ring-blue-100 focus:ring-blue-200 focus:ring-blue-300 focus:ring-blue-400 focus:ring-blue-500 focus:ring-blue-600 focus:ring-blue-700 focus:ring-blue-800 focus:ring-blue-900
+focus:ring-red-500 focus:ring-green-500 focus:ring-yellow-500 focus:ring-purple-500
+focus:ring-offset-0 focus:ring-offset-1 focus:ring-offset-2 focus:ring-offset-4
+focus:ring-offset-white focus:ring-offset-gray-100 focus:ring-offset-gray-900
+focus:outline-none focus:outline focus:outline-0 focus:outline-1 focus:outline-2 focus:outline-4
+focus:shadow-sm focus:shadow focus:shadow-md focus:shadow-lg focus:shadow-xl focus:shadow-none
+dark:focus:bg-gray-700 dark:focus:bg-gray-800 dark:focus:bg-gray-900
+dark:focus:text-white dark:focus:text-gray-100 dark:focus:text-gray-200 dark:focus:text-gray-300
+dark:focus:border-gray-500 dark:focus:border-gray-600 dark:focus:border-gray-700
+dark:focus:ring-gray-500 dark:focus:ring-gray-600 dark:focus:ring-gray-700
+dark:focus:ring-blue-400 dark:focus:ring-blue-500 dark:focus:ring-blue-600 dark:focus:ring-blue-700
+dark:focus:ring-offset-gray-800 dark:focus:ring-offset-gray-900
+focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+focus-visible:ring-2 focus-visible:ring-offset-2
+focus-visible:ring-blue-500 focus-visible:ring-gray-500
+focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-gray-500
+focus-within:border-blue-500 focus-within:border-gray-500
+
+/* Active States */
+active:bg-gray-100 active:bg-gray-200 active:bg-gray-300 active:bg-gray-700 active:bg-gray-800
+active:bg-blue-600 active:bg-blue-700 active:bg-blue-800
+active:bg-red-600 active:bg-red-700 active:bg-green-600 active:bg-green-700
+active:scale-95 active:scale-100 active:opacity-75 active:opacity-100
+dark:active:bg-gray-600 dark:active:bg-gray-700 dark:active:bg-gray-800
+
+/* Disabled States */
+disabled:opacity-25 disabled:opacity-50 disabled:opacity-75
+disabled:cursor-not-allowed disabled:cursor-default
+disabled:bg-gray-100 disabled:bg-gray-200 disabled:bg-gray-300
+disabled:text-gray-300 disabled:text-gray-400 disabled:text-gray-500
+disabled:border-gray-200 disabled:border-gray-300
+dark:disabled:bg-gray-700 dark:disabled:bg-gray-800
+dark:disabled:text-gray-500 dark:disabled:text-gray-600
+
+/* Group/Peer States */
+group-hover:bg-gray-100 group-hover:bg-gray-200 group-hover:bg-gray-700 group-hover:bg-gray-800
+group-hover:bg-blue-100 group-hover:bg-blue-500 group-hover:bg-blue-600
+group-hover:text-white group-hover:text-black
+group-hover:text-gray-700 group-hover:text-gray-800 group-hover:text-gray-900
+group-hover:text-blue-500 group-hover:text-blue-600 group-hover:text-blue-700
+group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:scale-105
+group-hover:translate-x-1 group-hover:translate-y-1
+group-focus:ring-2 group-focus:border-blue-500
+dark:group-hover:bg-gray-700 dark:group-hover:bg-gray-800
+dark:group-hover:text-white dark:group-hover:text-gray-100
+peer-focus:ring-2 peer-focus:border-blue-500
+peer-checked:bg-blue-500 peer-checked:border-blue-500
+peer-invalid:border-red-500 peer-invalid:text-red-500
+peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
+
+/* Child Selectors */
+first:mt-0 first:pt-0 first:border-t-0 first:rounded-t-lg first:rounded-l-lg
+last:mb-0 last:pb-0 last:border-b-0 last:rounded-b-lg last:rounded-r-lg
+odd:bg-gray-50 odd:bg-gray-100 odd:bg-white
+even:bg-gray-50 even:bg-gray-100 even:bg-white
+dark:odd:bg-gray-800 dark:odd:bg-gray-900
+dark:even:bg-gray-800 dark:even:bg-gray-900
+empty:hidden
+
+/* Form States */
+checked:bg-blue-500 checked:bg-blue-600 checked:bg-green-500
+checked:border-blue-500 checked:border-blue-600
+checked:text-white
+
+/* Accent color for checkbox/radio */
+accent-gray-900 accent-black accent-blue-600
+indeterminate:bg-gray-300 indeterminate:border-gray-400
+invalid:border-red-500 invalid:text-red-600 invalid:ring-red-500
+valid:border-green-500 valid:text-green-600 valid:ring-green-500
+read-only:bg-gray-50 read-only:bg-gray-100 read-only:cursor-not-allowed
+placeholder-shown:border-gray-300
+autofill:bg-yellow-100 autofill:text-black
+selection:bg-blue-200 selection:text-blue-900
+dark:selection:bg-blue-800 dark:selection:text-blue-100
+file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold
+file:bg-blue-50 file:text-blue-700 file:cursor-pointer
+file:hover:bg-blue-100
+marker:text-blue-500 marker:text-gray-500
+before:absolute before:inset-0 before:block
+after:absolute after:inset-0 after:block
+first-letter:text-2xl first-letter:font-bold first-letter:text-blue-600
+first-line:text-gray-700 first-line:font-semibold
+
+/* Responsive sm */
+sm:grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 sm:grid-cols-4 sm:grid-cols-6 sm:grid-cols-12
+sm:col-span-1 sm:col-span-2 sm:col-span-3 sm:col-span-4 sm:col-span-6 sm:col-span-12 sm:col-span-full
+sm:flex sm:flex-row sm:flex-col sm:hidden sm:block sm:inline sm:inline-flex sm:inline-block
+sm:w-auto sm:w-full sm:w-1/2 sm:w-1/3 sm:w-1/4 sm:w-2/3 sm:w-3/4
+sm:text-xs sm:text-sm sm:text-base sm:text-lg sm:text-xl sm:text-2xl sm:text-3xl
+sm:p-0 sm:p-1 sm:p-2 sm:p-3 sm:p-4 sm:p-5 sm:p-6 sm:p-8
+sm:px-0 sm:px-1 sm:px-2 sm:px-3 sm:px-4 sm:px-5 sm:px-6 sm:px-8
+sm:py-0 sm:py-1 sm:py-2 sm:py-3 sm:py-4 sm:py-5 sm:py-6 sm:py-8
+sm:m-0 sm:m-1 sm:m-2 sm:m-3 sm:m-4 sm:m-auto sm:mx-auto sm:my-auto
+sm:gap-0 sm:gap-1 sm:gap-2 sm:gap-3 sm:gap-4 sm:gap-5 sm:gap-6 sm:gap-8
+sm:space-x-0 sm:space-x-1 sm:space-x-2 sm:space-x-3 sm:space-x-4 sm:space-y-0 sm:space-y-1 sm:space-y-2 sm:space-y-3 sm:space-y-4
+sm:justify-start sm:justify-end sm:justify-center sm:justify-between sm:items-start sm:items-end sm:items-center
+
+/* Responsive md */
+md:grid-cols-1 md:grid-cols-2 md:grid-cols-3 md:grid-cols-4 md:grid-cols-5 md:grid-cols-6 md:grid-cols-12
+md:grid-rows-1 md:grid-rows-2 md:grid-rows-3 md:grid-rows-4 md:grid-rows-5 md:grid-rows-6
+md:col-span-1 md:col-span-2 md:col-span-3 md:col-span-4 md:col-span-5 md:col-span-6 md:col-span-12 md:col-span-full
+md:row-span-1 md:row-span-2 md:row-span-3 md:row-span-4 md:row-span-full
+md:flex md:flex-row md:flex-col md:hidden md:block md:inline md:inline-flex md:inline-block
+md:w-auto md:w-full md:w-1/2 md:w-1/3 md:w-1/4 md:w-2/3 md:w-3/4 md:w-1/5 md:w-2/5 md:w-3/5 md:w-4/5
+md:max-w-xs md:max-w-sm md:max-w-md md:max-w-lg md:max-w-xl md:max-w-2xl md:max-w-3xl md:max-w-4xl md:max-w-5xl md:max-w-6xl md:max-w-7xl md:max-w-full md:max-w-none
+md:text-xs md:text-sm md:text-base md:text-lg md:text-xl md:text-2xl md:text-3xl md:text-4xl
+md:p-0 md:p-1 md:p-2 md:p-3 md:p-4 md:p-5 md:p-6 md:p-8 md:p-10 md:p-12
+md:px-0 md:px-1 md:px-2 md:px-3 md:px-4 md:px-5 md:px-6 md:px-8 md:px-10 md:px-12
+md:py-0 md:py-1 md:py-2 md:py-3 md:py-4 md:py-5 md:py-6 md:py-8 md:py-10 md:py-12
+md:m-0 md:m-1 md:m-2 md:m-3 md:m-4 md:m-auto md:mx-auto md:my-auto
+md:mt-0 md:mt-1 md:mt-2 md:mt-3 md:mt-4 md:mt-6 md:mt-8
+md:mb-0 md:mb-1 md:mb-2 md:mb-3 md:mb-4 md:mb-6 md:mb-8
+md:ml-0 md:ml-1 md:ml-2 md:ml-3 md:ml-4 md:ml-6 md:ml-8 md:ml-auto
+md:mr-0 md:mr-1 md:mr-2 md:mr-3 md:mr-4 md:mr-6 md:mr-8 md:mr-auto
+md:gap-0 md:gap-1 md:gap-2 md:gap-3 md:gap-4 md:gap-5 md:gap-6 md:gap-8 md:gap-10 md:gap-12
+md:space-x-0 md:space-x-1 md:space-x-2 md:space-x-3 md:space-x-4 md:space-x-6 md:space-x-8
+md:space-y-0 md:space-y-1 md:space-y-2 md:space-y-3 md:space-y-4 md:space-y-6 md:space-y-8
+md:justify-start md:justify-end md:justify-center md:justify-between md:justify-around
+md:items-start md:items-end md:items-center md:items-baseline md:items-stretch
+md:order-1 md:order-2 md:order-3 md:order-first md:order-last md:order-none
+md:static md:fixed md:absolute md:relative md:sticky
+md:top-0 md:right-0 md:bottom-0 md:left-0 md:inset-0
+
+/* Responsive lg */
+lg:grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 lg:grid-cols-5 lg:grid-cols-6 lg:grid-cols-7 lg:grid-cols-8 lg:grid-cols-12
+lg:grid-rows-1 lg:grid-rows-2 lg:grid-rows-3 lg:grid-rows-4 lg:grid-rows-5 lg:grid-rows-6
+lg:col-span-1 lg:col-span-2 lg:col-span-3 lg:col-span-4 lg:col-span-5 lg:col-span-6 lg:col-span-7 lg:col-span-8 lg:col-span-12 lg:col-span-full
+lg:row-span-1 lg:row-span-2 lg:row-span-3 lg:row-span-4 lg:row-span-full
+lg:flex lg:flex-row lg:flex-col lg:hidden lg:block lg:inline lg:inline-flex lg:inline-block
+lg:w-auto lg:w-full lg:w-1/2 lg:w-1/3 lg:w-1/4 lg:w-2/3 lg:w-3/4 lg:w-1/5 lg:w-2/5 lg:w-3/5 lg:w-4/5 lg:w-1/6 lg:w-5/6
+lg:max-w-xs lg:max-w-sm lg:max-w-md lg:max-w-lg lg:max-w-xl lg:max-w-2xl lg:max-w-3xl lg:max-w-4xl lg:max-w-5xl lg:max-w-6xl lg:max-w-7xl lg:max-w-full lg:max-w-none
+lg:text-xs lg:text-sm lg:text-base lg:text-lg lg:text-xl lg:text-2xl lg:text-3xl lg:text-4xl lg:text-5xl
+lg:p-0 lg:p-1 lg:p-2 lg:p-3 lg:p-4 lg:p-5 lg:p-6 lg:p-8 lg:p-10 lg:p-12 lg:p-16
+lg:px-0 lg:px-1 lg:px-2 lg:px-3 lg:px-4 lg:px-5 lg:px-6 lg:px-8 lg:px-10 lg:px-12 lg:px-16
+lg:py-0 lg:py-1 lg:py-2 lg:py-3 lg:py-4 lg:py-5 lg:py-6 lg:py-8 lg:py-10 lg:py-12 lg:py-16
+lg:m-0 lg:m-1 lg:m-2 lg:m-3 lg:m-4 lg:m-auto lg:mx-auto lg:my-auto
+lg:mt-0 lg:mt-1 lg:mt-2 lg:mt-3 lg:mt-4 lg:mt-6 lg:mt-8 lg:mt-10 lg:mt-12
+lg:mb-0 lg:mb-1 lg:mb-2 lg:mb-3 lg:mb-4 lg:mb-6 lg:mb-8 lg:mb-10 lg:mb-12
+lg:ml-0 lg:ml-1 lg:ml-2 lg:ml-3 lg:ml-4 lg:ml-6 lg:ml-8 lg:ml-auto
+lg:mr-0 lg:mr-1 lg:mr-2 lg:mr-3 lg:mr-4 lg:mr-6 lg:mr-8 lg:mr-auto
+lg:gap-0 lg:gap-1 lg:gap-2 lg:gap-3 lg:gap-4 lg:gap-5 lg:gap-6 lg:gap-8 lg:gap-10 lg:gap-12 lg:gap-16
+lg:space-x-0 lg:space-x-1 lg:space-x-2 lg:space-x-3 lg:space-x-4 lg:space-x-6 lg:space-x-8 lg:space-x-10
+lg:space-y-0 lg:space-y-1 lg:space-y-2 lg:space-y-3 lg:space-y-4 lg:space-y-6 lg:space-y-8 lg:space-y-10
+lg:justify-start lg:justify-end lg:justify-center lg:justify-between lg:justify-around lg:justify-evenly
+lg:items-start lg:items-end lg:items-center lg:items-baseline lg:items-stretch
+lg:order-1 lg:order-2 lg:order-3 lg:order-4 lg:order-first lg:order-last lg:order-none
+lg:static lg:fixed lg:absolute lg:relative lg:sticky
+lg:top-0 lg:right-0 lg:bottom-0 lg:left-0 lg:inset-0
+
+/* Responsive xl */
+xl:grid-cols-1 xl:grid-cols-2 xl:grid-cols-3 xl:grid-cols-4 xl:grid-cols-5 xl:grid-cols-6 xl:grid-cols-12
+xl:grid-rows-1 xl:grid-rows-2 xl:grid-rows-3 xl:grid-rows-4
+xl:col-span-1 xl:col-span-2 xl:col-span-3 xl:col-span-4 xl:col-span-5 xl:col-span-6 xl:col-span-12 xl:col-span-full
+xl:row-span-1 xl:row-span-2 xl:row-span-3 xl:row-span-full
+xl:flex xl:flex-row xl:flex-col xl:hidden xl:block xl:inline xl:inline-flex xl:inline-block
+xl:w-auto xl:w-full xl:w-1/2 xl:w-1/3 xl:w-1/4 xl:w-2/3 xl:w-3/4 xl:w-1/5 xl:w-2/5 xl:w-3/5 xl:w-4/5
+xl:max-w-xs xl:max-w-sm xl:max-w-md xl:max-w-lg xl:max-w-xl xl:max-w-2xl xl:max-w-3xl xl:max-w-4xl xl:max-w-5xl xl:max-w-6xl xl:max-w-7xl xl:max-w-full xl:max-w-none
+xl:text-xs xl:text-sm xl:text-base xl:text-lg xl:text-xl xl:text-2xl xl:text-3xl xl:text-4xl xl:text-5xl xl:text-6xl
+xl:p-0 xl:p-1 xl:p-2 xl:p-3 xl:p-4 xl:p-5 xl:p-6 xl:p-8 xl:p-10 xl:p-12 xl:p-16
+xl:px-0 xl:px-1 xl:px-2 xl:px-3 xl:px-4 xl:px-5 xl:px-6 xl:px-8 xl:px-10 xl:px-12 xl:px-16
+xl:py-0 xl:py-1 xl:py-2 xl:py-3 xl:py-4 xl:py-5 xl:py-6 xl:py-8 xl:py-10 xl:py-12 xl:py-16
+xl:m-0 xl:m-auto xl:mx-auto xl:my-auto
+xl:gap-0 xl:gap-1 xl:gap-2 xl:gap-3 xl:gap-4 xl:gap-5 xl:gap-6 xl:gap-8 xl:gap-10 xl:gap-12 xl:gap-16
+xl:space-x-0 xl:space-x-1 xl:space-x-2 xl:space-x-3 xl:space-x-4 xl:space-x-6 xl:space-x-8
+xl:space-y-0 xl:space-y-1 xl:space-y-2 xl:space-y-3 xl:space-y-4 xl:space-y-6 xl:space-y-8
+xl:justify-start xl:justify-end xl:justify-center xl:justify-between
+xl:items-start xl:items-end xl:items-center
+
+/* Responsive 2xl */
+2xl:grid-cols-1 2xl:grid-cols-2 2xl:grid-cols-3 2xl:grid-cols-4 2xl:grid-cols-5 2xl:grid-cols-6 2xl:grid-cols-12
+2xl:col-span-1 2xl:col-span-2 2xl:col-span-3 2xl:col-span-4 2xl:col-span-6 2xl:col-span-12
+2xl:flex 2xl:hidden 2xl:block
+2xl:w-auto 2xl:w-full 2xl:w-1/2 2xl:w-1/3 2xl:w-1/4 2xl:w-2/3 2xl:w-3/4
+2xl:max-w-xs 2xl:max-w-sm 2xl:max-w-md 2xl:max-w-lg 2xl:max-w-xl 2xl:max-w-2xl 2xl:max-w-3xl 2xl:max-w-4xl 2xl:max-w-5xl 2xl:max-w-6xl 2xl:max-w-7xl 2xl:max-w-full
+2xl:text-xs 2xl:text-sm 2xl:text-base 2xl:text-lg 2xl:text-xl 2xl:text-2xl 2xl:text-3xl 2xl:text-4xl 2xl:text-5xl
+2xl:p-0 2xl:p-4 2xl:p-6 2xl:p-8 2xl:p-12 2xl:p-16
+2xl:px-0 2xl:px-4 2xl:px-6 2xl:px-8 2xl:px-12 2xl:px-16
+2xl:py-0 2xl:py-4 2xl:py-6 2xl:py-8 2xl:py-12 2xl:py-16
+2xl:gap-0 2xl:gap-4 2xl:gap-6 2xl:gap-8 2xl:gap-12 2xl:gap-16

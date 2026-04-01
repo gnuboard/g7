@@ -1,0 +1,38 @@
+{
+  "welcome": {
+    "title": "Welcome!",
+    "description": "Welcome to the Gnuboard7 Community.",
+    "login_prompt": "Sign in and join the community.",
+    "greeting": "Hello, {{name}}!"
+  },
+  "welcome_suffix": " Welcome",
+  "welcome_description": "Share various stories in a growing community together.",
+  "get_started": "Get Started",
+  "go_to_mypage": "My Page",
+  "learn_more": "Learn More",
+  "stats": {
+    "total_members": "Total Members",
+    "total_posts": "Total Posts",
+    "today_posts": "Today's Posts",
+    "online_users": "Online",
+    "members": "Members",
+    "posts": "Posts",
+    "comments": "Comments",
+    "boards": "Boards"
+  },
+  "recent_posts": "Recent Posts",
+  "no_posts": "No posts yet.",
+  "popular_boards": "Popular Boards",
+  "no_boards": "No popular boards yet.",
+  "shop": "Shop",
+  "shop_description": "Browse fresh products",
+  "community_guide": "Community Guide",
+  "guide_rule_1": "Respectful conversations",
+  "guide_rule_2": "No profanity or slander",
+  "guide_rule_3": "No advertising/spam",
+  "shop_promo": {
+    "title": "Shop",
+    "description": "Discover various products",
+    "go_to_shop": "Go to Shop"
+  }
+}

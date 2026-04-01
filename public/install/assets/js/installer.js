@@ -1,0 +1,3982 @@
+﻿/**
+ * G7 Installer - Vanilla JavaScript
+ * 모든 클라이언트 사이드 인터랙션 처리
+ */
+
+// =========================================================================
+// 로케일 초기화 (깜빡임 방지를 위해 최상단에서 즉시 실행)
+// =========================================================================
+
+(function initializeLocale() {
+    'use strict';
+
+    const STORAGE_KEY = 'g7_locale';
+    const SUPPORTED_LOCALES = ['ko', 'en'];
+    const DEFAULT_LOCALE = 'ko';
+
+    /**
+     * 저장된 로케일 또는 서버/브라우저 언어 기반 로케일 가져오기
+     *
+     * 우선순위: localStorage > state.json (서버 전달) > 브라우저 언어 > 기본값
+     */
+    function getPreferredLocale() {
+        // 1. localStorage 확인 (최우선)
+        const storedLocale = localStorage.getItem(STORAGE_KEY);
+        if (storedLocale && SUPPORTED_LOCALES.includes(storedLocale)) {
+            return storedLocale;
+        }
+
+        // 2. state.json 값 확인 (서버에서 전달된 값)
+        if (window.INSTALLER_STATE_LOCALE && SUPPORTED_LOCALES.includes(window.INSTALLER_STATE_LOCALE)) {
+            return window.INSTALLER_STATE_LOCALE;
+        }
+
+        // 3. 브라우저 언어 감지
+        const browserLang = navigator.language || navigator.userLanguage;
+        if (browserLang) {
+            // 언어-지역 형태에서 언어만 추출 (예: ko-KR -> ko)
+            const lang = browserLang.split('-')[0].toLowerCase();
+            if (SUPPORTED_LOCALES.includes(lang)) {
+                return lang;
+            }
+        }
+
+        // 4. 기본값
+        return DEFAULT_LOCALE;
+    }
+
+    /**
+     * localStorage에 로케일 저장
+     */
+    function saveLocale(locale) {
+        try {
+            localStorage.setItem(STORAGE_KEY, locale);
+        } catch (error) {
+            console.warn('[Installer] Failed to save locale to localStorage:', error);
+        }
+    }
+
+    // 초기 로케일 설정 및 저장
+    const initialLocale = getPreferredLocale();
+    saveLocale(initialLocale);
+
+    // 전역 함수로 노출 (언어 선택 UI에서 사용)
+    window.installerLocale = {
+        get: function() {
+            return localStorage.getItem(STORAGE_KEY) || DEFAULT_LOCALE;
+        },
+        set: function(locale) {
+            if (SUPPORTED_LOCALES.includes(locale)) {
+                saveLocale(locale);
+                return true;
+            }
+            return false;
+        }
+    };
+})();
+
+// =========================================================================
+// 메인 인스톨러 로직
+// =========================================================================
+
+(function() {
+    'use strict';
+
+    // =========================================================================
+    // 다국어 헬퍼 함수
+    // =========================================================================
+
+    /**
+     * 다국어 번역 조회
+     *
+     * @param {string} key 번역 키
+     * @return {string} 번역된 문자열
+     */
+    function lang(key) {
+        return window.INSTALLER_LANG && window.INSTALLER_LANG[key] ? window.INSTALLER_LANG[key] : key;
+    }
+
+    // =========================================================================
+    // Step 1: 라이선스 동의 체크박스
+    // =========================================================================
+
+    /**
+     * 라이선스 동의 체크박스 이벤트 초기화
+     */
+    function initLicenseAgreement() {
+        const licenseCheckbox = document.getElementById('license-agree');
+        const licenseForm = licenseCheckbox ? licenseCheckbox.closest('form') : null;
+
+        if (licenseForm && licenseCheckbox) {
+            licenseForm.addEventListener('submit', function(e) {
+                if (!licenseCheckbox.checked) {
+                    e.preventDefault();
+                    alert(lang('must_agree'));
+                    licenseCheckbox.focus();
+                }
+            });
+        }
+    }
+
+    // =========================================================================
+    // Step 2: 요구사항 검증
+    // =========================================================================
+
+    /**
+     * 서버 요구사항 검증 실행
+     */
+    async function checkRequirements() {
+        try {
+            // 절대 URL 생성 (origin + base path)
+            const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=requirements`;
+            const response = await fetch(apiUrl);
+
+            // HTTP 응답 상태 확인
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            const resultHtml = renderRequirements(data);
+            document.getElementById('requirements-result').innerHTML = resultHtml;
+            document.getElementById('navigation-buttons').classList.remove('hidden');
+
+            // 버튼 표시 제어
+            const recheckBtn = document.getElementById('recheck-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (data.all_required_passed) {
+                // 필수 요구사항 통과: 다음 버튼만 표시
+                recheckBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+                nextBtn.disabled = false;
+            } else {
+                // 필수 요구사항 미통과: 다시검증 버튼만 표시
+                recheckBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        } catch (error) {
+            document.getElementById('requirements-result').innerHTML = `
+                <div class="alert alert-error">
+                    ${lang('requirements_check_failed')}: ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * 검증 결과를 HTML로 렌더링 (카드 형태)
+     */
+    function renderRequirements(data) {
+        let html = '<div class="requirements-result">';
+        let failedRequirements = [];
+
+        // API 응답에서 권한 설정값 가져오기
+        const requiredPermissions = data.directories?.required_permissions || '770';
+
+        // OS 정보 (Windows 여부)
+        const isWindows = data.is_windows || false;
+
+        // 1. PHP 버전 카드
+        const phpStatusClass = data.php_version.passed ? 'status-pass' : 'status-fail';
+        if (!data.php_version.passed) {
+            failedRequirements.push(`${lang('error_php_version')}: ${data.php_version.current_version} (${lang('minimum')} ${data.php_version.min_version} ${lang('required_text')})`);
+        }
+        html += renderSingleItemCard(
+            lang('php_version'),
+            phpStatusClass,
+            `PHP ${data.php_version.current_version}`,
+            `${data.php_version.min_version}+`,
+            true
+        );
+
+        // 2. 디스크 공간 카드
+        const diskSpaceGB = (data.disk_space.current_mb / 1024).toFixed(2);
+        const minSpaceGB = (data.disk_space.min_mb / 1024).toFixed(2);
+        const diskStatusClass = data.disk_space.passed ? 'status-pass' : 'status-fail';
+        if (!data.disk_space.passed) {
+            failedRequirements.push(`${lang('error_disk_space')}: ${diskSpaceGB} GB (${lang('minimum')} ${minSpaceGB} GB ${lang('required_text')})`);
+        }
+        html += renderSingleItemCard(
+            lang('disk_space'),
+            diskStatusClass,
+            `${diskSpaceGB} GB`,
+            `${minSpaceGB} GB`,
+            true
+        );
+
+        // 3. PHP 모듈 카드
+        const allRequiredPassed = data.php_extensions.required.every(ext => data.php_extensions.installed[ext]?.installed);
+        if (!allRequiredPassed) {
+            const missing = data.php_extensions.required.filter(ext => !data.php_extensions.installed[ext]?.installed);
+            failedRequirements.push(`${lang('error_missing_extensions')}: ${missing.join(', ')}`);
+        }
+        let requiredExtHtml = '<div class="extension-grid">';
+        data.php_extensions.required.forEach(ext => {
+            const info = data.php_extensions.installed[ext];
+            requiredExtHtml += renderExtensionItem(ext, info?.installed || false, true);
+        });
+        requiredExtHtml += '</div>';
+
+        const requiredStatusClass = allRequiredPassed ? 'status-pass' : 'status-fail';
+        html += renderMultiItemCard(
+            lang('php_modules'),
+            requiredStatusClass,
+            requiredExtHtml,
+            true,
+            ''
+        );
+
+        // 4. 디렉토리 권한 카드
+        const allDirsPassed = Object.values(data.directories.results).every(dir => dir.passed);
+        const failedDirPaths = []; // chmod 대상 (permission_too_low)
+        const failedOwnershipPaths = []; // chown 대상 (not_writable)
+        const notExistsPaths = []; // mkdir 대상 (not_exists)
+        const failedDirRelPaths = []; // 상대경로 (permission_too_low)
+        const failedOwnershipRelPaths = []; // 상대경로 (not_writable)
+        const notExistsRelPaths = []; // 상대경로 (not_exists)
+        if (!allDirsPassed) {
+            // 계층적 디렉토리 에러 메시지 생성
+            let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
+
+            Object.entries(data.directories.results)
+                .filter(([, info]) => !info.passed)
+                .forEach(([path, info]) => {
+                    const fullPath = info.full_path || path;
+                    const relPath = info.relative_path || ('./' + path);
+                    if (info.error_type === 'not_exists') {
+                        notExistsPaths.push(fullPath);
+                        notExistsRelPaths.push(relPath);
+                    } else if (info.error_type === 'not_writable') {
+                        failedOwnershipPaths.push(fullPath);
+                        failedOwnershipRelPaths.push(relPath);
+                    } else {
+                        failedDirPaths.push(fullPath);
+                        failedDirRelPaths.push(relPath);
+                    }
+                    dirErrorHtml += `<li>${path}`;
+
+                    // 하위 디렉토리 문제가 있으면 중첩 리스트로 표시 (부모 경로 제거)
+                    if (info.has_subdirectory_issues && info.failed_subdirectories && info.failed_subdirectories.length > 0) {
+                        dirErrorHtml += '<ul>';
+                        info.failed_subdirectories.forEach(subdir => {
+                            // subdir는 {path: '...', permissions: '...'} 형태의 객체
+                            const subdirPath = typeof subdir === 'string' ? subdir : subdir.path;
+                            // 부모 경로 제거 (예: storage/framework/cache -> framework/cache)
+                            const relativePath = subdirPath.replace(path + '/', '');
+                            dirErrorHtml += `<li>${escapeHtml(relativePath)}</li>`;
+                        });
+                        dirErrorHtml += '</ul>';
+                    }
+
+                    dirErrorHtml += '</li>';
+                });
+
+            dirErrorHtml += '</ul>';
+            failedRequirements.push(dirErrorHtml);
+        }
+        let dirHtml = '<div class="directory-grid">';
+        for (const [path, info] of Object.entries(data.directories.results)) {
+            dirHtml += renderDirectoryItem(path, info, requiredPermissions);
+        }
+        dirHtml += '</div>';
+
+        const dirStatusClass = allDirsPassed ? 'status-pass' : 'status-fail';
+        html += renderMultiItemCard(
+            lang('directory_permissions'),
+            dirStatusClass,
+            dirHtml,
+            true,
+            requiredPermissions
+        );
+
+        // 5. 필수 파일 카드
+        const missingFileCommands = [];
+        const notWritableFilePaths = [];
+        if (data.required_files) {
+            const allFilesPassed = data.required_files.all_passed;
+            if (!allFilesPassed) {
+                const failedNames = Object.entries(data.required_files.files)
+                    .filter(([, info]) => !info.passed)
+                    .map(([name]) => name);
+                failedRequirements.push(`${lang('error_required_files')}: ${failedNames.join(', ')}`);
+
+                // 누락 파일별 명령어 수집 + 쓰기 불가 파일 수집
+                Object.entries(data.required_files.files).forEach(([name, info]) => {
+                    if (!info.exists && info.command) {
+                        missingFileCommands.push(info.command);
+                    }
+                    if (info.error_type === 'not_writable') {
+                        notWritableFilePaths.push(data.required_files.base_path + '/' + name);
+                    }
+                });
+            }
+
+            let fileHtml = '<div class="directory-grid">';
+            Object.entries(data.required_files.files).forEach(([name, info]) => {
+                const fileStatusClass = info.passed ? 'status-pass' : 'status-fail';
+                const fileStatusIcon = getStatusIcon(fileStatusClass);
+                let fileStatusText = lang('file_exists');
+                if (!info.exists) {
+                    fileStatusText = lang('file_missing');
+                } else if (!info.writable) {
+                    fileStatusText = lang('file_not_writable');
+                }
+                fileHtml += `
+                    <div class="directory-item-wrapper">
+                        <div class="directory-item ${fileStatusClass}">
+                            <div class="directory-left">
+                                ${fileStatusIcon}
+                                <span class="directory-name">${escapeHtml(name)}</span>
+                            </div>
+                            <div class="directory-right">
+                                <span class="directory-permission">${fileStatusText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            fileHtml += '</div>';
+
+            const fileStatusClass = allFilesPassed ? 'status-pass' : 'status-fail';
+            html += renderMultiItemCard(
+                lang('required_files'),
+                fileStatusClass,
+                fileHtml,
+                true
+            );
+        }
+
+        // 6. HTTPS 카드
+        const httpsStatusClass = data.https.enabled ? 'status-pass' : 'status-warning';
+        html += renderSingleItemCard(
+            lang('https_enabled'),
+            httpsStatusClass,
+            data.https.enabled ? lang('enabled') : lang('not_enabled'),
+            '',
+            false
+        );
+
+        // 7. 필수 함수 (exec, proc_open, shell_exec) 카드
+        if (data.disabled_functions) {
+            const dfPassed = data.disabled_functions.passed;
+            const dfStatusClass = dfPassed ? 'status-pass' : 'status-fail';
+            const dfDisabledList = data.disabled_functions.disabled || [];
+            if (!dfPassed) {
+                failedRequirements.push(
+                    lang('error_disabled_functions').replace(':functions', dfDisabledList.join(', '))
+                );
+            }
+            html += renderSingleItemCard(
+                lang('required_functions'),
+                dfStatusClass,
+                dfPassed
+                    ? lang('required_functions_available')
+                    : lang('required_functions_disabled').replace(':count', dfDisabledList.length),
+                'exec, proc_open, shell_exec',
+                true
+            );
+        }
+
+        // 8. PHP CLI 버전 일치 확인 카드 (경고만, 필수 아님)
+        if (data.php_cli_version) {
+            const cliData = data.php_cli_version;
+            let cliStatusClass, cliStatusText;
+            if (cliData.matched === null && cliData.cli_version === null) {
+                // exec 비활성화 또는 CLI 버전 파악 불가
+                cliStatusClass = 'status-warning';
+                cliStatusText = cliData.cli_path === null
+                    ? lang('php_cli_version_check_skipped')
+                    : lang('php_cli_version_unknown');
+            } else if (cliData.matched) {
+                cliStatusClass = 'status-pass';
+                cliStatusText = lang('php_cli_version_matched')
+                    .replace(':web', cliData.web_version)
+                    .replace(':cli', cliData.cli_version);
+            } else {
+                cliStatusClass = 'status-warning';
+                cliStatusText = lang('php_cli_version_mismatch')
+                    .replace(':web', cliData.web_version)
+                    .replace(':cli', cliData.cli_version || '?');
+            }
+            html += renderSingleItemCard(
+                lang('php_cli_version'),
+                cliStatusClass,
+                cliStatusText,
+                '',
+                false
+            );
+        }
+
+        html += '</div>';
+
+        // 필수 조건 미충족 시 에러 박스 표시
+        if (failedRequirements.length > 0) {
+            html += '<div class="requirements-error-box">';
+            html += '<div class="error-box-header">';
+            html += '<span class="error-icon">';
+            html += '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">';
+            html += '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />';
+            html += '</svg>';
+            html += '</span>';
+            html += `<h3 class="error-box-title">${lang('requirements_not_met')}</h3>`;
+            html += '</div>';
+            html += '<ul class="error-box-list">';
+            failedRequirements.forEach(error => {
+                html += `<li>${error}</li>`;
+            });
+            html += '</ul>';
+
+            // 소유자 === 웹 서버 사용자인 경우 chown/sudo 생략
+            // 모든 디렉토리(통과/실패 무관)의 owner를 확인하여 파일 섹션에서도 재사용
+            const dirWebUser = data.directories.web_server_user;
+            const dirOwners = Object.values(data.directories.results)
+                .filter(info => info.owner)
+                .map(info => info.owner);
+            const dirOwnerIsWebUser = dirWebUser && dirOwners.length > 0 && dirOwners.every(o => o === dirWebUser);
+
+            // 디렉토리 미존재 (not_exists): mkdir 명령어 안내
+            if (notExistsPaths.length > 0) {
+                html += '<div class="permission-fix-guide">';
+                html += `<p class="fix-guide-label">${lang('directory_create_guide')}</p>`;
+                html += '<div class="code-box">';
+                if (isWindows) {
+                    const winMkdirCommands = notExistsPaths.map(p => `mkdir "${p.replace(/\//g, '\\\\')}"`);
+                    html += `<pre class="fix-command">${escapeHtml(winMkdirCommands.join('\n'))}</pre>`;
+                } else {
+                    const mkdirCommand = `mkdir -p ${notExistsPaths.join(' ')}`;
+                    html += `<pre class="fix-command">${escapeHtml(mkdirCommand)}</pre>`;
+                }
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+                html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                html += '<div class="code-box">';
+                if (isWindows) {
+                    const winRelMkdirCommands = notExistsRelPaths.map(p => `mkdir "${p.replace(/\//g, '\\\\')}"`);
+                    html += `<pre class="fix-command">${escapeHtml(winRelMkdirCommands.join('\n'))}</pre>`;
+                } else {
+                    const relMkdirCommand = `mkdir -p ${notExistsRelPaths.join(' ')}`;
+                    html += `<pre class="fix-command">${escapeHtml(relMkdirCommand)}</pre>`;
+                }
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+                html += '</div>';
+            }
+
+            // 소유권 문제 (not_writable): 권한 수정 명령어 안내
+            if (failedOwnershipPaths.length > 0) {
+                html += '<div class="permission-fix-guide">';
+                if (isWindows) {
+                    const winPaths = failedOwnershipPaths.map(p => p.replace(/\//g, '\\'));
+                    const winCommands = winPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    const winRelPaths = failedOwnershipRelPaths.map(p => p.replace(/\//g, '\\'));
+                    const winRelCommands = winRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winRelCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
+                } else {
+                    const webGroup = data.directories.web_server_group || 'www-data';
+                    const pathList = failedOwnershipPaths.join(' ');
+                    const relPathList = failedOwnershipRelPaths.join(' ');
+                    if (dirOwnerIsWebUser) {
+                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${pathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${relPathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                    } else {
+                        const chownCommand = `sudo chown -R ${webGroup}:${webGroup} ${pathList} && sudo chmod -R 2770 ${pathList}`;
+                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(chownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const relChownCommand = `sudo chown -R ${webGroup}:${webGroup} ${relPathList} && sudo chmod -R 2770 ${relPathList}`;
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(relChownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const webServerUser = data.directories.web_server_user;
+                        if (webServerUser) {
+                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(webServerUser))}</p>`;
+                        } else {
+                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
+                        }
+                    }
+                }
+                html += '</div>';
+            }
+
+            // 권한 비트 부족 (permission_too_low): 권한 수정 명령어 안내
+            if (failedDirPaths.length > 0) {
+                html += '<div class="permission-fix-guide">';
+                if (isWindows) {
+                    const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
+                    const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    const winDirRelPaths = failedDirRelPaths.map(p => p.replace(/\//g, '\\'));
+                    const winDirRelCommands = winDirRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winDirRelCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
+                } else {
+                    const dirWebGroup = data.directories.web_server_group || 'www-data';
+                    const dirPathList = failedDirPaths.join(' ');
+                    const dirRelPathList = failedDirRelPaths.join(' ');
+                    if (dirOwnerIsWebUser) {
+                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${dirPathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${dirRelPathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                    } else {
+                        const dirChownCommand = `sudo chown -R ${dirWebGroup}:${dirWebGroup} ${dirPathList} && sudo chmod -R 2770 ${dirPathList}`;
+                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(dirChownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const dirRelChownCommand = `sudo chown -R ${dirWebGroup}:${dirWebGroup} ${dirRelPathList} && sudo chmod -R 2770 ${dirRelPathList}`;
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(dirRelChownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const dirWebServerUser = data.directories.web_server_user;
+                        if (dirWebServerUser) {
+                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(dirWebServerUser))}</p>`;
+                        } else {
+                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
+                        }
+                    }
+                }
+                html += '</div>';
+            }
+
+            // 필수 파일 누락: 생성 + 권한 수정 통합 안내
+            if (missingFileCommands.length > 0) {
+                let fileFixCommand;
+                let fileFixRelCommand;
+                const relBasePath = data.required_files.relative_base_path || '.';
+                if (isWindows) {
+                    // Windows: 복사 명령만 (권한 문제 거의 없음)
+                    fileFixCommand = missingFileCommands.join(' && ');
+                    fileFixRelCommand = 'copy .env.example .env';
+                } else {
+                    // Linux: 복사 + 권한 수정 통합 명령어 (소유자 === 웹 사용자면 chown 생략)
+                    const fileWebGroup = data.required_files.web_server_group || 'www-data';
+                    const basePath = data.required_files.base_path || '';
+                    const envPath = basePath + '/.env';
+                    const relEnvPath = relBasePath + '/.env';
+                    if (dirOwnerIsWebUser) {
+                        fileFixCommand = missingFileCommands.join(' && ')
+                            + ` && chmod 660 ${envPath}`;
+                        fileFixRelCommand = `cp ${relBasePath}/.env.example ${relEnvPath}`
+                            + ` && chmod 660 ${relEnvPath}`;
+                    } else {
+                        const sudoFileCommands = missingFileCommands.map(cmd => `sudo ${cmd}`);
+                        fileFixCommand = sudoFileCommands.join(' && ')
+                            + ` && sudo chown ${fileWebGroup}:${fileWebGroup} ${envPath} && sudo chmod 660 ${envPath}`;
+                        fileFixRelCommand = `sudo cp ${relBasePath}/.env.example ${relEnvPath}`
+                            + ` && sudo chown ${fileWebGroup}:${fileWebGroup} ${relEnvPath} && sudo chmod 660 ${relEnvPath}`;
+                    }
+                }
+                html += '<div class="permission-fix-guide">';
+                html += `<p class="fix-guide-label">${isWindows ? lang('required_files_fix_guide') : lang('required_files_fix_guide_combined')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(fileFixCommand)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+                html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(fileFixRelCommand)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+                html += '</div>';
+            }
+
+            // 필수 파일 쓰기 불가: 권한 수정 명령어 안내
+            if (notWritableFilePaths.length > 0) {
+                const notWritableRelPaths = notWritableFilePaths.map(p => {
+                    const basePath = data.required_files.base_path || '';
+                    return basePath ? p.replace(basePath, '.') : p;
+                });
+                html += '<div class="permission-fix-guide">';
+                if (isWindows) {
+                    const winFilePaths = notWritableFilePaths.map(p => p.replace(/\//g, '\\'));
+                    const winFileCommands = winFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
+                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winFileCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    const winRelFilePaths = notWritableRelPaths.map(p => p.replace(/\//g, '\\'));
+                    const winRelFileCommands = winRelFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
+                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(winRelFileCommands.join('\n'))}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
+                } else {
+                    const fileWebGroup = data.required_files.web_server_group || 'www-data';
+                    const filePathList = notWritableFilePaths.join(' ');
+                    const relFilePathList = notWritableRelPaths.join(' ');
+                    if (dirOwnerIsWebUser) {
+                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod 660 ${filePathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(`chmod 660 ${relFilePathList}`)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                    } else {
+                        const fileChownCommand = `sudo chown ${fileWebGroup}:${fileWebGroup} ${filePathList} && sudo chmod 660 ${filePathList}`;
+                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(fileChownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const relFileChownCommand = `sudo chown ${fileWebGroup}:${fileWebGroup} ${relFilePathList} && sudo chmod 660 ${relFilePathList}`;
+                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(relFileChownCommand)}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        const fileWebServerUser = data.required_files.web_server_user;
+                        if (fileWebServerUser) {
+                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(fileWebServerUser))}</p>`;
+                        } else {
+                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
+                        }
+                    }
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+        }
+
+        return html;
+    }
+
+    /**
+     * 단일 항목 카드 렌더링 (PHP 버전, 디스크 공간, HTTPS)
+     */
+    function renderSingleItemCard(title, statusClass, currentValue, requiredValue, isRequired) {
+        const statusIcon = getStatusIcon(statusClass);
+        const badgeText = isRequired ? lang('badge_required') : lang('badge_optional');
+        const badgeClass = isRequired ? 'badge-required' : 'badge-optional';
+
+        return `
+            <div class="requirement-card">
+                <div class="requirement-card-header header-single">
+                    <div class="header-left">
+                        ${statusIcon}
+                        <h3 class="requirement-card-title">${title}</h3>
+                        ${requiredValue ? `<span class="requirement-text">${requiredValue} ${lang('or_above')}</span>` : ''}
+                    </div>
+                    <div class="header-right">
+                        <div class="current-value">
+                            <span class="value-text">${currentValue}</span>
+                        </div>
+                        <div class="requirement-badge ${badgeClass}">${badgeText}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * 다중 항목 카드 렌더링 (PHP 확장, 디렉토리 권한)
+     */
+    function renderMultiItemCard(title, statusClass, bodyHtml, isRequired, requiredPermission) {
+        const statusIcon = getStatusIcon(statusClass);
+        const badgeText = isRequired ? lang('badge_required') : lang('badge_optional');
+        const badgeClass = isRequired ? 'badge-required' : 'badge-optional';
+
+        return `
+            <div class="requirement-card">
+                <div class="requirement-card-header">
+                    <div class="header-left">
+                        ${statusIcon}
+                        <h3 class="requirement-card-title">${title}</h3>
+                        ${requiredPermission ? `<span class="requirement-text">${requiredPermission}</span>` : ''}
+                    </div>
+                    <div class="requirement-badge ${badgeClass}">${badgeText}</div>
+                </div>
+                <div class="requirement-card-body">
+                    ${bodyHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * 상태 아이콘 생성 (SVG 아이콘 사용)
+     */
+    function getStatusIcon(statusClass) {
+        let iconType = '';
+        if (statusClass === 'status-pass') {
+            iconType = 'completed';
+        } else if (statusClass === 'status-fail') {
+            iconType = 'failed';
+        } else if (statusClass === 'status-warning') {
+            iconType = 'warning';
+        }
+        return `<span class="status-icon ${statusClass}">${getIconSvg(iconType)}</span>`;
+    }
+
+    /**
+     * PHP 확장 항목 렌더링
+     */
+    function renderExtensionItem(name, installed, required) {
+        const statusClass = installed ? 'status-pass' : (required ? 'status-fail' : 'status-warning');
+        const statusIcon = getStatusIcon(statusClass);
+
+        return `
+            <div class="extension-item ${statusClass}">
+                ${statusIcon}
+                <span class="extension-name">${name}</span>
+            </div>
+        `;
+    }
+
+    /**
+     * 디렉토리 권한 항목 렌더링
+     */
+    function renderDirectoryItem(path, info, requiredPermissions = '770') {
+        const statusClass = info.passed ? 'status-pass' : 'status-fail';
+        const statusIcon = getStatusIcon(statusClass);
+
+        let permissionDisplay = '';
+        let subdirectoryErrorHtml = '';
+
+        if (info.passed) {
+            // 통과한 경우
+            permissionDisplay = info.permissions;
+        } else {
+            // 실패한 경우
+
+            // 부모 디렉토리 권한 표시
+            if (info.error_type && info.error_type !== 'subdirectory_issues') {
+                // 부모에 문제가 있으면 부모 옆에 에러 아이콘 표시
+                permissionDisplay = `${info.permissions} <span class="permission-error-icon" data-tooltip="${lang('fix_permission')}">ⓘ</span>`;
+            } else {
+                // 부모는 OK, 하위만 문제
+                permissionDisplay = info.permissions;
+            }
+
+            // 하위 디렉토리 문제 확인
+            if (info.has_subdirectory_issues && info.failed_subdirectories && info.failed_subdirectories.length > 0) {
+                // 각 하위 디렉토리를 개별 div로 표시 (부모 경로 제거하여 상대 경로로 표시)
+                const subdirItems = info.failed_subdirectories.map(subdir => {
+                    // subdir는 이제 {path: '...', permissions: '...'} 형태
+                    const subdirPath = typeof subdir === 'string' ? subdir : subdir.path;
+                    const subdirPerms = typeof subdir === 'string' ? '' : subdir.permissions;
+
+                    // 부모 경로 제거 (예: storage/framework/cache -> framework/cache)
+                    const relativePath = subdirPath.replace(path + '/', '');
+
+                    return `
+                        <div class="directory-subdirectory-item">
+                            <span class="subdir-name">⤷ ${escapeHtml(relativePath)}</span>
+                            <span class="subdir-permission">
+                                ${subdirPerms} <span class="permission-error-icon" data-tooltip="${lang('fix_permission')}">ⓘ</span>
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+
+                subdirectoryErrorHtml = `
+                    <div class="directory-subdirectory-error">
+                        ${subdirItems}
+                    </div>
+                `;
+            }
+        }
+
+        // 소유자:소유그룹 표시 (posix 미지원 환경에서는 null이므로 생략)
+        let ownerDisplay = '';
+        if (info.owner || info.group) {
+            const owner = info.owner || '?';
+            const group = info.group || '?';
+            ownerDisplay = `<span class="directory-owner">${escapeHtml(owner)}:${escapeHtml(group)}</span>`;
+        }
+
+        return `
+            <div class="directory-item-wrapper">
+                <div class="directory-item ${statusClass}">
+                    <div class="directory-left">
+                        ${statusIcon}
+                        <span class="directory-name">${path}</span>
+                    </div>
+                    <div class="directory-right">
+                        ${ownerDisplay}
+                        <span class="directory-permission">${permissionDisplay}</span>
+                    </div>
+                </div>
+                ${subdirectoryErrorHtml}
+            </div>
+        `;
+    }
+
+    /**
+     * 요구사항 재검증
+     */
+    function recheckRequirements() {
+        // 페이지 리로드로 캐시 문제 해결
+        window.location.reload();
+    }
+
+    /**
+     * 요구사항 검증 자동 실행
+     */
+    function initRequirementsCheck() {
+        if (document.getElementById('requirements-result')) {
+            checkRequirements();
+        }
+    }
+
+    // =========================================================================
+    // Step 3: DB 연결 테스트
+    // =========================================================================
+
+    /**
+     * Read DB 필드 토글
+     */
+    function toggleReadDbFields() {
+        const useReadDb = document.getElementById('use-read-db');
+        const readDbSection = document.getElementById('read-db-section');
+
+        if (useReadDb && readDbSection) {
+            if (useReadDb.checked) {
+                // Read DB 필드 표시
+                readDbSection.classList.remove('hidden');
+            } else {
+                // Read DB 필드 숨김
+                readDbSection.classList.add('hidden');
+
+                // 입력값 초기화
+                const readDbInputs = readDbSection.querySelectorAll('input');
+                readDbInputs.forEach(input => {
+                    input.value = '';
+                });
+
+                // Read DB 테스트 플래그 제거
+                sessionStorage.removeItem('db_read_tested');
+                sessionStorage.removeItem('db_read_hash');
+
+                // FormValidator 업데이트
+                if (typeof FormValidator !== 'undefined') {
+                    FormValidator.setDbTestValid('read', false);
+                }
+
+                // 결과 메시지 숨김
+                const readResultDiv = document.getElementById('db-read-test-result');
+                if (readResultDiv) {
+                    readResultDiv.classList.add('hidden');
+                    readResultDiv.innerHTML = '';
+                }
+            }
+        }
+    }
+
+    /**
+     * DB 필드 해시 계산 (간단한 해시 함수)
+     *
+     * @param {Object} fields {host, port, database, username}
+     * @return {string} 해시 문자열
+     */
+    function calculateDbHash(fields) {
+        const str = JSON.stringify([
+            fields.host || '',
+            fields.port || '',
+            fields.database || '',
+            fields.username || ''
+        ]);
+
+        // 간단한 해시 함수 (PHP의 md5와 동일하지 않지만 변경 감지용으로 충분)
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return hash.toString(36);
+    }
+
+    /**
+     * DB 연결 테스트 (Write 또는 Read)
+     */
+    async function testDatabaseConnection(type) {
+        const form = document.getElementById('config-form');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const prefix = type === 'write' ? 'db_write' : 'db_read';
+
+        const dbData = {
+            type: type,
+            host: formData.get(`${prefix}_host`),
+            port: formData.get(`${prefix}_port`),
+            database: formData.get(`${prefix}_database`),
+            username: formData.get(`${prefix}_username`),
+            password: formData.get(`${prefix}_password`)
+        };
+
+        const resultDiv = document.getElementById(`db-${type}-test-result`);
+        if (!resultDiv) return;
+
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `<div class="loading-text">${lang('testing_connection')}</div>`;
+
+        try {
+            // 절대 URL 생성
+            const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=test-db`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dbData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        ${getIconSvg('completed', '24px', 'test-result-icon')}
+                        <span>${escapeHtml(result.message)}</span>
+                    </div>
+                `;
+
+                // 현재 DB 필드 해시 계산
+                const currentHash = calculateDbHash({
+                    host: dbData.host,
+                    port: dbData.port,
+                    database: dbData.database,
+                    username: dbData.username
+                });
+
+                // DB 테스트 성공 시 sessionStorage에 저장 (필드 해시 포함)
+                if (type === 'write') {
+                    sessionStorage.setItem('db_write_tested', 'true');
+                    sessionStorage.setItem('db_write_hash', currentHash);
+                    if (typeof FormValidator !== 'undefined') {
+                        FormValidator.setDbTestValid('write', true);
+                    }
+                } else if (type === 'read') {
+                    sessionStorage.setItem('db_read_tested', 'true');
+                    sessionStorage.setItem('db_read_hash', currentHash);
+                    if (typeof FormValidator !== 'undefined') {
+                        FormValidator.setDbTestValid('read', true);
+                    }
+                }
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-error">
+                        ${getIconSvg('failed', '24px', 'test-result-icon')}
+                        <span>${escapeHtml(result.message)}</span>
+                    </div>
+                `;
+
+                // DB 테스트 실패 시 FormValidator 업데이트
+                if (typeof FormValidator !== 'undefined') {
+                    FormValidator.setDbTestValid(type, false);
+                }
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-error">
+                    ${getIconSvg('failed', '24px', 'test-result-icon')}
+                    <span>${lang('connection_failed_prefix')} ${escapeHtml(error.message)}</span>
+                </div>
+            `;
+
+            // DB 테스트 실패 시 FormValidator 업데이트
+            if (typeof FormValidator !== 'undefined') {
+                FormValidator.setDbTestValid(type, false);
+            }
+        }
+    }
+
+    /**
+     * DB 테스트 관련 이벤트 초기화
+     */
+    function initDatabaseTest() {
+        const useReadDb = document.getElementById('use-read-db');
+        if (useReadDb) {
+            useReadDb.addEventListener('change', toggleReadDbFields);
+        }
+
+        // 전역 함수로 노출 (인라인 onclick에서 사용)
+        window.testDatabaseConnection = testDatabaseConnection;
+        window.toggleReadDbFields = toggleReadDbFields;
+    }
+
+    // =========================================================================
+    // Step 3: 실시간 필드 검증
+    // =========================================================================
+
+    /**
+     * FormValidator - 필드 검증 상태 추적 객체
+     */
+    const FormValidator = {
+        fields: {
+            app_name: false,
+            app_url: false,
+            admin_email: false,
+            admin_name: false,
+            admin_password: false,
+            admin_password_confirm: false
+        },
+        dbTests: {
+            write: false,
+            read: false
+        },
+
+        /**
+         * 필드 검증 상태 설정
+         */
+        setFieldValid(fieldName, isValid) {
+            this.fields[fieldName] = isValid;
+        },
+
+        /**
+         * DB 테스트 상태 설정
+         */
+        setDbTestValid(type, isValid) {
+            this.dbTests[type] = isValid;
+        },
+
+        /**
+         * 모든 필드가 유효한지 확인
+         */
+        areAllFieldsValid() {
+            return Object.values(this.fields).every(valid => valid);
+        },
+
+        /**
+         * DB 테스트 완료 여부 확인
+         */
+        areDbTestsValid() {
+            const useReadDb = document.getElementById('use-read-db');
+            const writeValid = this.dbTests.write;
+            const readValid = useReadDb && useReadDb.checked ? this.dbTests.read : true;
+            return writeValid && readValid;
+        },
+
+        /**
+         * 전체 폼이 유효한지 확인
+         */
+        isFormValid() {
+            return this.areAllFieldsValid() && this.areDbTestsValid();
+        },
+
+        /**
+         * 초기 검증 상태 로드 (PHP 세션과 동기화)
+         */
+        loadInitialState() {
+            // PHP 세션에서 전달된 DB 테스트 플래그 사용 (window.DB_TEST_FLAGS)
+            const phpFlags = window.DB_TEST_FLAGS || { write: false, read: false, writeHash: '', readHash: '' };
+
+            // Write DB: PHP 세션 플래그 확인 및 필드 변경 감지
+            if (phpFlags.write) {
+                // sessionStorage의 해시와 PHP에서 계산한 해시 비교
+                const storedHash = sessionStorage.getItem('db_write_hash');
+                if (storedHash && storedHash === phpFlags.writeHash) {
+                    // 필드가 변경되지 않았음 - 테스트 유효
+                    this.dbTests.write = true;
+                    sessionStorage.setItem('db_write_tested', 'true');
+                } else {
+                    // 필드가 변경되었거나 해시가 없음 - 테스트 무효화
+                    this.dbTests.write = false;
+                    sessionStorage.removeItem('db_write_tested');
+                    sessionStorage.removeItem('db_write_hash');
+                }
+            } else {
+                // PHP 세션에 플래그가 없음 - 테스트 무효화
+                this.dbTests.write = false;
+                sessionStorage.removeItem('db_write_tested');
+                sessionStorage.removeItem('db_write_hash');
+            }
+
+            // Read DB: PHP 세션 플래그 확인 및 필드 변경 감지
+            if (phpFlags.read) {
+                const storedHash = sessionStorage.getItem('db_read_hash');
+                if (storedHash && storedHash === phpFlags.readHash) {
+                    // 필드가 변경되지 않았음 - 테스트 유효
+                    this.dbTests.read = true;
+                    sessionStorage.setItem('db_read_tested', 'true');
+                } else {
+                    // 필드가 변경되었거나 해시가 없음 - 테스트 무효화
+                    this.dbTests.read = false;
+                    sessionStorage.removeItem('db_read_tested');
+                    sessionStorage.removeItem('db_read_hash');
+                }
+            } else {
+                // PHP 세션에 플래그가 없음 - 테스트 무효화
+                this.dbTests.read = false;
+                sessionStorage.removeItem('db_read_tested');
+                sessionStorage.removeItem('db_read_hash');
+            }
+
+            // 초기 필드 값이 있으면 검증
+            Object.keys(this.fields).forEach(fieldName => {
+                const field = document.getElementById(fieldName);
+                if (field && field.value.trim()) {
+                    validateField(field);
+                }
+            });
+
+            // DB 필드 변경 감지 리스너 추가
+            this.addDbFieldChangeListeners();
+        },
+
+        /**
+         * DB 필드 변경 감지 리스너 추가
+         */
+        addDbFieldChangeListeners() {
+            // Write DB 필드
+            const writeFields = ['db_write_host', 'db_write_port', 'db_write_database', 'db_write_username', 'db_write_password'];
+            writeFields.forEach(fieldName => {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.addEventListener('input', () => {
+                        // Write DB 필드가 변경되면 테스트 플래그 무효화
+                        this.setDbTestValid('write', false);
+                        sessionStorage.removeItem('db_write_tested');
+                        sessionStorage.removeItem('db_write_hash');
+
+                        // 테스트 결과 메시지 숨김
+                        const resultDiv = document.getElementById('db-write-test-result');
+                        if (resultDiv) {
+                            resultDiv.classList.add('hidden');
+                            resultDiv.innerHTML = '';
+                        }
+                    });
+                }
+            });
+
+            // Read DB 필드
+            const readFields = ['db_read_host', 'db_read_port', 'db_read_database', 'db_read_username', 'db_read_password'];
+            readFields.forEach(fieldName => {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.addEventListener('input', () => {
+                        // Read DB 필드가 변경되면 테스트 플래그 무효화
+                        this.setDbTestValid('read', false);
+                        sessionStorage.removeItem('db_read_tested');
+                        sessionStorage.removeItem('db_read_hash');
+
+                        // 테스트 결과 메시지 숨김
+                        const resultDiv = document.getElementById('db-read-test-result');
+                        if (resultDiv) {
+                            resultDiv.classList.add('hidden');
+                            resultDiv.innerHTML = '';
+                        }
+                    });
+                }
+            });
+        }
+    };
+
+    /**
+     * 필드 에러 메시지 표시
+     */
+    function showFieldError(field, message) {
+        const errorDiv = document.getElementById(field.id + '-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+        field.classList.add('error');
+        field.setAttribute('aria-invalid', 'true');
+
+        FormValidator.setFieldValid(field.id, false);
+    }
+
+    /**
+     * 필드 에러 메시지 제거
+     */
+    function clearFieldError(field) {
+        const errorDiv = document.getElementById(field.id + '-error');
+        if (errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('active');
+        }
+        field.classList.remove('error');
+        field.setAttribute('aria-invalid', 'false');
+
+        FormValidator.setFieldValid(field.id, true);
+    }
+
+    /**
+     * 필드 검증
+     */
+    function validateField(field) {
+        const fieldName = field.name;
+        const value = field.value.trim();
+
+        // 필수 필드 검증
+        if (field.hasAttribute('required') && !value) {
+            showFieldError(field, getLangMessage('error_field_required'));
+            return false;
+        }
+
+        // 이메일 검증
+        if (fieldName === 'admin_email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                showFieldError(field, getLangMessage('error_admin_email_invalid'));
+                return false;
+            }
+        }
+
+        // 비밀번호 최소 길이 검증
+        if (fieldName === 'admin_password') {
+            if (value.length < 8) {
+                showFieldError(field, getLangMessage('error_admin_password_min'));
+                return false;
+            }
+        }
+
+        // 비밀번호 확인 검증
+        if (fieldName === 'admin_password_confirm') {
+            const passwordField = document.getElementById('admin_password');
+            if (passwordField && value !== passwordField.value) {
+                showFieldError(field, getLangMessage('error_password_mismatch'));
+                return false;
+            }
+        }
+
+        // 사이트 이름 검증
+        if (fieldName === 'app_name' && !value) {
+            showFieldError(field, getLangMessage('error_app_name_required'));
+            return false;
+        }
+
+        // 사이트 URL 검증
+        if (fieldName === 'app_url' && !value) {
+            showFieldError(field, getLangMessage('error_app_url_required'));
+            return false;
+        }
+
+        // DB Prefix 검증 (선택 사항이지만, 입력 시 형식 검증)
+        if (fieldName === 'db_prefix' && value) {
+            // 영문 소문자로 시작해야 함
+            if (!/^[a-z]/.test(value)) {
+                showFieldError(field, getLangMessage('validation_starts_with_alpha').replace(':field', getLangMessage('fields.db_prefix')));
+                return false;
+            }
+            // 영문 소문자, 숫자, 언더스코어만 허용
+            if (!/^[a-z][a-z0-9_]*$/.test(value)) {
+                showFieldError(field, getLangMessage('validation_alpha_num_underscore').replace(':field', getLangMessage('fields.db_prefix')));
+                return false;
+            }
+        }
+
+        // 관리자 이름 검증
+        if (fieldName === 'admin_name' && !value) {
+            showFieldError(field, getLangMessage('error_admin_name_required'));
+            return false;
+        }
+
+        // 검증 통과
+        clearFieldError(field);
+        return true;
+    }
+
+    /**
+     * 다국어 메시지 가져오기
+     */
+    function getLangMessage(key) {
+        return lang(key);
+    }
+
+    /**
+     * 실시간 검증 초기화
+     */
+    function initRealTimeValidation() {
+        // Step 3 (config-form)이 있는 경우에만 실행
+        const configForm = document.getElementById('config-form');
+        if (!configForm) return;
+
+        const fieldsToValidate = [
+            'app_name',
+            'app_url',
+            'db_prefix',
+            'admin_email',
+            'admin_name',
+            'admin_password',
+            'admin_password_confirm'
+        ];
+
+        fieldsToValidate.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', function() {
+                    validateField(this);
+                });
+
+                // 비밀번호 확인 필드는 비밀번호 필드 변경 시에도 재검증
+                if (fieldId === 'admin_password') {
+                    field.addEventListener('input', function() {
+                        const confirmField = document.getElementById('admin_password_confirm');
+                        if (confirmField && confirmField.value) {
+                            validateField(confirmField);
+                        }
+                    });
+                }
+            }
+        });
+
+        // 초기 상태 로드
+        FormValidator.loadInitialState();
+
+        // 버튼 클릭 시 검증
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                // 폼이 유효하지 않으면 제출 방지 및 경고 표시
+                if (!FormValidator.isFormValid()) {
+                    e.preventDefault();
+                    showValidationWarning();
+                }
+            });
+        }
+    }
+
+    /**
+     * 검증 실패 경고 표시
+     */
+    function showValidationWarning() {
+        const errors = [];
+        let firstInvalidField = null;
+
+        // 필드 검증 상태 확인 (순서대로)
+        Object.keys(FormValidator.fields).forEach(fieldName => {
+            if (!FormValidator.fields[fieldName]) {
+                const field = document.getElementById(fieldName);
+                if (field) {
+                    // 첫 번째 실패 필드 저장
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+
+                    const label = field.closest('.form-group').querySelector('.form-label');
+                    errors.push(label ? label.textContent.replace(' *', '') : fieldName);
+                }
+            }
+        });
+
+        // DB 테스트 상태 확인
+        if (!FormValidator.dbTests.write) {
+            errors.push(getLangMessage('error_write_db_not_tested'));
+            // Write DB 테스트가 안 되었으면 첫 번째 Write DB 필드로 포커스
+            if (!firstInvalidField) {
+                firstInvalidField = document.querySelector('[name="db_write_host"]');
+            }
+        }
+        const useReadDb = document.getElementById('use-read-db');
+        if (useReadDb && useReadDb.checked && !FormValidator.dbTests.read) {
+            errors.push(getLangMessage('error_read_db_not_tested'));
+            // Read DB 테스트가 안 되었고 다른 실패 필드가 없으면 Read DB 필드로 포커스
+            if (!firstInvalidField && FormValidator.dbTests.write) {
+                firstInvalidField = document.querySelector('[name="db_read_host"]');
+            }
+        }
+
+        // Alert 표시 (간단한 메시지만)
+        alert(lang('validation_incomplete_alert'));
+
+        // 경고 박스 표시 (기존 alert 박스가 있다면 사용, 없으면 생성)
+        let warningBox = document.querySelector('.validation-warning');
+        if (!warningBox) {
+            warningBox = document.createElement('div');
+            warningBox.className = 'alert alert-error validation-warning';
+            warningBox.style.marginBottom = '1.5rem';
+
+            const form = document.getElementById('config-form');
+            if (form) {
+                form.insertBefore(warningBox, form.firstChild);
+            }
+        }
+
+        warningBox.innerHTML = `
+            <strong>${lang('validation_incomplete_title')}</strong>
+            <ul class="alert-list">
+                ${errors.map(error => `<li>${escapeHtml(error)}</li>`).join('')}
+            </ul>
+        `;
+
+        // 페이지 타이틀로 스크롤 (경고 박스가 잘 보이도록)
+        const titleElement = document.querySelector('.installer-title');
+        if (titleElement) {
+            titleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 첫 번째 실패 필드로 포커스 이동
+        if (firstInvalidField) {
+            setTimeout(() => {
+                firstInvalidField.focus();
+            }, 400); // 스크롤 완료 후 포커스
+        }
+    }
+
+    /**
+     * Step 3 폼 유효성 검증
+     */
+    function validateStep3Form() {
+        const form = document.getElementById('config-form');
+        if (!form) return true;
+
+        const errors = [];
+
+        // Write DB 필수 필드 확인
+        const dbWriteHost = form.querySelector('[name="db_write_host"]');
+        const dbWriteDatabase = form.querySelector('[name="db_write_database"]');
+        const dbWriteUsername = form.querySelector('[name="db_write_username"]');
+
+        if (!dbWriteHost || !dbWriteHost.value.trim()) {
+            errors.push({ field: dbWriteHost, message: lang('error_db_host_required') });
+        }
+        if (!dbWriteDatabase || !dbWriteDatabase.value.trim()) {
+            errors.push({ field: dbWriteDatabase, message: lang('error_db_name_required') });
+        }
+        if (!dbWriteUsername || !dbWriteUsername.value.trim()) {
+            errors.push({ field: dbWriteUsername, message: lang('error_db_username_required') });
+        }
+
+        // Read DB 사용 시 Read DB 필드 확인
+        const useReadDb = document.getElementById('use-read-db');
+        if (useReadDb && useReadDb.checked) {
+            const dbReadHost = form.querySelector('[name="db_read_host"]');
+            const dbReadDatabase = form.querySelector('[name="db_read_database"]');
+            const dbReadUsername = form.querySelector('[name="db_read_username"]');
+
+            if (!dbReadHost || !dbReadHost.value.trim()) {
+                errors.push({ field: dbReadHost, message: lang('error_db_host_required') });
+            }
+            if (!dbReadDatabase || !dbReadDatabase.value.trim()) {
+                errors.push({ field: dbReadDatabase, message: lang('error_db_name_required') });
+            }
+            if (!dbReadUsername || !dbReadUsername.value.trim()) {
+                errors.push({ field: dbReadUsername, message: lang('error_db_username_required') });
+            }
+        }
+
+        // 사이트 설정 필수 필드 확인
+        const appName = form.querySelector('[name="app_name"]');
+        const appUrl = form.querySelector('[name="app_url"]');
+
+        if (!appName || !appName.value.trim()) {
+            errors.push({ field: appName, message: lang('error_app_name_required') });
+        }
+        if (!appUrl || !appUrl.value.trim()) {
+            errors.push({ field: appUrl, message: lang('error_app_url_required') });
+        }
+
+        // 관리자 계정 필수 필드 확인
+        const adminName = form.querySelector('[name="admin_name"]');
+        const adminEmail = form.querySelector('[name="admin_email"]');
+        const adminPassword = form.querySelector('[name="admin_password"]');
+        const adminPasswordConfirm = form.querySelector('[name="admin_password_confirm"]');
+
+        if (!adminName || !adminName.value.trim()) {
+            errors.push({ field: adminName, message: lang('error_admin_name_required') });
+        }
+
+        // 이메일 형식 검증
+        if (!adminEmail || !adminEmail.value.trim()) {
+            errors.push({ field: adminEmail, message: lang('error_admin_email_invalid') });
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(adminEmail.value.trim())) {
+                errors.push({ field: adminEmail, message: lang('error_admin_email_invalid') });
+            }
+        }
+
+        // 비밀번호 최소 8자 확인
+        if (!adminPassword || !adminPassword.value) {
+            errors.push({ field: adminPassword, message: lang('error_admin_password_required') });
+        } else if (adminPassword.value.length < 8) {
+            errors.push({ field: adminPassword, message: lang('error_admin_password_min') });
+        }
+
+        // 비밀번호 일치 여부 확인
+        if (!adminPasswordConfirm || !adminPasswordConfirm.value) {
+            errors.push({ field: adminPasswordConfirm, message: lang('error_admin_password_confirm_required') });
+        } else if (adminPassword && adminPassword.value !== adminPasswordConfirm.value) {
+            errors.push({ field: adminPasswordConfirm, message: lang('error_password_mismatch') });
+        }
+
+        // DB 연결 테스트 완료 확인
+        const writeTestPassed = sessionStorage.getItem('db_write_tested') === 'true';
+        if (!writeTestPassed) {
+            errors.push({ field: null, message: lang('error_db_not_tested') });
+        }
+
+        // Read DB 사용 시 Read DB 연결 테스트 완료 확인
+        if (useReadDb && useReadDb.checked) {
+            const readTestPassed = sessionStorage.getItem('db_read_tested') === 'true';
+            if (!readTestPassed) {
+                errors.push({ field: null, message: lang('error_read_db_not_tested') });
+            }
+        }
+
+        // PHP CLI / Composer 검증 확인
+        if (window.CliValidator) {
+            const cliSection = document.getElementById('php-cli-section');
+            const cliRequired = window.CliValidator.cliRequired;
+            const cliSectionVisible = cliSection && !cliSection.classList.contains('hidden');
+
+            if (cliRequired || cliSectionVisible) {
+                if (!window.CliValidator.phpVerified) {
+                    errors.push({ field: document.getElementById('php_binary'), message: lang('error_php_cli_not_verified') });
+                }
+                if (!window.CliValidator.composerVerified) {
+                    errors.push({ field: document.getElementById('composer_binary'), message: lang('error_composer_not_verified') });
+                }
+            }
+        }
+
+        // 에러가 있으면 표시하고 제출 방지
+        if (errors.length > 0) {
+            alert(errors.map(e => e.message).join('\n'));
+
+            // 첫 번째 에러 필드에 포커스
+            if (errors[0].field) {
+                errors[0].field.focus();
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Step 3 폼 제출 이벤트 초기화
+     */
+    function initStep3FormSubmit() {
+        const form = document.getElementById('config-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateStep3Form()) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+    }
+
+    // =========================================================================
+    // Step 4: 확장 선택
+    // =========================================================================
+
+    let extensionsData = null;
+    let selectedExtensions = {
+        admin_templates: [],
+        user_templates: [],
+        modules: [],
+        plugins: []
+    };
+
+    async function loadExtensions() {
+        const form = document.getElementById('extension-form');
+        const loadingEl = document.getElementById('extensions-loading');
+        const errorEl = document.getElementById('extensions-error');
+        const errorMsgEl = document.getElementById('extensions-error-message');
+
+        // 각 섹션의 그리드 요소
+        const adminGrid = document.getElementById('admin-templates-list');
+        const userGrid = document.getElementById('user-templates-list');
+        const modulesGrid = document.getElementById('modules-list');
+        const pluginsGrid = document.getElementById('plugins-list');
+
+        // empty 메시지 요소
+        const userEmpty = document.getElementById('user-templates-empty');
+        const modulesEmpty = document.getElementById('modules-empty');
+        const pluginsEmpty = document.getElementById('plugins-empty');
+
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
+        if (form) form.classList.add('hidden');
+
+        try {
+            // 캐시 방지를 위해 타임스탬프 추가
+            const response = await fetch(INSTALLER_BASE_URL + '/api/scan-extensions.php?action=get', {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error_message || result.error || window.EXTENSION_LABELS?.extension_load_failed || 'Failed to load extensions');
+
+            extensionsData = result.data;
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (form) form.classList.remove('hidden');
+
+            // 각 그리드에 카드 렌더링
+            renderExtensionCards(adminGrid, 'admin_templates', extensionsData.admin_templates || [], true);
+            renderExtensionCards(userGrid, 'user_templates', extensionsData.user_templates || [], false, userEmpty);
+            renderExtensionCards(modulesGrid, 'modules', extensionsData.modules || [], false, modulesEmpty);
+            renderExtensionCards(pluginsGrid, 'plugins', extensionsData.plugins || [], false, pluginsEmpty);
+
+            restoreSelectionState();
+            updateSelectionSummary();
+            validateAdminTemplate();
+        } catch (error) {
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl) {
+                errorEl.classList.remove('hidden');
+                if (errorMsgEl) errorMsgEl.textContent = error.message;
+            }
+        }
+    }
+
+    /**
+     * 확장 기능 카드들을 그리드에 렌더링
+     * @param {HTMLElement} grid - 그리드 요소
+     * @param {string} type - 확장 타입 (admin_templates, user_templates, modules, plugins)
+     * @param {Array} items - 확장 기능 목록
+     * @param {boolean} _isRequired - 필수 선택 여부 (admin_templates) - 미사용, type으로 판별
+     * @param {HTMLElement} emptyEl - 비어있을 때 표시할 요소
+     */
+    function renderExtensionCards(grid, type, items, _isRequired, emptyEl) {
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        // 템플릿은 단일 선택 (라디오 버튼 방식), 모듈/플러그인은 다중 선택
+        const isSingleSelect = (type === 'admin_templates' || type === 'user_templates');
+
+        items.forEach(function(item, index) {
+            // admin_templates의 첫 번째 항목은 기본 선택 (필수이므로)
+            if (type === 'admin_templates' && selectedExtensions.admin_templates.length === 0 && index === 0) {
+                selectedExtensions.admin_templates = [item.identifier];
+            }
+            // user_templates는 선택사항이므로 기본 선택 없음
+            grid.appendChild(createExtensionCard(type, item, isSingleSelect));
+        });
+    }
+
+    /**
+     * 다국어 값에서 현재 언어에 맞는 텍스트 추출
+     * @param {string|object} value - 문자열 또는 {ko: '...', en: '...'} 객체
+     * @returns {string}
+     */
+    function getLocalizedText(value) {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        // 현재 언어 또는 한국어 또는 영어 우선
+        const currentLang = window.installerLocale?.get() || 'ko';
+        return value[currentLang] || value.ko || value.en || '';
+    }
+
+    /**
+     * identifier로 확장 기능 찾기 (의존성 표시용)
+     * @param {string} identifier - 확장 식별자
+     * @returns {object|null} 확장 정보 또는 null
+     */
+    function findExtensionById(identifier) {
+        if (!extensionsData) return null;
+
+        // 모듈에서 검색
+        var modules = extensionsData.modules || [];
+        for (var i = 0; i < modules.length; i++) {
+            if (modules[i].identifier === identifier) {
+                return { ...modules[i], type: 'module' };
+            }
+        }
+
+        // 플러그인에서 검색
+        var plugins = extensionsData.plugins || [];
+        for (var j = 0; j < plugins.length; j++) {
+            if (plugins[j].identifier === identifier) {
+                return { ...plugins[j], type: 'plugin' };
+            }
+        }
+
+        return null;
+    }
+
+    function createExtensionCard(type, item, isSingleSelect) {
+        const card = document.createElement('div');
+        card.className = 'extension-card';
+        card.dataset.type = type;
+        card.dataset.identifier = item.identifier;
+
+        const isSelected = selectedExtensions[type] && selectedExtensions[type].indexOf(item.identifier) !== -1;
+
+        if (isSelected) card.classList.add('selected');
+        if (isSingleSelect) card.classList.add('single-select');
+
+        // 아이콘 설정
+        let iconClass = 'fa-puzzle-piece';
+        if (type === 'admin_templates') iconClass = 'fa-shield-alt';
+        else if (type === 'user_templates') iconClass = 'fa-palette';
+        else if (type === 'modules') iconClass = 'fa-cube';
+        else if (type === 'plugins') iconClass = 'fa-plug';
+
+        const name = getLocalizedText(item.name) || item.identifier;
+        const description = getLocalizedText(item.description);
+        const version = item.version || '1.0.0';
+        const author = item.author || '';
+
+        // 의존성 표시 (identifier → name 변환, 모듈/플러그인 아이콘 추가)
+        let depsHtml = '';
+        if (item.dependencies && item.dependencies.length > 0) {
+            const depsText = item.dependencies.map(function(depId) {
+                const depInfo = findExtensionById(depId);
+                const depName = depInfo ? getLocalizedText(depInfo.name) : depId;
+                const depIcon = depInfo ? (depInfo.type === 'plugin' ? 'fa-plug' : 'fa-cube') : 'fa-cube';
+                return '<span class="dep-tag"><i class="fas ' + depIcon + '"></i> ' + escapeHtml(depName) + '</span>';
+            }).join(' ');
+            depsHtml = '<div class="extension-card-footer"><div class="extension-card-dependencies">' +
+                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div></div>';
+        }
+
+        // 선택 표시 아이콘 (단일 선택은 라디오, 다중 선택은 체크박스)
+        const selectIcon = isSingleSelect
+            ? (isSelected ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>')
+            : (isSelected ? '<i class="fas fa-check-square"></i>' : '<i class="far fa-square"></i>');
+
+        card.innerHTML =
+            '<div class="extension-card-header">' +
+                '<div class="extension-card-icon"><i class="fas ' + iconClass + '"></i></div>' +
+                '<div class="extension-card-info">' +
+                    '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
+                    '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +
+                '</div>' +
+                '<div class="extension-card-select">' + selectIcon + '</div>' +
+            '</div>' +
+            (description ? '<p class="extension-card-description">' + escapeHtml(description) + '</p>' : '') +
+            depsHtml;
+
+        card.addEventListener('click', function() {
+            toggleExtension(type, item.identifier, isSingleSelect);
+        });
+
+        return card;
+    }
+
+    /**
+     * HTML 이스케이프
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    window.toggleExtension = function(type, identifier, isSingleSelect) {
+        const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
+        if (!card) return;
+
+        const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
+        const isRequired = (type === 'admin_templates'); // 관리자 템플릿만 필수
+
+        if (isSingleSelect) {
+            // 단일 선택 모드
+            if (isCurrentlySelected && !isRequired) {
+                // 사용자 템플릿: 이미 선택된 항목 클릭 시 선택 해제
+                selectedExtensions[type] = [];
+                card.classList.remove('selected');
+                const selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) selectEl.innerHTML = '<i class="far fa-circle"></i>';
+            } else {
+                // 다른 항목 선택 해제 후 현재 항목 선택
+                const allCards = document.querySelectorAll('.extension-card[data-type="' + type + '"]');
+                allCards.forEach(function(c) {
+                    c.classList.remove('selected');
+                    const selectEl = c.querySelector('.extension-card-select');
+                    if (selectEl) selectEl.innerHTML = '<i class="far fa-circle"></i>';
+                });
+
+                selectedExtensions[type] = [identifier];
+                card.classList.add('selected');
+                const selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+            }
+        } else {
+            // 다중 선택: 토글 방식
+            const index = selectedExtensions[type].indexOf(identifier);
+            if (index === -1) {
+                selectedExtensions[type].push(identifier);
+                card.classList.add('selected');
+                const selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-square"></i>';
+            } else {
+                selectedExtensions[type].splice(index, 1);
+                card.classList.remove('selected');
+                const selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+            }
+        }
+
+        updateSelectionSummary();
+        validateAdminTemplate();
+    };
+
+    function restoreSelectionState() {
+        if (window.INSTALLER_SELECTED_EXTENSIONS) {
+            var saved = window.INSTALLER_SELECTED_EXTENSIONS;
+            ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach(function(type) {
+                if (saved[type] && Array.isArray(saved[type])) {
+                    selectedExtensions[type] = saved[type].slice();
+                }
+            });
+            Object.keys(selectedExtensions).forEach(function(type) {
+                selectedExtensions[type].forEach(function(identifier) {
+                    var card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
+                    if (card && !card.classList.contains('required')) {
+                        card.classList.add('selected');
+                    }
+                });
+            });
+        }
+        if (extensionsData) {
+            ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach(function(type) {
+                var items = extensionsData[type] || [];
+                items.forEach(function(item) {
+                    if (item.is_required && selectedExtensions[type].indexOf(item.identifier) === -1) {
+                        selectedExtensions[type].push(item.identifier);
+                    }
+                });
+            });
+        }
+    }
+
+    function updateSelectionSummary() {
+        // PHP 뷰 구조에 맞는 개별 요약 요소 업데이트
+        const adminCount = document.getElementById('summary-admin-templates');
+        const userCount = document.getElementById('summary-user-templates');
+        const modulesCount = document.getElementById('summary-modules');
+        const pluginsCount = document.getElementById('summary-plugins');
+
+        if (adminCount) adminCount.textContent = selectedExtensions.admin_templates.length;
+        if (userCount) userCount.textContent = selectedExtensions.user_templates.length;
+        if (modulesCount) modulesCount.textContent = selectedExtensions.modules.length;
+        if (pluginsCount) pluginsCount.textContent = selectedExtensions.plugins.length;
+    }
+
+    /**
+     * 관리자 템플릿이 최소 1개 선택되었는지 검증하고 제출 버튼 활성화
+     */
+    function validateAdminTemplate() {
+        const submitBtn = document.getElementById('submit-btn');
+        if (!submitBtn) return;
+
+        const hasAdminTemplate = selectedExtensions.admin_templates.length > 0;
+        submitBtn.disabled = !hasAdminTemplate;
+
+        if (!hasAdminTemplate) {
+            submitBtn.title = window.EXTENSION_LABELS?.admin_template_required || lang('error_admin_template_required');
+        } else {
+            submitBtn.title = '';
+        }
+    }
+
+    /**
+     * 확장 식별자로 이름 가져오기 (extensionsData에서)
+     * @param {string} category 카테고리 (admin_templates, modules 등)
+     * @param {string} identifier 확장 식별자
+     * @returns {Object|null} 이름 객체 {ko: '...', en: '...'}
+     */
+    function getExtensionNameFromData(category, identifier) {
+        if (!extensionsData) return null;
+        const list = extensionsData[category] || [];
+        const ext = list.find(e => e.identifier === identifier);
+        return ext ? ext.name : null;
+    }
+
+    async function saveExtensionsAndProceed() {
+        const btn = document.getElementById('submit-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = window.EXTENSION_LABELS?.saving || lang('saving');
+        }
+
+        // 관리자 템플릿 필수 검증
+        if (selectedExtensions.admin_templates.length === 0) {
+            alert(window.EXTENSION_LABELS?.admin_template_required || lang('error_admin_template_required'));
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        // 확장 이름 매핑 수집 (identifier → {ko: '...', en: '...'})
+        const extensionNames = {};
+        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins'];
+        categories.forEach(category => {
+            (selectedExtensions[category] || []).forEach(identifier => {
+                const name = getExtensionNameFromData(category, identifier);
+                if (name) {
+                    extensionNames[identifier] = name;
+                }
+            });
+        });
+
+        try {
+            const response = await fetch(INSTALLER_BASE_URL + '/api/save-extensions.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...selectedExtensions,
+                    extension_names: extensionNames
+                })
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error_message || result.error || window.EXTENSION_LABELS?.save_failed || 'Save failed');
+            window.location.href = INSTALLER_BASE_URL + '?step=5';
+        } catch (error) {
+            alert(error.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = window.EXTENSION_LABELS?.next || lang('next');
+            }
+        }
+    }
+    window.saveExtensionsAndProceed = saveExtensionsAndProceed;
+    window.loadExtensions = loadExtensions;
+
+    function initExtensionSelection() {
+        const form = document.getElementById('extension-form');
+        if (!form) return;
+        loadExtensions();
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveExtensionsAndProceed();
+        });
+    }
+
+    // =========================================================================
+    // Step 5: 설치 진행
+    // =========================================================================
+
+    // 설치 작업 목록 (PHP에서 window.INSTALLER_TASKS로 전달됨)
+    const INSTALLATION_TASKS = window.INSTALLER_TASKS || [];
+
+    let installationStarted = false;
+    let installationCompleted = false;
+    let eventSource = null;
+    let lastRollbackFailure = null;
+
+    /**
+     * 저장된 확장 이름 가져오기 (state.json에서 로드된 데이터 사용)
+     *
+     * @param {string} identifier 확장 식별자
+     * @returns {string|null} 다국어 이름 또는 null
+     */
+    function getStoredExtensionName(identifier) {
+        const extensionNames = window.INSTALLER_EXTENSION_NAMES || {};
+        if (!extensionNames[identifier]) {
+            return null;
+        }
+
+        const name = extensionNames[identifier];
+        const currentLang = window.installerLocale?.get() || 'ko';
+
+        // 다국어 객체인 경우
+        if (typeof name === 'object') {
+            return name[currentLang] || name['ko'] || name['en'] || identifier;
+        }
+
+        // 문자열인 경우
+        return name;
+    }
+
+    /**
+     * 번역 키 생성 유틸리티
+     *
+     * @param {string} prefix - 접두사 (예: 'task', 'error')
+     * @param {string} id - ID (예: 'composer_check')
+     * @returns {string} 번역 키 (예: 'task_composer_check')
+     */
+    function getTranslationKey(prefix, id) {
+        return prefix + '_' + id;
+    }
+
+    /**
+     * message_key로 안전하게 번역 처리
+     *
+     * @param {string|null} messageKey - 번역 키
+     * @param {string} fallback - 폴백 메시지
+     * @returns {string} 번역된 메시지
+     */
+    function translateWithKey(messageKey, fallback = '') {
+        if (!messageKey) {
+            return fallback;
+        }
+        return lang(messageKey);
+    }
+
+    /**
+     * Task ID를 번역된 이름으로 변환
+     *
+     * @param {string} taskId - 작업 ID (예: 'composer_check', 'env_create')
+     * @returns {string} 번역된 작업 이름
+     */
+    function getTaskName(taskId) {
+        const translationKey = getTranslationKey('task', taskId);
+        return lang(translationKey);
+    }
+
+    /**
+     * State Management API URL 생성
+     *
+     * @param {string} action - API 액션 ('get', 'reset', 'abort')
+     * @returns {string} 완전한 API URL
+     */
+    function getStateApiUrl(action) {
+        return `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=${action}`;
+    }
+
+    /**
+     * 설치 상태 가져오기
+     *
+     * @returns {Promise<Object>} 설치 상태 객체
+     */
+    async function fetchInstallationState() {
+        const apiUrl = getStateApiUrl('get');
+        const response = await fetch(apiUrl);
+        return await response.json();
+    }
+
+    /**
+     * 설치 시작 (SSE 기반)
+     */
+    async function startInstallation() {
+        if (installationStarted) return;
+        installationStarted = true;
+
+        // 중단 버튼 표시
+        showAbortButton();
+
+        // 작업 목록 렌더링
+        renderTaskList();
+
+        try {
+            // 설정 데이터 저장 (POST 요청)
+            const configData = window.INSTALLER_CONFIG || {};
+            const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
+
+            const response = await fetch(saveConfigUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config: configData })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                // 필수 파일 누락 시 파일 생성 안내 표시
+                if (result.env_required) {
+                    installationStarted = false;
+                    hideAbortButton();
+                    showFileSetupSection(result.missing_files || [], null, null, result.base_path, result.is_windows || false);
+                    return;
+                }
+                showError(result.message || lang('installation_start_failed'));
+                return;
+            }
+
+            // SSE 연결 시작
+            const sseUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-worker.php`;
+            eventSource = new EventSource(sseUrl);
+
+            let sseConnected = false;
+
+            // SSE 연결 타임아웃 (5초)
+            const sseTimeout = setTimeout(() => {
+                if (!sseConnected) {
+                    // eventSource가 null이 아닐 때만 close (onerror에서 이미 close 했을 수 있음)
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+
+                    // 설치 완료되지 않은 경우에만 에러 표시
+                    if (!installationCompleted) {
+                        const errorMessage = lang('sse_connection_timeout');
+                        const errorDetail = lang('sse_server_config_guide');
+                        showError(errorMessage, errorDetail);
+                    }
+                }
+            }, 5000);
+
+            // SSE 이벤트 핸들러 등록
+            eventSource.addEventListener('connected', (e) => {
+                clearTimeout(sseTimeout);
+                sseConnected = true;
+            });
+
+            eventSource.addEventListener('task_start', (e) => {
+                const data = JSON.parse(e.data);
+                updateTaskStatus(data.task, 'active', data.name, data.target || null);
+            });
+
+            eventSource.addEventListener('task_complete', (e) => {
+                const data = JSON.parse(e.data);
+                updateTaskStatus(data.task, 'completed', data.message, data.target || null);
+            });
+
+            eventSource.addEventListener('log', (e) => {
+                const data = JSON.parse(e.data);
+                addLogMessage(data.message);
+            });
+
+            eventSource.addEventListener('completed', (e) => {
+                const data = JSON.parse(e.data);
+                eventSource.close();
+                eventSource = null;
+                installationCompleted = true;
+                hideAbortButton();
+
+                // 상태 폴링으로 최종 확인
+                const stateUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=get`;
+                fetch(stateUrl)
+                    .then(res => res.json())
+                    .then(stateData => showCompletionSection(stateData))
+                    .catch(() => {
+                        // 리다이렉트
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        }
+                    });
+            });
+
+            eventSource.addEventListener('aborted', (e) => {
+                const data = JSON.parse(e.data);
+                eventSource.close();
+                eventSource = null;
+
+                // 즉시 중단 처리 - beforeunload 경고 방지 및 버튼 숨김
+                installationCompleted = true;
+                hideAbortButton();
+
+                // 현재 페이지에서 중단 섹션 표시 (리다이렉트하지 않음)
+                fetchInstallationState()
+                    .then(state => {
+                        showAbortedInstallationSection(state);
+                    })
+                    .catch(err => {
+                        // 상태 조회 실패 시 페이지 새로고침
+                        window.location.reload();
+                    });
+            });
+
+            eventSource.addEventListener('rollback_failed', (e) => {
+                // 롤백 실패 정보 저장 (showError에서 메시지 박스에 표시)
+                try {
+                    const data = JSON.parse(e.data);
+                    lastRollbackFailure = {
+                        message: data.message || lang('failed_rollback_manual_cleanup'),
+                        detail: data.detail || lang('failed_rollback_manual_cleanup_detail'),
+                    };
+                } catch (parseError) {
+                    lastRollbackFailure = {
+                        message: lang('failed_rollback_manual_cleanup'),
+                        detail: lang('failed_rollback_manual_cleanup_detail'),
+                    };
+                }
+            });
+
+            eventSource.addEventListener('error', (e) => {
+                // 서버에서 보낸 'error' 이벤트만 처리 (e.data 있음)
+                // SSE 연결 오류(e.data 없음)는 onerror 핸들러에서 처리
+                if (!e.data) {
+                    return;
+                }
+
+                let errorMessage = lang('installation_error_occurred');
+                let errorDetail = null;
+                let failedTaskId = null;
+
+                try {
+                    const data = JSON.parse(e.data);
+                    // message_key가 있으면 번역, 없으면 message 사용
+                    errorMessage = translateWithKey(data.message_key, data.message || errorMessage);
+
+                    // 상세 오류 정보가 있으면 추가
+                    if (data.error) {
+                        errorDetail = data.error;
+                    }
+
+                    // failed task ID 저장
+                    if (data.task) {
+                        failedTaskId = data.task;
+                    }
+                } catch (parseError) {
+                    // JSON 파싱 실패 시 기본 메시지 사용
+                }
+
+                eventSource.close();
+                eventSource = null;
+
+                showError(errorMessage, errorDetail, failedTaskId);
+            });
+
+            // SSE 연결 오류 처리
+            eventSource.onerror = () => {
+                // 타임아웃 취소 (onerror가 먼저 발생한 경우)
+                clearTimeout(sseTimeout);
+
+                // eventSource가 있으면 정리
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+
+                // 설치 완료되지 않은 경우에만 에러 표시
+                if (!installationCompleted) {
+                    const errorMessage = lang('sse_connection_timeout');
+                    const errorDetail = lang('sse_server_config_guide');
+                    showError(errorMessage, errorDetail);
+                }
+            };
+
+        } catch (error) {
+            showError(`${lang('installation_start_error')}: ${error.message}`);
+        }
+    }
+
+    /**
+     * 작업 상태 업데이트
+     * @param {string} taskId 작업 ID
+     * @param {string} status 상태
+     * @param {string} message 메시지
+     * @param {string|null} target 확장 식별자 (옵션)
+     */
+    function updateTaskStatus(taskId, status, message, target = null) {
+        // 통합 함수 사용 (target 전달)
+        setTaskStatus(taskId, status, target);
+
+        if (status === 'active') {
+            // 현재 작업명 업데이트
+            const currentTaskText = document.getElementById('current-task');
+            if (currentTaskText) {
+                // target이 있으면 확장 이름과 조합 (예: "게시판 모듈 설치 (sirsoft-board)")
+                let taskName = getTaskName(taskId);
+                if (target) {
+                    const extName = getStoredExtensionName(target);
+                    taskName = extName
+                        ? `${extName} ${taskName} (${target})`
+                        : `${taskName} (${target})`;
+                }
+                currentTaskText.textContent = taskName || message || '';
+            }
+        } else if (status === 'completed') {
+            // 진행률 업데이트
+            updateProgressBar();
+        }
+    }
+
+    /**
+     * 진행률 바 업데이트
+     */
+    function updateProgressBar() {
+        const completedTasks = document.querySelectorAll('.task-item.task-completed').length;
+        const totalTasks = document.querySelectorAll('.task-item').length || INSTALLATION_TASKS.length;
+        const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        const progressBar = document.getElementById('overall-progress-bar');
+        const progressPercentage = document.getElementById('overall-percentage');
+
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+        }
+        if (progressPercentage) {
+            progressPercentage.textContent = percentage + '%';
+        }
+    }
+
+    /**
+     * 로그 메시지 추가
+     */
+    function addLogMessage(message) {
+        const logDiv = document.getElementById('install-log');
+        if (!logDiv) return;
+
+        // 로그 플레이스홀더 제거
+        const placeholder = logDiv.querySelector('.log-placeholder');
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.textContent = message;
+        logDiv.appendChild(logEntry);
+
+        // 자동 스크롤
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    /**
+     * 기존 로그 표시 (페이지 로드 시)
+     *
+     * @param {Array} logs 로그 배열 [{timestamp, message}, ...] 또는 문자열 배열
+     */
+    function displayLogs(logs) {
+        const logDiv = document.getElementById('install-log');
+        if (!logDiv) return;
+
+        // 로그 플레이스홀더 제거
+        const placeholder = logDiv.querySelector('.log-placeholder');
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        // 로그가 없으면 플레이스홀더 유지
+        if (!logs || logs.length === 0) {
+            return;
+        }
+
+
+        // 로그 메시지 추가
+        logs.forEach(log => {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+
+            // 로그가 객체인 경우 message 속성 사용, 문자열인 경우 그대로 사용
+            if (typeof log === 'object' && log.message) {
+                logEntry.textContent = log.message;
+            } else if (typeof log === 'string') {
+                logEntry.textContent = log;
+            } else {
+                logEntry.textContent = JSON.stringify(log);
+            }
+
+            logDiv.appendChild(logEntry);
+        });
+
+        // 자동 스크롤
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    /**
+     * 그룹 레이블 번역
+     * @param {string} labelKey 번역 키
+     * @returns {string} 번역된 레이블
+     */
+    function getGroupLabel(labelKey) {
+        return lang(labelKey);
+    }
+
+    /**
+     * 작업 표시 이름 생성 (target이 있는 경우 조합)
+     * 예: "게시판 모듈 설치 (sirsoft-board)"
+     * @param {Object} task 작업 객체
+     * @returns {string} 표시 이름
+     */
+    function getTaskDisplayName(task) {
+        const baseName = getTaskName(task.id);
+        if (task.target) {
+            // 확장 이름 조회 (저장된 이름 사용)
+            const extName = getStoredExtensionName(task.target);
+            // 형식: "게시판 모듈 설치 (sirsoft-board)"
+            return extName
+                ? `${extName} ${baseName} (${task.target})`
+                : `${baseName} (${task.target})`;
+        }
+        return baseName;
+    }
+
+    /**
+     * 작업 DOM ID 생성 (target이 있는 경우 조합)
+     * @param {Object} task 작업 객체
+     * @returns {string} DOM ID
+     */
+    function getTaskDomId(task) {
+        if (task.target) {
+            return `task-${task.id}-${task.target}`;
+        }
+        return `task-${task.id}`;
+    }
+
+    /**
+     * 작업 목록 렌더링 (그룹화된 아코디언 UI)
+     */
+    function renderTaskList() {
+        const taskListDiv = document.getElementById('task-list');
+        if (!taskListDiv) return;
+
+        const taskGroups = window.INSTALLER_TASK_GROUPS || [];
+
+        // 그룹이 없으면 기존 평면 렌더링
+        if (taskGroups.length === 0) {
+            const html = INSTALLATION_TASKS.map(task => {
+                const taskName = task.id ? getTaskName(task.id) : (task.name || '');
+                return `
+                <div id="task-${task.id}" class="task-item task-pending">
+                    <span class="task-icon">⏳</span>
+                    <span class="task-name">${escapeHtml(taskName)}</span>
+                </div>
+            `;
+            }).join('');
+            taskListDiv.innerHTML = html;
+            return;
+        }
+
+        // 그룹별 렌더링
+        const groupsHtml = taskGroups.map(group => {
+            // 그룹 내 작업 목록 평탄화
+            const tasks = [];
+            if (group.tasks && group.tasks.length > 0) {
+                group.tasks.forEach(taskOrArray => {
+                    if (Array.isArray(taskOrArray)) {
+                        taskOrArray.forEach(t => tasks.push(t));
+                    } else {
+                        tasks.push(taskOrArray);
+                    }
+                });
+            }
+
+            // 작업이 없는 그룹은 건너뛰기
+            if (tasks.length === 0) return '';
+
+            const groupLabel = getGroupLabel(group.labelKey);
+            const tasksHtml = tasks.map(task => {
+                const taskDomId = getTaskDomId(task);
+                const taskName = getTaskDisplayName(task);
+                return `
+                    <div id="${taskDomId}" class="task-item task-pending" data-task-id="${task.id}" data-target="${task.target || ''}">
+                        <span class="task-icon"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                        <span class="task-name">${escapeHtml(taskName)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="task-group" data-group-id="${group.id}">
+                    <div class="task-group-header" onclick="toggleTaskGroup('${group.id}')">
+                        <span class="task-group-toggle">▼</span>
+                        <span class="task-group-label">${escapeHtml(groupLabel)}</span>
+                        <span class="task-group-status status-pending">${lang('status_pending')}</span>
+                    </div>
+                    <div class="task-group-items">
+                        ${tasksHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        taskListDiv.innerHTML = groupsHtml;
+    }
+
+    /**
+     * 완료된 작업 표시 (페이지 로드 시)
+     *
+     * @param {Array} completedTasks 완료된 작업 ID 배열 (예: ["db_migrate", "template_install:sirsoft-admin_basic"])
+     */
+    function displayCompletedTasks(completedTasks) {
+
+        completedTasks.forEach(taskIdWithTarget => {
+            // taskId:target 형식 파싱 (예: "template_install:sirsoft-admin_basic")
+            const [taskId, target] = taskIdWithTarget.includes(':')
+                ? taskIdWithTarget.split(':')
+                : [taskIdWithTarget, null];
+
+            // 통합 함수 사용
+            setTaskStatus(taskId, 'completed', target);
+        });
+
+        // 진행률 업데이트
+        updateProgressBar();
+    }
+
+
+    /**
+     * 완료 섹션 표시
+     */
+    function showCompletionSection(data) {
+        installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
+
+        // 중단 버튼 숨김
+        hideAbortButton();
+
+        // 타이틀 숨기기
+        const titleEl = document.getElementById('installer-title');
+        if (titleEl) {
+            titleEl.style.display = 'none';
+        }
+
+        // 경고 메시지 숨기기
+        const warningAlert = document.getElementById('install-warning');
+        if (warningAlert) {
+            warningAlert.style.display = 'none';
+        }
+
+        // 진행률 100% 설정 (wrapper는 숨기기 전에)
+        const progressBar = document.getElementById('overall-progress-bar');
+        const progressPercentage = document.getElementById('overall-percentage');
+        if (progressBar) {
+            progressBar.style.width = '100%';
+        }
+        if (progressPercentage) {
+            progressPercentage.textContent = '100%';
+        }
+
+        // 현재 작업 텍스트를 "설치 완료"로 변경
+        const currentTaskEl = document.getElementById('current-task');
+        if (currentTaskEl) {
+            currentTaskEl.textContent = lang('installation_completed');
+            currentTaskEl.style.color = '#10b981';
+            currentTaskEl.style.fontWeight = 'bold';
+        }
+
+        // 설치 카드 body 숨기기 (기본적으로 접힌 상태)
+        const installationCardBody = document.getElementById('installation-card-body');
+        const installToggleIcon = document.getElementById('install-toggle-icon');
+
+        if (installationCardBody) {
+            installationCardBody.style.display = 'none';
+        }
+        if (installToggleIcon) {
+            installToggleIcon.classList.remove('hidden');
+            installToggleIcon.textContent = '▶';
+        }
+
+        // 완료 섹션 표시 (타이틀 영역에, fadeIn 효과)
+        const completionSection = document.getElementById('completion-section');
+        if (completionSection) {
+            completionSection.classList.remove('hidden');
+            completionSection.style.opacity = '0';
+            completionSection.style.transition = 'opacity 0.5s ease-in';
+
+            // 약간의 지연 후 페이드인
+            setTimeout(() => {
+                completionSection.style.opacity = '1';
+            }, 100);
+        }
+    }
+
+    /**
+     * 에러 표시
+     *
+     * @param {string} errorMessage 메인 오류 메시지
+     * @param {string|null} errorDetail 상세 오류 메시지 (선택)
+     * @param {string|null} failedTaskId 실패한 작업 ID (선택)
+     */
+    function showError(errorMessage, errorDetail = null, failedTaskId = null) {
+        installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
+
+        // 중단 버튼 숨김
+        hideAbortButton();
+
+        // 타이틀 숨기기
+        const titleEl = document.getElementById('installer-title');
+        if (titleEl) {
+            titleEl.style.display = 'none';
+        }
+
+        // 경고 메시지 숨기기
+        const warningAlert = document.getElementById('install-warning');
+        if (warningAlert) {
+            warningAlert.style.display = 'none';
+        }
+
+        // 토글 아이콘 보이기 및 카드 헤더 활성화
+        const installToggleIcon = document.getElementById('install-toggle-icon');
+        const installationCardHeader = document.getElementById('installation-card-header');
+        const installationCardBody = document.getElementById('installation-card-body');
+
+        if (installToggleIcon) {
+            installToggleIcon.classList.remove('hidden');
+        }
+        if (installationCardHeader) {
+            installationCardHeader.style.cursor = 'pointer';
+        }
+
+        // 설치 카드 body 표시 (작업 목록과 로그 보이기)
+        if (installationCardBody) {
+            installationCardBody.style.display = 'block';
+        }
+
+        // failedTaskId가 파라미터로 제공되지 않은 경우, DOM에서 추출 시도
+        if (!failedTaskId) {
+            // 현재 진행 중인 작업(task-active)에서 추출
+            const activeTasks = document.querySelectorAll('.task-item.task-active');
+            activeTasks.forEach(taskEl => {
+                if (!failedTaskId) {
+                    // task element의 ID에서 task ID 추출 (예: 'task-composer_install' -> 'composer_install')
+                    const taskId = taskEl.id.replace('task-', '');
+                    if (taskId) {
+                        failedTaskId = taskId;
+                    }
+                }
+            });
+        }
+
+        // Task ID를 번역된 이름으로 변환
+        const failedTaskName = failedTaskId ? getTaskName(failedTaskId) : null;
+
+        // 현재 진행 중인 작업(task-active)을 모두 실패로 표시
+        const activeTasks = document.querySelectorAll('.task-item.task-active');
+        activeTasks.forEach(taskEl => {
+            const taskId = taskEl.id.replace('task-', '');
+            // 통합 함수 사용
+            setTaskStatus(taskId, 'failed');
+        });
+
+        // 실패 섹션 표시
+        const failureSection = document.getElementById('failure-section');
+        const failureMessage = document.getElementById('failure-message');
+        const failureTitle = failureSection?.querySelector('.result-title');
+
+        if (failureSection) {
+            // 타이틀에 실패 단계 추가
+            if (failureTitle && failedTaskName) {
+                const baseTitle = lang('installation_failed');
+                failureTitle.textContent = `${baseTitle} - ${failedTaskName}`;
+            }
+
+            // 오류 메시지 설정 (구조화된 형식)
+            if (failureMessage) {
+                let messageHtml = '';
+
+                // 메인 오류 메시지
+                messageHtml += `
+                    <div class="failure-main-message">
+                        ${escapeHtml(errorMessage)}
+                    </div>
+                `;
+
+                // 상세 오류 (있을 경우만 - 아코디언 형식)
+                if (errorDetail) {
+                    const accordionId = 'error-detail-' + Date.now();
+                    messageHtml += `
+                        <div class="failure-error-detail">
+                            <button
+                                class="error-detail-toggle"
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="${accordionId}"
+                                onclick="toggleErrorDetail(this, '${accordionId}')"
+                            >
+                                <span class="error-detail-toggle-icon">▶</span>
+                                <strong>${lang('view_error_details')}</strong>
+                            </button>
+                            <div id="${accordionId}" class="error-detail-content">
+                                <pre class="error-stack">${escapeHtml(errorDetail)}</pre>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 롤백 실패 안내 (있을 경우)
+                if (lastRollbackFailure) {
+                    messageHtml += `
+                        <div class="failure-rollback-notice">
+                            <strong>${escapeHtml(lastRollbackFailure.message)}</strong>
+                            <p>${escapeHtml(lastRollbackFailure.detail)}</p>
+                        </div>
+                    `;
+                    lastRollbackFailure = null;
+                }
+
+                failureMessage.innerHTML = messageHtml;
+            }
+
+            // 실패 섹션 표시 (페이드인 효과)
+            failureSection.classList.remove('hidden');
+            failureSection.style.opacity = '0';
+            failureSection.style.transition = 'opacity 0.5s ease-in';
+
+            setTimeout(() => {
+                failureSection.style.opacity = '1';
+            }, 100);
+        }
+    }
+
+    /**
+     * 설치 계속 진행 (실패/중단 공통 함수)
+     */
+    function continueInstallation() {
+        // 타이틀 다시 표시 및 초기화
+        const titleEl = document.getElementById('installer-title');
+        if (titleEl) {
+            titleEl.style.display = 'block';
+            titleEl.textContent = lang('installation_title');
+            titleEl.style.color = ''; // 기본 색상
+        }
+
+        // 경고 메시지 다시 표시
+        const warningAlert = document.getElementById('install-warning');
+        if (warningAlert) {
+            warningAlert.style.display = 'block';
+        }
+
+        // 모든 결과 섹션 숨기기
+        ['aborted-section', 'failure-section', 'completion-section'].forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('hidden');
+            }
+        });
+
+        // 설치 카드 다시 표시 및 초기화
+        const installationCardBody = document.getElementById('installation-card-body');
+        const installationCardHeader = document.getElementById('installation-card-header');
+        const installToggleIcon = document.getElementById('install-toggle-icon');
+        const logDiv = document.getElementById('install-log');
+
+        if (installationCardBody) {
+            installationCardBody.style.display = 'block';
+        }
+        if (installationCardHeader) {
+            installationCardHeader.style.cursor = 'default';
+        }
+        if (installToggleIcon) {
+            installToggleIcon.classList.add('hidden');
+        }
+        if (logDiv) {
+            // 기존 로그 유지, 플레이스홀더만 제거
+            const placeholder = logDiv.querySelector('.log-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            // 구분선 추가 (기존 로그와 새 로그 구분)
+            const separator = document.createElement('div');
+            separator.className = 'log-entry log-separator';
+            separator.textContent = '--- ' + lang('installation_resuming') + ' ---';
+            logDiv.appendChild(separator);
+        }
+
+        // 상태 초기화
+        installationStarted = false;
+        installationCompleted = false;
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+
+        // 설치 재시작
+        startInstallation();
+    }
+
+    /**
+     * 설치 재시도 (continueInstallation 래퍼)
+     */
+    function retryInstallation() {
+        continueInstallation();
+    }
+
+    /**
+     * 재진입 감지 및 확인
+     */
+    async function checkAndStartInstallation() {
+        try {
+            // 현재 설치 상태 확인
+            const state = await fetchInstallationState();
+
+
+            // 설치가 이미 완료된 경우
+            if (state.status === 'completed') {
+                showCompletionSection(state);
+                return;
+            }
+
+            // 설치가 실패한 경우 - 실패 섹션 표시
+            if (state.status === 'failed') {
+
+                // 페이지 로드 시 완료된 작업 표시
+                renderTaskList();
+                displayCompletedTasks(state.completed_tasks || []);
+
+                // 로그 표시
+                displayLogs(state.logs || []);
+
+                // 실패 정보 가져오기 (state.json에서 복원)
+                const errorMessage = translateWithKey(
+                    state.error_message_key,
+                    state.error || lang('unknown_error_occurred')
+                );
+                const errorDetail = state.error_detail || null;
+                const failedTaskId = state.failed_task;
+
+                // ✅ showError() 호출 전에 먼저 task를 failed로 마크
+                if (failedTaskId) {
+                    setTaskStatus(failedTaskId, 'failed');
+                }
+
+                // 롤백 실패 정보 복원 (state.json에서 새로고침 후에도 표시)
+                if (state.rollback_failure) {
+                    lastRollbackFailure = {
+                        message: lang(state.rollback_failure.message_key) || lang('failed_rollback_manual_cleanup'),
+                        detail: lang(state.rollback_failure.detail_key) || lang('failed_rollback_manual_cleanup_detail'),
+                    };
+                }
+
+                // ✅ failedTaskId를 명시적으로 전달 (함수 내부에서 번역됨)
+                showError(errorMessage, errorDetail, failedTaskId);
+
+                return;
+            }
+
+            // 설치가 중단된 경우 - 중단 섹션 표시
+            if (state.status === 'aborted') {
+                showAbortedInstallationSection(state);
+                return;
+            }
+
+            // 설치가 진행 중이었던 경우 (재진입) - alert 없이 바로 중단 섹션 표시
+            if (state.status === 'running') {
+
+                // installation_status를 aborted로 변경
+                const abortUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
+                fetch(abortUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                }).then(() => {
+
+                    // 상태를 다시 가져와서 중단 섹션 표시
+                    fetch(apiUrl)
+                        .then(res => res.json())
+                        .then(updatedState => {
+                            showAbortedInstallationSection(updatedState);
+                        });
+                }).catch(err => {
+                    // 실패해도 중단 섹션은 표시
+                    showAbortedInstallationSection(state);
+                });
+            } else {
+                // 처음 시작하는 경우 — 필수 파일 체크 후 시작
+                const filesReady = await checkFilesBeforeInstall();
+                if (filesReady) {
+                    startInstallation();
+                }
+            }
+        } catch (error) {
+            // 오류 발생 시에도 설치 시작 (기본 동작)
+            startInstallation();
+        }
+    }
+
+    /**
+     * 중단된 설치 섹션 표시 (Step 4)
+     *
+     * @param {Object} state 설치 상태 정보
+     */
+    function showAbortedInstallationSection(state) {
+
+        installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
+
+        // 중단 버튼 숨김
+        hideAbortButton();
+
+        // 타이틀 숨기기
+        const titleEl = document.getElementById('installer-title');
+        if (titleEl) {
+            titleEl.style.display = 'none';
+        }
+
+        // 경고 메시지 숨기기
+        const warningAlert = document.getElementById('install-warning');
+        if (warningAlert) {
+            warningAlert.style.display = 'none';
+        }
+
+        // 중단 섹션 표시
+        const abortedSection = document.getElementById('aborted-section');
+
+        if (abortedSection) {
+            // 롤백 실패 정보가 있으면 경고 메시지 추가
+            if (state.rollback_failure) {
+                const resultText = abortedSection.querySelector('.result-text');
+                if (resultText) {
+                    const rollbackAlert = document.createElement('div');
+                    rollbackAlert.className = 'alert alert-danger';
+                    rollbackAlert.style.marginTop = '0.75rem';
+                    rollbackAlert.style.fontSize = '0.875rem';
+                    const msg = lang(state.rollback_failure.message_key) || lang('failed_rollback_manual_cleanup');
+                    const detail = lang(state.rollback_failure.detail_key) || lang('failed_rollback_manual_cleanup_detail');
+                    rollbackAlert.innerHTML = '<strong>' + escapeHtml(msg) + '</strong><br>' + escapeHtml(detail);
+                    resultText.appendChild(rollbackAlert);
+                }
+            }
+
+            abortedSection.classList.remove('hidden');
+            abortedSection.style.opacity = '0';
+            abortedSection.style.transition = 'opacity 0.5s ease-in';
+
+            setTimeout(() => {
+                abortedSection.style.opacity = '1';
+            }, 100);
+        } else {
+        }
+
+        // 작업 목록 렌더링
+        renderTaskList();
+
+        // 완료된 작업 표시
+        const completedTasks = state.completed_tasks || [];
+        const currentTask = state.current_task;
+        displayCompletedTasks(completedTasks);
+
+        // 로그 표시
+        displayLogs(state.logs || []);
+
+        // 설치 카드 body 표시 (작업 목록 보이기)
+        const installationCardBody = document.getElementById('installation-card-body');
+        if (installationCardBody) {
+            installationCardBody.style.display = 'block';
+        }
+
+        // 현재 작업을 중단으로 표시
+        if (currentTask) {
+            // taskId:target 형식 파싱 (예: "module_install:sirsoft-board")
+            const [taskId, target] = currentTask.includes(':')
+                ? currentTask.split(':')
+                : [currentTask, null];
+
+            // 통합 함수 사용
+            setTaskStatus(taskId, 'aborted', target);
+        } else {
+            // current_task가 null인 경우, 마지막 완료된 작업 다음 작업을 중단으로 표시
+            const allTasks = window.INSTALLER_TASKS || [];
+
+            // completedTasks의 마지막 항목에서 taskId와 target 분리
+            const lastCompleted = completedTasks[completedTasks.length - 1] || '';
+            const [lastTaskId, lastTarget] = lastCompleted.includes(':')
+                ? lastCompleted.split(':')
+                : [lastCompleted, null];
+
+            // INSTALLER_TASKS에서 해당 작업 찾기 (target 포함 매칭)
+            const lastCompletedIndex = allTasks.findIndex(t => {
+                if (lastTarget) {
+                    return t.id === lastTaskId && t.target === lastTarget;
+                }
+                return t.id === lastTaskId && !t.target;
+            });
+
+            if (lastCompletedIndex >= 0 && lastCompletedIndex < allTasks.length - 1) {
+                const nextTask = allTasks[lastCompletedIndex + 1];
+                // 통합 함수 사용
+                setTaskStatus(nextTask.id, 'aborted', nextTask.target || null);
+            }
+        }
+    }
+
+    /**
+     * 중단된 설치에서 계속 진행 (continueInstallation 래퍼)
+     */
+    function resumeInstallationFromAborted() {
+        continueInstallation();
+    }
+
+    /**
+     * 설정 페이지로 이동 (확인 후)
+     */
+    async function goToSettingsWithConfirm() {
+        const confirmed = confirm(lang('confirm_go_to_settings_simple'));
+
+        if (confirmed) {
+            try {
+                // 상태 초기화 API 호출
+                const response = await fetch(getStateApiUrl('reset'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 설정 페이지로 이동 (세션 기반)
+                    window.location.href = `${window.INSTALLER_BASE_URL}/`;
+                } else {
+                    alert(lang('error_state_reset_failed').replace(':message', result.message));
+                }
+            } catch (error) {
+                // 오류가 발생해도 이동은 허용 (강제 이동)
+                const forceMove = confirm(lang('confirm_force_go_to_settings'));
+
+                if (forceMove) {
+                    window.location.href = `${window.INSTALLER_BASE_URL}/`;
+                }
+            }
+        }
+    }
+
+    /**
+     * 설치 페이지 자동 시작
+     */
+    function initInstallation() {
+        if (document.getElementById('task-list')) {
+            // 페이지 이탈 경고 설정
+            window.addEventListener('beforeunload', function(e) {
+                // 설치가 시작되었고, 아직 완료되지 않은 경우에만 경고
+                if (installationStarted && !installationCompleted) {
+                    const message = lang('confirm_leave_installation');
+                    e.preventDefault();
+                    e.returnValue = message; // Chrome에서 필요
+                    return message; // 일부 브라우저에서 필요
+                }
+            });
+
+            // 페이지 언로드 시 abort 신호 전송 (브라우저 종료/새로고침)
+            window.addEventListener('pagehide', function(e) {
+                // 설치가 시작되었고, 아직 완료되지 않은 경우에만 abort 전송
+                if (installationStarted && !installationCompleted) {
+                    const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
+
+                    // sendBeacon은 페이지 언로드 중에도 전송을 보장
+                    navigator.sendBeacon(apiUrl, new Blob([JSON.stringify({})], {type: 'application/json'}));
+                }
+            });
+
+            // 페이지 로드 시 상태 확인 후 시작
+            checkAndStartInstallation();
+        }
+    }
+
+    // =========================================================================
+    // 설치 중단 기능
+    // =========================================================================
+
+    /**
+     * 설치 중단
+     */
+    async function abortInstallation() {
+        // 설치가 이미 완료되었으면 중단 불가
+        if (installationCompleted) {
+            alert(lang('installation_already_completed_message'));
+            return;
+        }
+
+        // 버튼 중복 클릭 방지
+        const abortBtn = document.getElementById('abort-installation-btn');
+        if (abortBtn && abortBtn.disabled) {
+            return;
+        }
+
+        // 확인 다이얼로그 표시
+        const confirmed = confirm(
+            lang('confirm_abort_installation')
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        // 중단 처리 시작 - beforeunload 경고 방지
+        installationCompleted = true;
+
+        // 중단 버튼 비활성화 및 로딩 표시
+        if (abortBtn) {
+            abortBtn.disabled = true;
+            abortBtn.innerHTML = `
+                <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="spinner" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+                ${lang('aborting')}
+            `;
+        }
+
+        try {
+            // Abort API 호출
+            const response = await fetch(getStateApiUrl('abort'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // SSE 연결 닫기
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+
+                // 즉시 중단 버튼 숨김 (UI 즉각 반응)
+                hideAbortButton();
+
+                // state.json 동기화를 위해 짧은 지연 후 상태 조회
+                setTimeout(() => {
+                    fetchInstallationState()
+                        .then(state => {
+                            showAbortedInstallationSection(state);
+                        })
+                        .catch(err => {
+                            // 페이지 리로드로 폴백 (세션 기반)
+                            window.location.href = `${window.INSTALLER_BASE_URL}/`;
+                        });
+                }, 300);
+            } else {
+                // 중단 실패 시 플래그 복원
+                installationCompleted = false;
+                alert((window.INSTALLER_LANG?.abort_failed || 'Abort failed') + ': ' + (result.message || window.INSTALLER_LANG?.unknown_error_occurred || 'Unknown error'));
+
+                // 버튼 복원
+                if (abortBtn) {
+                    abortBtn.disabled = false;
+                    abortBtn.innerHTML = `
+                        <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        ${lang('abort_installation')}
+                    `;
+                }
+            }
+        } catch (error) {
+            // 중단 실패 시 플래그 복원
+            installationCompleted = false;
+            alert(lang('abort_error_occurred') + ': ' + error.message);
+
+            // 버튼 복원
+            if (abortBtn) {
+                abortBtn.disabled = false;
+                abortBtn.innerHTML = `
+                    <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    ${lang('abort_installation')}
+                `;
+            }
+        }
+    }
+
+    /**
+     * 중단 버튼 표시 (초기 상태로 리셋)
+     */
+    function showAbortButton() {
+        const abortBtn = document.getElementById('abort-installation-btn');
+        if (abortBtn) {
+            // 버튼을 초기 상태로 리셋
+            abortBtn.disabled = false;
+            abortBtn.innerHTML = `
+                <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                ${lang('abort_installation')}
+            `;
+            abortBtn.style.display = 'flex';
+        }
+    }
+
+    /**
+     * 중단 버튼 숨김
+     */
+    function hideAbortButton() {
+        const abortBtn = document.getElementById('abort-installation-btn');
+        if (abortBtn) {
+            abortBtn.style.display = 'none';
+        }
+    }
+
+    // =========================================================================
+    // 재진입/재개 다이얼로그
+    // =========================================================================
+
+    /**
+     * 재개 다이얼로그 표시
+     *
+     * @param {Object} state 설치 상태 데이터
+     */
+    // =========================================================================
+    // 다크모드 토글 기능
+    // =========================================================================
+
+    const THEME_STORAGE_KEY = 'g7_color_scheme';
+
+    /**
+     * 현재 테마 가져오기
+     */
+    function getCurrentTheme() {
+        return document.documentElement.getAttribute('data-theme') || 'light';
+    }
+
+    /**
+     * 테마 설정 및 저장
+     */
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        updateThemeIcon(theme);
+    }
+
+    /**
+     * 테마 토글
+     */
+    function toggleTheme() {
+        const currentTheme = getCurrentTheme();
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        // 버튼에 페이드 애니메이션 추가
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.classList.add('transitioning');
+            setTimeout(() => {
+                toggleBtn.classList.remove('transitioning');
+            }, 500);
+        }
+
+        setTheme(newTheme);
+    }
+
+    /**
+     * 테마 아이콘 업데이트
+     */
+    function updateThemeIcon(theme) {
+        const iconElement = document.getElementById('theme-toggle-icon');
+        if (iconElement) {
+            // SVG 아이콘으로 변경
+            if (theme === 'dark') {
+                // 라이트 모드로 전환할 수 있는 태양 아이콘
+                iconElement.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                `;
+            } else {
+                // 다크 모드로 전환할 수 있는 달 아이콘
+                iconElement.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                `;
+            }
+        }
+    }
+
+    /**
+     * 다크모드 토글 버튼 초기화
+     * 참고: 테마는 이미 HTML에서 적용됨 (FOUC 방지)
+     */
+    function initThemeToggle() {
+        const toggleBtn = document.getElementById('theme-toggle-btn');
+        if (toggleBtn) {
+            // 현재 테마에 맞는 아이콘으로 업데이트
+            const currentTheme = getCurrentTheme();
+            updateThemeIcon(currentTheme);
+
+            // 토글 버튼 클릭 이벤트 등록
+            toggleBtn.addEventListener('click', toggleTheme);
+        }
+
+        // 시스템 다크모드 설정 변경 감지
+        if (window.matchMedia) {
+            const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+            darkModeQuery.addEventListener('change', (e) => {
+                // localStorage에 저장된 값이 없을 때만 시스템 설정 따라감
+                if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    updateThemeIcon(newTheme);
+                }
+            });
+        }
+    }
+
+    // =========================================================================
+    // 유틸리티 함수
+    // =========================================================================
+
+    /**
+     * 설치 카드 토글
+     * 완료/실패 시에만 작동
+     */
+    function toggleInstallationCard() {
+        // 설치 진행 중에는 토글 불가
+        if (!installationCompleted) {
+            return;
+        }
+
+        const cardBody = document.getElementById('installation-card-body');
+        const toggleIcon = document.getElementById('install-toggle-icon');
+
+        if (!cardBody) {
+            return;
+        }
+
+        const isHidden = cardBody.style.display === 'none';
+
+        if (isHidden) {
+            // 카드 body 보이기
+            cardBody.style.display = 'block';
+            if (toggleIcon) toggleIcon.textContent = '▼';
+        } else {
+            // 카드 body 숨기기
+            cardBody.style.display = 'none';
+            if (toggleIcon) toggleIcon.textContent = '▶';
+        }
+    }
+
+    /**
+     * 오류 상세 아코디언 토글
+     */
+    function toggleErrorDetail(button, contentId) {
+        const content = document.getElementById(contentId);
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+        if (isExpanded) {
+            // 닫기
+            button.setAttribute('aria-expanded', 'false');
+            content.classList.remove('show');
+        } else {
+            // 열기
+            button.setAttribute('aria-expanded', 'true');
+            content.classList.add('show');
+        }
+    }
+
+    /**
+     * HTML 이스케이프
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * AJAX 요청 헬퍼 함수
+     *
+     * @param {string} url 요청 URL
+     * @param {Object} options Fetch API 옵션
+     * @return {Promise<Object>} JSON 응답
+     */
+    async function fetchJson(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    /**
+     * 작업 상태를 통합 관리 (아이콘 + 클래스)
+     *
+     * @param {string} taskId 작업 ID
+     * @param {string} status 상태 (active, completed, failed, aborted)
+     * @param {string|null} target 확장 식별자 (옵션)
+     */
+    function setTaskStatus(taskId, status, target = null) {
+        // target이 있으면 조합된 ID, 없으면 기본 ID
+        const domId = target ? `task-${taskId}-${target}` : `task-${taskId}`;
+        const taskEl = document.getElementById(domId);
+        if (!taskEl) return;
+
+        const icon = taskEl.querySelector('.task-icon');
+
+        // 기존 상태 클래스 제거
+        taskEl.classList.remove('task-pending', 'task-active', 'task-completed', 'task-failed', 'task-aborted');
+
+        // 새로운 상태 적용
+        switch(status) {
+            case 'active':
+                taskEl.classList.add('task-active');
+                if (icon) {
+                    icon.innerHTML = getIconSvg('spinner');
+                }
+                break;
+
+            case 'completed':
+                taskEl.classList.add('task-completed');
+                if (icon) {
+                    icon.innerHTML = getIconSvg('completed');
+                }
+                break;
+
+            case 'failed':
+                taskEl.classList.add('task-failed');
+                if (icon) {
+                    icon.innerHTML = getIconSvg('failed');
+                    icon.style.color = '#ef4444';
+                }
+                break;
+
+            case 'aborted':
+                taskEl.classList.add('task-aborted');
+                if (icon) {
+                    icon.innerHTML = getIconSvg('warning');
+                }
+                break;
+        }
+
+        // 그룹 상태 업데이트
+        updateGroupStatus(taskEl);
+    }
+
+    /**
+     * 그룹 상태 배지 업데이트
+     *
+     * 작업 상태가 변경될 때마다 해당 그룹의 상태 배지를 업데이트합니다.
+     * - 대기 중: 회색 "대기"
+     * - 진행 중: 파란색 "n/m" (완료/전체)
+     * - 완료: 초록색 "완료" (자동 접힘)
+     * - 실패: 빨간색 "실패"
+     * - 중단: 주황색 "중단"
+     *
+     * @param {HTMLElement} taskEl 작업 요소
+     */
+    function updateGroupStatus(taskEl) {
+        const group = taskEl.closest('.task-group');
+        if (!group) return;
+
+        const statusEl = group.querySelector('.task-group-status');
+        if (!statusEl) return;
+
+        const tasks = group.querySelectorAll('.task-item');
+        const completedCount = group.querySelectorAll('.task-item.task-completed').length;
+        const failedCount = group.querySelectorAll('.task-item.task-failed').length;
+        const abortedCount = group.querySelectorAll('.task-item.task-aborted').length;
+        const activeCount = group.querySelectorAll('.task-item.task-active').length;
+        const totalCount = tasks.length;
+
+        // 상태 클래스 초기화
+        statusEl.classList.remove('status-pending', 'status-in-progress', 'status-completed', 'status-error', 'status-aborted');
+
+        if (failedCount > 0) {
+            statusEl.textContent = lang('status_failed');
+            statusEl.classList.add('status-error');
+        } else if (abortedCount > 0) {
+            statusEl.textContent = lang('status_aborted');
+            statusEl.classList.add('status-aborted');
+        } else if (completedCount === totalCount) {
+            statusEl.textContent = lang('status_completed');
+            statusEl.classList.add('status-completed');
+            // 완료된 그룹은 자동으로 접기
+            group.classList.add('collapsed');
+        } else if (activeCount > 0 || completedCount > 0) {
+            statusEl.textContent = `${completedCount}/${totalCount}`;
+            statusEl.classList.add('status-in-progress');
+            // 진행 중인 그룹은 펼치기
+            group.classList.remove('collapsed');
+        } else {
+            statusEl.textContent = lang('status_pending');
+            statusEl.classList.add('status-pending');
+        }
+    }
+
+    /**
+     * 작업 그룹 토글 (아코디언)
+     *
+     * @param {string} groupId 그룹 ID
+     */
+    window.toggleTaskGroup = function(groupId) {
+        const group = document.querySelector(`.task-group[data-group-id="${groupId}"]`);
+        if (group) {
+            group.classList.toggle('collapsed');
+        }
+    };
+
+    /**
+     * 공통 아이콘 SVG 생성
+     *
+     * @param {string} type 아이콘 타입 (completed, failed, warning, spinner)
+     * @param {string} size 아이콘 크기 (기본값: 20px, 옵션: 24px 등)
+     * @param {string} className 추가 CSS 클래스
+     * @return {string} SVG HTML 문자열
+     */
+    function getIconSvg(type, size = '20px', className = '') {
+        const svgs = {
+            completed: `
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M6 10l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `,
+            failed: `
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M7 7l6 6M13 7l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            `,
+            warning: `
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: ${size}; height: ${size};" class="${className}">
+                    <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
+                    <path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            `,
+            spinner: '<div class="task-icon-spinner"></div>'
+        };
+
+        return svgs[type] || '';
+    }
+
+    // =========================================================================
+    // 단계 이동 (세션 기반)
+    // =========================================================================
+
+    /**
+     * 지정된 단계로 이동
+     *
+     * @param {number} step 이동할 단계 번호 (0-5)
+     */
+    function goToStep(step) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '';
+
+        const stepInput = document.createElement('input');
+        stepInput.type = 'hidden';
+        stepInput.name = 'go_to_step';
+        stepInput.value = step.toString();
+        form.appendChild(stepInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    /**
+     * 전역 함수 노출
+     */
+    function exposeGlobalFunctions() {
+        // 다국어 함수
+        window.lang = lang;
+
+        // 유틸리티 함수
+        window.escapeHtml = escapeHtml;
+        window.fetchJson = fetchJson;
+
+        // 단계 이동
+        window.goToStep = goToStep;
+
+        // Step 2
+        window.recheckRequirements = recheckRequirements;
+        window.copyPermissionCommand = copyPermissionCommand;
+
+        // Step 3
+        window.testDatabaseConnection = testDatabaseConnection;
+        window.toggleReadDbFields = toggleReadDbFields;
+
+        // Step 4
+        window.retryInstallation = retryInstallation;
+        window.toggleInstallationCard = toggleInstallationCard;
+        window.toggleErrorDetail = toggleErrorDetail;
+        window.abortInstallation = abortInstallation;
+        window.resumeInstallationFromAborted = resumeInstallationFromAborted;
+        window.goToSettingsWithConfirm = goToSettingsWithConfirm;
+
+        // Step 5: 파일 체크
+        window.recheckFiles = recheckFiles;
+        window.copySetupCommand = copySetupCommand;
+        window.copySetupCommandRelative = copySetupCommandRelative;
+    }
+
+    // =========================================================================
+    // 전역 중단 감지 (모든 스텝)
+    // =========================================================================
+
+    /**
+     * 설치 중단 여부 확인 및 Step 4로 리다이렉트
+     * 모든 스텝에서 페이지 로드 시 자동 실행
+     */
+    /**
+     * 설치 중단/실패 여부 확인 및 올바른 Step으로 리다이렉트
+     * 모든 스텝에서 페이지 로드 시 자동 실행
+     *
+     * Step 체계 (2026-02-06 업데이트):
+     * - Step 3: Configuration (DB 설정)
+     * - Step 4: Extension Selection (확장 선택)
+     * - Step 5: Installation (설치 진행)
+     */
+    async function checkAbortedInstallation() {
+        try {
+            const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=get`;
+            const response = await fetch(apiUrl);
+            const result = await response.json();
+
+            if (result && result.status) {
+                const status = result.status;
+                const currentStep = parseInt(window.CURRENT_STEP || '0', 10);
+                const stateStep = parseInt(result.current_step || '0', 10);
+
+                // Step 5 (Installation)에서는 checkAndStartInstallation()이 처리하므로 여기서는 무시
+                if (currentStep === 5) {
+                    return;
+                }
+
+                // aborted 또는 failed 상태일 때, state의 current_step과 현재 화면이 다르면 리다이렉트
+                // 예: 설치 실패 후 Step 4 (확장 선택) 또는 Step 3 (DB 설정)으로 돌아가야 할 때
+                if ((status === 'aborted' || status === 'failed') && currentStep !== stateStep) {
+                    window.location.href = `${window.INSTALLER_BASE_URL}/`;
+                }
+            }
+        } catch (error) {
+            // 에러 시 무시 (네트워크 문제 등)
+        }
+    }
+
+    // =========================================================================
+    // Step 2: 권한 수정 안내 (B11-c)
+    // =========================================================================
+
+    /**
+     * 권한 수정 명령어 클립보드 복사
+     *
+     * @param {HTMLButtonElement} btn 클릭된 복사 버튼
+     */
+    function copyPermissionCommand(btn) {
+        const pre = btn.previousElementSibling;
+        if (!pre) return;
+
+        const command = pre.textContent;
+
+        const showCopied = () => {
+            const originalText = btn.textContent;
+            btn.textContent = lang('copied');
+            setTimeout(() => { btn.textContent = originalText; }, 2000);
+        };
+
+        const fallback = () => {
+            const range = document.createRange();
+            range.selectNodeContents(pre);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+            showCopied();
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(command).then(showCopied).catch(fallback);
+        } else {
+            fallback();
+        }
+    }
+
+    // =========================================================================
+    // Step 5: 필수 파일 체크 (B11-a)
+    // =========================================================================
+
+    /**
+     * Step 5 시작 전 필수 파일(.env) 존재 여부 확인
+     *
+     * @returns {Promise<boolean>} 파일이 모두 존재하면 true
+     */
+    async function checkFilesBeforeInstall() {
+        try {
+            const checkUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-env.php`;
+            const response = await fetch(checkUrl);
+            const check = await response.json();
+
+            const missingFiles = [];
+            const commands = [];
+            const relCommands = [];
+
+            const basePath = check.path || '';
+            const relativePath = check.relative_path || '.';
+            const isWin = check.is_windows || false;
+            if (!check.env_exists) {
+                missingFiles.push('.env');
+                if (isWin) {
+                    const winBase = basePath.replace(/\//g, '\\');
+                    commands.push(`copy ${winBase}\\.env.example ${winBase}\\.env`);
+                    const winRel = relativePath.replace(/\//g, '\\');
+                    relCommands.push(`copy ${winRel}\\.env.example ${winRel}\\.env`);
+                } else {
+                    commands.push(`cp ${basePath}/.env.example ${basePath}/.env`);
+                    relCommands.push(`cp ${relativePath}/.env.example ${relativePath}/.env`);
+                }
+            }
+            if (missingFiles.length > 0) {
+                showFileSetupSection(missingFiles, commands, relCommands, basePath, isWin);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            // 체크 API 실패 시 설치 진행 허용 (install-process.php에서 재검증)
+            return true;
+        }
+    }
+
+    /**
+     * 필수 파일 생성 안내 섹션 표시
+     *
+     * @param {string[]} missingFiles 누락된 파일명 배열
+     * @param {string[]} [commands] 실행할 명령어 배열 (없으면 missingFiles로 생성)
+     */
+    function showFileSetupSection(missingFiles, commands, relCommands, basePath, isWin) {
+        const section = document.getElementById('env-setup-section');
+        if (!section) return;
+
+        // 명령어가 전달되지 않은 경우 (install-process.php의 env_required 응답에서 호출)
+        if (!commands || commands.length === 0) {
+            const p = basePath || '';
+            commands = [];
+            relCommands = relCommands || [];
+            if (missingFiles.includes('.env')) {
+                if (isWin) {
+                    const wp = p ? p.replace(/\//g, '\\') : '';
+                    commands.push(wp ? `copy ${wp}\\.env.example ${wp}\\.env` : 'copy .env.example .env');
+                    relCommands.push('copy .\\.env.example .\\.env');
+                } else {
+                    commands.push(p ? `cp ${p}/.env.example ${p}/.env` : 'cp .env.example .env');
+                    relCommands.push('cp ./.env.example ./.env');
+                }
+            }
+        }
+
+        // 누락 파일 목록 표시
+        const list = document.getElementById('missing-files-list');
+        if (list) {
+            list.innerHTML = missingFiles.map(f => `<li><code>${escapeHtml(f)}</code></li>`).join('');
+        }
+
+        // 절대경로 명령어 표시
+        const commandEl = document.getElementById('file-setup-command');
+        if (commandEl) {
+            commandEl.textContent = commands.join(' && ');
+        }
+
+        // 상대경로 명령어 표시
+        const relHint = document.getElementById('file-setup-relative-hint');
+        const relBox = document.getElementById('file-setup-relative-box');
+        const relCommandEl = document.getElementById('file-setup-command-relative');
+        if (relCommands && relCommands.length > 0 && relHint && relBox && relCommandEl) {
+            relCommandEl.textContent = relCommands.join(' && ');
+            relHint.style.display = '';
+            relBox.style.display = '';
+        }
+
+        // 섹션 표시
+        section.classList.remove('hidden');
+
+        // 버튼 상태 초기화
+        const btn = document.getElementById('env-recheck-btn');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = lang('file_check_button');
+        }
+
+        // 상태 메시지 숨기기
+        const statusEl = document.getElementById('env-check-status');
+        if (statusEl) {
+            statusEl.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 필수 파일 재확인 (확인 버튼 클릭 시)
+     */
+    async function recheckFiles() {
+        const btn = document.getElementById('env-recheck-btn');
+        const statusEl = document.getElementById('env-check-status');
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = lang('file_checking');
+        }
+
+        try {
+            const checkUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-env.php`;
+            const response = await fetch(checkUrl);
+            const check = await response.json();
+
+            if (check.env_exists) {
+                // 파일 확인 완료 — 안내 섹션 숨기고 설치 시작
+                const section = document.getElementById('env-setup-section');
+                if (section) {
+                    section.classList.add('hidden');
+                }
+                startInstallation();
+            } else {
+                // 아직 파일 미생성 — 안내 유지
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = lang('file_check_button');
+                }
+
+                // 여전히 누락된 파일 목록 갱신
+                const stillMissing = [];
+                if (!check.env_exists) stillMissing.push('.env');
+
+                const list = document.getElementById('missing-files-list');
+                if (list) {
+                    list.innerHTML = stillMissing.map(f => `<li><code>${escapeHtml(f)}</code></li>`).join('');
+                }
+
+                if (statusEl) {
+                    statusEl.textContent = lang('files_not_found_yet');
+                    statusEl.classList.remove('hidden');
+                }
+            }
+        } catch (error) {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = lang('file_check_button');
+            }
+            if (statusEl) {
+                statusEl.textContent = lang('files_not_found_yet');
+                statusEl.classList.remove('hidden');
+            }
+        }
+    }
+
+    /**
+     * 파일 생성 명령어 클립보드 복사
+     */
+    function copySetupCommand() {
+        const commandEl = document.getElementById('file-setup-command');
+        if (!commandEl) return;
+
+        const command = commandEl.textContent;
+
+        const showCopied = () => {
+            const copyBtn = commandEl.closest('.code-box')?.querySelector('.btn-copy');
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = lang('copied');
+                setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+            }
+        };
+
+        const fallback = () => {
+            const range = document.createRange();
+            range.selectNodeContents(commandEl);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+            showCopied();
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(command).then(showCopied).catch(fallback);
+        } else {
+            fallback();
+        }
+    }
+
+    /**
+     * 상대경로 명령어 클립보드 복사
+     */
+    function copySetupCommandRelative() {
+        const commandEl = document.getElementById('file-setup-command-relative');
+        if (!commandEl) return;
+
+        const command = commandEl.textContent;
+
+        const showCopied = () => {
+            const copyBtn = commandEl.closest('.code-box')?.querySelector('.btn-copy');
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = lang('copied');
+                setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+            }
+        };
+
+        const fallback = () => {
+            const range = document.createRange();
+            range.selectNodeContents(commandEl);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+            showCopied();
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(command).then(showCopied).catch(fallback);
+        } else {
+            fallback();
+        }
+    }
+
+    // =========================================================================
+    // 초기화
+    // =========================================================================
+
+    /**
+     * DOMContentLoaded 이벤트에서 초기화
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        // 전역 함수 노출
+        exposeGlobalFunctions();
+
+        // 다크모드 토글 초기화 (모든 스텝)
+        initThemeToggle();
+
+        // 전역 중단 감지 (모든 스텝)
+        checkAbortedInstallation();
+
+        // Step 1: 라이선스 동의
+        initLicenseAgreement();
+
+        // Step 2: 요구사항 검증
+        initRequirementsCheck();
+
+        // Step 3: DB 테스트 및 실시간 검증
+        initDatabaseTest();
+        initRealTimeValidation();
+        initStep3FormSubmit();
+
+        // Step 4: 확장 선택
+        initExtensionSelection();
+
+        // Step 5: 설치 진행
+        initInstallation();
+    });
+
+})();

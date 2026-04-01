@@ -1,0 +1,36 @@
+{
+  "401": {
+    "title": "Login Required",
+    "description": "You need to log in to view this page.",
+    "back_to_home": "Back to Home"
+  },
+  "403": {
+    "title": "Access Denied",
+    "description": "You do not have permission to access this page.",
+    "back_to_home": "Back to Home"
+  },
+  "404": {
+    "title": "Page Not Found",
+    "description": "The page you requested does not exist or has been moved.",
+    "back_to_home": "Back to Home"
+  },
+  "500": {
+    "title": "Server Error",
+    "description": "Sorry, something went wrong on our end. Please try again later.",
+    "back_to_home": "Back to Home"
+  },
+  "maintenance": {
+    "title": "Under Maintenance",
+    "description": "The system is currently being updated. Please try again later.",
+    "back_to_home": "Back to Home"
+  },
+  "503": {
+    "title": "Service Unavailable",
+    "description": "The service is currently unavailable.",
+    "unmet_dependencies": "Required extensions are not activated.",
+    "required_modules": "Required Modules",
+    "required_plugins": "Required Plugins",
+    "contact_admin": "Please contact the administrator to activate required extensions.",
+    "back_to_home": "Back to Home"
+  }
+}

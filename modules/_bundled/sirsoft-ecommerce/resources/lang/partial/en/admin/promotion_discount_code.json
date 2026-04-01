@@ -1,0 +1,172 @@
+{
+  "title": "Discount Code Management",
+  "description": "Create and manage discount codes.",
+  "actions": {
+    "create": "Create Discount Code",
+    "edit_search": "Edit Search",
+    "search": "Search",
+    "reset": "Reset",
+    "bulk_change": "Bulk Change"
+  },
+  "search": {
+    "field": {
+      "all": "All",
+      "discount_code_name": "Discount Code Name",
+      "discount_code": "Code"
+    },
+    "placeholder": "Enter search keyword...",
+    "column_select": "Column Select",
+    "detail_search": "Edit Search"
+  },
+  "filter": {
+    "benefit_type": "Benefit Type",
+    "code_type": "Code Type",
+    "benefit_amount": "Benefit Amount",
+    "created_at": "Created Date",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "min": "Min",
+    "max": "Max",
+    "amount_suffix": "",
+    "date_quick": {
+      "today": "Today",
+      "3_days": "3 Days",
+      "1_week": "1 Week",
+      "1_month": "1 Month",
+      "3_months": "3 Months",
+      "all": "All"
+    }
+  },
+  "benefit_type": {
+    "all": "All",
+    "product": "Product",
+    "shipping_fee": "Shipping Fee"
+  },
+  "code_type": {
+    "all": "All",
+    "public_code": "Public Code",
+    "one_time_code": "One-time Code"
+  },
+  "benefit_category": {
+    "fixed": "Fixed",
+    "rate": "Rate"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "batch": {
+    "selected_count": "{{count}} selected",
+    "status_change": "Change Status"
+  },
+  "table": {
+    "total_count": "Total {{count}}",
+    "sort": {
+      "created_at_desc": "Created Date (Latest)",
+      "created_at_asc": "Created Date (Oldest)",
+      "discount_code_name_asc": "Discount Code Name (A-Z)",
+      "discount_code_name_desc": "Discount Code Name (Z-A)"
+    },
+    "per_page": "{{count}} items",
+    "columns": {
+      "checkbox": "Select",
+      "no": "No.",
+      "benefit_type": "Benefit Type",
+      "code_type": "Code Type",
+      "discount_code_name": "Discount Code Name",
+      "code_info": "Code Info",
+      "benefit": "Benefit",
+      "validity_period": "Validity Period",
+      "history": "History",
+      "created_at": "Created Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "benefit_max": "Max {{amount}}"
+  },
+  "mobile": {
+    "code_label": "Code",
+    "validity_period_label": "Validity Period",
+    "history_label": "History",
+    "status_label": "Status",
+    "issued_count": "Issued {{count}}",
+    "used_count": "Used {{count}}",
+    "view_history": "View"
+  },
+  "modal": {
+    "status_change": {
+      "title": "Change Status?",
+      "description": "The status of {{count}} selected discount codes will be changed to {{status}}.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "delete": {
+      "title": "Delete Discount Code?",
+      "description": "This action cannot be undone. The discount code will be permanently deleted.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    }
+  },
+  "create": {
+    "title": "Create Discount Code",
+    "description": "Register a new discount code.",
+    "section": {
+      "status": "Discount Code Status",
+      "basic_info": "Basic Information",
+      "benefit_settings": "Benefit Settings",
+      "code_issue": "Discount Code Issue",
+      "usage_limit": "Discount Code Usage Limit"
+    },
+    "field": {
+      "issue_status": "Issue Status",
+      "is_visible": "Visibility",
+      "benefit_type": "Benefit Type",
+      "code_type": "Discount Code Type",
+      "discount_code_name": "Discount Code Name",
+      "discount_code_description": "Discount Code Description",
+      "benefit": "Benefit",
+      "min_order_amount": "Minimum Order Amount",
+      "validity_period": "Validity Period",
+      "code_generation_method": "Code Generation Method",
+      "discount_code": "Discount Code",
+      "limit_type": "Usage Limit",
+      "apply_target": "Apply Target"
+    },
+    "option": {
+      "product": "Product",
+      "order": "Order",
+      "shipping_fee": "Shipping Fee",
+      "public_code": "Public Code",
+      "one_time_code": "One-time Code",
+      "auto_generate": "Auto Generate",
+      "manual_generate": "Manual Generate",
+      "unlimited": "Unlimited",
+      "limited": "Limited",
+      "no_limit": "No Limit",
+      "specific_product": "Specific Product",
+      "specific_category": "Specific Category"
+    },
+    "placeholder": {
+      "discount_code_name": "Enter discount code name",
+      "discount_code_description": "Enter discount code description",
+      "amount_input": "Enter amount",
+      "min_order": "Min order amount",
+      "max_discount": "Max discount",
+      "start_date": "Start date",
+      "end_date": "End date",
+      "limit_count": "Count"
+    },
+    "hint": {
+      "issued_used": "Issued {{issued}} / Used {{used}}",
+      "min_order_suffix": "Available for orders over this amount",
+      "max_discount_suffix": "discount",
+      "code_length_suffix": "-digit discount code will be generated",
+      "limit_suffix": "users can use"
+    },
+    "button": {
+      "view_history": "View",
+      "select_product": "Select Product",
+      "select_category": "Select Category"
+    }
+  }
+}

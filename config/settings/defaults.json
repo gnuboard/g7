@@ -1,0 +1,232 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update"]
+    },
+    "defaults": {
+        "general": {
+            "site_name": "그누보드7",
+            "site_url": "",
+            "site_description": "",
+            "admin_email": "",
+            "timezone": "Asia/Seoul",
+            "language": "ko",
+            "currency": "KRW",
+            "maintenance_mode": false,
+            "site_logo": []
+        },
+        "security": {
+            "force_https": false,
+            "login_attempt_enabled": true,
+            "auth_token_lifetime": 30,
+            "max_login_attempts": 5,
+            "login_lockout_time": 5,
+            "two_factor_auth": false,
+            "password_min_length": 8,
+            "require_password_special_char": false
+        },
+        "mail": {
+            "mailer": "smtp",
+            "host": "",
+            "port": 587,
+            "username": "",
+            "password": "",
+            "encryption": "tls",
+            "mailgun_domain": "",
+            "mailgun_secret": "",
+            "mailgun_endpoint": "api.mailgun.net",
+            "ses_key": "",
+            "ses_secret": "",
+            "ses_region": "ap-northeast-2",
+            "from_address": "noreply@example.com",
+            "from_name": "그누보드7"
+        },
+        "upload": {
+            "max_file_size": 10,
+            "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "zip"],
+            "image_max_width": 2000,
+            "image_max_height": 2000,
+            "image_quality": 85
+        },
+        "seo": {
+            "meta_title_suffix": "",
+            "meta_description": "",
+            "meta_keywords": "",
+            "google_analytics_id": "",
+            "google_site_verification": "",
+            "naver_site_verification": "",
+            "bot_user_agents": ["Googlebot", "Bingbot", "Naverbot", "Yeti", "Yandex"],
+            "bot_detection_enabled": true,
+            "cache_enabled": true,
+            "cache_ttl": 7200,
+            "sitemap_enabled": true,
+            "sitemap_cache_ttl": 86400,
+            "sitemap_schedule": "daily",
+            "sitemap_schedule_time": "02:00"
+        },
+        "cache": {
+            "enabled": true,
+            "layout_enabled": true,
+            "layout_ttl": 3600,
+            "stats_enabled": true,
+            "stats_ttl": 1800,
+            "seo_enabled": true,
+            "seo_ttl": 7200
+        },
+        "debug": {
+            "mode": false,
+            "sql_query_log": false,
+            "log_level": "error"
+        },
+        "core_update": {
+            "github_url": "",
+            "github_token": ""
+        },
+        "drivers": {
+            "storage_driver": "local",
+            "s3_bucket": "",
+            "s3_region": "ap-northeast-2",
+            "s3_access_key": "",
+            "s3_secret_key": "",
+            "s3_url": "",
+            "cache_driver": "file",
+            "redis_host": "127.0.0.1",
+            "redis_port": 6379,
+            "redis_password": "",
+            "redis_database": 0,
+            "memcached_host": "127.0.0.1",
+            "memcached_port": 11211,
+            "session_driver": "database",
+            "session_lifetime": 120,
+            "queue_driver": "database",
+            "log_driver": "daily",
+            "log_level": "error",
+            "log_days": 14,
+            "websocket_enabled": false,
+            "websocket_app_key": "",
+            "websocket_host": "localhost",
+            "websocket_port": 8080,
+            "websocket_scheme": "https",
+            "search_engine_driver": "mysql-fulltext"
+        }
+    },
+    "frontend_schema": {
+        "_description": "프론트엔드에 노출할 설정 필드 정의. 각 카테고리별로 노출할 필드와 타입 캐스팅, 민감 정보 여부를 정의합니다.",
+        "general": {
+            "expose": true,
+            "_comment": "site_url, admin_email, language, timezone는 프론트엔드에서 미참조하므로 expose: false",
+            "fields": {
+                "site_name": { "type": "string", "sensitive": false },
+                "site_url": { "type": "string", "sensitive": false, "expose": false },
+                "site_description": { "type": "string", "sensitive": false },
+                "admin_email": { "type": "string", "sensitive": false, "expose": false },
+                "language": { "type": "string", "sensitive": false, "expose": false },
+                "timezone": { "type": "string", "sensitive": false, "expose": false },
+                "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
+                "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" }
+            }
+        },
+        "security": {
+            "expose": false,
+            "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
+        },
+        "mail": {
+            "expose": false,
+            "_comment": "mail 설정은 password 포함으로 프론트엔드에 노출하지 않음"
+        },
+        "upload": {
+            "expose": true,
+            "fields": {
+                "max_file_size": { "type": "integer", "sensitive": false },
+                "allowed_extensions": { "type": "string", "sensitive": false, "transform": "join_comma", "expose": false },
+                "allowed_extensions_formatted": { "type": "string", "sensitive": false, "computed": true, "source": "allowed_extensions", "transform": "format_extensions" },
+                "image_max_width": { "type": "integer", "sensitive": false },
+                "image_max_height": { "type": "integer", "sensitive": false },
+                "image_quality": { "type": "integer", "sensitive": false, "expose": false }
+            }
+        },
+        "seo": {
+            "expose": false,
+            "_comment": "SEO 설정 전체 — 프론트엔드 미참조 (admin 환경설정 폼은 API 데이터 기반)",
+            "fields": {
+                "meta_title_suffix": { "type": "string", "sensitive": false },
+                "meta_description": { "type": "string", "sensitive": false },
+                "meta_keywords": { "type": "string", "sensitive": false },
+                "google_analytics_id": { "type": "string", "sensitive": false },
+                "google_site_verification": { "type": "string", "sensitive": false },
+                "naver_site_verification": { "type": "string", "sensitive": false },
+                "bot_user_agents": { "type": "array", "sensitive": false },
+                "bot_detection_enabled": { "type": "boolean", "sensitive": false },
+                "cache_enabled": { "type": "boolean", "sensitive": false },
+                "cache_ttl": { "type": "integer", "sensitive": false },
+                "sitemap_enabled": { "type": "boolean", "sensitive": false },
+                "sitemap_cache_ttl": { "type": "integer", "sensitive": false },
+                "sitemap_schedule": { "type": "string", "sensitive": false },
+                "sitemap_schedule_time": { "type": "string", "sensitive": false }
+            }
+        },
+        "cache": {
+            "expose": true,
+            "frontend_name": "advanced",
+            "_comment": "cache와 debug를 합쳐서 advanced로 노출",
+            "fields": {
+                "enabled": { "type": "boolean", "sensitive": false, "frontend_key": "cache_enabled", "expose": false },
+                "layout_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "layout_cache_enabled", "expose": false },
+                "layout_ttl": { "type": "integer", "sensitive": false, "frontend_key": "layout_cache_ttl", "expose": false },
+                "stats_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "stats_cache_enabled", "expose": false },
+                "stats_ttl": { "type": "integer", "sensitive": false, "frontend_key": "stats_cache_ttl", "expose": false },
+                "seo_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "seo_cache_enabled", "expose": false },
+                "seo_ttl": { "type": "integer", "sensitive": false, "frontend_key": "seo_cache_ttl", "expose": false }
+            }
+        },
+        "debug": {
+            "expose": true,
+            "merge_into": "advanced",
+            "_comment": "debug 설정은 advanced 카테고리에 병합",
+            "fields": {
+                "mode": { "type": "boolean", "sensitive": false, "frontend_key": "debug_mode" },
+                "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false }
+            }
+        },
+        "core_update": {
+            "expose": true,
+            "merge_into": "advanced",
+            "_comment": "core_update 설정은 advanced 카테고리에 병합",
+            "fields": {
+                "github_url": { "type": "string", "sensitive": false, "frontend_key": "core_update_github_url", "expose": false },
+                "github_token": { "type": "string", "sensitive": true, "frontend_key": "core_update_github_token" }
+            }
+        },
+        "drivers": {
+            "expose": false,
+            "_comment": "드라이버 설정 — 프론트엔드 미노출 (admin_settings에서 API 원본값 기반 비교로 변경)",
+            "fields": {
+                "storage_driver": { "type": "string", "sensitive": false },
+                "s3_bucket": { "type": "string", "sensitive": false },
+                "s3_region": { "type": "string", "sensitive": false },
+                "s3_access_key": { "type": "string", "sensitive": true },
+                "s3_secret_key": { "type": "string", "sensitive": true },
+                "s3_url": { "type": "string", "sensitive": false },
+                "cache_driver": { "type": "string", "sensitive": false },
+                "redis_host": { "type": "string", "sensitive": false },
+                "redis_port": { "type": "integer", "sensitive": false },
+                "redis_password": { "type": "string", "sensitive": true },
+                "redis_database": { "type": "integer", "sensitive": false },
+                "memcached_host": { "type": "string", "sensitive": false },
+                "memcached_port": { "type": "integer", "sensitive": false },
+                "session_driver": { "type": "string", "sensitive": false },
+                "session_lifetime": { "type": "integer", "sensitive": false },
+                "queue_driver": { "type": "string", "sensitive": false },
+                "log_driver": { "type": "string", "sensitive": false },
+                "log_level": { "type": "string", "sensitive": false },
+                "log_days": { "type": "integer", "sensitive": false },
+                "websocket_enabled": { "type": "boolean", "sensitive": false },
+                "websocket_app_key": { "type": "string", "sensitive": false },
+                "websocket_host": { "type": "string", "sensitive": false },
+                "websocket_port": { "type": "integer", "sensitive": false },
+                "websocket_scheme": { "type": "string", "sensitive": false }
+            }
+        }
+    }
+}

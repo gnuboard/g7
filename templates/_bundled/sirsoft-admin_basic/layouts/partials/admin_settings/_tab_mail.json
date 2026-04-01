@@ -1,0 +1,971 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 메일 탭 콘텐츠"
+  },
+  "id": "tab_content_mail",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'mail'}}",
+  "props": {
+    "className": "mt-6 space-y-6"
+  },
+  "children": [
+    {
+      "id": "card_mail_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings' : '$t:admin.settings.mail.smtp_settings')}}"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings_desc' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings_desc' : '$t:admin.settings.mail.smtp_settings_desc')}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "field_mailer_row",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_mailer",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.mailer"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "mail.mailer",
+                        "className": "w-full",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "placeholder": "$t:admin.settings.mail.select_mailer",
+                        "options": [
+                          { "label": "SMTP", "value": "smtp" },
+                          { "label": "Mailgun", "value": "mailgun" },
+                          { "label": "SES (Amazon)", "value": "ses" }
+                        ],
+                        "error": "{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "smtp_settings_fields",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_encryption",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.mail.encryption"
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "mail.encryption",
+                        "className": "w-full",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "placeholder": "$t:admin.settings.mail.select_encryption",
+                        "options": [
+                          { "label": "TLS", "value": "tls" },
+                          { "label": "SSL", "value": "ssl" },
+                          { "label": "$t:admin.settings.mail.none", "value": "" }
+                        ],
+                        "error": "{{_local.errors?.['mail.encryption']?.[0] ?? ''}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "field_host",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.host"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.host",
+                        "placeholder": "smtp.example.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.host'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.host']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.host']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_port",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.port"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "mail.port",
+                        "placeholder": "587",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.port'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.port']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.port']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_username",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.mail.username"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.username",
+                        "placeholder": "your@email.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "field_password",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.mail.password"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "password",
+                        "name": "mail.password",
+                        "placeholder": "********",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "mailgun_settings_fields",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.mail?.mailer === 'mailgun'}}",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_mailgun_domain",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.mailgun_domain"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.mailgun_domain",
+                        "placeholder": "mg.example.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.mailgun_domain'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.mailgun_domain']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.mailgun_domain']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_mailgun_secret",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.mailgun_secret"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "password",
+                        "name": "mail.mailgun_secret",
+                        "placeholder": "key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.mailgun_secret'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.mailgun_secret']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.mailgun_secret']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_mailgun_endpoint",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.mail.mailgun_endpoint"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.mailgun_endpoint",
+                        "placeholder": "api.mailgun.net",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "ses_settings_fields",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.mail?.mailer === 'ses'}}",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_ses_key",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.ses_key"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.ses_key",
+                        "placeholder": "AKIAIOSFODNN7EXAMPLE",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.ses_key'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.ses_key']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.ses_key']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_ses_secret",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.ses_secret"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "password",
+                        "name": "mail.ses_secret",
+                        "placeholder": "********",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.ses_secret'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.ses_secret']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.ses_secret']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_ses_region",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.ses_region"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "mail.ses_region",
+                        "className": "w-full",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "placeholder": "$t:admin.settings.mail.select_ses_region",
+                        "options": [
+                          { "label": "Asia Pacific (Seoul) - ap-northeast-2", "value": "ap-northeast-2" },
+                          { "label": "Asia Pacific (Tokyo) - ap-northeast-1", "value": "ap-northeast-1" },
+                          { "label": "Asia Pacific (Singapore) - ap-southeast-1", "value": "ap-southeast-1" },
+                          { "label": "US East (N. Virginia) - us-east-1", "value": "us-east-1" },
+                          { "label": "US West (Oregon) - us-west-2", "value": "us-west-2" },
+                          { "label": "Europe (Ireland) - eu-west-1", "value": "eu-west-1" },
+                          { "label": "Europe (Frankfurt) - eu-central-1", "value": "eu-central-1" }
+                        ],
+                        "error": "{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "common_mail_fields",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "id": "field_from_address",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.from_address"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "email",
+                        "name": "mail.from_address",
+                        "placeholder": "noreply@example.com",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.from_address'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.from_address']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.from_address']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_from_name",
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.settings.mail.from_name"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-red-500 ml-1"
+                          },
+                          "text": "*"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "name": "mail.from_name",
+                        "placeholder": "그누보드7",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['mail.from_name'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['mail.from_name']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['mail.from_name']?.[0] ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_test_mail",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.mail.test_mail"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.mail.test_mail_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-col sm:flex-row gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "email",
+                "name": "mail.test_email",
+                "placeholder": "$t:admin.settings.mail.test_email_placeholder",
+                "disabled": "{{_computed.isReadOnly}}",
+                "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+              }
+            },
+            {
+              "id": "test_mail_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "disabled": "{{_computed.isReadOnly || _local.isSendingTest}}",
+                "className": "flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "isSendingTest": true,
+                        "testMailResult": null,
+                        "testMailResultMessage": null
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/admin/settings/test-mail",
+                      "params": {
+                        "method": "POST",
+                        "body": {
+                          "to_email": "{{_local.form?.mail?.test_email || ''}}",
+                          "mailer": "{{_local.form?.mail?.mailer || 'smtp'}}",
+                          "from_address": "{{_local.form?.mail?.from_address || ''}}",
+                          "from_name": "{{_local.form?.mail?.from_name || ''}}",
+                          "host": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}",
+                          "port": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.port ?? 587) : undefined}}",
+                          "username": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.username ?? '') : undefined}}",
+                          "password": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.password ?? '') : undefined}}",
+                          "encryption": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.encryption ?? 'tls') : undefined}}",
+                          "mailgun_domain": "{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}",
+                          "mailgun_secret": "{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_secret ?? '') : undefined}}",
+                          "mailgun_endpoint": "{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_endpoint ?? '') : undefined}}",
+                          "ses_key": "{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_key ?? '') : undefined}}",
+                          "ses_secret": "{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_secret ?? '') : undefined}}",
+                          "ses_region": "{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_region ?? '') : undefined}}"
+                        }
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isSendingTest": false,
+                            "testMailResult": "success",
+                            "testMailResultMessage": "$t:admin.settings.mail.test_mail_success",
+                            "testMailSubject": "{{response.data?.subject ?? ''}}",
+                            "testMailBody": "{{response.data?.body ?? ''}}",
+                            "testMailError": null
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:admin.settings.mail.test_mail_success"
+                          }
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "isSendingTest": false,
+                            "testMailResult": "error",
+                            "testMailResultMessage": "{{error.message || '$t:admin.settings.mail.test_mail_failed'}}",
+                            "testMailSubject": null,
+                            "testMailBody": null,
+                            "testMailError": "{{typeof error.errors === 'object' ? Object.values(error.errors).flat().join(', ') : (error.errors ?? '')}}"
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "{{error.message || '$t:admin.settings.mail.test_mail_failed'}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.isSendingTest}}",
+                  "props": {
+                    "name": "spinner",
+                    "className": "w-4 h-4 animate-spin"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{!_local.isSendingTest}}",
+                  "props": {
+                    "name": "paper-plane",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:admin.settings.mail.send_test"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "test_mail_result",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.testMailResult}}",
+          "props": {
+            "className": "{{_local.testMailResult === 'success' ? 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm' : 'mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm'}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.testMailResult === 'success'}}",
+                  "props": {
+                    "name": "check-circle",
+                    "className": "text-green-500 dark:text-green-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_local.testMailResult === 'error'}}",
+                  "props": {
+                    "name": "exclamation-circle",
+                    "className": "text-red-500 dark:text-red-400 flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "font-medium"
+                  },
+                  "text": "{{_local.testMailResultMessage ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.testMailResult === 'success' && _local.testMailSubject}}",
+              "props": {
+                "className": "mt-2 pl-7 space-y-1 text-green-600 dark:text-green-300"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium"
+                      },
+                      "text": "$t:admin.settings.mail.test_mail_subject_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_local.testMailSubject ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "font-medium"
+                      },
+                      "text": "$t:admin.settings.mail.test_mail_body_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{_local.testMailBody ?? ''}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.testMailResult === 'error' && _local.testMailError}}",
+              "props": {
+                "className": "mt-2 pl-7 text-xs text-red-600 dark:text-red-300 break-all"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_local.testMailError ?? ''}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "common": {
+    "$partial": "partial/en/common.json"
+  },
+  "admin": {
+    "$partial": "partial/en/admin.json"
+  },
+  "board": {
+    "$partial": "partial/en/board.json"
+  },
+  "messages": {
+    "$partial": "partial/en/messages.json"
+  },
+  "validation": {
+    "$partial": "partial/en/validation.json"
+  },
+  "attributes": {
+    "$partial": "partial/en/attributes.json"
+  },
+  "enums": {
+    "$partial": "partial/en/enums.json"
+  }
+}

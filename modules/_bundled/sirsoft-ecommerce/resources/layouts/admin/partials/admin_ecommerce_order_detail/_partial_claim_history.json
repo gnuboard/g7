@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order Detail - Claim History Section"
+  },
+  "id": "tab_content_claim_history",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "card mt-6"
+  },
+  "children": [
+    {
+      "id": "claim_history_header",
+      "type": "basic",
+      "name": "H2",
+      "props": {
+        "className": "card-section-title"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.title"
+    },
+    {
+      "id": "claim_tab_navigation",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "tabs w-full mb-6"
+      },
+      "children": [
+        {
+          "id": "tab_refund",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "tab active flex-1"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.refund"
+        },
+        {
+          "id": "tab_return",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "tab flex-1"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.return"
+        },
+        {
+          "id": "tab_exchange",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "tab flex-1"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.tabs.exchange"
+        }
+      ]
+    },
+    {
+      "id": "claim_sections_wrapper",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-8"
+      },
+      "children": [
+        {
+          "id": "refund_section",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "partial": "_tab_claim_refund.json"
+            }
+          ]
+        },
+        {
+          "id": "return_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border-t border-gray-200 dark:border-gray-700 pt-8"
+          },
+          "children": [
+            {
+              "partial": "_tab_claim_return.json"
+            }
+          ]
+        },
+        {
+          "id": "exchange_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "border-t border-gray-200 dark:border-gray-700 pt-8"
+          },
+          "children": [
+            {
+              "partial": "_tab_claim_exchange.json"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+    "attachment": {
+        "disk": "modules",
+        "max_count": 5,
+        "max_size_mb": 10,
+        "allowed_types": ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/zip"]
+    }
+}

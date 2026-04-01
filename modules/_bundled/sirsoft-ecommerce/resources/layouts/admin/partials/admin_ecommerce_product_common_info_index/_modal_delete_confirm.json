@@ -1,0 +1,213 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Common Info Delete Confirm Modal"
+    },
+    "id": "delete_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.common_info.modal.delete.title",
+        "titlePrefix": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-center"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "props": {
+                            "name": "exclamation",
+                            "className": "w-4 h-4 text-red-600 dark:text-red-400 block"
+                        }
+                    }
+                ]
+            }
+        ],
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 mb-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "font-semibold"
+                    },
+                    "text": "'{{_global.deleteModal.itemName}}'"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": " $t:sirsoft-ecommerce.admin.common_info.modal.delete.confirm_suffix"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-start gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "box",
+                                "className": "w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.delete.warning"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-red-500 dark:text-red-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.common_info.modal.delete.irreversible"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeleting}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "flex items-center gap-2 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isDeleting}}"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{_global.deleteModal.itemId}}",
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": false,
+                                                "selectedId": null,
+                                                "selectedItem": null,
+                                                "panelMode": "view"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "commonInfos"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "w-4 h-4 animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isDeleting ? '$t:sirsoft-ecommerce.common.deleting' : '$t:sirsoft-ecommerce.admin.common_info.button.delete'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

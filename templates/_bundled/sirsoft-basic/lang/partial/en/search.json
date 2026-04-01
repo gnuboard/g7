@@ -1,0 +1,50 @@
+{
+  "title": "Search",
+  "placeholder": "Enter search term",
+  "button": "Search",
+  "submit": "Search",
+  "results": "Search Results",
+  "results_count": "{{count}} results",
+  "result_summary": "{{count}} results found",
+  "no_results": "No results found.",
+  "try_different": "Try a different search term.",
+  "tabs": {
+    "all": "All",
+    "posts": "Posts",
+    "products": "Products",
+    "pages": "Pages"
+  },
+  "filter": {
+    "all": "All",
+    "posts": "Posts",
+    "products": "Products",
+    "all_boards": "All Boards"
+  },
+  "sort": {
+    "relevance": "Relevance",
+    "latest": "Latest",
+    "popular": "Popular",
+    "price_asc": "Price: Low to High",
+    "price_desc": "Price: High to Low"
+  },
+  "empty": {
+    "all": "No results found.",
+    "posts": "No posts found.",
+    "products": "No products found.",
+    "pages": "No pages found.",
+    "posts_in_all": "No posts found",
+    "products_in_all": "No products found",
+    "pages_in_all": "No pages found",
+    "suggestion": "Try a different search term"
+  },
+  "page_published_at": "Published: {{date}}",
+  "view_more": "View more",
+  "view_all": "View all",
+  "initial": {
+    "title": "Enter a search term",
+    "description": "Search posts, products, and pages all at once.",
+    "hint_title": "Search Tips",
+    "hint_1": "Use multiple words for more accurate results",
+    "hint_2": "Search covers both titles and content"
+  }
+}

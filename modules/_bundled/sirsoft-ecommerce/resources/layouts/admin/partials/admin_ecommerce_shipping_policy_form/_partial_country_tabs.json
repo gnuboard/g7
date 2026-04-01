@@ -1,0 +1,173 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "배송정책 폼 - 국가 탭 바 (섹션 타이틀 + 국가 추가 + 탭 전환)"
+    },
+    "id": "country_tab_bar_section",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center justify-between mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings"
+                },
+                {
+                    "id": "add_country_area",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.addableCountries ?? []).length > 0}}",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "className": "input w-40 text-sm",
+                                "value": "{{_local._selectedCountryToAdd ?? ''}}",
+                                "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "_selectedCountryToAdd": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{!_local._selectedCountryToAdd || _computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "plus",
+                                        "className": "text-xs mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_tab_add"
+                                }
+                            ],
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "sirsoft-ecommerce.addCountrySetting",
+                                                "params": {
+                                                    "country_code": "{{_local._selectedCountryToAdd}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "_local",
+                                                    "_selectedCountryToAdd": ""
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "empty_country_settings",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.country_settings ?? []).length === 0}}",
+            "props": {
+                "className": "p-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "globe",
+                        "className": "text-3xl text-gray-300 dark:text-gray-600 mb-2"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings"
+                }
+            ]
+        },
+        {
+            "id": "country_tab_buttons",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.country_settings ?? []).length > 0}}",
+            "props": {
+                "className": "flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "iteration": {
+                        "source": "(_local.form?.country_settings ?? []).map((cs, i) => ({...cs, _idx: i}))",
+                        "item_var": "tabItem",
+                        "index_var": "tabIdx"
+                    },
+                    "props": {
+                        "type": "button",
+                        "className": "{{(_local.activeCountryTab ?? 0) === tabItem._idx ? 'px-4 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap' : 'px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 whitespace-nowrap'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{tabItem.country_code}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.switchCountryTab",
+                            "params": {
+                                "index": "{{tabItem._idx}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

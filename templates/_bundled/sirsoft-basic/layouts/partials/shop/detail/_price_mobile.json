@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "모바일용 상품 가격 표시"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "flex items-baseline gap-2" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Span",
+      "if": "{{product.data?.discount_rate > 0}}",
+      "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
+      "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}"
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+      "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+    }
+  ]
+}

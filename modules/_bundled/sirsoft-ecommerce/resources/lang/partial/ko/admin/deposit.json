@@ -1,0 +1,124 @@
+{
+  "title": "입금관리",
+  "description": "웹훅으로 수신된 입금 내역을 관리하고 주문과 매칭합니다",
+  "search": {
+    "field": {
+      "order_number": "주문번호",
+      "depositor_name": "입금자명",
+      "member_name": "회원명",
+      "member_id": "회원 ID"
+    },
+    "placeholder": "검색어를 입력하세요",
+    "reset": "초기화"
+  },
+  "filter": {
+    "matching_type": "매칭 유형",
+    "payment_method": "결제수단",
+    "deposit_date": "입금일 기간",
+    "all": "전체",
+    "unmatched": "미매칭",
+    "auto_matched": "자동매칭",
+    "manual_matched": "수동매칭",
+    "bank_transfer": "무통장",
+    "virtual_account": "가상계좌",
+    "start_date": "시작일",
+    "end_date": "종료일",
+    "1_day": "1일",
+    "1_week": "1주일",
+    "1_month": "1개월",
+    "3_months": "3개월"
+  },
+  "batch": {
+    "selected_count": "{{count}}개 선택됨",
+    "batch_match": "일괄 매칭"
+  },
+  "table": {
+    "total_count": "총 {{count}}개",
+    "sort": {
+      "deposit_date_desc": "입금일 (최신순)",
+      "deposit_date_asc": "입금일 (오래된순)",
+      "amount_desc": "금액 (높은순)",
+      "amount_asc": "금액 (낮은순)"
+    },
+    "per_page": "{{count}}개씩 보기",
+    "columns": {
+      "no": "순번",
+      "payment_method": "결제수단",
+      "bank_account": "은행/계좌",
+      "depositor_name": "입금자명",
+      "amount": "금액",
+      "deposit_time": "입금시간",
+      "order_number": "주문번호",
+      "member_info": "회원정보",
+      "matching_type": "매칭유형",
+      "receive_status": "수신상태",
+      "actions": "관리"
+    }
+  },
+  "status": {
+    "virtual_account": "가상계좌",
+    "bank_transfer": "무통장",
+    "manual": "수동",
+    "auto": "자동",
+    "normal": "정상"
+  },
+  "actions": {
+    "match": "매칭하기",
+    "view_history": "이력보기"
+  },
+  "mobile": {
+    "select_all": "전체선택",
+    "deposit_time": "입금시간",
+    "bank_account": "은행/계좌",
+    "member": "회원",
+    "order_number": "주문번호"
+  },
+  "modal": {
+    "manual_match": {
+      "title": "수동 매칭",
+      "description": "입금 내역과 주문을 수동으로 연결합니다",
+      "deposit_info": "입금 정보",
+      "depositor_name": "입금자명",
+      "deposit_amount": "입금금액",
+      "deposit_bank": "입금은행",
+      "search_label": "주문번호 검색 (입금대기 건만)",
+      "search_placeholder": "주문번호, 회원명, 상품명으로 검색",
+      "cancel": "취소",
+      "match": "매칭하기"
+    },
+    "process_history": {
+      "title": "처리이력",
+      "description": "입금 처리 이력 및 웹훅 로그를 확인합니다",
+      "order_number": "주문번호",
+      "timeline_title": "처리 타임라인",
+      "system_pg_webhook": "시스템(PG웹훅)",
+      "webhook_receive": "웹훅 수신",
+      "match_complete": "매칭완료",
+      "failed": "실패",
+      "toggle_detail_open": "상세 정보 보기",
+      "toggle_detail_close": "상세 정보 닫기",
+      "request_data": "Request Data",
+      "response_data": "Response Data"
+    },
+    "bulk_match": {
+      "title": "일괄 매칭",
+      "description": "선택된 {{count}}건의 입금 내역을 주문과 매칭합니다.",
+      "instruction_1": "• 주문번호를 직접 입력하거나, 주문번호/고객명을 입력하면 자동으로 검색 결과가 표시됩니다.",
+      "instruction_2": "• 검색 결과에서 원하는 주문을 선택하면 자동으로 입력됩니다. (예: ORD20251118-0001)",
+      "columns": {
+        "depositor_name": "입금자명",
+        "amount": "금액",
+        "bank_account": "은행/계좌",
+        "deposit_time": "입금시간",
+        "order_number": "주문번호"
+      },
+      "orderer": "주문자:",
+      "order_amount": "금액:",
+      "amount_mismatch": "금액 불일치",
+      "amount_mismatch_full": "주문 금액과 입금 금액이 일치하지 않습니다",
+      "order_number_placeholder": "주문번호 또는 고객명 입력",
+      "cancel": "취소",
+      "save": "저장"
+    }
+  }
+}

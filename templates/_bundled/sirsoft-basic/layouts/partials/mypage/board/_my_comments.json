@@ -1,0 +1,466 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 내 게시판 활동 - 내가 쓴 댓글 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "필터 영역",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col sm:flex-row gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "comment": "게시판 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "props": {
+                        "value": "{{_global.myCommentsBoard ?? ''}}",
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.board_activities.filter.all_boards"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{boards?.data ?? []}}",
+                                "item_var": "board"
+                            },
+                            "props": {
+                                "value": "{{board.slug}}"
+                            },
+                            "text": "{{board.name}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsBoard": "{{$event.target.value}}",
+                                        "myCommentsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myComments"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "정렬 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "props": {
+                        "value": "{{_global.myCommentsSort ?? 'latest'}}",
+                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "latest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.latest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "oldest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.oldest"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsSort": "{{$event.target.value}}",
+                                        "myCommentsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myComments"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "검색 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 flex gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "placeholder": "$t:mypage.board_activities.search_placeholder_comments",
+                                "value": "{{_global.myCommentsSearch ?? ''}}",
+                                "className": "flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsSearch": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
+                            "text": "$t:common.search",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myCommentsPage": 1
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myComments"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.reset",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myCommentsBoard": "",
+                                                "myCommentsSearch": "",
+                                                "myCommentsSort": "latest",
+                                                "myCommentsPage": 1
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myComments"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "검색 조건 표시 영역 (API 응답의 query 값 기반)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{myComments?.data?.query?.search || myComments?.data?.query?.board_slug}}",
+            "props": {
+                "className": "mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-between"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:mypage.board_activities.search_result"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{myComments?.data?.query?.search}}",
+                            "props": {
+                                "className": "font-medium"
+                            },
+                            "text": "\"{{myComments?.data?.query?.search}}\""
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit)"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "className": "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"
+                    },
+                    "text": "$t:common.reset",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsBoard": "",
+                                        "myCommentsSearch": "",
+                                        "myCommentsSort": "latest",
+                                        "myCommentsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myComments"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "댓글 목록",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "댓글 카드 반복",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{myComments?.data?.data && myComments.data.data.length > 0}}",
+                    "iteration": {
+                        "source": "{{myComments?.data?.data ?? []}}",
+                        "item_var": "comment"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{comment.board_slug}}/{{comment.post_id_val}}"
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "comment": "상단: [게시판명] 원글 제목 + 작성일",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center justify-between gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0 flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "게시판 이름",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0"
+                                                    },
+                                                    "text": "{{comment.board_name}}"
+                                                },
+                                                {
+                                                    "comment": "원글 제목",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-base font-medium text-gray-900 dark:text-white truncate"
+                                                    },
+                                                    "text": "{{comment.post_title}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "댓글 작성일시",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap",
+                                                "title": "{{comment.created_at ?? ''}}"
+                                            },
+                                            "text": "{{comment.created_at_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "댓글 내용 요약 (2줄)",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{comment.content}}",
+                                    "props": {
+                                        "className": "mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2"
+                                    },
+                                    "text": "{{comment.content}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "댓글 없음",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!myComments?.data?.data || myComments.data.data.length === 0}}",
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "comment",
+                                "size": "3x",
+                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.empty_comments"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/boards"
+                                    }
+                                }
+                            ],
+                            "text": "$t:mypage.board_activities.go_boards"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션",
+            "type": "composite",
+            "name": "Pagination",
+            "if": "{{myComments?.data?.last_page > 1}}",
+            "props": {
+                "currentPage": "{{myComments?.data?.current_page ?? 1}}",
+                "totalPages": "{{myComments?.data?.last_page ?? 1}}",
+                "className": "mt-4 flex justify-center"
+            },
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "myCommentsPage": "{{$args[0]}}"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "myComments"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

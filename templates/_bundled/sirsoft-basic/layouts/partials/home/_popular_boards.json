@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "인기 게시판 카드"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "H3",
+      "props": { "className": "text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "flame", "className": "w-5 h-5 text-orange-500" } },
+        { "type": "basic", "name": "Span", "text": "$t:home.popular_boards" }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{popular_boards.data && popular_boards.data.length > 0}}",
+      "props": { "className": "space-y-2 mb-1" },
+      "iteration": { "source": "{{popular_boards.data ?? []}}", "item_var": "board", "index_var": "index" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "w-full text-left flex items-center justify-between py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer" },
+          "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{board.slug}}" } }],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3 flex-1 min-w-0" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300" },
+                  "text": "{{index + 1}}"
+                },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{board.name}}" }
+              ]
+            },
+            { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{board.posts_count}}" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!popular_boards.data || popular_boards.data.length === 0}}",
+      "props": { "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center min-h-[200px]" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "inbox", "className": "w-8 h-8 mx-auto mb-2 opacity-50" } },
+        { "type": "basic", "name": "P", "props": { "className": "text-sm" }, "text": "$t:home.no_boards" }
+      ]
+    }
+  ]
+}

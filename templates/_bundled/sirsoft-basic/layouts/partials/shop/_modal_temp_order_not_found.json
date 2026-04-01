@@ -1,0 +1,78 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "임시 주문 정보 없음 알림 모달"
+    },
+    "id": "tempOrderNotFoundModal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:shop.checkout.temp_order_not_found_title",
+        "size": "small",
+        "showCloseButton": false,
+        "closeOnOverlayClick": false,
+        "closeOnEscape": false
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "text-center py-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "exclamation-circle",
+                        "className": "text-yellow-500 text-4xl mb-4"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:shop.checkout.temp_order_not_found_message"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    },
+                    "text": "$t:common.confirm",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_global.shopBase}}/cart"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,298 @@
+{
+    "id": "benefit_settings_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "H2",
+            "props": {
+                "className": "card-title mb-4"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.benefit_settings"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-5"
+            },
+            "children": [
+                {
+                    "comment": "혜택금액 (Input + Select 같은 줄)",
+                    "id": "field_benefit_amount",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount",
+                        "required": true,
+                        "error": "{{_local.errors?.discount_value?.[0] ?? _local.errors?.discount_type?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "discount_value",
+                                        "className": "input w-40",
+                                        "min": "{{_local.form?.discount_type === 'rate' ? 1 : 0}}",
+                                        "max": "{{_local.form?.discount_type === 'rate' ? 100 : undefined}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "discount_type",
+                                        "className": "input w-24",
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_fixed",
+                                                "value": "fixed"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_rate",
+                                                "value": "rate"
+                                            }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "form.discount_value": null
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "최대할인금액 (% 선택 시만 표시)",
+                    "id": "field_discount_max_amount",
+                    "type": "composite",
+                    "name": "FormField",
+                    "if": "{{_local.form?.discount_type === 'rate'}}",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount",
+                        "error": "{{_local.errors?.discount_max_amount?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.max_prefix"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "discount_max_amount",
+                                        "className": "input w-32",
+                                        "min": 0
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.currency_won_discount"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "최소주문금액",
+                    "id": "field_min_order_amount",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount",
+                        "error": "{{_local.errors?.min_order_amount?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "min_order_amount",
+                                        "className": "input w-40",
+                                        "min": 0
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.min_order_suffix"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "유효기간 타입 RadioGroup",
+                    "id": "field_valid_type",
+                    "type": "composite",
+                    "name": "FormField",
+                    "props": {
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period",
+                        "required": true,
+                        "error": "{{_local.errors?.valid_type?.[0] ?? _local.errors?.valid_from?.[0] ?? _local.errors?.valid_to?.[0] ?? _local.errors?.valid_days?.[0] ?? ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "RadioGroup",
+                                    "props": {
+                                        "name": "valid_type",
+                                        "inline": true,
+                                        "options": [
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_fixed_period",
+                                                "value": "period"
+                                            },
+                                            {
+                                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_days_from_issue",
+                                                "value": "days_from_issue"
+                                            }
+                                        ]
+                                    },
+                                    "responsive": {
+                                        "mobile": {
+                                            "props": {
+                                                "inline": false
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "기간선택 시: 시작일 ~ 종료일",
+                                    "id": "valid_period_range",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.form?.valid_type === 'period'}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "date",
+                                                "name": "valid_from",
+                                                "className": "input w-40"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "date",
+                                                "name": "valid_to",
+                                                "className": "input w-40"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "발급일로부터 선택 시: 일수 입력",
+                                    "id": "valid_period_days",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.form?.valid_type === 'days_from_issue'}}",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.from_issue_date"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "valid_days",
+                                                "className": "input w-24",
+                                                "min": 1
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_days"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

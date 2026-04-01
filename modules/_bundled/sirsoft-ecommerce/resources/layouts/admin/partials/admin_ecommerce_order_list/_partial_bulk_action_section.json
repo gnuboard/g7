@@ -1,0 +1,180 @@
+{
+  "id": "bulk_action_section",
+  "type": "basic",
+  "name": "Div",
+  "comment": "B-001 ~ B-006 일괄변경 영역",
+  "props": {
+    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mt-6 mb-4 flex flex-wrap items-center gap-3"
+  },
+  "children": [
+    {
+      "id": "b_001_selected_count",
+      "type": "basic",
+      "name": "Span",
+      "comment": "B-001",
+      "props": {
+        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.bulk.selected_count|count={{(_local.selectedItems || []).length}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-wrap items-center gap-2"
+      },
+      "children": [
+        {
+          "id": "b_002_order_status_select",
+          "type": "basic",
+          "name": "Select",
+          "comment": "B-002, D-030 ~ D-039",
+          "props": {
+            "name": "bulkOrderStatus",
+            "className": "w-44 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "value": "{{_local.bulkOrderStatus || ''}}",
+            "disabled": "{{orders?.data?.abilities?.can_update !== true}}",
+            "options": [
+              { "value": "", "label": "$t:sirsoft-ecommerce.admin.order.bulk.status_placeholder", "disabled": true },
+              { "value": "pending_payment", "label": "$t:sirsoft-ecommerce.admin.order.status.payment_pending" },
+              { "value": "payment_complete", "label": "$t:sirsoft-ecommerce.admin.order.status.payment_complete" },
+              { "value": "shipping_hold", "label": "$t:sirsoft-ecommerce.admin.order.status.shipping_hold" },
+              { "value": "preparing", "label": "$t:sirsoft-ecommerce.admin.order.status.preparing" },
+              { "value": "shipping_ready", "label": "$t:sirsoft-ecommerce.admin.order.status.shipping_ready" },
+              { "value": "shipping", "label": "$t:sirsoft-ecommerce.admin.order.status.shipping" },
+              { "value": "delivered", "label": "$t:sirsoft-ecommerce.admin.order.status.delivered" },
+              { "value": "cancelled", "label": "$t:sirsoft-ecommerce.admin.order.status.cancelled" },
+              { "value": "confirmed", "label": "$t:sirsoft-ecommerce.admin.order.status.confirmed" }
+            ]
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "bulkOrderStatus": "{{$event.target.value}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.bulkOrderStatus === 'shipping_ready' || _local.bulkOrderStatus === 'shipping' || _local.bulkOrderStatus === 'delivered'}}",
+      "props": {
+        "className": "flex items-center gap-2"
+      },
+      "children": [
+        {
+          "id": "b_003_shipping_label",
+          "type": "basic",
+          "name": "Span",
+          "comment": "B-003",
+          "props": {
+            "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.bulk.shipping_label"
+        },
+        {
+          "id": "b_004_courier_select",
+          "type": "basic",
+          "name": "Select",
+          "comment": "B-004, D-040 ~ D-044",
+          "props": {
+            "name": "bulkCourier",
+            "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "value": "{{_local.bulkCourier || ''}}",
+            "placeholder": "$t:sirsoft-ecommerce.admin.order.bulk.courier_placeholder",
+            "disabled": "{{orders?.data?.abilities?.can_update !== true}}",
+            "options": "{{active_carriers?.data ?? []}}"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "bulkCourier": "{{$event.target.value}}"
+              }
+            }
+          ]
+        },
+        {
+          "id": "b_005_tracking_number_input",
+          "type": "basic",
+          "name": "Input",
+          "comment": "B-005",
+          "props": {
+            "type": "text",
+            "name": "bulkTrackingNumber",
+            "className": "w-40 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+            "value": "{{_local.bulkTrackingNumber}}",
+            "placeholder": "$t:sirsoft-ecommerce.admin.order.bulk.tracking_placeholder",
+            "disabled": "{{orders?.data?.abilities?.can_update !== true}}"
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "_local",
+                "bulkTrackingNumber": "{{$event.target.value}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex-1"
+      }
+    },
+    {
+      "id": "b_006_bulk_apply_button",
+      "type": "basic",
+      "name": "Button",
+      "comment": "B-006",
+      "props": {
+        "type": "button",
+        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50"
+          },
+          "text": "$t:sirsoft-ecommerce.admin.order.bulk.apply_full"
+        }
+      },
+      "text": "$t:sirsoft-ecommerce.admin.order.bulk.apply",
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            {
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "bulkOrderStatus": "{{_local.bulkOrderStatus}}",
+                "bulkCourier": "{{_local.bulkCourier}}",
+                "bulkTrackingNumber": "{{_local.bulkTrackingNumber}}",
+                "bulkSelectedItems": "{{_local.selectedItems}}"
+              }
+            },
+            {
+              "handler": "sirsoft-ecommerce.buildOrderBulkConfirmData"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

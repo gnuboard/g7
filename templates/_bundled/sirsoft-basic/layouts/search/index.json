@@ -1,0 +1,181 @@
+{
+    "version": "1.0.0",
+    "layout_name": "search/index",
+    "permissions": [],
+    "extends": "_user_base",
+    "meta": {
+        "seo": {
+            "enabled": true,
+            "data_sources": [],
+            "page_type": "search",
+            "toggle_setting": "$module_settings:seo.seo_search_result",
+            "vars": {
+                "keyword_name": "$query:q",
+                "commerce_name": "$module_settings:basic_info.shop_name",
+                "site_name": "$core_settings:general.site_name"
+            },
+            "priority": 0.3,
+            "changefreq": "daily",
+            "og": {
+                "type": "website"
+            },
+            "structured_data": {
+                "@type": "SearchResultsPage"
+            }
+        }
+    },
+    "state": {
+        "q": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "searchActiveTab": "all",
+                "searchBoardFilter": "",
+                "searchSortBy": "relevance",
+                "searchPage": 1,
+                "_local": {
+                    "q": "{{query?.q || ''}}"
+                }
+            }
+        }
+    ],
+    "global_state": {
+        "searchActiveTab": "all",
+        "searchBoardFilter": "",
+        "searchSortBy": "relevance",
+        "searchPage": 1
+    },
+    "data_sources": [
+        {
+            "id": "searchResults",
+            "type": "api",
+            "endpoint": "/api/search?q={{query?.q}}&type={{_global.searchActiveTab ?? 'all'}}&board_slug={{_global.searchBoardFilter}}&sort={{_global.searchSortBy ?? 'relevance'}}&page={{_global.searchPage ?? 1}}&per_page={{(_global.searchActiveTab === 'products') ? 12 : 10}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "condition": "{{query?.q}}",
+            "fallback": {
+                "data": {
+                    "keyword": "",
+                    "total": 0,
+                    "results": {
+                        "posts": {
+                            "total": 0,
+                            "items": []
+                        },
+                        "products": {
+                            "total": 0,
+                            "items": []
+                        },
+                        "pages": {
+                            "total": 0,
+                            "items": []
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "layout",
+                "name": "Container",
+                "props": {
+                    "className": "py-4"
+                },
+                "responsive": {
+                    "desktop": {
+                        "props": {
+                            "className": "py-8"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "comment": "페이지 헤더",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "search",
+                                            "size": "lg"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:search.title"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/search/_search_input.json"
+                    },
+                    {
+                        "partial": "partials/search/_search_tabs.json"
+                    },
+                    {
+                        "partial": "partials/search/_search_filters.json"
+                    },
+                    {
+                        "partial": "partials/search/_search_states.json"
+                    },
+                    {
+                        "partial": "partials/search/_search_results.json"
+                    },
+                    {
+                        "comment": "페이지네이션",
+                        "type": "composite",
+                        "name": "Pagination",
+                        "if": "{{query?.q && (_global.searchActiveTab ?? 'all') !== 'all' && searchResults?.data?.last_page > 1}}",
+                        "props": {
+                            "currentPage": "{{searchResults.data.current_page}}",
+                            "totalPages": "{{searchResults.data.last_page}}",
+                            "className": "mt-6 flex justify-center"
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "searchPage": "{{$args[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "searchResults"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

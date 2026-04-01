@@ -1,0 +1,1112 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_personal_payment_create",
+    "permissions": [],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.personal_payment_create.title",
+        "description": "$t:sirsoft-ecommerce.admin.personal_payment_create.description"
+    },
+    "state": {
+        "buyerType": "guest",
+        "showMemberSearchModal": false,
+        "showOrderSearchModal": false,
+        "form": {
+            "buyer_name": "",
+            "buyer_phone": "",
+            "buyer_email": "",
+            "product_name": "",
+            "amount": "",
+            "expired_at": "",
+            "order_id": null,
+            "memo": ""
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "personal_payment_create_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between gap-4 mb-6"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "flex flex-col gap-4 mb-6"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title mb-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-secondary text-sm"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 flex-shrink-0"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.cancel",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/personal-payment"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.save"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "buyer_info_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "card mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "buyer_info_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center justify-between mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.required_notice"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "buyer_type_selection",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.buyer_type"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                },
+                                                "text": "*"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-6 mt-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "flex items-center gap-2 cursor-pointer"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "radio",
+                                                            "name": "buyerType",
+                                                            "value": "member",
+                                                            "className": "radio"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.member_select"
+                                                    }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "_local",
+                                                                    "buyerType": "member"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "modal_member_search"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "flex items-center gap-2 cursor-pointer"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "radio",
+                                                            "name": "buyerType",
+                                                            "value": "guest",
+                                                            "className": "radio",
+                                                            "checked": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-secondary"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.guest_input"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "selected_member_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label mb-2"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.selected_member"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center justify-between"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "user",
+                                                                            "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex items-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "font-medium text-heading"
+                                                                                },
+                                                                                "text": "정수진"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "text-secondary text-sm"
+                                                                                },
+                                                                                "text": "user005"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-secondary text-sm"
+                                                                        },
+                                                                        "text": "jung@example.com"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-secondary text-sm"
+                                                                        },
+                                                                        "text": "010-5678-9012"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-icon",
+                                                                    "title": "제거"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "x",
+                                                                            "className": "w-4 h-4"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-icon",
+                                                                    "title": "새로고침"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "refresh-cw",
+                                                                            "className": "w-4 h-4"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "field_buyer_name",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                },
+                                                "text": "*"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "name": "buyer_name",
+                                            "className": "input w-full md:w-80",
+                                            "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name_placeholder"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "buyer_contact_grid",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_buyer_phone",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "form-group"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "buyer_phone",
+                                                    "className": "input w-full",
+                                                    "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone_placeholder"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone_hint"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_buyer_email",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "form-group"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.email"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "email",
+                                                    "name": "buyer_email",
+                                                    "className": "input w-full",
+                                                    "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.email_placeholder"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "payment_detail_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "card"
+                        },
+                        "children": [
+                            {
+                                "id": "payment_detail_header",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "card-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "field_product_name",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.product_name"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                },
+                                                "text": "*"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "name": "product_name",
+                                            "className": "input w-full",
+                                            "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.product_name_placeholder"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "amount_expiry_grid",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "field_amount",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "form-group"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "relative"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "₩"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "amount",
+                                                            "className": "input w-full pl-8",
+                                                            "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_placeholder"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_hint"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "field_expired_at",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "form-group"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.expired_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                        },
+                                                        "text": "*"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "relative"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "calendar",
+                                                                    "className": "w-4 h-4"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "text",
+                                                            "name": "expired_at",
+                                                            "className": "input w-full pl-10",
+                                                            "placeholder": "2025. 11. 5."
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.expired_at_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "order_link_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 mt-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "search",
+                                                            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "font-medium text-heading"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "text-sm text-secondary"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "modal_order_search"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "linked_order_section",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order_optional"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center justify-between"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "file-text",
+                                                                            "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex items-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "font-medium text-heading"
+                                                                                },
+                                                                                "text": "ORD20251028-567E"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "badge badge-yellow"
+                                                                                },
+                                                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-secondary text-sm"
+                                                                        },
+                                                                        "text": "· 정수진"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-secondary text-sm"
+                                                                        },
+                                                                        "text": "스탠다드 멤버십 6개월"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "text-secondary text-sm"
+                                                                        },
+                                                                        "text": "₩60,000"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-icon",
+                                                                    "title": "제거"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "x",
+                                                                            "className": "w-4 h-4"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-icon",
+                                                                    "title": "새로고침"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "refresh-cw",
+                                                                            "className": "w-4 h-4"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "field_memo",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "form-group"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "form-label"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_optional"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Textarea",
+                                        "props": {
+                                            "name": "memo",
+                                            "className": "textarea w-full",
+                                            "rows": 4,
+                                            "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_placeholder"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_ecommerce_personal_payment_create/_modal_member_search.json"
+        },
+        {
+            "partial": "partials/admin_ecommerce_personal_payment_create/_modal_order_search.json"
+        }
+    ]
+}

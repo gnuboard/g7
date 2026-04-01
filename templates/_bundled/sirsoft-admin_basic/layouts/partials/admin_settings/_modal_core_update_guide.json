@@ -1,0 +1,84 @@
+{
+    "meta": { "is_partial": true, "description": "코어 업데이트 터미널 안내 모달" },
+    "id": "core_update_guide_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.info.update_guide_title",
+        "size": "md"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "space-y-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex gap-2" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" } },
+                                { "type": "basic", "name": "P", "props": { "className": "text-sm text-yellow-700 dark:text-yellow-300" }, "text": "$t:admin.settings.info.update_guide_warning" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                    "text": "$t:admin.settings.info.update_guide_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "bg-gray-900 dark:bg-gray-950 rounded-lg p-4" },
+                    "children": [
+                        { "type": "basic", "name": "P", "props": { "className": "text-sm font-mono text-green-400" }, "text": "$ php artisan core:update" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                    "text": "$t:admin.settings.info.update_guide_note"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mt-2" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+                            "text": "$t:admin.settings.info.manual_update_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-3" },
+                            "text": "$t:admin.settings.info.manual_update_desc"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "bg-gray-900 dark:bg-gray-950 rounded-lg p-4 space-y-1" },
+                            "children": [
+                                { "type": "basic", "name": "P", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "$t:admin.settings.info.manual_update_step1" },
+                                { "type": "basic", "name": "P", "props": { "className": "text-xs font-mono text-gray-400" }, "text": "$t:admin.settings.info.manual_update_step2" },
+                                { "type": "basic", "name": "P", "props": { "className": "text-sm font-mono text-green-400" }, "text": "$ php artisan core:update --source=/path/to/extracted" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

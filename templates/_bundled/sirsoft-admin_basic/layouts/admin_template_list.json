@@ -1,0 +1,402 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_template_list",
+    "permissions": [
+        "core.templates.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.templates.page_title",
+        "description": "$t:admin.templates.page_description"
+    },
+    "state": {
+        "searchQuery": ""
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "templates",
+            "type": "api",
+            "endpoint": "/api/admin/templates",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "params": {
+                "type": "{{route.type}}",
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page || 12}}",
+                "search": "{{query.search}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 12,
+                    "total": 0
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "template_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.templates.title",
+                            "description": "$t:admin.templates.description"
+                        },
+                        "children": [
+                            {
+                                "id": "check_updates_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}",
+                                    "type": "button"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isCheckingTemplateUpdates": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/templates/check-updates",
+                                                "params": {
+                                                    "method": "POST"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isCheckingTemplateUpdates": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "templates"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.data?.update_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.update_count : '$t:admin.templates.check_updates_no_updates'}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isCheckingTemplateUpdates": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{$error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.isCheckingTemplateUpdates}}",
+                                        "props": {
+                                            "name": "refresh",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.isCheckingTemplateUpdates}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "className": "animate-spin"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.actions.check_updates"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "manual_install_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{templates?.data?.abilities?.can_install !== true}}"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "template_manual_install_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "upload",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.manual_install"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "marketplace_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{false}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                },
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "hidden"
+                                        }
+                                    }
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "globe",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.marketplace"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "mobile_action_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "hidden"
+                        },
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "flex items-center gap-2 -mt-4 mb-4"
+                                }
+                            }
+                        },
+                        "children": [
+                            {
+                                "id": "mobile_manual_install_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{templates?.data?.abilities?.can_install !== true}}"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "template_manual_install_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "upload",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.manual_install"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "mobile_marketplace_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{false}}",
+                                "props": {
+                                    "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "globe",
+                                            "className": "w-5 h-5"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.marketplace"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "tab_navigation",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "props": {
+                            "tabs": [
+                                {
+                                    "id": "user",
+                                    "label": "$t:admin.templates.tabs.user"
+                                },
+                                {
+                                    "id": "admin",
+                                    "label": "$t:admin.templates.tabs.admin"
+                                }
+                            ],
+                            "activeTabId": "{{_global.activeTemplateTab || route.type || 'user'}}",
+                            "variant": "default",
+                            "className": "mb-4"
+                        },
+                        "actions": [
+                            {
+                                "event": "onTabChange",
+                                "type": "change",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "activeTemplateTab": "{{$args[0]}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/templates/{{$args[0]}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_template_list/_tab_admin.json"
+                    },
+                    {
+                        "partial": "partials/admin_template_list/_tab_user.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_template_list/_modal_detail.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_install.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_uninstall.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_activate.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_deactivate.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_manual_install.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_refresh_layouts.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_force_activate.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_update.json"
+        },
+        {
+            "partial": "partials/admin_template_list/_modal_extension_license.json"
+        }
+    ]
+}

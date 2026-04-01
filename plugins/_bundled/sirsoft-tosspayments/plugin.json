@@ -1,0 +1,34 @@
+{
+    "identifier": "sirsoft-tosspayments",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "토스페이먼츠",
+        "en": "TossPayments"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "토스페이먼츠 결제 게이트웨이 (통합결제창 연동)",
+        "en": "TossPayments gateway (integrated payment window)"
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {
+            "sirsoft-ecommerce": ">=0.1.1"
+        },
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-tosspayments",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-tosspayments/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}
