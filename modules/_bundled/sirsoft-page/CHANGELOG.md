@@ -4,6 +4,19 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.2] - 2026-04-20
+
+### Changed
+
+- 코어 최소 요구 버전을 7.0.0-beta.2 로 상향
+- 페이지 편집 다국어 탭을 동적 생성으로 전환
+- 페이지 에디터를 확장 포인트(extension_point)로 변환
+
+### Fixed
+
+- 사용자 화면 버전 배지가 잘못된 형식으로 표시되던 문제 수정
+- 존재하지 않는 컬럼을 참조하던 draft/archived 배지 코드 제거
+
 ## [1.0.0-beta.1] - 2026-04-01
 
 ### Changed

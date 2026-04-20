@@ -97,7 +97,7 @@ class ClearsTemplateCachesTest extends TestCase
      */
     public function test_get_extension_cache_version_returns_zero_when_not_set(): void
     {
-        Cache::forget('extension_cache_version');
+        Cache::forget('g7:core:ext.cache_version');
 
         $version = ClearsTemplateCaches::getExtensionCacheVersion();
 
@@ -110,7 +110,7 @@ class ClearsTemplateCachesTest extends TestCase
     public function test_get_extension_cache_version_returns_cached_value(): void
     {
         $expectedVersion = 1735000000;
-        Cache::put('extension_cache_version', $expectedVersion);
+        Cache::put('g7:core:ext.cache_version', $expectedVersion);
 
         $version = ClearsTemplateCaches::getExtensionCacheVersion();
 
@@ -118,11 +118,17 @@ class ClearsTemplateCachesTest extends TestCase
     }
 
     /**
-     * 템플릿 언어 캐시 무효화 테스트
+     * clearAllTemplateLanguageCaches() 는 버전 기반 설계로 리팩토링되어 레거시 no-op.
+     *
+     * 2026-03-31 커밋 c86c6d3e5 에서 실제 캐시 삭제 로직 제거. 대신
+     * incrementExtensionCacheVersion() 으로 버전 카운터가 증가하고,
+     * 프론트엔드는 새 버전의 캐시 키로 API를 재요청하여 실질적 무효화가 이루어짐.
+     * 이전 버전 캐시는 TTL 로 자연 만료.
+     *
+     * 본 테스트는 현재 동작(호출 호환성 유지, 버전 카운터 증가)을 검증한다.
      */
-    public function test_clear_all_template_language_caches(): void
+    public function test_clear_all_template_language_caches_is_no_op_but_triggers_version_bump(): void
     {
-        // 활성 템플릿 생성 - 고유 identifier 사용하여 트랜잭션 락 충돌 방지
         $identifier = 'test-template-'.uniqid();
         $template = Template::create([
             'identifier' => $identifier,
@@ -134,30 +140,24 @@ class ClearsTemplateCachesTest extends TestCase
             'description' => ['ko' => '테스트용', 'en' => 'For testing'],
         ]);
 
-        // 언어 캐시 설정
         Cache::put("template.language.{$template->identifier}.ko", ['key' => 'value']);
-        Cache::put("template.language.{$template->identifier}.en", ['key' => 'value']);
-
-        // 캐시 존재 확인
         $this->assertTrue(Cache::has("template.language.{$template->identifier}.ko"));
-        $this->assertTrue(Cache::has("template.language.{$template->identifier}.en"));
 
-        // 캐시 무효화
+        // clearAllTemplateLanguageCaches 자체는 no-op (호출 호환성 유지용)
+        // 예외 없이 호출 가능해야 함
         $this->traitUser->callClearAllTemplateLanguageCaches();
 
-        // 캐시가 삭제됨
-        $this->assertFalse(Cache::has("template.language.{$template->identifier}.ko"));
-        $this->assertFalse(Cache::has("template.language.{$template->identifier}.en"));
+        // 기존 캐시는 그대로 유지 — 버전 기반 무효화는 프론트엔드가 새 버전 키로 요청하여 처리
+        $this->assertTrue(
+            Cache::has("template.language.{$template->identifier}.ko"),
+            'clearAllTemplateLanguageCaches 는 레거시 캐시를 직접 삭제하지 않아야 함'
+        );
     }
 
-    /**
-     * 템플릿 routes 캐시 무효화 테스트
-     */
-    public function test_clear_all_template_routes_caches(): void
+    public function test_clear_all_template_routes_caches_is_no_op(): void
     {
-        // 활성 템플릿 생성 - 고유 identifier 사용하여 트랜잭션 락 충돌 방지
         $identifier = 'test-template-'.uniqid();
-        $template = Template::create([
+        Template::create([
             'identifier' => $identifier,
             'vendor' => 'test',
             'name' => ['ko' => '테스트', 'en' => 'Test'],
@@ -167,26 +167,30 @@ class ClearsTemplateCachesTest extends TestCase
             'description' => ['ko' => '테스트용', 'en' => 'For testing'],
         ]);
 
-        // routes 캐시 설정
-        Cache::put("template.routes.{$template->identifier}", ['routes' => []]);
+        Cache::put("template.routes.{$identifier}", ['routes' => []]);
+        $this->assertTrue(Cache::has("template.routes.{$identifier}"));
 
-        // 캐시 존재 확인
-        $this->assertTrue(Cache::has("template.routes.{$template->identifier}"));
-
-        // 캐시 무효화
+        // no-op 호출 — 예외 없이 성공해야 함
         $this->traitUser->callClearAllTemplateRoutesCaches();
 
-        // 캐시가 삭제됨
-        $this->assertFalse(Cache::has("template.routes.{$template->identifier}"));
+        // 레거시 캐시는 유지됨
+        $this->assertTrue(
+            Cache::has("template.routes.{$identifier}"),
+            'clearAllTemplateRoutesCaches 는 레거시 캐시를 직접 삭제하지 않아야 함'
+        );
     }
 
     /**
-     * 비활성 템플릿의 캐시는 무효화하지 않음
+     * incrementExtensionCacheVersion 호출 후 getExtensionCacheVersion 이 증가된 타임스탬프 반환.
+     *
+     * 활성/비활성 템플릿 구분은 더 이상 trait 수준에서 다루지 않으며
+     * (레거시 테스트가 기대한 "활성만 삭제" 로직은 제거되었음),
+     * 실제 무효화는 모든 프론트엔드 요청이 새 버전 파라미터를 사용하게 함으로써 이루어진다.
      */
-    public function test_clear_caches_only_affects_active_templates(): void
+    public function test_increment_extension_cache_version_is_actual_invalidation_mechanism(): void
     {
-        // 활성 템플릿
-        $activeTemplate = Template::create([
+        // 활성/비활성 템플릿 생성
+        Template::create([
             'identifier' => 'active-template',
             'vendor' => 'test',
             'name' => ['ko' => '활성', 'en' => 'Active'],
@@ -195,9 +199,7 @@ class ClearsTemplateCachesTest extends TestCase
             'status' => ExtensionStatus::Active->value,
             'description' => ['ko' => '테스트용', 'en' => 'For testing'],
         ]);
-
-        // 비활성 템플릿
-        $inactiveTemplate = Template::create([
+        Template::create([
             'identifier' => 'inactive-template',
             'vendor' => 'test',
             'name' => ['ko' => '비활성', 'en' => 'Inactive'],
@@ -207,16 +209,15 @@ class ClearsTemplateCachesTest extends TestCase
             'description' => ['ko' => '테스트용', 'en' => 'For testing'],
         ]);
 
-        // 두 템플릿의 언어 캐시 설정
-        Cache::put("template.language.{$activeTemplate->identifier}.ko", ['key' => 'active']);
-        Cache::put("template.language.{$inactiveTemplate->identifier}.ko", ['key' => 'inactive']);
+        // 초기 버전 0
+        $this->assertEquals(0, \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion());
 
-        // 캐시 무효화
-        $this->traitUser->callClearAllTemplateLanguageCaches();
+        // 버전 증가
+        $this->traitUser->callIncrementExtensionCacheVersion();
 
-        // 활성 템플릿 캐시만 삭제됨
-        $this->assertFalse(Cache::has("template.language.{$activeTemplate->identifier}.ko"));
-        // 비활성 템플릿 캐시는 유지됨
-        $this->assertTrue(Cache::has("template.language.{$inactiveTemplate->identifier}.ko"));
+        // 타임스탬프로 설정됨 (양수)
+        $newVersion = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
+        $this->assertGreaterThan(0, $newVersion);
+        $this->assertLessThanOrEqual(time(), $newVersion);
     }
 }

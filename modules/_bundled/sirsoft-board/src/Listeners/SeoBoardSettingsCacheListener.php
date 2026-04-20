@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Board\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -65,7 +65,7 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
             $cache->invalidateByLayout('board/boards');
 
             // Sitemap 캐시 무효화
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             Log::info('[SEO] Board module settings changed — board cache cleared');
         } catch (\Throwable $e) {

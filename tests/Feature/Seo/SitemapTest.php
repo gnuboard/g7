@@ -35,7 +35,7 @@ class SitemapTest extends TestCase
 
         // 캐시에 XML 미리 저장하여 Generator 호출 방지
         $sampleXml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
-        Cache::put('seo:sitemap', $sampleXml, 86400);
+        Cache::put('g7:core:seo.sitemap', $sampleXml, 86400);
 
         $response = $this->get('/sitemap.xml');
 
@@ -67,7 +67,7 @@ class SitemapTest extends TestCase
             .'<url><loc>https://example.com/cached</loc></url>'
             .'</urlset>';
 
-        Cache::put('seo:sitemap', $cachedXml, 86400);
+        Cache::put('g7:core:seo.sitemap', $cachedXml, 86400);
 
         $response = $this->get('/sitemap.xml');
 
@@ -86,7 +86,7 @@ class SitemapTest extends TestCase
         Config::set('g7_settings.core.seo.sitemap_cache_ttl', 3600);
 
         // 캐시 비우기
-        Cache::forget('seo:sitemap');
+        Cache::forget('g7:core:seo.sitemap');
 
         $generatedXml = '<?xml version="1.0" encoding="UTF-8"?>'
             .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -109,7 +109,7 @@ class SitemapTest extends TestCase
         $this->assertSame($generatedXml, $response->getContent());
 
         // 캐시에 저장되었는지 확인
-        $this->assertSame($generatedXml, Cache::get('seo:sitemap'));
+        $this->assertSame($generatedXml, Cache::get('g7:core:seo.sitemap'));
     }
 
     /**
@@ -135,7 +135,7 @@ class SitemapTest extends TestCase
         Config::set('g7_settings.core.seo.sitemap_enabled', true);
 
         $sampleXml = '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
-        Cache::put('seo:sitemap', $sampleXml, 86400);
+        Cache::put('g7:core:seo.sitemap', $sampleXml, 86400);
 
         $response = $this->get('/sitemap.xml');
 
@@ -156,7 +156,7 @@ class SitemapTest extends TestCase
             .'  </url>'."\n"
             .'</urlset>';
 
-        Cache::put('seo:sitemap', $validXml, 86400);
+        Cache::put('g7:core:seo.sitemap', $validXml, 86400);
 
         $response = $this->get('/sitemap.xml');
 

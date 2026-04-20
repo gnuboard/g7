@@ -72,6 +72,20 @@
                 "className": "{{(_isolated.scrollIdx + 4) >= (newProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
                 "disabled": "{{(_isolated.scrollIdx + 4) >= (newProducts.data.length)}}"
               },
+              "responsive": {
+                "0-639": {
+                  "props": {
+                    "className": "{{(_isolated.scrollIdx + 2) >= (newProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
+                    "disabled": "{{(_isolated.scrollIdx + 2) >= (newProducts.data.length)}}"
+                  }
+                },
+                "640-1023": {
+                  "props": {
+                    "className": "{{(_isolated.scrollIdx + 3) >= (newProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}",
+                    "disabled": "{{(_isolated.scrollIdx + 3) >= (newProducts.data.length)}}"
+                  }
+                }
+              },
               "actions": [
                 {
                   "type": "click",
@@ -106,15 +120,14 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": { "className": "flex gap-4 overflow-x-hidden" },
+      "props": { "className": "grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden" },
       "children": [
         {
           "type": "basic",
           "name": "Div",
           "iteration": { "source": "{{newProducts.data ?? []}}", "item_var": "product", "index_var": "idx" },
           "props": {
-            "id": "new-product-{{idx}}",
-            "className": "flex-none w-[calc(25%-12px)]"
+            "id": "new-product-{{idx}}"
           },
           "children": [
             { "type": "composite", "name": "ProductCard", "props": { "product": "{{product}}", "shopBase": "{{_global.shopBase ?? '/shop'}}" } }

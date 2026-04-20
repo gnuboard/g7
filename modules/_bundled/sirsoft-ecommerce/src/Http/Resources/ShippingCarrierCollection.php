@@ -2,20 +2,18 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
-use App\Http\Resources\Traits\HasRowNumber;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * 배송사 컬렉션 리소스
  *
  * 배송사 목록을 반환합니다.
  */
-class ShippingCarrierCollection extends ResourceCollection
+class ShippingCarrierCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
-    use HasRowNumber;
 
     /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.

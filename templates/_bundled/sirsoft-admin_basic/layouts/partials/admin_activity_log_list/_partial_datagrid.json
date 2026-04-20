@@ -362,7 +362,9 @@
                     {
                         "type": "basic",
                         "name": "Span",
-                        "props": { "className": "text-gray-500 dark:text-gray-400" },
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                        },
                         "text": "-",
                         "if": "{{!row.user}}"
                     },
@@ -405,18 +407,24 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "min-w-0 flex-1" },
+                                        "props": {
+                                            "className": "min-w-0 flex-1"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
-                                                "props": { "className": "font-medium text-gray-900 dark:text-gray-100 truncate block" },
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
+                                                },
                                                 "text": "{{row.user.name}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
-                                                "props": { "className": "text-xs text-gray-500 dark:text-gray-400 truncate block" },
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                },
                                                 "text": "({{row.user.email}})",
                                                 "if": "{{!!row.user.email}}"
                                             }
@@ -433,7 +441,9 @@
                                 "cases": {
                                     "view_member": {
                                         "handler": "openWindow",
-                                        "params": { "path": "/admin/users/{{row.user.uuid}}" }
+                                        "params": {
+                                            "path": "/admin/users/{{row.user.uuid}}"
+                                        }
                                     },
                                     "search_by_actor": {
                                         "handler": "sequence",
@@ -454,7 +464,8 @@
                                                     "query": {
                                                         "created_by": "{{row.user.uuid}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "activity_log_datagrid__body"
                                                 }
                                             }
                                         ]
@@ -508,7 +519,8 @@
                 "mergeQuery": true,
                 "query": {
                     "page": "{{$args[0]}}"
-                }
+                },
+                "transition_overlay_target": "activity_log_datagrid__body"
             }
         },
         {

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Models\Concerns\HasUserOverrides;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,9 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * 배송사 모델
  *
  * 배송사 마스터 데이터를 관리합니다.
+ *
+ * ShippingCarrierSeeder 는 GenericEntitySyncHelper 기반으로 동작하므로,
+ * 사용자가 관리자 UI 에서 수정한 필드는 `user_overrides` 에 기록되어
+ * 재설치/재시드 시 보존됩니다.
  */
 class ShippingCarrier extends Model
 {
+    use HasUserOverrides;
+
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'code' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.code', 'type' => 'text'],
@@ -19,6 +26,15 @@ class ShippingCarrier extends Model
         'tracking_url' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tracking_url', 'type' => 'text'],
         'is_active' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.is_active', 'type' => 'boolean'],
         'sort_order' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sort_order', 'type' => 'number'],
+    ];
+
+    /** @var list<string> 사용자 수정 추적 필드 (시더 재실행 시 보존 대상) */
+    protected array $trackableFields = [
+        'name',
+        'type',
+        'tracking_url',
+        'is_active',
+        'sort_order',
     ];
 
     protected $table = 'ecommerce_shipping_carriers';
@@ -30,6 +46,7 @@ class ShippingCarrier extends Model
         'tracking_url',
         'is_active',
         'sort_order',
+        'user_overrides',
         'created_by',
         'updated_by',
     ];
@@ -38,6 +55,7 @@ class ShippingCarrier extends Model
         'name' => 'array',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'user_overrides' => 'array',
         'created_by' => 'integer',
         'updated_by' => 'integer',
     ];

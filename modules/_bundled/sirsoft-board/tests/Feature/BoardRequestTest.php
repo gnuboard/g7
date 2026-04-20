@@ -275,52 +275,6 @@ class BoardRequestTest extends ModuleTestCase
         $this->assertFalse($validator->passes(), "max_comment_depth above max should fail");
     }
 
-    /**
-     * notify_author_channels / notify_admin_on_post_channels 검증 테스트 (rules만 독립 검증)
-     */
-    public function test_store_request_notification_channels_validation(): void
-    {
-        $request = new StoreBoardRequest();
-        $rules = $request->rules();
-
-        // notify_author_channels 검증
-        $authorRules = $rules['notify_author_channels'] ?? [];
-        $authorItemRules = $rules['notify_author_channels.*'] ?? [];
-
-        $validator = Validator::make(
-            ['notify_author_channels' => ['mail', 'database']],
-            ['notify_author_channels' => $authorRules, 'notify_author_channels.*' => $authorItemRules]
-        );
-        $this->assertTrue($validator->passes(), "Valid notify_author_channels should pass");
-
-        $validator = Validator::make(
-            ['notify_author_channels' => []],
-            ['notify_author_channels' => $authorRules, 'notify_author_channels.*' => $authorItemRules]
-        );
-        $this->assertTrue($validator->passes(), "Empty notify_author_channels should pass");
-
-        $validator = Validator::make(
-            ['notify_author_channels' => null],
-            ['notify_author_channels' => $authorRules, 'notify_author_channels.*' => $authorItemRules]
-        );
-        $this->assertTrue($validator->passes(), "Null notify_author_channels should pass");
-
-        $validator = Validator::make(
-            ['notify_author_channels' => [123]],
-            ['notify_author_channels' => $authorRules, 'notify_author_channels.*' => $authorItemRules]
-        );
-        $this->assertFalse($validator->passes(), "Non-string items should fail");
-
-        $validator = Validator::make(
-            ['notify_author_channels' => [str_repeat('a', 51)]],
-            ['notify_author_channels' => $authorRules, 'notify_author_channels.*' => $authorItemRules]
-        );
-        $this->assertFalse($validator->passes(), "Channel name exceeding 50 chars should fail");
-
-        // notify_admin_on_post_channels도 동일 규칙 존재 확인
-        $adminRules = $rules['notify_admin_on_post_channels'] ?? [];
-        $this->assertNotEmpty($adminRules, "notify_admin_on_post_channels rules should exist");
-    }
 
     // ==========================================
     // UpdateBoardRequest 테스트
@@ -461,30 +415,6 @@ class BoardRequestTest extends ModuleTestCase
         // 범위 초과
         $validator = Validator::make(['max_comment_depth' => $max + 1], $request->rules());
         $this->assertFalse($validator->passes());
-    }
-
-    /**
-     * UpdateBoardRequest - notify_author_channels / notify_admin_on_post_channels 부분 업데이트 검증 테스트
-     */
-    public function test_update_request_notification_channels_validation(): void
-    {
-        $request = $this->makeUpdateRequest();
-
-        // notify_author_channels 유효한 채널 배열
-        $validator = Validator::make(['notify_author_channels' => ['mail']], $request->rules());
-        $this->assertTrue($validator->passes());
-
-        // 빈 배열도 허용
-        $validator = Validator::make(['notify_author_channels' => []], $request->rules());
-        $this->assertTrue($validator->passes());
-
-        // 50자 초과 항목은 실패
-        $validator = Validator::make(['notify_author_channels' => [str_repeat('a', 51)]], $request->rules());
-        $this->assertFalse($validator->passes());
-
-        // notify_admin_on_post_channels도 동일 검증
-        $validator = Validator::make(['notify_admin_on_post_channels' => ['database']], $request->rules());
-        $this->assertTrue($validator->passes());
     }
 
     protected function tearDown(): void

@@ -26,6 +26,7 @@ import tabReportPolicy from '../../../layouts/admin/partials/admin_board_setting
 import tabSpamSecurity from '../../../layouts/admin/partials/admin_board_settings/_tab_spam_security.json';
 import bulkApplyModal from '../../../layouts/admin/partials/admin_board_settings/_bulk_apply_modal.json';
 import tabGeneral from '../../../layouts/admin/partials/admin_board_settings/_tab_general.json';
+import tabSeo from '../../../layouts/admin/partials/admin_board_settings/_tab_seo.json';
 
 /**
  * JSON 트리에서 특정 ID를 가진 노드를 재귀적으로 찾습니다.
@@ -145,7 +146,7 @@ function findFormFields(node: any): string[] {
     const names: string[] = [];
     if (!node) return names;
 
-    if ((node.name === 'Input' || node.name === 'Select' || node.name === 'TagInput' || node.name === 'Toggle' || node.name === 'RadioGroup') && node.props?.name) {
+    if ((node.name === 'Input' || node.name === 'Select' || node.name === 'TagInput' || node.name === 'Toggle' || node.name === 'RadioGroup' || node.name === 'Textarea') && node.props?.name) {
         names.push(node.props.name);
     }
 
@@ -387,7 +388,6 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(partialPaths.some((p: string) => p.includes('_tab_general.json'))).toBe(true);
         expect(partialPaths.some((p: string) => p.includes('_tab_report_policy.json'))).toBe(true);
         expect(partialPaths.some((p: string) => p.includes('_tab_spam_security.json'))).toBe(true);
-        expect(partialPaths.some((p: string) => p.includes('_tab_mail_templates.json'))).toBe(true);
 
         // 게시판설정 8개 하위 탭 partial
         expect(partialPaths.some((p: string) => p.includes('_tab_board_settings_basic.json'))).toBe(true);
@@ -666,25 +666,6 @@ describe('_tab_board_settings_notification.json - 알림 하위 탭', () => {
         const fields = findFormFields(tabBoardSettingsNotification);
         expect(fields).toContain('basic_defaults.notify_author');
         expect(fields).toContain('basic_defaults.notify_admin_on_post');
-        expect(fields).toContain('basic_defaults.notify_author_channels');
-        expect(fields).toContain('basic_defaults.notify_admin_on_post_channels');
-    });
-
-    it('알림 채널 TagInput이 항상 표시된다 (if 조건 없음)', () => {
-        const authorChannels = findById(tabBoardSettingsNotification, 'field_notify_author_channels');
-        expect(authorChannels).toBeDefined();
-        expect(authorChannels.if).toBeUndefined();
-
-        const adminChannels = findById(tabBoardSettingsNotification, 'field_notify_admin_channels');
-        expect(adminChannels).toBeDefined();
-        expect(adminChannels.if).toBeUndefined();
-    });
-
-    it('채널 TagInput이 notification_channels 데이터소스를 사용한다', () => {
-        const authorTagInputs = findByName(tabBoardSettingsNotification, 'TagInput');
-        for (const tagInput of authorTagInputs) {
-            expect(tagInput.props.options).toContain('notification_channels');
-        }
     });
 });
 
@@ -1217,5 +1198,182 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         // general 탭에서 display 카테고리 전송
         expect(body).toContain('general');
         expect(body).toContain('display');
+    });
+});
+
+// =============================================
+// N. SEO 탭 (_tab_seo.json)
+// =============================================
+describe('_tab_seo.json - SEO 설정 탭', () => {
+    it('Partial 메타데이터가 올바르다', () => {
+        expect(tabSeo.meta.is_partial).toBe(true);
+        expect(tabSeo.if).toContain("'seo'");
+        expect(tabSeo.id).toBe('tab_content_seo');
+    });
+
+    it('탭 가시성 조건이 올바르다', () => {
+        // activeBoardSettingsTab 또는 query.tab이 'seo'일 때만 표시
+        expect(tabSeo.if).toContain('activeBoardSettingsTab');
+        expect(tabSeo.if).toContain('query.tab');
+        expect(tabSeo.if).toContain("'general'");
+    });
+
+    it('메타 설정 카드가 존재한다', () => {
+        const metaCard = findById(tabSeo, 'meta_settings_card');
+        expect(metaCard).toBeDefined();
+        expect(metaCard.name).toBe('Div');
+    });
+
+    it('아코디언 3개가 올바르게 정의되어 있다', () => {
+        const accordions = [
+            'accordion_boards_page',
+            'accordion_board_page',
+            'accordion_post_page',
+        ];
+        for (const id of accordions) {
+            const node = findById(tabSeo, id);
+            expect(node, `${id} 아코디언이 없다`).toBeDefined();
+            expect(node.props.className).toContain('card-accordion');
+        }
+    });
+
+    it('메타 제목/설명 입력 필드 6개가 올바른 name을 가진다', () => {
+        const fields = findFormFields(tabSeo);
+        const expectedNames = [
+            'seo.meta_boards_title',
+            'seo.meta_boards_description',
+            'seo.meta_board_title',
+            'seo.meta_board_description',
+            'seo.meta_post_title',
+            'seo.meta_post_description',
+        ];
+        for (const name of expectedNames) {
+            expect(fields, `폼 필드 '${name}'이 없다`).toContain(name);
+        }
+    });
+
+    it('SEO 제공 페이지 체크박스 3개가 올바른 name을 가진다', () => {
+        const fields = findFormFields(tabSeo);
+        const checkboxNames = ['seo.seo_boards', 'seo.seo_board', 'seo.seo_post_detail'];
+        for (const name of checkboxNames) {
+            expect(fields, `체크박스 '${name}'이 없다`).toContain(name);
+        }
+    });
+
+    it('캐시 초기화 버튼이 존재하고 type="button"이다', () => {
+        const buttons = findByName(tabSeo, 'Button');
+        const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
+        expect(cacheBtn).toBeDefined();
+        // 로딩 중 비활성화
+        expect(cacheBtn.props.disabled).toContain('clearingCache');
+    });
+
+    it('캐시 초기화 액션이 sequence → setState → apiCall 체이닝 구조다', () => {
+        const buttons = findByName(tabSeo, 'Button');
+        const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
+        expect(cacheBtn.actions).toHaveLength(1);
+
+        const clickAction = cacheBtn.actions[0];
+        expect(clickAction.type).toBe('click');
+        expect(clickAction.handler).toBe('sequence');
+
+        // 1단계: clearingCache = true
+        const setStateAction = clickAction.actions[0];
+        expect(setStateAction.handler).toBe('setState');
+        expect(setStateAction.params.target).toBe('local');
+        expect(setStateAction.params.clearingCache).toBe(true);
+
+        // 2단계: 첫 번째 apiCall (board/boards 캐시 삭제)
+        const firstApiCall = clickAction.actions[1];
+        expect(firstApiCall.handler).toBe('apiCall');
+        expect(firstApiCall.auth_required).toBe(true);
+        expect(firstApiCall.target).toBe('/api/admin/seo/clear-cache');
+        expect(firstApiCall.params.body.layout).toBe('board/boards');
+    });
+
+    it('캐시 초기화 onSuccess 체이닝이 3개 레이아웃을 순차 삭제한다', () => {
+        const buttons = findByName(tabSeo, 'Button');
+        const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
+        const firstApiCall = cacheBtn.actions[0].actions[1];
+
+        // board/boards → board/index onSuccess
+        expect(firstApiCall.onSuccess.handler).toBe('apiCall');
+        expect(firstApiCall.onSuccess.params.body.layout).toBe('board/index');
+
+        // board/index → board/show onSuccess
+        expect(firstApiCall.onSuccess.onSuccess.handler).toBe('apiCall');
+        expect(firstApiCall.onSuccess.onSuccess.params.body.layout).toBe('board/show');
+
+        // board/show onSuccess: clearingCache=false + 성공 토스트
+        const finalSuccess = firstApiCall.onSuccess.onSuccess.onSuccess;
+        expect(Array.isArray(finalSuccess)).toBe(true);
+        const finalSetState = finalSuccess.find((a: any) => a.handler === 'setState');
+        expect(finalSetState.params.clearingCache).toBe(false);
+        const finalToast = finalSuccess.find((a: any) => a.handler === 'toast');
+        expect(finalToast.params.type).toBe('success');
+    });
+
+    it('캐시 초기화 onError에서 clearingCache를 false로 리셋하고 에러 토스트를 표시한다', () => {
+        const buttons = findByName(tabSeo, 'Button');
+        const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
+        const firstApiCall = cacheBtn.actions[0].actions[1];
+
+        // 각 단계의 onError 확인 (3곳)
+        for (const onError of [
+            firstApiCall.onError,
+            firstApiCall.onSuccess.onError,
+            firstApiCall.onSuccess.onSuccess.onError,
+        ]) {
+            expect(Array.isArray(onError)).toBe(true);
+            const setStateErr = onError.find((a: any) => a.handler === 'setState');
+            expect(setStateErr.params.clearingCache).toBe(false);
+            const toastErr = onError.find((a: any) => a.handler === 'toast');
+            expect(toastErr.params.type).toBe('error');
+        }
+    });
+
+    it('모든 다국어 키가 sirsoft-board 네임스페이스를 사용한다', () => {
+        const allTexts: string[] = [];
+        function collectTexts(node: any) {
+            if (!node) return;
+            if (typeof node.text === 'string' && node.text.startsWith('$t:')) {
+                allTexts.push(node.text);
+            }
+            if (Array.isArray(node.children)) {
+                node.children.forEach(collectTexts);
+            }
+        }
+        collectTexts(tabSeo);
+        expect(allTexts.length).toBeGreaterThan(0);
+        for (const text of allTexts) {
+            expect(text, `잘못된 다국어 키: ${text}`).toMatch(/^\$t:sirsoft-board\./);
+        }
+    });
+
+    it('메인 레이아웃 TabNavigation에 seo 탭이 포함되어 있다', () => {
+        const tabNavList = findByName(mainLayout, 'TabNavigation');
+        expect(tabNavList.length).toBeGreaterThan(0);
+        const tabs = tabNavList[0]?.props?.tabs as any[];
+        const seoTab = tabs.find((t: any) => t.id === 'seo');
+        expect(seoTab).toBeDefined();
+        expect(seoTab.label).toContain('$t:sirsoft-board.');
+    });
+
+    it('메인 레이아웃 Partial 목록에 _tab_seo.json이 포함되어 있다', () => {
+        const content = mainLayout.slots.content[0];
+        const mainContent = findById(content, 'main_content');
+        const partialPaths = mainContent.children
+            .filter((c: any) => c.partial)
+            .map((p: any) => p.partial as string);
+        expect(partialPaths.some((p) => p.includes('_tab_seo.json'))).toBe(true);
+    });
+
+    it('저장 body에 seo 탭 분기 로직이 있다', () => {
+        const content = mainLayout.slots.content[0];
+        const saveBtn = findById(content, 'save_button');
+        const apiCallAction = saveBtn.actions[0].actions[1];
+        const body = apiCallAction.params.body as string;
+        expect(body).toContain("'seo'");
+        expect(body).toContain('seo:');
     });
 });

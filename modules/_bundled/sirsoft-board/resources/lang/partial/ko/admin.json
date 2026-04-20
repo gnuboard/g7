@@ -750,7 +750,7 @@
     },
     "search_fields": {
       "all": "전체",
-      "title": "게시글 제목",
+      "title_content": "제목+내용",
       "author": "작성자(이름, 이메일)"
     },
     "filters": {
@@ -839,7 +839,7 @@
       "basic_defaults": "게시판 설정",
       "report_policy": "신고 정책",
       "spam_security": "보안 설정",
-      "mail_templates": "메일 템플릿"
+      "notification_definitions": "알림 설정"
     },
     "board_settings_tabs": {
       "basic": "기본",
@@ -1104,28 +1104,26 @@
         "max_file_count": "최대 파일 개수",
         "allowed_extensions": "허용 확장자",
         "notify_admin_on_post": "관리자 알림",
-        "notify_admin_on_post_channels": "관리자 알림 채널",
         "notify_author": "작성자 알림",
-        "notify_author_channels": "작성자 알림 채널",
         "new_display_hours": "새글 표시 시간",
         "default_board_permissions": "기본 권한",
         "manager": "게시판 관리"
       }
     },
-    "mail_templates": {
-      "title": "메일 템플릿 관리",
-      "description": "게시판 알림 이메일의 템플릿을 관리합니다. 제목과 본문을 수정하고 활성/비활성 상태를 제어할 수 있습니다.",
+    "notification_definitions": {
+      "title": "알림 설정",
+      "description": "게시판 알림의 제목과 본문을 관리합니다. 활성/비활성 상태를 제어할 수 있습니다.",
       "active": "활성",
       "inactive": "비활성",
       "default_badge": "기본",
       "btn_activate": "활성화",
       "btn_deactivate": "비활성화",
       "btn_edit": "편집",
-      "btn_reset": "초기화",
-      "toggle_success": "메일 템플릿 상태가 변경되었습니다.",
-      "reset_success": "메일 템플릿이 기본값으로 복원되었습니다.",
-      "save_success": "메일 템플릿이 저장되었습니다.",
-      "save_error": "메일 템플릿 저장에 실패했습니다.",
+      "btn_reset": "기본값 복원",
+      "toggle_success": "알림 활성 상태가 변경되었습니다.",
+      "reset_success": "알림 설정이 기본값으로 복원되었습니다.",
+      "save_success": "알림 설정이 저장되었습니다.",
+      "save_error": "알림 설정 저장에 실패했습니다.",
       "types": {
         "new_comment": "새 댓글 알림",
         "reply_comment": "대댓글 알림",
@@ -1143,20 +1141,21 @@
       "search_type_body": "본문",
       "total_count": "총 {{count}}건",
       "per_page_label": "페이지당",
-      "empty_message": "등록된 메일 템플릿이 없습니다.",
+      "empty_message": "등록된 알림 설정이 없습니다.",
       "empty_no_results": "검색 결과가 없습니다.",
       "edit_modal": {
-        "title": "메일 템플릿 편집",
+        "title": "알림 템플릿 편집",
         "type_label": "유형:",
         "subject": "제목",
         "body": "본문",
+        "channels_label": "활성 채널",
         "variables_title": "사용 가능한 변수",
         "btn_preview": "미리보기",
         "validation_error": "입력 정보를 확인해주세요.",
         "is_active_label": "활성화"
       },
       "preview_modal": {
-        "title": "메일 미리보기",
+        "title": "알림 미리보기",
         "subject_label": "제목",
         "body_label": "본문"
       }

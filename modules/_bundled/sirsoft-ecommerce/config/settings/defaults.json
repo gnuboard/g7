@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.2.0",
     "description": "이커머스 모듈 환경설정",
-    "categories": ["basic_info", "language_currency", "order_settings", "shipping", "seo", "review_settings", "inquiry"]
+    "categories": ["basic_info", "language_currency", "order_settings", "shipping", "seo", "review_settings", "inquiry", "notifications"]
   },
   "defaults": {
     "basic_info": {
@@ -237,13 +237,6 @@
         { "code": "MY", "name": { "ko": "말레이시아", "en": "Malaysia" }, "is_active": false }
       ],
       "international_shipping_enabled": false,
-      "domestic_shipping_types": ["domestic_parcel", "domestic_express", "pickup"],
-      "international_shipping_types": ["international_ems", "international_standard"],
-      "default_domestic_shipping_type": "domestic_parcel",
-      "default_international_shipping_type": "international_standard",
-      "remote_area_enabled": true,
-      "remote_area_extra_fee": 3000,
-      "island_extra_fee": 5000,
       "free_shipping_threshold": 50000,
       "free_shipping_enabled": true,
       "address_validation_enabled": false,
@@ -256,9 +249,12 @@
       "meta_search_description": "",
       "meta_product_title": "{commerce_name} - {product_name}",
       "meta_product_description": "",
+      "meta_shop_index_title": "{commerce_name}",
+      "meta_shop_index_description": "",
       "seo_category": true,
       "seo_search_result": true,
-      "seo_product_detail": true
+      "seo_product_detail": true,
+      "seo_shop_index": true
     },
     "review_settings": {
       "write_deadline_days": 90,
@@ -267,6 +263,12 @@
     },
     "inquiry": {
       "board_slug": null
+    },
+    "notifications": {
+      "channels": [
+        { "id": "mail", "is_active": true, "sort_order": 1 },
+        { "id": "database", "is_active": true, "sort_order": 2 }
+      ]
     }
   },
   "frontend_schema": {
@@ -328,6 +330,10 @@
       "fields": {
         "board_slug": { "expose": true }
       }
+    },
+    "notifications": {
+      "expose": true,
+      "fields": {}
     }
   }
 }

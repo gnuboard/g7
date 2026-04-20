@@ -43,13 +43,20 @@
 2. TemplateApp.init()
    └─ ModuleAssetLoader.loadActiveExtensionAssets()
        ├─ CSS 로드 (병렬)
-       └─ JS 로드 (순차)
+       └─ JS 로드 (병렬 fetch + 순차 실행)
+           ├─ priority 오름차순 정렬 후 DOM append
+           ├─ script.async = false → 삽입 순서대로 실행 보장 (HTML 사양)
            └─ 각 모듈의 initModule() 실행
                └─ ActionDispatcher.registerHandler()
 
 3. 레이아웃 렌더링
    └─ 모듈 핸들러 사용 가능
 ```
+
+> **성능 참고**: JS 번들은 `Promise.all` 로 병렬 fetch 되며, `script.async = false` 와
+> priority 정렬된 DOM append 순서로 **실행 순서는 유지**됩니다. N 개의 확장 IIFE 로딩이
+> N × (fetch 시간) 에서 max(fetch 시간) 으로 단축됩니다. 단, 확장 간 런타임 의존성
+> (다른 확장의 window 전역/핸들러 참조) 이 발생하면 priority 필드로 실행 순서를 명시해야 합니다.
 
 ---
 

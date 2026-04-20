@@ -2,9 +2,10 @@
 
 namespace App\Extension\Traits;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
-use Illuminate\Support\Facades\Cache;
+use App\Extension\Cache\CoreCacheDriver;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -93,20 +94,34 @@ trait InvalidatesLayoutCache
      */
     protected function forgetLayoutCacheKeys(object $layout, string $templateIdentifier = ''): void
     {
+        $cache = $this->resolveLayoutCache();
+
         // 1. LayoutService 내부 캐시 (버전 없음 → 능동 삭제)
-        Cache::forget("template.{$layout->template_id}.layout.{$layout->name}");
+        $cache->forget("template.{$layout->template_id}.layout.{$layout->name}");
 
         // 2. 소스 해시 포함 키 (버전 없음 → 능동 삭제)
         if ($layout->source_type && $layout->source_identifier) {
             $sourceHash = md5($layout->source_type->value.$layout->source_identifier);
-            Cache::forget("template.{$layout->template_id}.layout.{$layout->name}.{$sourceHash}");
+            $cache->forget("template.{$layout->template_id}.layout.{$layout->name}.{$sourceHash}");
         }
 
         // 3. PublicLayoutController 캐시 (버전 포함)
         //    레이아웃 내용 편집 시 현재 버전 키 삭제 (버전 변경 없이 내용만 바뀜)
         if ($templateIdentifier) {
-            $cacheVersion = (int) Cache::get('extension_cache_version', 0);
-            Cache::forget("layout.{$templateIdentifier}.{$layout->name}.v{$cacheVersion}");
+            $cacheVersion = (int) $cache->get('ext.cache_version', 0);
+            $cache->forget("layout.{$templateIdentifier}.{$layout->name}.v{$cacheVersion}");
+        }
+    }
+
+    /**
+     * CacheInterface 인스턴스를 lazy 조회합니다.
+     */
+    private function resolveLayoutCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
         }
     }
 

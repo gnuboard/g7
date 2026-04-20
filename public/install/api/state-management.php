@@ -70,12 +70,22 @@ class StateManagementApi
             exit;
         }
 
+        // state.json 파일 실제 존재 여부 (getInstallationState는 부재 시 DEFAULT_INSTALLATION_STATE를 반환하므로
+        // isset($state['installation_status']) 로는 "기본 상태"와 "실제 파일 상태"를 구분할 수 없다)
+        $stateFileExists = file_exists(STATE_PATH);
+        $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
+
         // 현재 설치 상태 조회
         $state = getInstallationState();
 
         // installation_status 값을 status로 매핑
         $status = 'pending';
-        if (isset($state['installation_status'])) {
+
+        if (!$stateFileExists && file_exists($installedFlagPath)) {
+            // state.json 삭제 + g7_installed 플래그 존재 → 설치 완료 후 정리된 상태
+            // 폴링이 완료 시점을 놓치면 이후 주기에서 이 분기로 completed 전환
+            $status = 'completed';
+        } elseif ($stateFileExists && isset($state['installation_status'])) {
             switch ($state['installation_status']) {
                 case 'not_started':
                 case 'ready':  // ready도 pending으로 매핑 (설치 대기 상태)
@@ -98,27 +108,33 @@ class StateManagementApi
             }
         }
 
-        // 로그 파일에서 로그 읽기
-        $logs = getInstallationLogs();
+        // 폴링 모드 증분 조회 지원 (?log_offset=N)
+        $logOffset = isset($_GET['log_offset']) ? max(0, (int) $_GET['log_offset']) : 0;
+
+        // 로그 파일에서 로그 읽기 (offset 이후만)
+        $logs = getInstallationLogs($logOffset);
+        $logTotal = getInstallationLogCount();
 
         // API 응답 형식으로 변환
         $response = [
             'status' => $status,
             'current_step' => $state['current_step'] ?? 0,
             'current_task' => $state['current_task'] ?? null,
-            // current_task_name은 제거 (프론트엔드에서 task ID로 번역)
             'completed_tasks' => $state['completed_tasks'] ?? [],
             'logs' => $logs,
+            'log_total' => $logTotal,
             'error' => $state['error'] ?? null,
             'last_updated' => $state['last_updated'] ?? null,
 
             // 실패 정보 (새로고침 후에도 표시용)
             'failed_task' => $state['failed_task'] ?? null,
-            // failed_task_name은 제거 (프론트엔드에서 task ID로 번역)
             'error_message_key' => $state['error_message_key'] ?? null,
             'error_detail' => $state['error_detail'] ?? null,
             'rollback_failure' => $state['rollback_failure'] ?? null,
             'manual_commands' => $state['manual_commands'] ?? null,
+
+            // SSE/폴링 듀얼 모드 지원
+            'installation_mode' => $state['installation_mode'] ?? 'sse',
         ];
 
         // JSON 응답 반환

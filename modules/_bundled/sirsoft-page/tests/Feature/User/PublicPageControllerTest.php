@@ -73,7 +73,7 @@ class PublicPageControllerTest extends FeatureTestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
-                'data' => ['id', 'slug', 'title', 'content'],
+                'data' => ['id', 'slug', 'title', 'content', 'current_version', 'created_at'],
             ]);
         $this->assertEquals('test-public-page', $response->json('data.slug'));
     }

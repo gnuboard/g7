@@ -106,13 +106,16 @@ class PluginService
         return $this->pluginManager->getPluginUninstallInfo($pluginName);
     }
 
-    public function installPlugin(string $pluginName): ?array
-    {
+    public function installPlugin(
+        string $pluginName,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        bool $force = false,
+    ): ?array {
         HookManager::doAction('core.plugins.before_install', $pluginName);
 
         try {
             $this->pluginManager->loadPlugins();
-            $result = $this->pluginManager->installPlugin($pluginName);
+            $result = $this->pluginManager->installPlugin($pluginName, null, $vendorMode, $force);
 
             if ($result) {
                 // 설치 후 플러그인 정보 반환
@@ -417,17 +420,28 @@ class PluginService
      * 지정된 플러그인을 업데이트합니다.
      *
      * @param  string  $pluginName  업데이트할 플러그인 identifier
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
      */
-    public function updatePlugin(string $pluginName): array
-    {
+    public function updatePlugin(
+        string $pluginName,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        string $layoutStrategy = 'overwrite',
+    ): array {
         HookManager::doAction('core.plugins.before_update', $pluginName);
 
         try {
             $this->pluginManager->loadPlugins();
-            $result = $this->pluginManager->updatePlugin($pluginName);
+            $result = $this->pluginManager->updatePlugin(
+                $pluginName,
+                false,
+                null,
+                $vendorMode,
+                $layoutStrategy,
+            );
 
             $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
@@ -443,6 +457,27 @@ class PluginService
 
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.errors.update_failed', ['plugin' => $pluginName, 'error' => $rawError])],
+            ]);
+        }
+    }
+
+    /**
+     * 지정된 플러그인의 수정된 레이아웃을 확인합니다.
+     *
+     * @param  string  $pluginName  확인할 플러그인 identifier
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     *
+     * @throws ValidationException 확인 실패 시
+     */
+    public function checkModifiedLayouts(string $pluginName): array
+    {
+        try {
+            $this->pluginManager->loadPlugins();
+
+            return $this->pluginManager->hasModifiedLayouts($pluginName);
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'plugin_name' => [__('plugins.check_modified_layouts_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }

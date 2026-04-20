@@ -1,8 +1,10 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
+import { Input } from './Input';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
@@ -22,6 +24,10 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   error?: string;
   options?: SelectOption[] | string[];
   onChange?: (e: React.ChangeEvent<HTMLSelectElement> | { target: { value: string | number } }) => void;
+  /** 드롭다운 내 검색 input 활성화 (engine-v1.40.0+) */
+  searchable?: boolean;
+  /** 검색 input placeholder */
+  searchPlaceholder?: string;
 }
 
 /**
@@ -56,11 +62,17 @@ export const Select: React.FC<SelectProps> = ({
   value,
   onChange,
   disabled,
+  searchable = false,
+  searchPlaceholder,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -94,10 +106,79 @@ export const Select: React.FC<SelectProps> = ({
     return selected?.label || '';
   }, [normalizedOptions, value]);
 
-  // 외부 클릭 시 드롭다운 닫기
+  // searchable 모드에서 검색어로 필터링된 옵션
+  const visibleOptions = useMemo((): SelectOption[] | null => {
+    if (!normalizedOptions) return null;
+    if (!searchable || searchTerm.trim() === '') return normalizedOptions;
+    const needle = searchTerm.trim().toLowerCase();
+    return normalizedOptions.filter(opt =>
+      opt.label.toLowerCase().includes(needle) ||
+      String(opt.value).toLowerCase().includes(needle)
+    );
+  }, [normalizedOptions, searchable, searchTerm]);
+
+  // 드롭다운 열릴 때 검색어 초기화 및 input 포커스
+  useEffect(() => {
+    if (isOpen && searchable) {
+      setSearchTerm('');
+      // 다음 tick에 포커스 (DOM 렌더 이후)
+      const timer = setTimeout(() => searchInputRef.current?.focus(), 0);
+      return () => clearTimeout(timer);
+    }
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen, searchable]);
+
+  /**
+   * 드롭다운 위치 계산 (버튼 기준 fixed positioning)
+   * Modal 등 overflow:hidden 컨테이너 내부에서도 정상 표시
+   */
+  const updateDropdownPos = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropdownMaxH = 280; // max-h-60(240px) + search(~40px)
+    // 아래 공간 부족 시 위로 열기
+    const openUpward = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
+    if (openUpward) {
+      setDropdownPos({
+        bottom: window.innerHeight - rect.top + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    } else {
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  // 드롭다운 열릴 때 위치 계산 + 스크롤/리사이즈 추적
+  useEffect(() => {
+    if (!isOpen) {
+      setDropdownPos(null);
+      return;
+    }
+    updateDropdownPos();
+    window.addEventListener('scroll', updateDropdownPos, true);
+    window.addEventListener('resize', updateDropdownPos);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPos, true);
+      window.removeEventListener('resize', updateDropdownPos);
+    };
+  }, [isOpen, updateDropdownPos]);
+
+  // 외부 클릭 시 드롭다운 닫기 (Portal 영역 포함)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -190,13 +271,34 @@ export const Select: React.FC<SelectProps> = ({
         </Svg>
       </Button>
 
-      {isOpen && (
+      {isOpen && dropdownPos && createPortal(
         <Div
-          className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
+          ref={dropdownRef}
+          className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
+          style={{ top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}
           role="listbox"
         >
+          {searchable && (
+            <Div className="p-2 border-b border-gray-200 dark:border-gray-600">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                placeholder={searchPlaceholder ?? 'Search...'}
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                role="searchbox"
+                aria-label={searchPlaceholder ?? 'Search'}
+              />
+            </Div>
+          )}
           <Div className="py-2 max-h-60 overflow-auto">
-            {normalizedOptions.map((option) => {
+            {visibleOptions && visibleOptions.length === 0 && (
+              <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                {searchTerm ? 'No results' : ''}
+              </Div>
+            )}
+            {(visibleOptions ?? []).map((option) => {
               const isSelected = String(option.value) === String(value);
               return (
                 <Button
@@ -225,7 +327,8 @@ export const Select: React.FC<SelectProps> = ({
               );
             })}
           </Div>
-        </Div>
+        </Div>,
+        document.body
       )}
     </Div>
   );

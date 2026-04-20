@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
@@ -28,6 +28,18 @@ class SeoSettingsCacheListenerTest extends TestCase
         $this->app->instance(SeoCacheManagerInterface::class, $this->cacheMock);
 
         $this->listener = new SeoSettingsCacheListener;
+    }
+
+    /**
+     * SeoSettingsCacheListener 가 호출하는 sitemap 무효화를 mock 합니다.
+     *
+     * 새 시스템: app(CacheInterface::class)->forget('seo.sitemap')
+     */
+    private function mockSitemapForget(): void
+    {
+        $cacheInterfaceMock = Mockery::mock(CacheInterface::class);
+        $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
+        $this->app->instance(CacheInterface::class, $cacheInterfaceMock);
     }
 
     protected function tearDown(): void
@@ -75,9 +87,7 @@ class SeoSettingsCacheListenerTest extends TestCase
             ->once()
             ->with('shop/show');
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
+        $this->mockSitemapForget();
 
         Log::shouldReceive('info')->once();
 
@@ -103,7 +113,7 @@ class SeoSettingsCacheListenerTest extends TestCase
                 return 1;
             });
 
-        Cache::shouldReceive('forget')->once()->with('seo:sitemap');
+        $this->mockSitemapForget();
         Log::shouldReceive('info')->once();
 
         $this->listener->onModuleSettingsSave('sirsoft-ecommerce', [
@@ -125,7 +135,7 @@ class SeoSettingsCacheListenerTest extends TestCase
             ->once()
             ->with('search/index');
 
-        Cache::shouldReceive('forget')->once()->with('seo:sitemap');
+        $this->mockSitemapForget();
         Log::shouldReceive('info')->once();
 
         $this->listener->onModuleSettingsSave('sirsoft-ecommerce', [
@@ -146,7 +156,7 @@ class SeoSettingsCacheListenerTest extends TestCase
             ->once()
             ->with('shop/show');
 
-        Cache::shouldReceive('forget')->once()->with('seo:sitemap');
+        $this->mockSitemapForget();
         Log::shouldReceive('info')->once();
 
         $this->listener->onModuleSettingsSave('sirsoft-ecommerce', [
@@ -169,7 +179,7 @@ class SeoSettingsCacheListenerTest extends TestCase
                 return 1;
             });
 
-        Cache::shouldReceive('forget')->once()->with('seo:sitemap');
+        $this->mockSitemapForget();
         Log::shouldReceive('info')->once();
 
         $this->listener->onModuleSettingsSave('sirsoft-ecommerce', [

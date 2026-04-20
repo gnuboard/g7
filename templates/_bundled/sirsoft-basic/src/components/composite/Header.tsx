@@ -33,6 +33,9 @@ import { ThemeToggle } from './ThemeToggle';
 // Avatar 컴포넌트 import
 import { Avatar } from './Avatar';
 
+// NotificationCenter 컴포넌트 import
+import { NotificationCenter, type NotificationItem } from './NotificationCenter';
+
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
@@ -84,6 +87,40 @@ interface HeaderProps {
   shopBase?: string;
   /** 추가 CSS 클래스 */
   className?: string;
+
+  // ===== 알림센터 드롭다운 Props =====
+  /** 알림 목록 (NotificationCenter에 전달) */
+  notifications?: NotificationItem[];
+  /** 더 불러올 페이지 존재 여부 */
+  notificationHasMore?: boolean;
+  /** 알림 로딩 상태 */
+  notificationLoading?: boolean;
+  /** "안 읽은 알림만" 필터 상태 */
+  notificationUnreadOnly?: boolean;
+  /** 알림 드롭다운 제목 */
+  notificationTitleText?: string;
+  /** 알림 없음 텍스트 */
+  notificationEmptyText?: string;
+  /** "모두 읽음" 텍스트 */
+  notificationMarkAllReadText?: string;
+  /** "모두 삭제" 텍스트 */
+  notificationDeleteAllText?: string;
+  /** "안 읽은 알림만" 체크박스 텍스트 */
+  notificationUnreadOnlyText?: string;
+  /** 알림 드롭다운 닫힐 때 (뷰포트에 보인 미읽음 ID 배열 전달) */
+  onNotificationClose?: (visibleUnreadIds: (string | number)[]) => void;
+  /** 개별 알림 클릭 */
+  onNotificationClick?: (notification: NotificationItem) => void;
+  /** 무한 스크롤: 추가 로드 */
+  onNotificationLoadMore?: () => void;
+  /** "모두 읽음" 처리 */
+  onNotificationMarkAllRead?: () => void;
+  /** "모두 삭제" 요청 (모달 오픈) */
+  onNotificationDeleteAll?: () => void;
+  /** 개별 알림 삭제 */
+  onNotificationDelete?: (notification: NotificationItem) => void;
+  /** "안 읽은 알림만" 체크박스 토글 */
+  onNotificationUnreadOnlyToggle?: (checked: boolean) => void;
 }
 
 /**
@@ -120,6 +157,23 @@ const Header: React.FC<HeaderProps> = ({
   currentLocale = 'ko',
   shopBase = '/shop',
   className = '',
+  // 알림센터
+  notifications = [],
+  notificationHasMore = false,
+  notificationLoading = false,
+  notificationUnreadOnly = false,
+  notificationTitleText,
+  notificationEmptyText,
+  notificationMarkAllReadText,
+  notificationDeleteAllText,
+  notificationUnreadOnlyText,
+  onNotificationClose,
+  onNotificationClick,
+  onNotificationLoadMore,
+  onNotificationMarkAllRead,
+  onNotificationDeleteAll,
+  onNotificationDelete,
+  onNotificationUnreadOnlyToggle,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -128,6 +182,14 @@ const Header: React.FC<HeaderProps> = ({
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
+
+  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
+  const G7Core = (window as any).G7Core;
+  const useResponsive = G7Core?.useResponsive;
+  const responsiveValue = useResponsive?.();
+  const isMobile = responsiveValue
+    ? responsiveValue.width < 768
+    : typeof window !== 'undefined' && window.innerWidth < 768;
 
   // 경로 변경 감지 (SPA 네비게이션 대응)
   useEffect(() => {
@@ -228,22 +290,24 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </Button>
 
-          {/* 검색바 (데스크톱) */}
-          <Form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-lg mx-8">
-            <Div className="relative w-full">
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('common.search_placeholder')}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <Icon
-                name="search"
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
-              />
-            </Div>
-          </Form>
+          {/* 검색바 (데스크톱 전용) */}
+          {!isMobile && (
+            <Form onSubmit={handleSearch} className="flex flex-1 max-w-lg mx-8">
+              <Div className="relative w-full">
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('common.search_placeholder')}
+                  className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Icon
+                  name="search"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
+                />
+              </Div>
+            </Form>
+          )}
 
           {/* 우측 액션 버튼들 */}
           <Div className="flex items-center gap-2">
@@ -254,15 +318,29 @@ const Header: React.FC<HeaderProps> = ({
               darkText={t('common.theme.dark')}
             />
 
-            {/* 알림 */}
-            <Button onClick={() => navigate('/notifications')} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
-              <Icon name="bell" className="w-5 h-5" />
-              {notificationCount > 0 && (
-                <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs bg-red-500 text-white rounded-full">
-                  {notificationCount > 99 ? '99+' : notificationCount}
-                </Span>
-              )}
-            </Button>
+            {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출 */}
+            {user?.uuid && (
+              <NotificationCenter
+                notifications={notifications}
+                unreadCount={notificationCount}
+                hasMore={notificationHasMore}
+                loading={notificationLoading}
+                unreadOnly={notificationUnreadOnly}
+                titleText={notificationTitleText ?? t('mypage.notifications.title')}
+                emptyText={notificationEmptyText ?? t('mypage.notifications.empty')}
+                markAllReadText={notificationMarkAllReadText ?? t('mypage.notifications.mark_all_read')}
+                deleteAllText={notificationDeleteAllText ?? t('mypage.notifications.delete_all')}
+                unreadOnlyText={notificationUnreadOnlyText ?? t('mypage.notifications.unread_only')}
+                onClose={onNotificationClose}
+                onNotificationClick={onNotificationClick}
+                onLoadMore={onNotificationLoadMore}
+                onMarkAllRead={onNotificationMarkAllRead}
+                onDeleteAll={onNotificationDeleteAll}
+                onDelete={onNotificationDelete}
+                onUnreadOnlyToggle={onNotificationUnreadOnlyToggle}
+                dropdownAlign="right"
+              />
+            )}
 
             {/* 장바구니 */}
             <Button onClick={() => navigate(`${shopBase}/cart`)} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
@@ -391,19 +469,22 @@ const Header: React.FC<HeaderProps> = ({
               </Div>
             )}
 
-            {/* 모바일 햄버거 메뉴 */}
-            <Button
-              onClick={onMobileMenuOpen}
-              className="md:hidden p-2 text-gray-600 dark:text-gray-400"
-            >
-              <Icon name="menu" className="w-6 h-6" />
-            </Button>
+            {/* 모바일 햄버거 메뉴 (모바일 전용) */}
+            {isMobile && (
+              <Button
+                onClick={onMobileMenuOpen}
+                className="p-2 text-gray-600 dark:text-gray-400"
+              >
+                <Icon name="menu" className="w-6 h-6" />
+              </Button>
+            )}
           </Div>
         </Div>
       </Div>
 
-      {/* 탭 네비게이션 */}
-      <Nav className="hidden md:block border-t border-gray-200 dark:border-gray-800">
+      {/* 탭 네비게이션 (데스크톱 전용) */}
+      {!isMobile && (
+      <Nav className="border-t border-gray-200 dark:border-gray-800">
         <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Div className="flex items-center gap-1 h-12 overflow-x-auto">
             <Button onClick={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))}>
@@ -481,6 +562,7 @@ const Header: React.FC<HeaderProps> = ({
           </Div>
         </Div>
       </Nav>
+      )}
     </HeaderBasic>
   );
 };

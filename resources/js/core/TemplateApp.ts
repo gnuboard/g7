@@ -648,7 +648,7 @@ export class TemplateApp {
                 });
 
                 // setGlobalState 함수 주입
-                actionDispatcher.setGlobalStateUpdater((updates: any) => this.setGlobalState(updates));
+                actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
 
                 logger.log('Navigate function and setGlobalState injected to ActionDispatcher');
             }
@@ -880,14 +880,29 @@ export class TemplateApp {
             const blockingSources = dataSources.filter(
                 (source: any) => source.loading_strategy === 'blocking'
             );
+            // WebSocket 소스는 이벤트 리스너(실시간 알림)이지 데이터 제공자가 아님
+            // Step 6에서 별도로 구독 처리되므로 progressive 목록에서 제외
+            // 포함 시 progressiveDataInit에서 undefined로 초기화되어 blur_until_loaded가 영구 블러됨
             const progressiveAndBackgroundSources = dataSources.filter(
-                (source: any) => (source.loading_strategy || 'progressive') !== 'blocking'
+                (source: any) => (source.loading_strategy || 'progressive') !== 'blocking' && source.type !== 'websocket'
             );
 
-            // 2.5 transition 오버레이: blocking 데이터 fetch 전에 표시 (@since engine-v1.24.0)
-            // blocking 데이터 로딩 대기 시간에 skeleton/spinner UI를 보여줌
+            // 2.5 transition 오버레이: blocking 데이터 fetch 전 또는 wait_for 명시 시 표시 (@since engine-v1.24.0, wait_for engine-v1.30.0)
+            // blocking 데이터 로딩 대기 시간 또는 progressive 데이터 fetch 완료까지 skeleton/spinner UI 표시
             // 3단계 타겟팅: target → fallback_target → fullpage (@since engine-v1.24.2)
-            if (blockingSources.length > 0 && layoutData.transition_overlay) {
+            //
+            // wait_for: progressive 데이터소스를 명시적으로 spinner 가드 대상으로 등록
+            // - background/websocket 데이터소스는 의도상 사용자 차단 불가 → 자동 무시
+            // - 존재하지 않는 ID 도 자동 무시 (검증은 백엔드 UpdateLayoutContentRequest 에서 수행)
+            const waitForIds: string[] = Array.isArray((layoutData.transition_overlay as any)?.wait_for)
+                ? ((layoutData.transition_overlay as any).wait_for as string[])
+                : [];
+            const waitForActive = waitForIds.length > 0 && dataSources.some((source: any) =>
+                waitForIds.includes(source.id)
+                && source.type !== 'websocket'
+                && (source.loading_strategy || 'progressive') !== 'background'
+            );
+            if ((blockingSources.length > 0 || waitForActive) && layoutData.transition_overlay) {
                 const overlayConfig: any = typeof layoutData.transition_overlay === 'boolean'
                     ? { enabled: layoutData.transition_overlay, style: 'opaque' }
                     : layoutData.transition_overlay;
@@ -1203,49 +1218,7 @@ export class TemplateApp {
             // 새 DOM의 타겟에 spinner를 재생성 (@since engine-v1.29.0)
             this.reattachSpinnerOverlay();
 
-            // 6. WebSocket 데이터 소스 구독 (실시간 업데이트용)
-            const webSocketSources = dataSources.filter((s: any) => s.type === 'websocket');
-            if (webSocketSources.length > 0) {
-                logger.log('Subscribing WebSocket data sources:', webSocketSources.map((s: any) => s.id));
-
-                const { updateTemplateData: wsUpdateData, getState: wsGetState } = await import('./template-engine');
-
-                this.currentWebSocketSubscriptions = dataSourceManager.subscribeWebSockets(
-                    dataSources,
-                    (sourceId: string, data: unknown) => {
-                        // WebSocket에서 데이터 수신 시 템플릿 업데이트
-                        logger.log(`WebSocket data received for: ${sourceId}`, data);
-
-                        // fetch된 데이터 업데이트
-                        this.currentFetchedData[sourceId] = data;
-
-                        // 타겟 데이터 소스 정의 찾기 (initGlobal/initLocal 캐시 무효화용)
-                        const targetSource = dataSources.find((s: any) => s.id === sourceId);
-
-                        // 캐시 무효화
-                        const state = wsGetState();
-                        if (state.bindingEngine) {
-                            const keysToInvalidate = [sourceId];
-                            // 타겟 데이터 소스에 initGlobal이 있으면 _global 키도 무효화
-                            if (targetSource?.initGlobal) {
-                                keysToInvalidate.push('_global');
-                            }
-                            // 타겟 데이터 소스에 initLocal이 있으면 _local 키도 무효화
-                            if (targetSource?.initLocal) {
-                                keysToInvalidate.push('_local');
-                            }
-                            state.bindingEngine.invalidateCacheByKeys(keysToInvalidate);
-                        }
-
-                        // 템플릿 업데이트
-                        wsUpdateData({ [sourceId]: data });
-                    }
-                );
-
-                logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
-            }
-
-            // 7. progressive + background 데이터 소스 fetch (렌더링 후)
+            // 6. progressive + background 데이터 소스 fetch (렌더링 후)
             if (progressiveAndBackgroundSources.length > 0) {
                 // 새 요청이 들어왔으면 현재 요청 무시 (progressive fetch 전)
                 if (routeChangeId !== this.currentRouteChangeId) {
@@ -1371,6 +1344,101 @@ export class TemplateApp {
             } else {
                 // progressive 데이터가 없으면 즉시 오버레이 제거
                 this.hideTransitionOverlay();
+            }
+
+            // 7. WebSocket 데이터 소스 구독 (실시간 업데이트용)
+            // progressive fetch 완료 후 구독: channel/event 표현식이 fetched 데이터(current_user 등) 참조 가능
+            const webSocketSources = dataSources.filter((s: any) => s.type === 'websocket');
+            if (webSocketSources.length > 0) {
+                logger.log('Subscribing WebSocket data sources:', webSocketSources.map((s: any) => s.id));
+
+                const { updateTemplateData: wsUpdateData, getState: wsGetState } = await import('./template-engine');
+
+                // 채널/이벤트 표현식 평가 컨텍스트
+                // blocking + progressive 데이터 모두 포함 (표현식이 fetched 데이터 참조 가능)
+                const wsBindingContext = {
+                    ...this.currentFetchedData,
+                    ...route.params,
+                    route: { ...(route.params || {}), path: route.path },
+                    query: queryObject,
+                    _global: { ...this.globalState },
+                };
+
+                // 디버깅: WebSocket 구독 직전 컨텍스트 키 로깅
+                // 표현식 평가 실패 시 어떤 키가 누락되었는지 확인용
+                logger.log('WebSocket binding context keys:', Object.keys(wsBindingContext));
+
+                this.currentWebSocketSubscriptions = dataSourceManager.subscribeWebSockets(
+                    dataSources,
+                    (sourceId: string, data: unknown) => {
+                        // WebSocket에서 데이터 수신 시 템플릿 업데이트
+                        logger.log(`WebSocket data received for: ${sourceId}`, data);
+
+                        // fetch된 데이터 업데이트
+                        this.currentFetchedData[sourceId] = data;
+
+                        // 타겟 데이터 소스 정의 찾기 (initGlobal/initLocal 캐시 무효화용)
+                        const targetSource = dataSources.find((s: any) => s.id === sourceId);
+
+                        // 캐시 무효화
+                        const state = wsGetState();
+                        if (state.bindingEngine) {
+                            const keysToInvalidate = [sourceId];
+                            // 타겟 데이터 소스에 initGlobal이 있으면 _global 키도 무효화
+                            if (targetSource?.initGlobal) {
+                                keysToInvalidate.push('_global');
+                            }
+                            // 타겟 데이터 소스에 initLocal이 있으면 _local 키도 무효화
+                            if (targetSource?.initLocal) {
+                                keysToInvalidate.push('_local');
+                            }
+                            state.bindingEngine.invalidateCacheByKeys(keysToInvalidate);
+                        }
+
+                        // 템플릿 업데이트
+                        wsUpdateData({ [sourceId]: data });
+
+                        // engine-v1.33.0: WebSocket 데이터 소스의 onReceive 액션 실행
+                        // websocket 소스 정의(원본)에서 onReceive 배열을 찾음
+                        // sourceId는 target_source가 적용된 ID이므로 원본 websocket 소스를 별도로 찾음
+                        const websocketSource = dataSources.find(
+                            (s: any) => s.type === 'websocket' && (s.target_source || s.id) === sourceId
+                        );
+                        const onReceiveActions = websocketSource?.onReceive;
+                        if (Array.isArray(onReceiveActions) && onReceiveActions.length > 0) {
+                            const G7Core = (window as any).G7Core;
+                            if (G7Core?.dispatch) {
+                                // 각 액션을 순차 실행, $args[0]로 페이로드 접근 가능
+                                (async () => {
+                                    for (const action of onReceiveActions) {
+                                        try {
+                                            // dispatchAction에 직접 호출하여 $args 컨텍스트 주입
+                                            const actionDispatcher = this.getActionDispatcher?.();
+                                            if (actionDispatcher) {
+                                                await actionDispatcher.dispatchAction(action, {
+                                                    navigate: this.getRouter?.() ? (path: string, opts?: any) =>
+                                                        this.getRouter().navigate(path, opts) : undefined,
+                                                    setState: (updates: any) => this.setGlobalState(updates),
+                                                    state: this.globalState,
+                                                    data: { ...this.globalState, $args: [data], $event: data },
+                                                    _isDispatchFallbackContext: true,
+                                                });
+                                            }
+                                        } catch (err) {
+                                            logger.error(
+                                                `WebSocket onReceive action failed for ${sourceId}:`,
+                                                err
+                                            );
+                                        }
+                                    }
+                                })();
+                            }
+                        }
+                    },
+                    wsBindingContext
+                );
+
+                logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
             }
 
             logger.log('Layout rendered successfully');
@@ -2568,6 +2636,97 @@ export class TemplateApp {
     }
 
     /**
+     * 확장 상태(routes/translations/layouts/module assets) 원자적 재동기화
+     *
+     * 모듈/플러그인/템플릿의 install/activate/deactivate/uninstall 직후 호출되어
+     * 전체 새로고침 없이 변경된 확장 상태를 즉시 반영합니다.
+     *
+     * 동작 순서:
+     *   1. `/api/templates/{id}/config.json` 에서 최신 cache_version 획득
+     *   2. 변경이 있으면 `this.extensionCacheVersion` 및 localStorage 갱신
+     *   3. `router.loadRoutes(newVersion)` — 새 버전 쿼리로 routes 재fetch
+     *   4. LayoutLoader.setCacheVersion + clear — 다음 레이아웃 로드부터 신 버전 사용
+     *   5. TranslationEngine.setCacheVersion + loadTranslations(true) — 다국어 재로드
+     *
+     * 각 단계는 try/catch 로 격리되어 한 단계의 실패가 다른 단계를 막지 않습니다.
+     *
+     * @since engine-v1.19.0
+     */
+    async reloadExtensionState(): Promise<void> {
+        logger.log('reloadExtensionState: start');
+
+        // 1. 최신 cache_version 획득 (브라우저 캐시 우회용 `_` 쿼리 포함)
+        let newVersion: number | undefined;
+        try {
+            const configResponse = await fetch(
+                `/api/templates/${this.config.templateId}/config.json?_=${Date.now()}`
+            );
+            if (configResponse.ok) {
+                const configResult = await configResponse.json();
+                if (configResult?.success && configResult?.data?.cache_version !== undefined) {
+                    newVersion = configResult.data.cache_version;
+                }
+            }
+        } catch (error) {
+            logger.warn('reloadExtensionState: failed to fetch config.json', error);
+        }
+
+        // 2. 버전 상태 갱신
+        if (newVersion !== undefined && newVersion !== this.extensionCacheVersion) {
+            logger.log(
+                `reloadExtensionState: cache version ${this.extensionCacheVersion} -> ${newVersion}`
+            );
+            this.extensionCacheVersion = newVersion;
+            this.saveCacheVersionToStorage(newVersion);
+        }
+
+        // 3. Router routes 재로드 (버전 쿼리 부착 필수)
+        try {
+            if (this.router) {
+                await this.router.loadRoutes(this.extensionCacheVersion);
+                logger.log('reloadExtensionState: routes reloaded');
+            }
+        } catch (error) {
+            logger.error('reloadExtensionState: routes reload failed', error);
+        }
+
+        // 4. LayoutLoader 버전 갱신 + 캐시 클리어
+        try {
+            if (this.layoutLoader) {
+                if (this.extensionCacheVersion > 0) {
+                    this.layoutLoader.setCacheVersion(this.extensionCacheVersion);
+                }
+                this.layoutLoader.clear();
+                logger.log('reloadExtensionState: layout cache cleared');
+            }
+        } catch (error) {
+            logger.error('reloadExtensionState: layout cache clear failed', error);
+        }
+
+        // 5. 다국어 재로드 — 활성 translations 맵은 loadTranslations 가 원자적으로 교체할 때까지
+        //    유지되므로 병렬 `toast($t:...)` 와 경합하지 않음. 명시적 clearCache() 호출 금지
+        //    (engine-v1.38.1 참고: setCacheVersion 이 TTL 캐시만 비움).
+        try {
+            const { TranslationEngine } = await import('./template-engine/TranslationEngine');
+            const translationEngine = TranslationEngine.getInstance();
+            if (this.extensionCacheVersion > 0) {
+                translationEngine.setCacheVersion(this.extensionCacheVersion);
+            }
+            const locale = this.config.locale || 'ko';
+            const fallbackLocale = 'en';
+            await translationEngine.loadTranslations(this.config.templateId, locale, '/api', true);
+            if (locale !== fallbackLocale) {
+                await translationEngine.loadTranslations(this.config.templateId, fallbackLocale, '/api', true);
+            }
+            logger.log('reloadExtensionState: translations reloaded');
+        } catch (error) {
+            logger.error('reloadExtensionState: translations reload failed', error);
+        }
+
+        logger.log('reloadExtensionState: done');
+    }
+
+    /**
      * ActionDispatcher 인스턴스 반환
      *
      * 템플릿 컴포넌트에서 액션을 실행할 때 사용합니다.
@@ -2638,7 +2797,7 @@ export class TemplateApp {
                     navigate: (path: string) => this.router?.navigate(path),
                 });
 
-                actionDispatcher.setGlobalStateUpdater((updates: any) => this.setGlobalState(updates));
+                actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
 
                 logger.log('Navigate function and setGlobalState re-injected to ActionDispatcher');
             }
@@ -2916,11 +3075,11 @@ export class TemplateApp {
      * 전역 상태 업데이트
      *
      * @param updates 업데이트할 상태 객체 또는 함수형 업데이트 (prev => newState)
+     * @param options.render false이면 상태 업데이트만 수행하고 React 렌더링을 건너뜀 (engine-v1.42.0+)
      */
-    setGlobalState(updates: Partial<GlobalState> | ((prev: GlobalState) => GlobalState)): void {
+    setGlobalState(updates: Partial<GlobalState> | ((prev: GlobalState) => GlobalState), options?: { render?: boolean }): void {
         // DevTools: 이전 상태 저장
         const prevState = { ...this.globalState };
-
         // 함수형 업데이트 지원 (Form dataKey="_global.xxx" 자동 바인딩에서 사용)
         if (typeof updates === 'function') {
             this.globalState = updates(this.globalState);
@@ -2945,6 +3104,11 @@ export class TemplateApp {
         this.globalStateListeners.forEach(listener => {
             listener(this.globalState);
         });
+
+        // engine-v1.42.0: render: false이면 상태 업데이트만 수행, React 렌더링 건너뛰기
+        // 값은 this.globalState에 저장되므로 getLocal()/getState()로 최신 값 접근 가능
+        // 플러그인(CKEditor 등)이 자체 DOM을 관리하는 경우, React 리렌더 없이 값만 저장
+        if (options?.render === false) return;
 
         // 전역 상태만 업데이트 (라우트 재로딩 없이)
         // 렌더링 완료 여부 확인 후 updateTemplateData 호출
@@ -3447,13 +3611,18 @@ export class TemplateApp {
      * navigate 핸들러에서 replace: true 옵션 사용 시 자동 호출됩니다.
      *
      * @param newPath 새 경로 (쿼리스트링 포함)
+     * @param options 선택 옵션
+     *   - transitionOverlayTarget: 이 호출에 한해 transition_overlay.target 을 동적으로 override
+     *     (탭 안의 서브 탭, 목록 페이지네이션 등 부분 영역만 spinner 가 표시되어야 할 때 사용)
+     *     @since engine-v1.36.0
      * @returns refetch 완료 후 resolve되는 Promise
      *
      * @example
      * // ActionDispatcher에서 호출
      * G7Core.updateQueryParams('/admin/products?status=active&page=2');
+     * G7Core.updateQueryParams('/admin/settings?tab=notification&channel=email', { transitionOverlayTarget: 'notif_channel_content' });
      */
-    async updateQueryParams(newPath: string): Promise<void> {
+    async updateQueryParams(newPath: string, options?: { transitionOverlayTarget?: string }): Promise<void> {
         logger.log('updateQueryParams:', newPath);
 
         // URL 파싱
@@ -3469,8 +3638,10 @@ export class TemplateApp {
         logger.log('currentQueryParams updated:', Object.fromEntries(newQueryParams.entries()));
 
         // 3. auto_fetch: true인 데이터 소스들 refetch
+        // WebSocket 소스는 이벤트 리스너(실시간 알림)이지 fetch 대상이 아님 (engine-v1.32.2 정책)
+        // handleRouteChange progressive 경로와 동일하게 호출 전에 필터링하여 계약 일관성 확보
         const autoFetchDataSources = this.currentDataSources.filter(
-            (ds: any) => ds.auto_fetch !== false
+            (ds: any) => ds.auto_fetch !== false && ds.type !== 'websocket'
         );
 
         if (autoFetchDataSources.length === 0) {
@@ -3482,6 +3653,27 @@ export class TemplateApp {
 
         // blur_until_loaded 지원: transition 상태를 pending으로 설정
         transitionManager.setPending(true);
+
+        // transition_overlay spinner: wait_for 에 명시된 progressive 데이터소스가 refetch 대상이면 오버레이 표시
+        // navigate replace:true(탭 전환 등)로 이 경로에 진입했을 때 handleRouteChange step 2.5 와 동일 동작 (@since engine-v1.35.0)
+        // options.transitionOverlayTarget 으로 호출별 target 동적 override 지원 (탭 안의 서브 탭/페이지네이션 등) (@since engine-v1.36.0)
+        const layoutJson = getState().currentLayoutJson as any;
+        const overlayConfig = layoutJson?.transition_overlay;
+        const waitForIds: string[] = Array.isArray(overlayConfig?.wait_for) ? overlayConfig.wait_for : [];
+        const blockingRefetch = autoFetchDataSources.some((s: any) => (s.loading_strategy || 'progressive') === 'blocking');
+        const waitForActive = waitForIds.length > 0 && autoFetchDataSources.some((s: any) =>
+            waitForIds.includes(s.id)
+            && s.type !== 'websocket'
+            && (s.loading_strategy || 'progressive') !== 'background'
+        );
+        if ((blockingRefetch || waitForActive) && overlayConfig && typeof overlayConfig === 'object') {
+            const effectiveTarget = options?.transitionOverlayTarget || overlayConfig.target;
+            if (overlayConfig.enabled && overlayConfig.style === 'skeleton' && overlayConfig.skeleton?.component && effectiveTarget) {
+                this.renderSkeletonOverlay(effectiveTarget, overlayConfig.skeleton, layoutJson, overlayConfig.fallback_target);
+            } else if (overlayConfig.enabled && overlayConfig.style === 'spinner' && effectiveTarget) {
+                this.renderSpinnerOverlay(effectiveTarget, overlayConfig.spinner, overlayConfig.fallback_target);
+            }
+        }
 
         try {
             const dataSourceManager = new DataSourceManager();
@@ -3506,13 +3698,20 @@ export class TemplateApp {
             );
 
             // 결과 처리 및 UI 업데이트
+            // result.id 기반 조회로 매핑 (handleRouteChange blocking 경로와 동일 패턴)
+            // 인덱스 기반 매핑은 fetchDataSourcesWithResults가 내부에서 소스를 필터링할 경우
+            // autoFetchDataSources와 results의 인덱스가 어긋나 데이터가 잘못된 키에 기록됨
             const updateData: Record<string, any> = {};
             const localInit: Record<string, any> = {};
+            const sourceById = new Map(autoFetchDataSources.map((ds: any) => [ds.id, ds]));
 
-            for (let i = 0; i < results.length; i++) {
-                const result = results[i];
-                const dataSourceDef = autoFetchDataSources[i];
-                const dataSourceId = dataSourceDef.id;
+            for (const result of results) {
+                const dataSourceDef = sourceById.get(result.id);
+                if (!dataSourceDef) {
+                    logger.warn(`Refetch result id not found in autoFetchDataSources: ${result.id}`);
+                    continue;
+                }
+                const dataSourceId = result.id;
 
                 if (result.state === 'success' && result.data !== undefined) {
                     // 캐시 업데이트
@@ -3571,6 +3770,8 @@ export class TemplateApp {
         } finally {
             // transition 상태 해제
             transitionManager.setPending(false);
+            // transition_overlay spinner 해제 (@since engine-v1.35.0)
+            this.hideTransitionOverlay();
         }
     }
 

@@ -49,19 +49,22 @@ class ModuleRouteServiceProvider extends ServiceProvider
             return;
         }
 
-        // DB 연결 가능 여부 및 테이블/컬럼 존재 여부 확인
-        try {
-            if (! Schema::hasTable('modules')) {
-                return;
-            }
+        // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
+        // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
+        if (! config('app.installer_completed')) {
+            try {
+                if (! Schema::hasTable('modules')) {
+                    return;
+                }
 
-            // identifier 컬럼이 없으면 스킵 (마이그레이션 미적용 상태)
-            if (! Schema::hasColumn('modules', 'identifier')) {
+                // identifier 컬럼이 없으면 스킵 (마이그레이션 미적용 상태)
+                if (! Schema::hasColumn('modules', 'identifier')) {
+                    return;
+                }
+            } catch (\Exception) {
+                // DB 연결 실패 시 조용히 스킵 (설정 오류, 마이그레이션 전 등)
                 return;
             }
-        } catch (\Exception) {
-            // DB 연결 실패 시 조용히 스킵 (설정 오류, 마이그레이션 전 등)
-            return;
         }
 
         // 활성화된 모듈 identifier 목록 가져오기

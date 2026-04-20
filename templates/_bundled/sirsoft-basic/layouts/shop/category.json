@@ -8,12 +8,15 @@
         "description": "{{category?.data?.description_localized ?? ''}}",
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-ecommerce" }
+            ],
             "data_sources": ["category", "products"],
             "page_type": "category",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_category",
             "vars": {
                 "category_name": "{{category.data.name ?? ''}}",
-                "commerce_name": "$module_settings:sirsoft-ecommerce:basic_info.shop_name",
+                "category_description": "{{category.data.description ?? ''}}",
                 "site_name": "$core_settings:general.site_name",
                 "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
             },
@@ -21,12 +24,12 @@
             "changefreq": "weekly",
             "og": {
                 "type": "website",
-                "title": "{{category.data.name ?? ''}}",
-                "description": "{{category.data.description ?? ''}}"
+                "title": "{{_seo.category.title ?? category.data.name ?? ''}}",
+                "description": "{{_seo.category.description ?? category.data.description ?? ''}}"
             },
             "structured_data": {
                 "@type": "ItemList",
-                "name": "{{category.data.name ?? ''}}"
+                "name": "{{_seo.category.title ?? category.data.name ?? ''}}"
             }
         }
     },

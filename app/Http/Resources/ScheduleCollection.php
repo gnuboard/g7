@@ -3,10 +3,9 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ScheduleCollection extends ResourceCollection
+class ScheduleCollection extends BaseApiCollection
 {
     /**
      * 스케줄 컬렉션을 배열로 변환합니다.

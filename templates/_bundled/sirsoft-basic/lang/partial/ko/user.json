@@ -48,8 +48,6 @@
     "back_to_home": "홈으로 돌아가기",
     "admin_edit": "수정",
     "status_active": "시행중",
-    "status_draft": "초안",
-    "status_archived": "보관됨",
     "published_at": "발행일",
     "create_page": "페이지 생성",
     "attachments": "첨부파일",

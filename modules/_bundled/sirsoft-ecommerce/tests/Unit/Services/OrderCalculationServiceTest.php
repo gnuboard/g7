@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
+
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -640,7 +640,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         $policy->countrySettings()->create([
             'country_code' => $countryCode,
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => $currencyCode,
             'charge_policy' => $chargePolicy,
             'base_fee' => $baseFee,
@@ -674,7 +674,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
 
         foreach ($countrySettingsData as $cs) {
             $policy->countrySettings()->create(array_merge([
-                'shipping_method' => ShippingMethodEnum::PARCEL,
+                'shipping_method' => 'parcel',
                 'currency_code' => 'KRW',
                 'charge_policy' => ChargePolicyEnum::FREE,
                 'base_fee' => 0,
@@ -6524,7 +6524,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
         ]);
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => ChargePolicyEnum::RANGE_AMOUNT,
             'base_fee' => 0,
@@ -6603,7 +6603,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
         ]);
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => ChargePolicyEnum::FIXED,
             'base_fee' => 3000,
@@ -6836,7 +6836,7 @@ class OrderCalculationServiceTest extends ModuleTestCase
         ]);
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => ChargePolicyEnum::FIXED,
             'base_fee' => 5000,

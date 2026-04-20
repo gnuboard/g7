@@ -24,7 +24,6 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundOptionStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -178,7 +177,7 @@ class OrderCancellationServiceTest extends ModuleTestCase
 
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => $chargePolicy,
             'base_fee' => $baseFee,
@@ -213,6 +212,19 @@ class OrderCancellationServiceTest extends ModuleTestCase
         $shippingPolicySnapshot = [];
         if ($input->shippingAddress) {
             $shippingPolicySnapshot['address'] = $input->shippingAddress->toArray();
+        }
+
+        // 배송정책 스냅샷 구성 (재계산 시 스냅샷 기반 배송비 계산용)
+        foreach ($result->items as $item) {
+            if ($item->appliedShippingPolicy !== null) {
+                $shippingPolicySnapshot[] = [
+                    'product_option_id' => $item->productOptionId,
+                    'policy' => array_merge(
+                        $item->appliedShippingPolicy->policySnapshot,
+                        ['policy_id' => $item->appliedShippingPolicy->policyId, 'policy_name' => $item->appliedShippingPolicy->policyName]
+                    ),
+                ];
+            }
         }
 
         $order = Order::factory()->create(array_merge([
@@ -265,12 +277,15 @@ class OrderCancellationServiceTest extends ModuleTestCase
             ]);
         }
 
+        $shippingPolicy = $result->shippings[0] ?? null;
         OrderShipping::factory()->forOrder($order)->create([
             'shipping_status' => 'pending',
+            'shipping_policy_id' => $shippingPolicy?->policyId,
             'base_shipping_amount' => $result->summary->baseShippingTotal,
             'extra_shipping_amount' => $result->summary->extraShippingTotal,
             'total_shipping_amount' => $result->summary->totalShipping,
             'shipping_discount_amount' => $result->summary->shippingDiscount,
+            'delivery_policy_snapshot' => $shippingPolicy?->policySnapshot,
         ]);
 
         OrderPayment::factory()->forOrder($order)->create([

@@ -12,8 +12,7 @@ use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\ReportLog;
-use Modules\Sirsoft\Board\Notifications\ReportActionNotification;
-use Modules\Sirsoft\Board\Notifications\ReportReceivedAdminNotification;
+use App\Notifications\GenericNotification;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -115,7 +114,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(200);
 
         // 게시글 작성자에게 ReportActionNotification 발송 확인
-        Notification::assertSentTo($this->author, ReportActionNotification::class);
+        Notification::assertSentTo($this->author, GenericNotification::class);
     }
 
     /**
@@ -147,7 +146,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(200);
 
         // 게시글 작성자에게 ReportActionNotification 발송 확인
-        Notification::assertSentTo($this->author, ReportActionNotification::class);
+        Notification::assertSentTo($this->author, GenericNotification::class);
     }
 
     /**
@@ -179,7 +178,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(200);
 
         // 게시글 작성자에게 ReportActionNotification 발송 확인
-        Notification::assertSentTo($this->author, ReportActionNotification::class);
+        Notification::assertSentTo($this->author, GenericNotification::class);
     }
 
     // ── report_policy.notify_author_on_report_action = OFF ──
@@ -209,7 +208,7 @@ class ReportNotificationTest extends ModuleTestCase
             ]);
 
         // Then: 알림 미발송
-        Notification::assertNotSentTo($this->author, ReportActionNotification::class);
+        Notification::assertNotSentTo($this->author, GenericNotification::class);
     }
 
     // ── 댓글 신고 처리 ──
@@ -244,7 +243,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(200);
 
         // 댓글 작성자에게 ReportActionNotification 발송 확인
-        Notification::assertSentTo($this->author, ReportActionNotification::class);
+        Notification::assertSentTo($this->author, GenericNotification::class);
     }
 
     /**
@@ -273,7 +272,7 @@ class ReportNotificationTest extends ModuleTestCase
             ]);
 
         // Then: 알림 미발송
-        Notification::assertNotSentTo($this->author, ReportActionNotification::class);
+        Notification::assertNotSentTo($this->author, GenericNotification::class);
     }
 
     // ── report_policy.notify_admin_on_report ──
@@ -301,14 +300,16 @@ class ReportNotificationTest extends ModuleTestCase
         // Then: 성공 응답
         $response->assertStatus(201);
 
-        // reports.manage 권한 보유자(admin)에게 ReportReceivedAdminNotification 발송 확인
-        // postTitle과 reasonType 내용도 검증
+        // reports.manage 권한 보유자(admin)에게 알림 발송 확인
+        // post_title과 reason_type 내용도 검증
         Notification::assertSentTo(
             $this->admin,
-            ReportReceivedAdminNotification::class,
-            function (ReportReceivedAdminNotification $notification) {
-                return $notification->postTitle === '테스트 게시글'
-                    && $notification->reasonType === 'spam';
+            GenericNotification::class,
+            function (GenericNotification $notification) {
+                $data = $notification->getData();
+
+                return ($data['post_title'] ?? '') === '테스트 게시글'
+                    && str_contains($data['reason_type'] ?? '', 'spam');
             }
         );
     }
@@ -333,7 +334,7 @@ class ReportNotificationTest extends ModuleTestCase
             ]);
 
         // Then: 관리자 알림 미발송
-        Notification::assertNotSentTo($this->admin, ReportReceivedAdminNotification::class);
+        Notification::assertNotSentTo($this->admin, GenericNotification::class);
     }
 
     /**
@@ -390,7 +391,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // 첫 신고 시 알림 발송 확인
-        Notification::assertSentTo($this->admin, ReportReceivedAdminNotification::class);
+        Notification::assertSentTo($this->admin, GenericNotification::class);
 
         // 알림 초기화
         Notification::fake();
@@ -410,9 +411,6 @@ class ReportNotificationTest extends ModuleTestCase
 
     /**
      * per_report: 동일 케이스에 재신고 → 매 신고마다 알림 발송
-     *
-     * BoardNotificationListener의 processedKeys(static)를 리플렉션으로 리셋하여
-     * 같은 테스트 프로세스 내에서 동일 Report에 대한 2회 훅 발행을 시뮬레이션합니다.
      */
     #[Test]
     public function test_per_report_재신고시_매번_알림_발송(): void
@@ -431,11 +429,10 @@ class ReportNotificationTest extends ModuleTestCase
             ]);
         $response->assertStatus(201);
 
-        Notification::assertSentTo($this->admin, ReportReceivedAdminNotification::class);
+        Notification::assertSentTo($this->admin, GenericNotification::class);
 
-        // 알림 초기화 + processedKeys 리셋 (static 중복 방지 해제)
+        // 알림 초기화
         Notification::fake();
-        $this->resetListenerProcessedKeys();
 
         // 두 번째 신고 (동일 케이스 재신고)
         $secondReporter = User::factory()->create();
@@ -447,7 +444,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // Then: per_report 는 재신고도 알림 발송
-        Notification::assertSentTo($this->admin, ReportReceivedAdminNotification::class);
+        Notification::assertSentTo($this->admin, GenericNotification::class);
     }
 
     /**
@@ -486,9 +483,8 @@ class ReportNotificationTest extends ModuleTestCase
         $reactivatedAt = now()->addSecond(); // 기존 로그보다 미래로 설정
         $report->update(['last_activated_at' => $reactivatedAt]);
 
-        // 알림 초기화 + processedKeys 리셋 (재활성화 이전 알림 무시)
+        // 알림 초기화 (재활성화 이전 알림 무시)
         Notification::fake();
-        $this->resetListenerProcessedKeys();
 
         // 재활성화 이후 첫 신고
         $thirdReporter = User::factory()->create();
@@ -500,7 +496,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // Then: 재활성화 후 첫 신고 → 새 사이클 시작이므로 알림 발송
-        Notification::assertSentTo($this->admin, ReportReceivedAdminNotification::class);
+        Notification::assertSentTo($this->admin, GenericNotification::class);
     }
 
     // ── 헬퍼 메서드 ──
@@ -547,22 +543,6 @@ class ReportNotificationTest extends ModuleTestCase
         $settingsService->clearCache();
     }
 
-    /**
-     * BoardNotificationListener의 processedKeys 정적 속성을 초기화합니다.
-     *
-     * Listener는 동일 이벤트 키에 대한 중복 실행을 정적 변수로 방지합니다.
-     * 같은 Report에 대해 여러 신고를 테스트할 때 각 신고마다 Listener가 실행되도록
-     * 리플렉션으로 초기화합니다.
-     *
-     * @return void
-     */
-    private function resetListenerProcessedKeys(): void
-    {
-        $ref = new \ReflectionClass(\Modules\Sirsoft\Board\Listeners\BoardNotificationListener::class);
-        $prop = $ref->getProperty('processedKeys');
-        $prop->setAccessible(true);
-        $prop->setValue(null, []);
-    }
 
     /**
      * 테스트용 게시글 생성 헬퍼

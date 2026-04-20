@@ -450,6 +450,9 @@
                       }
                     },
                     {
+                      "handler": "reloadExtensions"
+                    },
+                    {
                       "handler": "closeModal"
                     }
                   ],

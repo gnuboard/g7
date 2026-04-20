@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Http\Requests\StoreCommentRequest;
@@ -93,7 +92,7 @@ class CommentController extends PublicBaseController
             $cooldown = (int) ($spamSecurity['comment_cooldown_seconds'] ?? 0);
             if ($cooldown > 0) {
                 $identifier = Auth::id() ?? $request->ip();
-                Cache::put("comment_cooldown_{$slug}_{$identifier}", true, $cooldown);
+                $this->commentService->recordCommentCooldown($slug, $identifier, $cooldown);
             }
 
             return $this->successWithResource(

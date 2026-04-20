@@ -77,12 +77,44 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
     echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
     ?>
 
-    <div class="alert alert-warning" id="install-warning">
+    <!-- 설치 진행 방식 선택 (SSE / 폴링) -->
+    <div class="requirement-card installation-mode-card" id="installation-mode-card">
+        <div class="requirement-card-header">
+            <h3 class="requirement-card-title"><?= htmlspecialchars(lang('installation_mode_label')) ?></h3>
+        </div>
+        <div class="requirement-card-body">
+            <div class="installation-mode-options">
+                <label class="installation-mode-option">
+                    <input type="radio" name="installation_mode" value="sse" checked>
+                    <div class="installation-mode-text">
+                        <strong><?= htmlspecialchars(lang('installation_mode_sse_title')) ?></strong>
+                        <span class="installation-mode-desc"><?= htmlspecialchars(lang('installation_mode_sse_desc')) ?></span>
+                    </div>
+                </label>
+                <label class="installation-mode-option">
+                    <input type="radio" name="installation_mode" value="polling">
+                    <div class="installation-mode-text">
+                        <strong><?= htmlspecialchars(lang('installation_mode_polling_title')) ?></strong>
+                        <span class="installation-mode-desc"><?= htmlspecialchars(lang('installation_mode_polling_desc')) ?></span>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설치 시작 버튼 (초기 상태, 설치 시작 후 숨김) -->
+    <div id="installation-start-section" class="installation-start-section" style="display: none;">
+        <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" onclick="onStartInstallationClick()">
+            <?= htmlspecialchars(lang('start_installation_button')) ?>
+        </button>
+    </div>
+
+    <div class="alert alert-warning" id="install-warning" style="display: none;">
         ⚠ <?= htmlspecialchars(lang('do_not_close_page')) ?>
     </div>
 
     <!-- 설치 진행 상황 카드 -->
-    <div class="requirement-card">
+    <div class="requirement-card" id="installation-progress-card" style="display: none;">
         <div class="requirement-card-header" id="installation-card-header" onclick="toggleInstallationCard()">
             <h3 class="requirement-card-title">
                 <?= htmlspecialchars(lang('progress_status')) ?>

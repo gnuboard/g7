@@ -3,10 +3,21 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class ModuleCollection extends ResourceCollection
+class ModuleCollection extends BaseApiCollection
 {
+    /**
+     * {@inheritDoc}
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_install' => 'core.modules.install',
+            'can_activate' => 'core.modules.activate',
+            'can_uninstall' => 'core.modules.uninstall',
+        ];
+    }
+
     /**
      * 모듈 컬렉션을 배열로 변환합니다.
      *

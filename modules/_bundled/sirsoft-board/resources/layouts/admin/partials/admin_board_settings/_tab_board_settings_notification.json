@@ -57,7 +57,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author' && f !== 'notify_author_channels') : [...(_local.bulkApplyFields ?? []), 'notify_author', 'notify_author_channels']}}"
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
                       }
                     }
                   ],
@@ -96,16 +96,6 @@
                   }
                 }
               ]
-            },
-            {
-              "id": "field_notify_author_channels",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center gap-3 px-3 pb-2 ml-6" },
-              "children": [
-                { "type": "basic", "name": "Label", "props": { "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
-                { "type": "composite", "name": "TagInput", "props": { "name": "basic_defaults.notify_author_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-64 flex-shrink-0" } }
-              ]
             }
           ]
         },
@@ -132,7 +122,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post' && f !== 'notify_admin_on_post_channels') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post', 'notify_admin_on_post_channels']}}"
+                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
                       }
                     }
                   ],
@@ -170,16 +160,6 @@
                     "disabled": "{{_computed.isReadOnly}}"
                   }
                 }
-              ]
-            },
-            {
-              "id": "field_notify_admin_channels",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center gap-3 px-3 pb-2 ml-6" },
-              "children": [
-                { "type": "basic", "name": "Label", "props": { "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
-                { "type": "composite", "name": "TagInput", "props": { "name": "basic_defaults.notify_admin_on_post_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-64 flex-shrink-0" } }
               ]
             }
           ]

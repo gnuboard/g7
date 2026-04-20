@@ -295,7 +295,8 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
         // 쿨타임 캐시 활성화 (이전에 신고한 것처럼)
         $identifier = $this->reporter->id;
-        Cache::put("report_cooldown_{$this->board->slug}_{$identifier}", true, 60);
+        // CooldownRule 은 ModuleCacheDriver 사용 → key 에 prefix 포함
+        Cache::put("g7:module.sirsoft-board:report_cooldown_{$this->board->slug}_{$identifier}", true, 60);
 
         // When: 신고 시도
         $response = $this->actingAs($this->reporter, 'sanctum')

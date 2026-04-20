@@ -137,5 +137,6 @@ return [
         'extract_fallback' => ':method failed: :error — Trying next method.',
         'all_extract_methods_failed' => 'All archive extraction methods failed. Try manual update with --source option.',
         'unzip_command_failed' => 'unzip command failed (exit code: :code). :output',
+        'zip_file_not_found' => 'Specified ZIP file not found: :path',
     ],
 ];

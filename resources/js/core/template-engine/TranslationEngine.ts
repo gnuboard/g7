@@ -164,13 +164,21 @@ export class TranslationEngine {
    * 새로운 다국어 데이터를 서버에서 가져오도록 합니다.
    *
    * @param version 캐시 버전 (타임스탬프)
+   *
+   * @since engine-v1.38.1 활성 `translations` 맵은 비우지 않음 — 이전에는
+   *   `clearCache()` 로 `translations` 까지 비웠기 때문에, `reloadExtensions`
+   *   와 같은 병렬 재동기화 중 새 `loadTranslations()` 가 끝나기 전에 실행되는
+   *   `translate()` 호출이 빈 사전을 만나 raw $t:key 를 반환하는 경합이 있었음.
+   *   이제 TTL 캐시(`this.cache`)만 비우고, 활성 사전(`this.translations`)은
+   *   `loadTranslations` 가 새 데이터를 `set()` 으로 원자 교체할 때까지 유지된다.
    */
   setCacheVersion(version: number): void {
     if (this.cacheVersion !== version) {
       logger.log('Cache version updated:', this.cacheVersion, '->', version);
       this.cacheVersion = version;
-      // 캐시 버전 변경 시 기존 캐시 클리어 (새 버전으로 로드 필요)
-      this.clearCache();
+      // TTL 캐시만 클리어 → getFromCache 미스 → 다음 loadTranslations 가 새 버전 URL 로 fetch.
+      // 활성 translations 맵은 fetch 완료 시 원자적으로 교체되므로 건드리지 않음.
+      this.cache.clear();
     }
   }
 

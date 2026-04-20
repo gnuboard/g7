@@ -104,6 +104,69 @@
                 "path": "count"
             },
             "fallback": { "data": { "count": 0 } }
+        },
+        {
+            "id": "notification_unread_count",
+            "type": "api",
+            "endpoint": "/api/user/notifications/unread-count",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initGlobal": {
+                "key": "notificationCount",
+                "path": "unread_count"
+            },
+            "fallback": { "data": { "unread_count": 0 } },
+            "errorHandling": {
+                "401": { "handler": "suppress" },
+                "403": { "handler": "suppress" }
+            }
+        },
+        {
+            "comment": "알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용",
+            "id": "notifications",
+            "type": "api",
+            "endpoint": "/api/user/notifications",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 15,
+                "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+            },
+            "fallback": { "data": { "data": [] } },
+            "errorHandling": {
+                "401": { "handler": "suppress" },
+                "403": { "handler": "suppress" }
+            }
+        },
+        {
+            "id": "user_notification_ws",
+            "type": "websocket",
+            "channel": "core.user.notifications.{{_global.currentUser?.uuid}}",
+            "event": "notification.received",
+            "channel_type": "private",
+            "target_source": "notification_unread_count",
+            "onReceive": [
+                {
+                    "handler": "refetchDataSource",
+                    "params": { "dataSourceId": "notification_unread_count" }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "params": { "dataSourceId": "notifications" }
+                },
+                {
+                    "handler": "toast",
+                    "params": {
+                        "type": "info",
+                        "message": "{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}",
+                        "duration": 5000
+                    }
+                }
+            ]
         }
     ],
     "components": [
@@ -207,21 +270,12 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "if": "{{!_global.settings?.general?.site_logo_url}}",
                                     "props": {
-                                        "className": "flex items-center justify-center w-8 h-8 bg-black dark:bg-white rounded-lg"
+                                        "className": "text-lg font-bold text-gray-900 dark:text-white"
                                     },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-white dark:text-black font-bold text-sm"
-                                            },
-                                            "text": "N"
-                                        }
-                                    ]
+                                    "text": "{{_global.settings?.general?.site_name ?? 'Site'}}"
                                 }
                             ]
                         },
@@ -246,7 +300,216 @@
                                     }
                                 },
                                 {
-                                    "comment": "장바구니",
+                                    "comment": "알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니)",
+                                    "id": "mobile_notification_center",
+                                    "type": "composite",
+                                    "name": "NotificationCenter",
+                                    "if": "{{_global.currentUser?.uuid}}",
+                                    "props": {
+                                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                                        "unreadCount": "{{_global.notificationCount ?? 0}}",
+                                        "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                                        "titleText": "$t:mypage.notifications.title",
+                                        "emptyText": "$t:mypage.notifications.empty",
+                                        "markAllReadText": "$t:mypage.notifications.mark_all_read",
+                                        "deleteAllText": "$t:mypage.notifications.delete_all",
+                                        "unreadOnlyText": "$t:mypage.notifications.unread_only",
+                                        "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                                        "dropdownAlign": "right"
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onClose",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/user/notifications/read-batch",
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": { "ids": "{{$args[0]}}" }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": { "dataSourceId": "notification_unread_count" }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "event": "onNotificationClick",
+                                            "handler": "parallel",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                                        "params": { "method": "PATCH" },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": { "dataSourceId": "notification_unread_count" }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "event": "onMarkAllRead",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/user/notifications/read-all",
+                                                        "params": { "method": "POST" },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "notificationsCurrentPage": 1,
+                                                                    "notificationsHasMore": null,
+                                                                    "notificationsLoadingMore": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": { "dataSourceId": "notifications" }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": { "dataSourceId": "notification_unread_count" }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "event": "onUnreadOnlyToggle",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "notificationsUnreadOnly": "{{$args[0]}}",
+                                                            "notificationsCurrentPage": 1,
+                                                            "notificationsHasMore": null,
+                                                            "notificationsLoadingMore": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": { "dataSourceId": "notifications" }
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "event": "onDelete",
+                                            "handler": "apiCall",
+                                            "auth_required": true,
+                                            "target": "/api/user/notifications/{{$args[0].id}}",
+                                            "params": { "method": "DELETE" },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notificationsCurrentPage": 1,
+                                                        "notificationsHasMore": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": { "dataSourceId": "notifications" }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": { "dataSourceId": "notification_unread_count" }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "event": "onDeleteAll",
+                                            "handler": "openModal",
+                                            "target": "notification_delete_all_confirm_modal"
+                                        },
+                                        {
+                                            "event": "onLoadMore",
+                                            "handler": "sequence",
+                                            "params": {
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "notificationsLoadingMore": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "auth_required": true,
+                                                        "target": "/api/user/notifications",
+                                                        "params": {
+                                                            "method": "GET",
+                                                            "query": {
+                                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                                                "per_page": 15
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "appendDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "notifications",
+                                                                    "dataPath": "data.data",
+                                                                    "newData": "{{response.data.data ?? []}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                                    "notificationsLoadingMore": false
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "notificationsLoadingMore": false
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니)",
                                     "id": "mobile_cart_btn",
                                     "type": "basic",
                                     "name": "Button",
@@ -276,37 +539,9 @@
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
                                             "props": {
-                                                "className": "absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                                                "className": "absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
                                             },
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "알림",
-                                    "id": "mobile_notification_btn",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "if": "{{_global.currentUser?.uuid}}",
-                                    "props": {
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "bell",
-                                                "className": "w-5 h-5"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_global.notificationCount > 0}}",
-                                            "props": {
-                                                "className": "absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-                                            }
                                         }
                                     ]
                                 },
@@ -452,7 +687,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "search",
-                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -460,9 +695,27 @@
                                             "name": "Input",
                                             "props": {
                                                 "type": "text",
+                                                "name": "q",
                                                 "placeholder": "$t:user.search_placeholder",
                                                 "className": "w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500"
-                                            }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "keydown",
+                                                    "key": "Enter",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": { "target": "global", "mobileMenuOpen": false }
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": { "path": "/search", "query": { "q": "{{$event.target.value}}" } }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
@@ -535,7 +788,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-down",
-                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} w-5 h-5 text-gray-400 transition-transform duration-200"
+                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200"
                                             }
                                         }
                                     ]
@@ -765,7 +1018,7 @@
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
-                                                                            "text": "{{loc === 'ko' ? '한국어' : loc === 'en' ? 'English' : loc}}"
+                                                                            "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                                                         }
                                                                     ]
                                                                 }
@@ -1425,13 +1678,207 @@
                         "maxVisibleBoards": 5,
                         "availableLocales": "{{$locales}}",
                         "currentLocale": "{{$locale}}",
-                        "className": "hidden"
+                        "className": "hidden",
+                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                        "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                        "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                        "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
                     },
                     "responsive": {
                         "desktop": {
                             "props": { "className": "block" }
                         }
-                    }
+                    },
+                    "actions": [
+                        {
+                            "event": "onNotificationClose",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/user/notifications/read-batch",
+                                        "params": {
+                                            "method": "POST",
+                                            "body": { "ids": "{{$args[0]}}" }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": { "dataSourceId": "notification_unread_count" }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "event": "onNotificationClick",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/user/notifications/{{$args[0].id}}/read",
+                                        "params": { "method": "PATCH" },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": { "dataSourceId": "notification_unread_count" }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "if": "{{$args[0].url}}",
+                                        "params": { "path": "{{$args[0].url ?? '/mypage/notifications'}}" }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "event": "onNotificationMarkAllRead",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/user/notifications/read-all",
+                                        "params": { "method": "POST" },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "notificationsCurrentPage": 1,
+                                                    "notificationsHasMore": null,
+                                                    "notificationsLoadingMore": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": { "dataSourceId": "notifications" }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": { "dataSourceId": "notification_unread_count" }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "event": "onNotificationUnreadOnlyToggle",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "notificationsUnreadOnly": "{{$args[0]}}",
+                                            "notificationsCurrentPage": 1,
+                                            "notificationsHasMore": null,
+                                            "notificationsLoadingMore": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": { "dataSourceId": "notifications" }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "event": "onNotificationDelete",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/user/notifications/{{$args[0].id}}",
+                            "params": { "method": "DELETE" },
+                            "onSuccess": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "notificationsCurrentPage": 1,
+                                        "notificationsHasMore": null
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notifications" }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "onNotificationDeleteAll",
+                            "handler": "openModal",
+                            "target": "notification_delete_all_confirm_modal"
+                        },
+                        {
+                            "event": "onNotificationLoadMore",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "notificationsLoadingMore": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/user/notifications",
+                                        "params": {
+                                            "method": "GET",
+                                            "query": {
+                                                "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                                "per_page": 15
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "appendDataSource",
+                                                "params": {
+                                                    "dataSourceId": "notifications",
+                                                    "dataPath": "data.data",
+                                                    "newData": "{{response.data.data ?? []}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                                    "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                                    "notificationsLoadingMore": false
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "notificationsLoadingMore": false
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 },
                 {
                     "comment": "=== 메인 콘텐츠 영역 ===",
@@ -1478,6 +1925,11 @@
                     }
                 }
             ]
+        }
+    ],
+    "modals": [
+        {
+            "partial": "partials/_modal_notification_delete_all_confirm.json"
         }
     ]
 }

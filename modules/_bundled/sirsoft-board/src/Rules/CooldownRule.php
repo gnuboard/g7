@@ -2,10 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Rules;
 
+use App\Extension\Cache\ModuleCacheDriver;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * 쿨다운 검증 규칙
@@ -46,7 +46,12 @@ class CooldownRule implements ValidationRule
         $identifier = Auth::id() ?? request()->ip();
         $cacheKey = "{$this->type}_cooldown_{$this->slug}_{$identifier}";
 
-        if (Cache::has($cacheKey)) {
+        // 모듈 컨트롤러와 동일한 ModuleCacheDriver 사용 → 동일 키 namespace 보장
+        // (`g7:module.sirsoft-board:` 접두사). Validation Rule 은 컨테이너 DI 가 안 되므로
+        // 인스턴스 생성. 동일 모듈 내 다중 호출 시에도 stateless 라 안전.
+        $cache = new ModuleCacheDriver('sirsoft-board', config('cache.default', 'array'));
+
+        if ($cache->has($cacheKey)) {
             $formattedTime = $this->formatDuration($this->cooldownSeconds);
 
             // 타입별 전용 메시지가 있으면 사용, 없으면 공통 메시지

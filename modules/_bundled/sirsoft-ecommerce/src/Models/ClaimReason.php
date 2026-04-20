@@ -2,18 +2,30 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Models\Concerns\HasUserOverrides;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 
 /**
- * 클래임 사유 모델
+ * 클래임 사유 모델.
  *
  * 환불/교환/반품 등 클래임 사유 템플릿을 관리합니다.
+ *
+ * @since 7.0.0-beta.2 (HasUserOverrides 적용)
  */
 class ClaimReason extends Model
 {
+    use HasUserOverrides;
+
+    /**
+     * 사용자 수정 보존 대상 필드.
+     *
+     * @var array<int, string>
+     */
+    protected array $trackableFields = ['name', 'sort_order', 'is_active'];
+
     protected $table = 'ecommerce_claim_reasons';
 
     protected $fillable = [
@@ -26,6 +38,7 @@ class ClaimReason extends Model
         'sort_order',
         'created_by',
         'updated_by',
+        'user_overrides',
     ];
 
     protected $casts = [
@@ -37,6 +50,7 @@ class ClaimReason extends Model
         'sort_order' => 'integer',
         'created_by' => 'integer',
         'updated_by' => 'integer',
+        'user_overrides' => 'array',
     ];
 
     /**

@@ -73,8 +73,6 @@
   "scope_type_self_desc": "Only resources created by you",
   "scope_type_role_desc": "Only resources from users with the same role",
   "multilingual": {
-    "add_language": "Add Language",
-    "language_ko": "한국어",
-    "language_en": "English"
+    "add_language": "Add Language"
   }
 }

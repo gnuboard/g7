@@ -335,6 +335,40 @@ npm install
 
 ---
 
+## 환경 격리 — Shared Settings 파일 주의
+
+### 배경
+
+`storage/app/settings/*.json` 파일(특히 `drivers.json`)은 dev / testing 환경이 **공유**하는 파일입니다. `SettingsServiceProvider::register()`가 부팅 시 이 파일을 읽어 `cache.default`, `session.driver`, `queue.default` 등을 runtime에 오버라이드합니다.
+
+### 발생했던 문제
+
+과거에는 `SettingsServiceProvider::applyDriverConfig()`가 testing 환경에서도 이 오버라이드를 적용하여, `phpunit.xml`이 지정한 `CACHE_STORE=array` 설정이 무효화되고 testing이 dev의 **Redis 인스턴스와 프리픽스를 공유**했습니다. 그 결과:
+
+1. 테스트가 `RefreshDatabase`로 `notification_definitions` 테이블을 truncate
+2. 부팅 중 `NotificationDefinitionService::getAllActive()` 호출 → 빈 컬렉션
+3. 빈 컬렉션이 dev Redis에 cached
+4. 이후 dev 요청이 이 stale 빈 캐시를 읽어 `NotificationHookListener::registerDynamicHooks()`가 어떤 훅도 등록하지 못함
+5. **알림이 silent하게 발송 실패**
+
+### 현재 보호 장치
+
+`SettingsServiceProvider::applyDriverConfig()`는 `env('APP_ENV') === 'testing'`에서 cache/session/queue 드라이버 오버라이드를 **건너뜁니다**. testing 환경은 `phpunit.xml` + `.env.testing`이 지정한 드라이버를 그대로 사용합니다.
+
+### 지침
+
+```text
+⚠️ testing 환경은 dev의 Redis/DB/file 캐시를 절대 공유하지 않아야 함
+
+✅ phpunit.xml: CACHE_STORE=array (in-memory, per-process)
+✅ .env.testing: CACHE_STORE=file 또는 array
+❌ drivers.json 오버라이드는 testing에서 비활성화됨 (SettingsServiceProvider 내 가드)
+```
+
+**향후 변경 시 주의**: `SettingsServiceProvider`에 새 드라이버 오버라이드를 추가할 때, shared 파일 경로(storage/app/settings)에서 읽는다면 testing 환경 가드를 반드시 포함할 것.
+
+---
+
 ## DDL 트랜잭션 격리 문제
 
 ### 문제 설명
@@ -586,6 +620,34 @@ npm run test:run -- --testPathPattern=Router  # 잘못된 명령
 필수: 기존 테스트 유지 (삭제/skip 금지)
 필수: 테스트 작성 후 실행까지 완료
 ```
+
+### 테스트 커버리지 기준
+
+코어, 모듈, 플러그인 전 영역에 걸쳐 아래 계층별 테스트가 존재해야 합니다.
+
+**백엔드 (PHPUnit)**:
+
+| 계층 | 테스트 대상 | 검증 항목 |
+|------|-----------|----------|
+| Controller (Feature) | API 엔드포인트 | 상태 코드, 응답 구조, abilities, 권한 403 |
+| Resource (Unit) | 직렬화 | 필드 반환, 관계 미로드 시 null, json_encode 안전성 |
+| Collection (Unit) | 목록 직렬화 | abilityMap, resolveCollectionAbilities, pagination |
+| Service (Unit) | 비즈니스 로직 | CRUD, 캐싱, 예외 처리 |
+| Listener (Unit) | 이벤트/훅 처리 | 훅 구독, 데이터 변환 |
+| Upgrade (Unit) | 업그레이드 스텝 | 데이터 이관, 멱등성 |
+
+**프론트엔드 (Vitest)**:
+
+| 계층 | 테스트 대상 | 검증 항목 |
+|------|-----------|----------|
+| 컴포넌트 | TSX 컴포넌트 | 렌더링, props, 이벤트 |
+| 레이아웃 | JSON 레이아웃 | 렌더링, 데이터 바인딩, 액션 |
+
+**신규 기능 구현 시 최소 커버리지**:
+- Controller → Feature 테스트 (정상 + 권한 부족)
+- Resource → json_encode 안전성 (관계 미로드 시나리오 포함)
+- Collection → abilities 반환 검증 (abilityMap 정의 시)
+- Service → 핵심 메서드별 정상/예외 케이스
 
 ### 레이아웃 렌더링 테스트 (상세)
 

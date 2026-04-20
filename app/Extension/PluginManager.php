@@ -17,18 +17,26 @@ use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\PermissionType;
 use App\Exceptions\LayoutIncludeException;
+use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Vendor\Exceptions\VendorInstallException;
+use App\Extension\Vendor\VendorInstallContext;
+use App\Extension\Vendor\VendorInstallResult;
+use App\Extension\Vendor\VendorMode;
+use App\Extension\Vendor\VendorResolver;
 use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
+use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -39,10 +47,12 @@ class PluginManager implements PluginManagerInterface
 {
     use Traits\CachesPluginStatus;
     use Traits\ClearsTemplateCaches;
+    use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\RefreshesLayoutExtensions;
     use Traits\ValidatesLayoutFiles;
+    use Traits\ValidatesSeoVariables;
     use Traits\ValidatesTranslationPath;
 
     /** @var int install 프로그레스바 단계 수 */
@@ -122,6 +132,18 @@ class PluginManager implements PluginManagerInterface
             }
 
             $pluginFile = $directory.'/plugin.php';
+            $pluginJson = $directory.'/plugin.json';
+
+            // 무결성 검사: 활성 디렉토리는 있으나 manifest 누락 감지
+            if (! File::exists($pluginFile) || ! File::exists($pluginJson)) {
+                Log::warning('플러그인 활성 디렉토리가 불완전합니다 (manifest 누락)', [
+                    'plugin' => $pluginName,
+                    'directory' => $directory,
+                    'plugin_php' => File::exists($pluginFile),
+                    'plugin_json' => File::exists($pluginJson),
+                    'hint' => "복구: php artisan plugin:install {$pluginName} --force",
+                ]);
+            }
 
             if (File::exists($pluginFile)) {
                 // vendor-plugin 형식을 네임스페이스로 변환
@@ -144,6 +166,9 @@ class PluginManager implements PluginManagerInterface
 
                         // 훅 리스너 자동 등록
                         $this->registerPluginHookListeners($plugin);
+
+                        // 브로드캐스트 채널 자동 등록
+                        $this->registerPluginChannels($plugin);
                     }
                 }
             }
@@ -260,8 +285,12 @@ class PluginManager implements PluginManagerInterface
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 의존성 문제 시
      */
-    public function installPlugin(string $pluginName, ?\Closure $onProgress = null): bool
-    {
+    public function installPlugin(
+        string $pluginName,
+        ?\Closure $onProgress = null,
+        VendorMode $vendorMode = VendorMode::Auto,
+        bool $force = false,
+    ): bool {
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($pluginName);
 
@@ -277,26 +306,40 @@ class PluginManager implements PluginManagerInterface
         // _pending 감지: 활성 디렉토리 부재 + _pending 존재 시 스테이징 설치 흐름
         $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
         $composerDoneInPending = false;
+        $resolvedVendorMode = $vendorMode;
 
         if (! File::isDirectory($activePath)
             && ExtensionPendingHelper::isPending($this->pluginsPath, $pluginName)) {
-            // _pending에서 Composer 의존성 설치 (활성 디렉토리 이관 전)
+            // _pending에서 Vendor 의존성 설치 (활성 디렉토리 이관 전)
             if (! app()->environment('testing')) {
                 $pendingPath = ExtensionPendingHelper::getPendingPath($this->pluginsPath, $pluginName);
                 if ($this->extensionManager->hasComposerDependenciesAt($pendingPath)) {
-                    $onProgress?->__invoke('composer', '_pending에서 Composer 의존성 설치 중...');
-                    $composerResult = $this->extensionManager->runComposerInstallAt($pendingPath);
-                    if (! $composerResult) {
-                        Log::warning('플러그인 _pending Composer 의존성 설치 실패', ['plugin' => $pluginName]);
+                    $onProgress?->__invoke('composer', '_pending에서 Vendor 의존성 설치 중...');
+                    try {
+                        $vendorResult = $this->installVendorViaResolver(
+                            $pluginName,
+                            $pendingPath,
+                            $vendorMode,
+                            'install',
+                            null,
+                            $onProgress,
+                        );
+                        $resolvedVendorMode = $vendorResult->mode;
+                        $composerDoneInPending = true;
+                    } catch (VendorInstallException $e) {
+                        Log::warning('플러그인 _pending Vendor 의존성 설치 실패', [
+                            'plugin' => $pluginName,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
-                    $composerDoneInPending = true;
                 }
             }
         }
 
         // _pending 또는 _bundled에서 활성 디렉토리로 복사 (미설치 플러그인 설치 시)
+        // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
         $onProgress?->__invoke('copy', '파일 복사 중...');
-        $this->copyFromPendingOrBundled($pluginName, $onProgress);
+        $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
 
         // 플러그인이 활성 디렉토리에 있지 않으면 로드 시도
         $plugin = $this->getPlugin($pluginName);
@@ -322,6 +365,9 @@ class PluginManager implements PluginManagerInterface
 
         // 언어 파일 경로 검증 (lang 경로 필수)
         $this->validateTranslationPath($plugin, 'plugin');
+
+        // SEO 변수명 중복 검증
+        $this->validateSeoVariables($plugin, 'plugin');
 
         // 플러그인 설치 실행
         $onProgress?->__invoke('validate', '검증 중...');
@@ -363,6 +409,7 @@ class PluginManager implements PluginManagerInterface
                     'update_available' => $updateAvailable,
                     'metadata' => $plugin->getMetadata(),
                     'status' => ExtensionStatus::Inactive->value,
+                    'vendor_mode' => $resolvedVendorMode->value,
                     'hooks' => $this->normalizeHooksToArray($plugin->getHooks()),
                     'created_by' => Auth::id(),
                     'updated_by' => Auth::id(),
@@ -449,46 +496,43 @@ class PluginManager implements PluginManagerInterface
         }
 
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
+        // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
         $missingModules = [];
         $missingPlugins = [];
 
-        // 의존성 확인 (모듈/플러그인 양쪽 검색)
         $dependencies = $plugin->getDependencies();
-        foreach ($dependencies as $depIdentifier => $versionConstraint) {
-            // 플러그인에서 검색
-            $depPlugin = $this->pluginRepository->findByIdentifier($depIdentifier);
-            if ($depPlugin) {
-                if ($depPlugin->status !== ExtensionStatus::Active->value) {
-                    $missingPlugins[] = [
-                        'identifier' => $depPlugin->identifier,
-                        'name' => $depPlugin->getLocalizedName(),
-                        'status' => 'inactive',
+        foreach ($this->iterateNestedDependencies($dependencies) as $depIdentifier => $declaredType) {
+            if ($declaredType === 'module') {
+                $depModule = $this->moduleRepository->findByIdentifier($depIdentifier);
+                if (! $depModule) {
+                    $missingModules[] = [
+                        'identifier' => $depIdentifier,
+                        'name' => $depIdentifier,
+                        'status' => 'not_installed',
                     ];
-                }
-
-                continue;
-            }
-
-            // 모듈에서 검색
-            $depModule = $this->moduleRepository->findByIdentifier($depIdentifier);
-            if ($depModule) {
-                if ($depModule->status !== ExtensionStatus::Active->value) {
+                } elseif ($depModule->status !== ExtensionStatus::Active->value) {
                     $missingModules[] = [
                         'identifier' => $depModule->identifier,
                         'name' => $depModule->getLocalizedName(),
                         'status' => 'inactive',
                     ];
                 }
-
-                continue;
+            } else {
+                $depPlugin = $this->pluginRepository->findByIdentifier($depIdentifier);
+                if (! $depPlugin) {
+                    $missingPlugins[] = [
+                        'identifier' => $depIdentifier,
+                        'name' => $depIdentifier,
+                        'status' => 'not_installed',
+                    ];
+                } elseif ($depPlugin->status !== ExtensionStatus::Active->value) {
+                    $missingPlugins[] = [
+                        'identifier' => $depPlugin->identifier,
+                        'name' => $depPlugin->getLocalizedName(),
+                        'status' => 'inactive',
+                    ];
+                }
             }
-
-            // 어디에서도 찾을 수 없음
-            $missingPlugins[] = [
-                'identifier' => $depIdentifier,
-                'name' => $depIdentifier,
-                'status' => 'not_installed',
-            ];
         }
 
         $hasMissingDependencies = ! empty($missingModules) || ! empty($missingPlugins);
@@ -636,6 +680,9 @@ class PluginManager implements PluginManagerInterface
             ];
         }
 
+        // 드라이버 사용 중 경고 확인
+        $driverWarnings = $this->checkDriversInUse($plugin->getIdentifier());
+
         $result = $plugin->deactivate();
         $layoutsDeleted = 0;
 
@@ -661,11 +708,55 @@ class PluginManager implements PluginManagerInterface
             // 확장 기능 캐시 버전 증가 (프론트엔드 캐시 무효화)
             $this->incrementExtensionCacheVersion();
 
+            // 플러그인 자체 캐시 전체 정리
+            $this->flushPluginCache($plugin);
+
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
         }
 
-        return ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
+        $response = ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
+
+        if (! empty($driverWarnings)) {
+            $response['driver_warnings'] = $driverWarnings;
+        }
+
+        return $response;
+    }
+
+    /**
+     * 플러그인이 제공하는 드라이버 중 현재 사용 중인 것이 있는지 확인합니다.
+     *
+     * @param  string  $pluginIdentifier  플러그인 식별자
+     * @return array<array{category: string, driver_id: string}> 사용 중인 드라이버 목록
+     */
+    private function checkDriversInUse(string $pluginIdentifier): array
+    {
+        try {
+            $driverRegistry = app(DriverRegistryService::class);
+
+            $driversInUse = $driverRegistry->getPluginProvidedDriversInUse($pluginIdentifier);
+
+            if (! empty($driversInUse)) {
+                $driverNames = array_map(
+                    fn (array $d) => "{$d['category']}:{$d['driver_id']}",
+                    $driversInUse
+                );
+
+                Log::warning("플러그인 '{$pluginIdentifier}' 비활성화: 사용 중인 드라이버가 기본값으로 전환됩니다.", [
+                    'drivers' => $driverNames,
+                ]);
+            }
+
+            return $driversInUse;
+        } catch (\Throwable $e) {
+            // 드라이버 확인 실패가 비활성화를 차단해서는 안 됨
+            Log::warning("플러그인 드라이버 사용 확인 실패: {$pluginIdentifier}", [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -750,8 +841,11 @@ class PluginManager implements PluginManagerInterface
             $result = $plugin->uninstall();
 
             if ($result) {
-                // 관련 권한 삭제
-                $this->removePluginPermissions($plugin);
+                // 권한/역할은 $deleteData=true 시에만 삭제.
+                // PO 정책: "동적 권한은 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
+                if ($deleteData) {
+                    $this->removePluginPermissions($plugin);
+                }
 
                 // 플러그인 레이아웃 영구 삭제
                 $this->deletePluginLayouts($plugin->getIdentifier());
@@ -787,6 +881,9 @@ class PluginManager implements PluginManagerInterface
 
                 // 확장 기능 캐시 버전 증가 (프론트엔드 캐시 무효화)
                 $this->incrementExtensionCacheVersion();
+
+                // 플러그인 자체 캐시 전체 정리
+                $this->flushPluginCache($plugin);
 
                 // 플러그인 상태 캐시 무효화
                 self::invalidatePluginStatusCache();
@@ -1058,6 +1155,7 @@ class PluginManager implements PluginManagerInterface
             'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
             'github_url' => $plugin->getGithubUrl(),
             'metadata' => $metadata,
+            'requires_core' => $plugin->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
             'permissions' => $plugin->getPermissions(),
             'roles' => $plugin->getRoles(),
@@ -1103,6 +1201,7 @@ class PluginManager implements PluginManagerInterface
                 'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
                 'github_url' => $plugin->getGithubUrl(),
                 'metadata' => $pluginMetadata,
+                'requires_core' => $plugin->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
                 'permissions' => $plugin->getPermissions(),
                 'roles' => $plugin->getRoles(),
@@ -1129,6 +1228,7 @@ class PluginManager implements PluginManagerInterface
             'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
             'github_url' => $metadata['github_url'] ?? null,
             'metadata' => $metadata,
+            'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
             'permissions' => $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
@@ -1278,37 +1378,62 @@ class PluginManager implements PluginManagerInterface
     protected function checkDependencies(PluginInterface $plugin): void
     {
         $dependencies = $plugin->getDependencies();
-        $moduleRepository = app(ModuleRepositoryInterface::class);
         $unmetDependencies = [];
 
-        foreach ($dependencies as $dependency => $versionConstraint) {
-            // 플러그인에서 검색
-            $dependencyPlugin = $this->pluginRepository->findByIdentifier($dependency);
-            if ($dependencyPlugin) {
-                if ($dependencyPlugin->status !== ExtensionStatus::Active->value) {
-                    $unmetDependencies[] = __('plugins.dependency_not_active', ['dependency' => $dependency]);
-                }
-
-                continue;
+        // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
+        foreach ($this->iterateNestedDependencies($dependencies) as $identifier => $declaredType) {
+            if (! $this->isDependencySatisfied($identifier, $declaredType)) {
+                $unmetDependencies[] = __('plugins.dependency_not_active', ['dependency' => $identifier]);
             }
-
-            // 모듈에서 검색
-            $dependencyModule = $moduleRepository->findByIdentifier($dependency);
-            if ($dependencyModule) {
-                if ($dependencyModule->status !== ExtensionStatus::Active->value) {
-                    $unmetDependencies[] = __('plugins.dependency_not_active', ['dependency' => $dependency]);
-                }
-
-                continue;
-            }
-
-            // 플러그인/모듈 어디에서도 찾을 수 없음
-            $unmetDependencies[] = __('plugins.dependency_not_active', ['dependency' => $dependency]);
         }
 
         if (! empty($unmetDependencies)) {
             throw new \Exception(implode("\n", $unmetDependencies));
         }
+    }
+
+    /**
+     * 중첩 구조 의존성 배열을 순회하며 (identifier => declaredType) 를 yield 합니다.
+     *
+     * @param  array  $dependencies  ['modules' => [...], 'plugins' => [...]] 형식
+     * @return \Generator<string, string>  identifier => 'module'|'plugin'
+     */
+    private function iterateNestedDependencies(array $dependencies): \Generator
+    {
+        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $identifier => $versionConstraint) {
+                yield $identifier => 'module';
+            }
+        }
+        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $identifier => $versionConstraint) {
+                yield $identifier => 'plugin';
+            }
+        }
+    }
+
+    /**
+     * 의존성이 활성 상태로 설치되어 있는지 확인합니다.
+     *
+     * declaredType 이 'module' 이면 modules 테이블만, 'plugin' 이면 plugins 테이블만 검색.
+     *
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $declaredType  'module' | 'plugin'
+     * @return bool 활성 상태로 설치되어 있으면 true
+     */
+    private function isDependencySatisfied(string $identifier, string $declaredType): bool
+    {
+        if ($declaredType === 'module') {
+            $record = app(ModuleRepositoryInterface::class)->findByIdentifier($identifier);
+        } else {
+            $record = $this->pluginRepository->findByIdentifier($identifier);
+        }
+
+        if (! $record) {
+            return false;
+        }
+
+        return $record->status === ExtensionStatus::Active->value;
     }
 
     /**
@@ -1321,35 +1446,7 @@ class PluginManager implements PluginManagerInterface
      */
     protected function enrichDependencies(array $dependencies): array
     {
-        $result = [];
-        $locale = app()->getLocale();
-
-        // 모듈 의존성 처리
-        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
-            $moduleRepository = app(ModuleRepositoryInterface::class);
-            foreach ($dependencies['modules'] as $identifier => $versionConstraint) {
-                $module = $moduleRepository->findByIdentifier($identifier);
-                $result[] = [
-                    'identifier' => $identifier,
-                    'name' => $module ? $this->getLocalizedValue($module->name, $locale) : $identifier,
-                    'type' => 'module',
-                ];
-            }
-        }
-
-        // 플러그인 의존성 처리
-        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
-            foreach ($dependencies['plugins'] as $identifier => $versionConstraint) {
-                $plugin = $this->pluginRepository->findByIdentifier($identifier);
-                $result[] = [
-                    'identifier' => $identifier,
-                    'name' => $plugin ? $this->getLocalizedValue($plugin->name, $locale) : $identifier,
-                    'type' => 'plugin',
-                ];
-            }
-        }
-
-        return $result;
+        return DependencyEnricher::enrich($dependencies);
     }
 
     /**
@@ -1611,7 +1708,9 @@ class PluginManager implements PluginManagerInterface
             extensionType: ExtensionOwnerType::Plugin,
             extensionIdentifier: $pluginIdentifier,
             otherAttributes: [
-                'type' => PermissionType::Admin,
+                'type' => isset($permissionConfig['type'])
+                    ? PermissionType::from($permissionConfig['type'])
+                    : PermissionType::Admin,
                 'order' => 100,
                 'parent_id' => null,
             ],
@@ -1735,6 +1834,64 @@ class PluginManager implements PluginManagerInterface
             permissionRoleMap: $permissionRoleMap,
             allExtensionPermIdentifiers: $allPermIdentifiers,
         );
+    }
+
+    /**
+     * 플러그인 정의 기준으로 stale 권한·역할을 정리합니다 (완전 동기화 원칙).
+     *
+     * 플러그인은 메뉴(getAdminMenus) 를 지원하지 않으므로 권한·역할만 대상.
+     * user_overrides 보존 및 `users.role_id` 참조 역할 삭제 차단은 helper 가 담당.
+     *
+     * @param  PluginInterface  $plugin
+     * @return void
+     */
+    protected function cleanupStalePluginEntries(PluginInterface $plugin): void
+    {
+        $roleSyncHelper = $this->getRoleSyncHelper();
+
+        // 1. 권한 stale 정리 (정적 정의 + 동적 식별자 병합)
+        //
+        // 동적 권한을 보유한 플러그인은 AbstractPlugin::getDynamicPermissionIdentifiers()
+        // 를 override 하여 런타임 생성 권한을 보존 대상으로 등록한다.
+        $permissionConfig = $plugin->getPermissions();
+        if (isset($permissionConfig['categories'])) {
+            $expectedPermIds = [$plugin->getIdentifier()];
+            foreach ($permissionConfig['categories'] as $cat) {
+                $categoryIdentifier = $plugin->getIdentifier().'.'.($cat['identifier'] ?? '');
+                if (! empty($cat['identifier'])) {
+                    $expectedPermIds[] = $categoryIdentifier;
+                }
+                foreach ($cat['permissions'] ?? [] as $p) {
+                    if (isset($p['action'])) {
+                        $expectedPermIds[] = $categoryIdentifier.'.'.$p['action'];
+                    }
+                }
+            }
+            if (method_exists($plugin, 'getDynamicPermissionIdentifiers')) {
+                $expectedPermIds = array_merge($expectedPermIds, $plugin->getDynamicPermissionIdentifiers());
+            }
+            $roleSyncHelper->cleanupStalePermissions(
+                ExtensionOwnerType::Plugin,
+                $plugin->getIdentifier(),
+                $expectedPermIds,
+            );
+        }
+
+        // 2. 역할 stale 정리 (정적 + 동적 병합. 둘 다 비어있으면 skip)
+        if (method_exists($plugin, 'getRoles')) {
+            $roles = $plugin->getRoles();
+            $staticRoleIds = array_column($roles, 'identifier');
+            $dynamicRoleIds = method_exists($plugin, 'getDynamicRoleIdentifiers')
+                ? $plugin->getDynamicRoleIdentifiers()
+                : [];
+            if (! empty($staticRoleIds) || ! empty($dynamicRoleIds)) {
+                $roleSyncHelper->cleanupStaleRoles(
+                    ExtensionOwnerType::Plugin,
+                    $plugin->getIdentifier(),
+                    array_merge($staticRoleIds, $dynamicRoleIds),
+                );
+            }
+        }
     }
 
     /**
@@ -1924,6 +2081,24 @@ class PluginManager implements PluginManagerInterface
             Log::info('플러그인 설정 디렉토리 삭제 완료', [
                 'plugin' => $identifier,
                 'path' => $pluginStorageDir,
+            ]);
+        }
+    }
+
+    /**
+     * 플러그인의 캐시를 전체 삭제합니다.
+     *
+     * 플러그인 비활성화/삭제 시 해당 플러그인의 격리된 캐시를 정리합니다.
+     *
+     * @param  PluginInterface  $plugin  플러그인 인스턴스
+     */
+    protected function flushPluginCache(PluginInterface $plugin): void
+    {
+        try {
+            $plugin->getCache()->flush();
+        } catch (\Exception $e) {
+            Log::warning("플러그인 캐시 정리 실패: {$plugin->getIdentifier()}", [
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -2202,37 +2377,7 @@ class PluginManager implements PluginManagerInterface
             }
 
             try {
-                // 구독할 훅 정보 가져오기
-                $subscribedHooks = $listenerClass::getSubscribedHooks();
-
-                foreach ($subscribedHooks as $hookName => $config) {
-                    $method = $config['method'] ?? 'handle';
-                    $priority = $config['priority'] ?? 10;
-                    $type = $config['type'] ?? 'action';
-
-                    if ($type === 'filter') {
-                        // Filter 훅: 반환값을 전달
-                        HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method) {
-                            $listener = app($listenerClass);
-
-                            return $listener->{$method}($value, ...$args);
-                        }, $priority);
-                    } else {
-                        // 기존 Action 훅
-                        HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method) {
-                            $listener = app($listenerClass);
-                            $listener->{$method}(...$args);
-                        }, $priority);
-                    }
-
-                    Log::info('훅 리스너 등록 완료', [
-                        'hook' => $hookName,
-                        'listener' => $listenerClass,
-                        'method' => $method,
-                        'priority' => $priority,
-                        'type' => $type,
-                    ]);
-                }
+                HookListenerRegistrar::register($listenerClass, $plugin->getIdentifier());
             } catch (\Exception $e) {
                 Log::error('훅 리스너 등록 중 오류 발생', [
                     'listener' => $listenerClass,
@@ -2240,6 +2385,46 @@ class PluginManager implements PluginManagerInterface
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
+        }
+    }
+
+    /**
+     * 플러그인의 브로드캐스트 채널을 등록합니다.
+     *
+     * 플러그인의 getChannels() 메서드에서 정의한 채널을
+     * Broadcast::channel()로 자동 등록합니다.
+     *
+     * @param  PluginInterface  $plugin  플러그인 인스턴스
+     */
+    protected function registerPluginChannels(PluginInterface $plugin): void
+    {
+        if (! method_exists($plugin, 'getChannels')) {
+            return;
+        }
+
+        $activeIdentifiers = self::getActivePluginIdentifiers();
+        if (! in_array($plugin->getIdentifier(), $activeIdentifiers, true)) {
+            return;
+        }
+
+        $channels = $plugin->getChannels();
+
+        foreach ($channels as $channelName => $config) {
+            $permission = $config['permission'] ?? null;
+
+            Broadcast::channel($channelName, function ($user, ...$params) use ($permission) {
+                if ($permission) {
+                    return $user->hasPermission($permission);
+                }
+
+                return true;
+            });
+
+            Log::info('플러그인 브로드캐스트 채널 등록 완료', [
+                'channel' => $channelName,
+                'plugin' => $plugin->getIdentifier(),
+                'permission' => $permission,
+            ]);
         }
     }
 
@@ -2258,43 +2443,16 @@ class PluginManager implements PluginManagerInterface
         }
 
         try {
-            // GitHub URL에서 owner/repo 추출
-            // 예: https://github.com/vendor/plugin -> vendor/plugin
-            if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
-                return null;
-            }
-
-            $owner = $matches[1];
-            $repo = $matches[2];
-
-            // GitHub API로 최신 릴리스 정보 가져오기
-            $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
-
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'GET',
-                    'header' => GithubHelper::buildHeaders(config('app.update.github_token') ?? ''),
-                    'timeout' => 5,
-                ],
-            ]);
-
-            $response = @file_get_contents($apiUrl, false, $context);
-
-            if ($response === false) {
-                Log::warning("GitHub API 호출 실패: {$apiUrl}");
-
-                return null;
-            }
-
-            $data = json_decode($response, true);
-
-            if (isset($data['tag_name'])) {
-                // tag_name에서 v 접두사 제거 (예: v1.2.3 -> 1.2.3)
-                return ltrim($data['tag_name'], 'v');
-            }
-
+            [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
+        } catch (\RuntimeException $e) {
             return null;
+        }
 
+        try {
+            $token = (string) (config('app.update.github_token') ?? '');
+            $result = GithubHelper::fetchLatestRelease($owner, $repo, $token);
+
+            return $result['version'];
         } catch (\Exception $e) {
             Log::error('최신 버전 확인 중 오류 발생', [
                 'plugin' => $plugin->getName(),
@@ -2513,6 +2671,7 @@ class PluginManager implements PluginManagerInterface
         $content = $layoutData;
 
         // DB에 레이아웃 등록 (updateOrCreate로 중복 방지)
+        // original_content_hash/size: 파일 원본 기준. keep 전략에서 사용자 수정 감지에 사용.
         $this->layoutRepository->updateOrCreate(
             [
                 'template_id' => $template->id,
@@ -2523,6 +2682,8 @@ class PluginManager implements PluginManagerInterface
                 'extends' => $layoutData['extends'] ?? null,
                 'source_type' => LayoutSourceType::Plugin,
                 'source_identifier' => $pluginIdentifier,
+                'original_content_hash' => $this->computeContentHash($content),
+                'original_content_size' => $this->computeContentSize($content),
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]
@@ -2980,11 +3141,12 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $pluginName  플러그인명
+     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
      * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName): array
+    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false): array
     {
         $plugin = $this->getPlugin($pluginName);
 
@@ -3090,6 +3252,19 @@ class PluginManager implements PluginManagerInterface
                                 : $existingLayout->content;
 
                             if ($existingContent !== $layoutData) {
+                                // 사용자 수정 감지: preserveModified 시 original_content_hash 와 현재 hash 비교
+                                if ($preserveModified) {
+                                    $currentHash = $this->computeContentHash($existingContent);
+                                    $originalHash = $existingLayout->original_content_hash;
+
+                                    if ($originalHash && $currentHash !== $originalHash) {
+                                        $stats['skipped'] = ($stats['skipped'] ?? 0) + 1;
+                                        Log::info("플러그인 레이아웃 보존 (사용자 수정): {$layoutName}", ['plugin' => $identifier]);
+
+                                        continue;
+                                    }
+                                }
+
                                 $this->registerLayoutToTemplate($template, $layoutName, $layoutData, $identifier);
                                 $stats['updated']++;
                             } else {
@@ -3180,12 +3355,13 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $pluginName  플러그인명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      */
-    protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null): void
+    protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null, bool $force = false): void
     {
         $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
 
-        // 이미 활성 디렉토리에 존재하면 복사 불필요
-        if (File::isDirectory($activePath)) {
+        // force=false 시 활성 디렉토리 존재하면 스킵.
+        // force=true 시 불완전 활성 디렉토리(manifest 누락 등)를 원본으로 덮어씀.
+        if (! $force && File::isDirectory($activePath)) {
             return;
         }
 
@@ -3193,7 +3369,7 @@ class PluginManager implements PluginManagerInterface
         if (ExtensionPendingHelper::isPending($this->pluginsPath, $pluginName)) {
             $sourcePath = ExtensionPendingHelper::getPendingPath($this->pluginsPath, $pluginName);
             ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
-            Log::info('플러그인을 _pending에서 활성 디렉토리로 복사', ['plugin' => $pluginName]);
+            Log::info('플러그인을 _pending에서 활성 디렉토리로 복사', ['plugin' => $pluginName, 'force' => $force]);
 
             return;
         }
@@ -3202,7 +3378,7 @@ class PluginManager implements PluginManagerInterface
         if (ExtensionPendingHelper::isBundled($this->pluginsPath, $pluginName)) {
             $sourcePath = ExtensionPendingHelper::getBundledPath($this->pluginsPath, $pluginName);
             ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
-            Log::info('플러그인을 _bundled에서 활성 디렉토리로 복사', ['plugin' => $pluginName]);
+            Log::info('플러그인을 _bundled에서 활성 디렉토리로 복사', ['plugin' => $pluginName, 'force' => $force]);
         }
     }
 
@@ -3300,7 +3476,15 @@ class PluginManager implements PluginManagerInterface
     /**
      * 단일 플러그인의 업데이트 가능 여부를 확인합니다.
      *
-     * 우선순위: GitHub → _pending → _bundled
+     * 일반 업데이트 우선순위 (GitHub 엄격 우선):
+     *   1. GitHub URL 존재 + API 조회 성공 → GitHub 결과만 신뢰
+     *      a. GitHub 버전 > 현재 → 'github' 소스 반환
+     *      b. GitHub 버전 ≤ 현재 → "업데이트 없음" 즉시 반환 (bundled 폴백 없음)
+     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망)
+     *
+     * --force 업데이트 우선순위는 resolveForceUpdateSource() 참조 (번들 우선).
+     *
+     * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  플러그인 식별자
      * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
@@ -3320,20 +3504,45 @@ class PluginManager implements PluginManagerInterface
         $currentVersion = $record->version;
         $plugin = $this->getPlugin($identifier);
 
-        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인
+        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         if ($plugin && $plugin->getGithubUrl()) {
-            $latestVersion = $this->fetchLatestVersion($plugin);
-            if ($latestVersion && version_compare($latestVersion, $currentVersion, '>')) {
+            try {
+                $latestVersion = $this->fetchLatestVersion($plugin);
+            } catch (\Throwable $e) {
+                Log::warning('플러그인 GitHub 버전 조회 실패', [
+                    'plugin' => $identifier,
+                    'url' => $plugin->getGithubUrl(),
+                    'error' => $e->getMessage(),
+                ]);
+                $latestVersion = null;
+            }
+
+            if ($latestVersion !== null) {
+                // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
+                if (version_compare($latestVersion, $currentVersion, '>')) {
+                    return [
+                        'update_available' => true,
+                        'update_source' => 'github',
+                        'latest_version' => $latestVersion,
+                        'current_version' => $currentVersion,
+                    ];
+                }
+
                 return [
-                    'update_available' => true,
-                    'update_source' => 'github',
-                    'latest_version' => $latestVersion,
+                    'update_available' => false,
+                    'update_source' => null,
+                    'latest_version' => $currentVersion,
                     'current_version' => $currentVersion,
                 ];
             }
+
+            // GitHub 조회 실패 → _bundled 폴백 안내
+            Log::info('플러그인 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
+                'plugin' => $identifier,
+            ]);
         }
 
-        // 2. _bundled에서 업데이트 확인
+        // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
         if (isset($this->bundledPlugins[$identifier])) {
             $bundledVersion = $this->bundledPlugins[$identifier]['version'] ?? null;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
@@ -3487,10 +3696,12 @@ class PluginManager implements PluginManagerInterface
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      * @param  string  $fromVersion  시작 버전 (이 버전 초과)
      * @param  string  $toVersion  목표 버전 (이 버전 이하)
+     * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
+     * @param  \Closure|null  $onStep  각 step 실행 직전에 호출되는 콜백 (인자: 버전 문자열)
      *
      * @throws \Exception 스텝 실행 실패 시
      */
-    protected function runUpgradeSteps(PluginInterface $plugin, string $fromVersion, string $toVersion): void
+    protected function runUpgradeSteps(PluginInterface $plugin, string $fromVersion, string $toVersion, bool $force = false, ?\Closure $onStep = null): void
     {
         $allSteps = $plugin->upgrades();
 
@@ -3498,10 +3709,17 @@ class PluginManager implements PluginManagerInterface
             return;
         }
 
+        // force + 동일 버전: 해당 버전의 스텝도 포함 (>= 비교)
+        $sameVersion = version_compare($fromVersion, $toVersion, '==');
+
         // $fromVersion 초과 ~ $toVersion 이하 필터링
         $filteredSteps = [];
         foreach ($allSteps as $stepVersion => $step) {
-            if (version_compare($stepVersion, $fromVersion, '>') && version_compare($stepVersion, $toVersion, '<=')) {
+            $included = $force && $sameVersion
+                ? version_compare($stepVersion, $toVersion, '==')
+                : version_compare($stepVersion, $fromVersion, '>') && version_compare($stepVersion, $toVersion, '<=');
+
+            if ($included) {
                 $filteredSteps[$stepVersion] = $step;
             }
         }
@@ -3521,6 +3739,8 @@ class PluginManager implements PluginManagerInterface
         foreach ($filteredSteps as $stepVersion => $step) {
             $stepContext = $context->withCurrentStep($stepVersion);
 
+            $onStep?->__invoke((string) $stepVersion);
+
             $stepContext->logger->info("Upgrading {$plugin->getIdentifier()} step {$stepVersion}...");
 
             if ($step instanceof UpgradeStepInterface) {
@@ -3534,6 +3754,54 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 플러그인의 레이아웃 중 사용자가 수정한 것이 있는지 확인합니다.
+     *
+     * 관리자 UI 업데이트 모달에서 layout_strategy 선택 시 보존 대상 목록 표시에 사용됩니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     */
+    public function hasModifiedLayouts(string $identifier): array
+    {
+        $layouts = $this->layoutRepository->getBySourceIdentifier(
+            $identifier,
+            \App\Enums\LayoutSourceType::Plugin,
+        );
+
+        $modifiedLayouts = $layouts->filter(function ($layout) {
+            if (! $layout->original_content_hash) {
+                return false;
+            }
+
+            $currentContent = is_string($layout->content)
+                ? json_decode($layout->content, true)
+                : $layout->content;
+            $currentHash = $this->computeContentHash($currentContent);
+
+            return $currentHash !== $layout->original_content_hash;
+        });
+
+        return [
+            'has_modified_layouts' => $modifiedLayouts->isNotEmpty(),
+            'modified_count' => $modifiedLayouts->count(),
+            'modified_layouts' => $modifiedLayouts->map(function ($layout) {
+                $currentContent = is_string($layout->content)
+                    ? json_decode($layout->content, true)
+                    : $layout->content;
+                $currentSize = $this->computeContentSize($currentContent);
+                $originalSize = $layout->original_content_size ?? $currentSize;
+
+                return [
+                    'id' => $layout->id,
+                    'name' => $layout->name,
+                    'updated_at' => $layout->updated_at?->format('Y-m-d H:i:s'),
+                    'size_diff' => $currentSize - $originalSize,
+                ];
+            })->values()->toArray(),
+        ];
+    }
+
+    /**
      * 플러그인을 업데이트합니다.
      *
      * 프로세스: 백업 → updating 상태 → 파일 교체 → 마이그레이션 → DB 갱신 →
@@ -3542,11 +3810,23 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $identifier  플러그인 식별자
      * @param  bool  $force  버전 비교 없이 강제 업데이트
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  VendorMode  $vendorMode  vendor 설치 모드
+     * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
+     * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
      */
-    public function updatePlugin(string $identifier, bool $force = false, ?\Closure $onProgress = null): array
+    public function updatePlugin(
+        string $identifier,
+        bool $force = false,
+        ?\Closure $onProgress = null,
+        VendorMode $vendorMode = VendorMode::Auto,
+        string $layoutStrategy = 'overwrite',
+        ?\Closure $onUpgradeStep = null,
+        ?string $sourceOverride = null,
+        ?string $zipPath = null,
+    ): array
     {
         $record = $this->pluginRepository->findByIdentifier($identifier);
         if (! $record) {
@@ -3568,19 +3848,60 @@ class PluginManager implements PluginManagerInterface
         $fromVersion = $record->version;
         $updateInfo = $this->checkPluginUpdate($identifier);
 
-        if (! $updateInfo['update_available'] && ! $force) {
+        // ZIP 강제 경로: 외부 ZIP 파일을 직접 추출하여 사용. checkPluginUpdate 결과는 무시.
+        // zipTempDir / zipExtractedDir 는 staging 단계에서 사용 후 finally 에서 정리.
+        $zipTempDir = null;
+        $zipExtractedDir = null;
+        if ($zipPath !== null) {
+            $prepared = $this->extensionManager->prepareZipSource($zipPath, $identifier, 'plugin.json');
+            $zipTempDir = $prepared['temp_dir'];
+            $zipExtractedDir = $prepared['extracted_dir'];
+            $updateSource = 'zip';
+            $toVersion = $prepared['to_version'];
+        }
+        // 번들 강제 경로: 코어 업그레이드 / 일괄 업데이트 컨텍스트에서 GitHub 상태와 무관하게
+        // _bundled manifest 버전을 강제 사용.
+        elseif ($sourceOverride === 'bundled') {
+            $bundled = $this->getBundledVersion($identifier);
+            if ($bundled === null) {
+                throw new \RuntimeException(
+                    __('plugins.errors.force_update_no_source', ['plugin' => $identifier])
+                );
+            }
+            $updateSource = 'bundled';
+            $toVersion = $bundled;
+        } elseif ($sourceOverride === 'github') {
+            // GitHub 강제 경로: _bundled 폴백 없이 GitHub 만 시도.
+            if (! $plugin->getGithubUrl()) {
+                throw new \RuntimeException(
+                    __('plugins.errors.force_update_no_source', ['plugin' => $identifier])
+                );
+            }
+            $updateSource = 'github';
+            $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
+                ?? $updateInfo['current_version'];
+        } elseif (! $updateInfo['update_available'] && ! $force) {
             return [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('plugins.no_update_available'),
             ];
-        }
-
-        // force 시 버전/소스 결정
-        if ($force && ! $updateInfo['update_available']) {
-            $toVersion = $updateInfo['current_version'];
+        } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
+
+            if ($updateSource === null) {
+                throw new \RuntimeException(
+                    __('plugins.errors.force_update_no_source', ['plugin' => $identifier])
+                );
+            }
+
+            // 번들 재설치는 번들 manifest 버전 기준, github 재설치는 현재 버전 기준
+            if ($updateSource === 'bundled') {
+                $toVersion = $this->getBundledVersion($identifier) ?? $updateInfo['current_version'];
+            } else {
+                $toVersion = $updateInfo['current_version'];
+            }
         } else {
             $toVersion = $updateInfo['latest_version'];
             $updateSource = $updateInfo['update_source'];
@@ -3610,19 +3931,36 @@ class PluginManager implements PluginManagerInterface
                     $sourcePath = ExtensionPendingHelper::getBundledPath($this->pluginsPath, $identifier);
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($sourcePath, $stagingPath, $onProgress);
+                } elseif ($updateSource === 'zip') {
+                    $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $identifier);
+                    ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
                 }
 
-                // 3.5. Composer Install (의존성 있는 경우만, 변경 시에만)
+                // 3.5. Vendor 설치 (의존성 있는 경우만, 변경 시에만)
+                $resolvedVendorMode = $vendorMode;
                 if ($stagingPath && $this->extensionManager->hasComposerDependenciesAt($stagingPath)) {
                     $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier;
+                    $previousMode = $this->getPreviousVendorMode($identifier);
 
-                    if ($this->extensionManager->isComposerUnchanged($stagingPath, $activePath)) {
+                    if ($vendorMode === VendorMode::Auto
+                        && $previousMode !== VendorMode::Bundled
+                        && $this->extensionManager->isComposerUnchanged($stagingPath, $activePath)
+                    ) {
                         $onProgress?->__invoke('composer', 'Composer 의존성 변경 없음 — 스킵');
                         Log::info('플러그인 업데이트: composer 변경 없음, 스킵', ['plugin' => $identifier]);
                         ExtensionPendingHelper::copyVendorFromActive($activePath, $stagingPath, $onProgress);
+                        $resolvedVendorMode = $previousMode ?? VendorMode::Auto;
                     } else {
-                        $onProgress?->__invoke('composer', 'Composer 의존성 설치 중...');
-                        $this->extensionManager->runComposerInstallAt($stagingPath, true);
+                        $onProgress?->__invoke('composer', 'Vendor 설치 중...');
+                        $vendorResult = $this->installVendorViaResolver(
+                            $identifier,
+                            $stagingPath,
+                            $vendorMode,
+                            'update',
+                            $previousMode,
+                            $onProgress,
+                        );
+                        $resolvedVendorMode = $vendorResult->mode;
                     }
                 }
 
@@ -3637,6 +3975,10 @@ class PluginManager implements PluginManagerInterface
                 if ($stagingPath) {
                     ExtensionPendingHelper::cleanupStaging($stagingPath);
                 }
+                // ZIP 임시 추출 디렉토리 정리
+                if ($zipTempDir && File::isDirectory($zipTempDir)) {
+                    File::deleteDirectory($zipTempDir);
+                }
             }
 
             // 플러그인 재로드 (새 파일로)
@@ -3650,7 +3992,16 @@ class PluginManager implements PluginManagerInterface
                 $this->runMigrations($plugin);
             }
 
-            // 5. 트랜잭션: DB 정보 갱신
+            // 5. 오토로드 갱신 (DB 트랜잭션 진입 전)
+            //
+            // 순서 중요: cleanupStalePluginEntries 의 동적 hook(getDynamicPermissionIdentifiers 등)이
+            // 플러그인 클래스를 참조할 수 있으므로, 새 파일에 대한 PSR-4 매핑이 현재 프로세스
+            // ClassLoader 에 등록되어 있어야 한다. updateComposerAutoload() 가 파일 재기록 +
+            // 런타임 ClassLoader 재등록을 동시에 수행한다.
+            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
+            $this->extensionManager->updateComposerAutoload();
+
+            // 6. 트랜잭션: DB 정보 갱신
             $onProgress?->__invoke('db', 'DB 갱신 중...');
             DB::beginTransaction();
             try {
@@ -3667,15 +4018,17 @@ class PluginManager implements PluginManagerInterface
                     'github_url' => $plugin ? $plugin->getGithubUrl() : $record->github_url,
                     'github_changelog_url' => $plugin ? $this->buildChangelogUrl($plugin->getGithubUrl()) : $record->github_changelog_url,
                     'metadata' => $plugin ? $plugin->getMetadata() : $record->metadata,
+                    'vendor_mode' => $resolvedVendorMode->value,
                     'updated_by' => Auth::id(),
                     'updated_at' => now(),
                 ]);
 
-                // Role/Permission 동기화 (있으면 업데이트)
+                // Role/Permission 동기화 (있으면 업데이트) + 완전 동기화 (stale cleanup)
                 if ($plugin) {
                     $this->createPluginRoles($plugin);
                     $this->createPluginPermissions($plugin);
                     $this->assignPermissionsToRoles($plugin);
+                    $this->cleanupStalePluginEntries($plugin);
                 }
 
                 DB::commit();
@@ -3684,14 +4037,10 @@ class PluginManager implements PluginManagerInterface
                 throw $e;
             }
 
-            // 6. 오토로드 갱신
-            $onProgress?->__invoke('autoload', '오토로드 갱신 중...');
-            $this->extensionManager->updateComposerAutoload();
-
             // 7. 업그레이드 스텝 실행
             $onProgress?->__invoke('upgrade', '업그레이드 스텝 실행 중...');
             if ($plugin) {
-                $this->runUpgradeSteps($plugin, $fromVersion, $toVersion);
+                $this->runUpgradeSteps($plugin, $fromVersion, $toVersion, $force, $onUpgradeStep);
             }
 
             // 8. 상태 복원 (refreshPluginLayouts()가 active 상태를 요구하므로 먼저 복원)
@@ -3705,9 +4054,10 @@ class PluginManager implements PluginManagerInterface
             // refreshPluginLayouts()는 캐시 무효화 + 캐시 버전 증가를 포함
             $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
             if ($previousStatus === ExtensionStatus::Active->value && $plugin) {
+                $preserveModified = ($layoutStrategy === 'keep');
                 $this->registerPluginLayouts($identifier);
                 $this->registerLayoutExtensions($plugin);
-                $this->refreshPluginLayouts($identifier);
+                $this->refreshPluginLayouts($identifier, $preserveModified);
             }
 
             // 10. 백업 삭제 + 캐시 삭제
@@ -3782,8 +4132,17 @@ class PluginManager implements PluginManagerInterface
     /**
      * --force 시 업데이트 소스를 결정합니다.
      *
+     * PO 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
+     * (일반 업데이트의 GitHub 우선과 반대 — 개발자가 로컬 번들로 되돌리려는 의도 존중)
+     *
+     * 우선순위:
+     *   1. _bundled (메모리 캐시) → 'bundled'
+     *   2. _bundled (디스크 재조회) → 'bundled'
+     *   3. GitHub URL 존재 → 'github'
+     *   4. 둘 다 없음 → null (업데이트 불가)
+     *
      * @param  string  $identifier  플러그인 식별자
-     * @return string|null 업데이트 소스 ('bundled' 또는 null)
+     * @return string|null 'bundled' | 'github' | null
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
@@ -3796,6 +4155,102 @@ class PluginManager implements PluginManagerInterface
             return 'bundled';
         }
 
+        // 번들 없음 → GitHub URL 확인
+        $plugin = $this->getPlugin($identifier);
+        if ($plugin && $plugin->getGithubUrl()) {
+            return 'github';
+        }
+
         return null;
+    }
+
+    /**
+     * _bundled 에 등록된 플러그인의 버전을 반환합니다 (force 업데이트용).
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return string|null 버전 문자열 또는 null
+     */
+    private function getBundledVersion(string $identifier): ?string
+    {
+        if (isset($this->bundledPlugins[$identifier]['version'])) {
+            return $this->bundledPlugins[$identifier]['version'];
+        }
+
+        $meta = ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json');
+
+        return $meta[$identifier]['version'] ?? null;
+    }
+
+    /**
+     * VendorResolver 경유로 vendor/ 를 구성합니다 (composer 또는 bundled).
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  string  $sourceDir  composer.json 및 vendor-bundle.zip 위치
+     * @param  VendorMode  $mode  요청된 모드
+     * @param  string  $operation  'install' | 'update'
+     * @param  VendorMode|null  $previousMode  이전 설치 모드 (update 시 상속용)
+     * @param  \Closure|null  $onProgress  진행 콜백
+     *
+     * @throws VendorInstallException
+     */
+    private function installVendorViaResolver(
+        string $identifier,
+        string $sourceDir,
+        VendorMode $mode,
+        string $operation,
+        ?VendorMode $previousMode,
+        ?\Closure $onProgress,
+    ): VendorInstallResult {
+        $resolver = app(VendorResolver::class);
+
+        $context = new VendorInstallContext(
+            target: 'plugin',
+            identifier: $identifier,
+            sourceDir: $sourceDir,
+            targetDir: $sourceDir,
+            requestedMode: $mode,
+            previousMode: $previousMode,
+            composerBinaryHint: config('process.composer_binary'),
+            operation: $operation,
+        );
+
+        $composerExecutor = function (VendorInstallContext $ctx) use ($onProgress): VendorInstallResult {
+            $onProgress?->__invoke('composer', 'Composer install 실행 중...');
+            $success = $this->extensionManager->runComposerInstallAt($ctx->sourceDir, true);
+
+            if (! $success) {
+                throw new VendorInstallException(
+                    errorKey: 'composer_execution_failed',
+                    context: ['message' => 'runComposerInstallAt returned false'],
+                );
+            }
+
+            return new VendorInstallResult(
+                mode: VendorMode::Composer,
+                strategy: 'composer',
+                packageCount: 0,
+                details: ['source_dir' => $ctx->sourceDir],
+            );
+        };
+
+        return $resolver->install($context, $composerExecutor);
+    }
+
+    /**
+     * DB에 기록된 이전 vendor 설치 모드를 조회합니다 (update 시 상속용).
+     */
+    private function getPreviousVendorMode(string $identifier): ?VendorMode
+    {
+        $record = $this->pluginRepository->findByIdentifier($identifier);
+        if (! $record) {
+            return null;
+        }
+
+        $stored = $record->vendor_mode ?? null;
+        if ($stored === null) {
+            return null;
+        }
+
+        return VendorMode::tryFrom((string) $stored);
     }
 }

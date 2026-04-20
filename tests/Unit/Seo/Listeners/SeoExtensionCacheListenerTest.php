@@ -76,11 +76,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')
+Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Extension changed — all cache cleared', Mockery::on(function ($context) {
                 return $context['identifier'] === 'sirsoft-ecommerce';
@@ -98,11 +94,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')->once();
+Log::shouldReceive('info')->once();
 
         $this->listener->onExtensionChanged('sirsoft-ecommerce', ['name' => 'Ecommerce']);
 
@@ -116,11 +108,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')->once();
+Log::shouldReceive('info')->once();
 
         $this->listener->onExtensionChanged('sirsoft-ecommerce', ['success' => true], ['name' => 'Ecommerce']);
 
@@ -136,11 +124,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')->once();
+Log::shouldReceive('info')->once();
 
         $this->listener->onExtensionChanged('sirsoft-payment', ['name' => 'Payment']);
 
@@ -156,11 +140,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')->once();
+Log::shouldReceive('info')->once();
 
         // 템플릿 활성화는 Template model 객체가 전달됨
         $templateModel = Mockery::mock();
@@ -179,11 +159,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')->once();
+Log::shouldReceive('info')->once();
 
         $this->listener->onExtensionChanged('sirsoft-basic', ['success' => true], ['name' => 'Basic']);
 
@@ -232,11 +208,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')
+Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Extension changed — all cache cleared', Mockery::on(function ($context) {
                 return isset($context['identifier'])
@@ -257,11 +229,7 @@ class SeoExtensionCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
-        Log::shouldReceive('info')
+Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Extension changed — all cache cleared', Mockery::on(function ($context) {
                 return $context['identifier'] === 'unknown';

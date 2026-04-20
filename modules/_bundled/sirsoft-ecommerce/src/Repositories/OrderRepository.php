@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
@@ -335,7 +334,7 @@ class OrderRepository implements OrderRepositoryInterface
                             'order_id' => $order->id,
                             'order_option_id' => $option->id,
                             'shipping_status' => ShippingStatusEnum::PENDING->value,
-                            'shipping_type' => ShippingTypeEnum::DOMESTIC_PARCEL->value,
+                            'shipping_type' => 'parcel',
                         ], $updateData));
                     }
                 }

@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Http\Resources\Traits\HasRowNumber;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -12,9 +10,17 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * 활동 로그 목록을 페이지네이션과 함께 반환합니다.
  */
-class ActivityLogCollection extends ResourceCollection
+class ActivityLogCollection extends BaseApiCollection
 {
-    use HasRowNumber;
+    /**
+     * {@inheritDoc}
+     */
+    protected function abilityMap(): array
+    {
+        return [
+            'can_delete' => 'core.activities.delete',
+        ];
+    }
 
     /**
      * 활동 로그 컬렉션을 배열로 변환합니다.
@@ -24,6 +30,8 @@ class ActivityLogCollection extends ResourceCollection
      */
     public function toArray(Request $request): array
     {
+        $abilities = $this->resolveCollectionAbilities($request);
+
         return [
             'data' => $this->mapWithRowNumber(function ($activityLog) {
                 return (new ActivityLogResource($activityLog))->toArray(request());
@@ -37,6 +45,7 @@ class ActivityLogCollection extends ResourceCollection
                 'to' => $this->resource->lastItem(),
                 'has_more_pages' => $this->resource->hasMorePages(),
             ] : null,
+            ...($abilities ? ['abilities' => $abilities] : []),
         ];
     }
 }

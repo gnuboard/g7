@@ -13,6 +13,11 @@
         "searchField": "all",
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "reports"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -998,58 +1003,58 @@
                                                     "className": "flex flex-wrap items-center gap-2"
                                                 },
                                                 "children": [
+                                                    {
+                                                        "id": "date_from",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "date",
+                                                            "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
+                                                            "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                                                        },
+                                                        "actions": [
                                                             {
-                                                                "id": "date_from",
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "date",
-                                                                    "value": "{{_global.dateFrom !== undefined ? _global.dateFrom : (query.reported_at_from || '')}}",
-                                                                    "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "dateFrom": "{{$event.target.value}}",
-                                                                            "dateQuick": ""
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            },
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "dateFrom": "{{$event.target.value}}",
+                                                                    "dateQuick": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "~"
+                                                    },
+                                                    {
+                                                        "id": "date_to",
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "date",
+                                                            "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
+                                                            "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                                                        },
+                                                        "actions": [
                                                             {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "props": {
-                                                                    "className": "text-sm text-gray-500 dark:text-gray-400"
-                                                                },
-                                                                "text": "~"
-                                                            },
-                                                            {
-                                                                "id": "date_to",
-                                                                "type": "basic",
-                                                                "name": "Input",
-                                                                "props": {
-                                                                    "type": "date",
-                                                                    "value": "{{_global.dateTo !== undefined ? _global.dateTo : (query.reported_at_to || '')}}",
-                                                                    "className": "px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
-                                                                },
-                                                                "actions": [
-                                                                    {
-                                                                        "type": "change",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "dateTo": "{{$event.target.value}}",
-                                                                            "dateQuick": ""
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "id": "date_quick_buttons",
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "dateTo": "{{$event.target.value}}",
+                                                                    "dateQuick": ""
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "date_quick_buttons",
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
@@ -1620,7 +1625,7 @@
                                         "actions": [
                                             {
                                                 "event": "onItemClick",
-                                                                                                "handler": "switch",
+                                                "handler": "switch",
                                                 "cases": {
                                                     "review": {
                                                         "handler": "sequence",
@@ -2174,14 +2179,15 @@
                                             "mergeQuery": true,
                                             "query": {
                                                 "page": "{{$args[0]}}"
-                                            }
+                                            },
+                                            "transition_overlay_target": "reports_data_grid__body"
                                         }
                                     }
                                 ]
                             },
                             {
                                 "event": "onRowAction",
-                                                                "handler": "switch",
+                                "handler": "switch",
                                 "value": "{{$args[0]}}",
                                 "cases": {
                                     "view": {

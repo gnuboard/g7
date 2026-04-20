@@ -23,7 +23,7 @@
 
 | 하위 문서 | 주요 핸들러 | 설명 |
 |----------|------------|------|
-| [actions-handlers-navigation.md](actions-handlers-navigation.md) | navigate, navigateBack, openWindow, replaceUrl, reloadRoutes, refresh | 페이지 이동 및 라우트 관리 |
+| [actions-handlers-navigation.md](actions-handlers-navigation.md) | navigate, navigateBack, openWindow, replaceUrl, **reloadExtensions**, reloadRoutes, refresh | 페이지 이동 및 라우트 관리 |
 | [actions-handlers-state.md](actions-handlers-state.md) | apiCall, setState, setError, refetchDataSource, remount | API 호출 및 상태 관리 |
 | [actions-handlers-ui.md](actions-handlers-ui.md) | login/logout, openModal/closeModal, toast, switch, sequence/parallel, loadScript, callExternal | UI 인터랙션 및 외부 스크립트 |
 
@@ -37,8 +37,9 @@
 2. [navigateBack](actions-handlers-navigation.md#navigateback) - 뒤로 가기
 3. [openWindow](actions-handlers-navigation.md#openwindow) - 새 창/탭에서 열기
 4. [replaceUrl](actions-handlers-navigation.md#replaceurl) - URL만 변경 (refetch 없음)
-5. [reloadRoutes](actions-handlers-navigation.md#reloadroutes) - 라우트 재로드
-6. [refresh](actions-handlers-navigation.md#refresh) - 페이지 새로고침
+5. [reloadExtensions](actions-handlers-navigation.md#reloadextensions) ⭐ NEW (engine-v1.38.0+) - 확장 상태 원자 재동기화
+6. [reloadRoutes](actions-handlers-navigation.md#reloadroutes) (deprecated) - 라우트 재로드
+7. [refresh](actions-handlers-navigation.md#refresh) - 페이지 새로고침
 
 ### 상태 관리 핸들러 → [상세 문서](actions-handlers-state.md)
 
@@ -60,7 +61,7 @@
 17. [confirm (액션 속성)](actions-handlers-ui.md#confirm-액션-속성) - 실행 전 확인 대화상자
 18. [switch](actions-handlers-ui.md#switch) - 조건부 액션
 19. [sequence / parallel](actions-handlers-ui.md#sequence--parallel) - 액션 조합
-20. [reloadTranslations](actions-handlers-ui.md#reloadtranslations) - 다국어 재로드
+20. [reloadTranslations](actions-handlers-ui.md#reloadtranslations) (deprecated) - 다국어 재로드 (extension 라이프사이클은 `reloadExtensions` 사용)
 21. [showErrorPage](actions-handlers-ui.md#showerrorpage) - 에러 페이지
 22. [loadScript](actions-handlers-ui.md#loadscript) ⭐ NEW - 외부 스크립트 로드
 23. [callExternal](actions-handlers-ui.md#callexternal) ⭐ NEW - 외부 라이브러리 호출
@@ -89,7 +90,7 @@
 
 | 핸들러 | 필수 속성 | 선택 속성 |
 |--------|----------|----------|
-| `navigate` | `params.path` | `params.query`, `params.mergeQuery`, `params.replace` |
+| `navigate` | `params.path` | `params.query`, `params.mergeQuery`, `params.replace`, `params.fallback` (engine-v1.40.0+, 미등록 경로 fallback, 기본 `openWindow`) |
 | `openWindow` | `params.path` | - |
 | `replaceUrl` | - | `params.path`, `params.query`, `params.mergeQuery` |
 | `apiCall` | `target` | `params.method`, `params.body`, `params.contentType`, `auth_required`, `onSuccess`, `onError` |

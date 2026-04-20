@@ -465,8 +465,8 @@ export class ActionDispatcher {
   /** 기본 컨텍스트 */
   private defaultContext: Partial<ActionContext>;
 
-  /** 전역 상태 업데이트 함수 */
-  private globalStateUpdater?: (updates: any) => void;
+  /** 전역 상태 업데이트 함수 (engine-v1.42.0: render 옵션 추가) */
+  private globalStateUpdater?: (updates: any, options?: { render?: boolean }) => void;
 
   /** ErrorHandlingResolver 연동 여부 */
   private errorHandlingSetup: boolean = false;
@@ -1044,7 +1044,76 @@ export class ActionDispatcher {
       });
     });
 
-    // reloadRoutes: 라우트 다시 로드
+    // reloadExtensions: 확장 상태(routes/translations/layouts) 원자적 재동기화
+    //
+    // 모듈/플러그인/템플릿 install/activate/deactivate/uninstall 직후 onSuccess 에서 호출합니다.
+    // 내부적으로 TemplateApp.reloadExtensionState() 를 호출하여 최신 cache_version 으로
+    // routes/translations/layout 캐시를 일괄 갱신합니다.
+    //
+    // 선택적 파라미터 `{ moduleInfo, action }` 전달 시 모듈 에셋(JS/CSS) 동적 로드/제거도
+    // reloadModuleHandlers 와 동일한 방식으로 수행합니다 (플러그인도 동일 파라미터로 처리).
+    //
+    // @since engine-v1.19.0
+    this.registerHandler('reloadExtensions', async (action: ActionDefinition, context: ActionContext) => {
+      if (typeof window === 'undefined') {
+        logger.warn('reloadExtensions: window is not available');
+        return;
+      }
+
+      const templateApp = (window as any).__templateApp;
+      if (!templateApp) {
+        logger.warn('reloadExtensions: TemplateApp not initialized');
+        return;
+      }
+
+      // 1. 확장 상태 일괄 재동기화
+      if (typeof templateApp.reloadExtensionState === 'function') {
+        try {
+          await templateApp.reloadExtensionState();
+        } catch (error) {
+          logger.error('reloadExtensions: reloadExtensionState failed', error);
+          throw error;
+        }
+      } else {
+        logger.warn('reloadExtensions: TemplateApp.reloadExtensionState unavailable');
+      }
+
+      // 2. 선택적으로 모듈/플러그인 에셋 동적 로드/제거
+      const { moduleInfo, pluginInfo } = action.params || {};
+      if (moduleInfo) {
+        try {
+          await this.executeAction(
+            {
+              handler: 'reloadModuleHandlers',
+              params: action.params,
+            } as ActionDefinition,
+            context
+          );
+        } catch (error) {
+          logger.error('reloadExtensions: reloadModuleHandlers failed', error);
+        }
+      }
+      if (pluginInfo) {
+        try {
+          await this.executeAction(
+            {
+              handler: 'reloadPluginHandlers',
+              params: action.params,
+            } as ActionDefinition,
+            context
+          );
+        } catch (error) {
+          logger.error('reloadExtensions: reloadPluginHandlers failed', error);
+        }
+      }
+
+      logger.log('reloadExtensions: done');
+    });
+
+    // reloadRoutes: 라우트 다시 로드 (하위 호환)
+    //
+    // @deprecated engine-v1.19.0 이후 `reloadExtensions` 사용 권장. 본 핸들러는
+    //   `reloadExtensionState()` 로 위임하여 버전 기반 캐시 갱신을 보장합니다.
     this.registerHandler('reloadRoutes', async (_action: ActionDefinition, _context: ActionContext) => {
       if (typeof window === 'undefined') {
         logger.warn('reloadRoutes: window is not available');
@@ -1057,18 +1126,21 @@ export class ActionDispatcher {
         return;
       }
 
-      const router = templateApp.getRouter?.();
-      if (!router) {
-        logger.warn('reloadRoutes: Router not available');
-        return;
-      }
-
-      try {
-        await router.loadRoutes();
-        logger.log('reloadRoutes: Routes reloaded successfully');
-      } catch (error) {
-        logger.error('reloadRoutes: Failed to reload routes', error);
-        throw error;
+      if (typeof templateApp.reloadExtensionState === 'function') {
+        try {
+          await templateApp.reloadExtensionState();
+          logger.log('reloadRoutes: delegated to reloadExtensionState');
+        } catch (error) {
+          logger.error('reloadRoutes: Failed to reload routes', error);
+          throw error;
+        }
+      } else {
+        // 최소 호환: Router 직접 호출 (캐시 버전 없이)
+        const router = templateApp.getRouter?.();
+        if (router) {
+          await router.loadRoutes();
+          logger.log('reloadRoutes: Routes reloaded (legacy fallback)');
+        }
       }
     });
 
@@ -1118,65 +1190,30 @@ export class ActionDispatcher {
       logger.log(`remount: ${componentId} key incremented to ${currentValue + 1}`);
     });
 
-    // reloadTranslations: 다국어 파일 다시 로드
-    // 모듈/플러그인 활성화 후 새 캐시 버전으로 번역 데이터를 다시 로드합니다.
+    // reloadTranslations: 다국어 파일 다시 로드 (하위 호환)
+    //
+    // @deprecated engine-v1.19.0 이후 `reloadExtensions` 사용 권장. 본 핸들러는
+    //   `reloadExtensionState()` 로 위임하여 다국어 외 routes/layouts 도 함께 갱신됩니다.
     this.registerHandler('reloadTranslations', async (_action: ActionDefinition, _context: ActionContext) => {
       if (typeof window === 'undefined') {
         logger.warn('reloadTranslations: window is not available');
         return;
       }
 
-      // TranslationEngine 싱글톤 인스턴스 가져오기
-      const { TranslationEngine } = await import('./TranslationEngine');
-      const translationEngine = TranslationEngine.getInstance();
-
-      // 현재 템플릿 ID와 로케일 가져오기
       const templateApp = (window as any).__templateApp;
       if (!templateApp) {
         logger.warn('reloadTranslations: TemplateApp not initialized');
         return;
       }
 
-      const config = templateApp.getConfig?.();
-      if (!config?.templateId) {
-        logger.warn('reloadTranslations: templateId not available');
-        return;
-      }
-
-      const locale = config.locale || 'ko';
-      const fallbackLocale = 'en';
-
-      try {
-        // 새 캐시 버전 가져오기 (모듈/플러그인 활성화 시 버전이 변경됨)
-        // config.json을 호출하여 최신 cache_version을 가져옵니다.
-        const configResponse = await fetch(`/api/templates/${config.templateId}/config.json?_=${Date.now()}`);
-        if (configResponse.ok) {
-          const templateConfig = await configResponse.json();
-          // API 응답 구조: {success: true, data: {cache_version: ...}}
-          const cacheVersion = templateConfig?.data?.cache_version;
-          if (cacheVersion !== undefined) {
-            const currentVersion = translationEngine.getCacheVersion();
-            if (currentVersion !== cacheVersion) {
-              logger.log('reloadTranslations: Cache version changed', currentVersion, '->', cacheVersion);
-              translationEngine.setCacheVersion(cacheVersion);
-            }
-          }
+      if (typeof templateApp.reloadExtensionState === 'function') {
+        try {
+          await templateApp.reloadExtensionState();
+          logger.log('reloadTranslations: delegated to reloadExtensionState');
+        } catch (error) {
+          logger.error('reloadTranslations: Failed to reload translations', error);
+          throw error;
         }
-
-        // 캐시 무효화를 위해 clearCache 호출 (있는 경우)
-        if (typeof translationEngine.clearCache === 'function') {
-          translationEngine.clearCache();
-        }
-
-        // 현재 로케일과 폴백 로케일 다시 로드 (브라우저 캐시 무효화)
-        await translationEngine.loadTranslations(config.templateId, locale, '/api', true);
-        if (locale !== fallbackLocale) {
-          await translationEngine.loadTranslations(config.templateId, fallbackLocale, '/api', true);
-        }
-        logger.log('reloadTranslations: Translations reloaded successfully');
-      } catch (error) {
-        logger.error('reloadTranslations: Failed to reload translations', error);
-        throw error;
       }
     });
 
@@ -2253,7 +2290,12 @@ export class ActionDispatcher {
 
         case 'setState':
           logger.log('[executeAction] setState resolvedParams:', resolvedParams);
-          result = await this.handleSetState(resolvedParams, context);
+          // engine-v1.42.0: action.render 옵션을 __render 메타데이터로 전달
+          // handleSetState는 resolvedParams를 받으므로 action 레벨 속성에 직접 접근 불가
+          result = await this.handleSetState(
+            action.render !== undefined ? { ...resolvedParams, __render: action.render } : resolvedParams,
+            context
+          );
           break;
 
         case 'setError':
@@ -2610,15 +2652,45 @@ export class ActionDispatcher {
 
     // replace: true인 경우 - URL만 교체하고 데이터 소스 refetch (컴포넌트 리마운트 없음)
     // 같은 페이지에서 검색/필터 변경 시 사용
+    // params.transition_overlay_target 으로 transition_overlay.target 동적 override 지원 (@since engine-v1.36.0)
+    // 명명 주의: `overlay_target` 같은 광범위 키를 피하고 `transition_overlay` 스키마와 1:1 매핑되는 명시적 이름 사용.
+    // 미래 다른 overlay 시스템(modal/drawer/tooltip 등)은 각자 독립 키 이름 사용 권장.
     if (params.replace === true) {
       const G7Core = (window as any).G7Core;
       if (G7Core?.updateQueryParams) {
-        await G7Core.updateQueryParams(finalPath);
-        logger.log('handleNavigate: Used updateQueryParams for replace mode');
+        const transitionOverlayTarget = typeof (params as any).transition_overlay_target === 'string'
+          ? (params as any).transition_overlay_target
+          : undefined;
+        await G7Core.updateQueryParams(
+          finalPath,
+          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+        );
+        logger.log(
+          'handleNavigate: Used updateQueryParams for replace mode',
+          transitionOverlayTarget ? { transitionOverlayTarget } : undefined
+        );
+        // 이동 후 스크롤 위치 적용 (기본: 상단)
+        this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
         return;
       }
       // G7Core.updateQueryParams가 없으면 fallback으로 React Router 사용
       logger.warn('handleNavigate: G7Core.updateQueryParams not available, falling back to React Router');
+    }
+
+    // 미등록 라우트 fallback — 기본 openWindow, fallback: false 또는 커스텀 지정 가능
+    // @since engine-v1.40.0: 관리자 ↔ 사용자 경로 교차 이동 시 404 대신 새 창 열기
+    // 중요: 동기 검사로 fallback 대상 여부만 판단 — 일치/부재 시 즉시 빠져나가 기존 동기 실행 경로 유지
+    const fallbackAction = this.resolveNavigateFallbackAction(finalPath, params);
+    if (fallbackAction) {
+      logger.warn(
+        `handleNavigate: No route matched, falling back to "${fallbackAction.handler}"`
+      );
+      await this.dispatchAction(
+        { type: 'click', handler: fallbackAction.handler, params: fallbackAction.params } as ActionDefinition,
+        context
+      );
+      this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
+      return;
     }
 
     // navigate 함수 확인
@@ -2630,6 +2702,339 @@ export class ActionDispatcher {
 
     // 일반 navigate (페이지 전환) - React Router 사용
     context.navigate(finalPath, { replace: params.replace === true });
+
+    // 이동 후 스크롤 위치 적용 (기본: 상단)
+    this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
+  }
+
+  /**
+   * navigate 대상 경로가 routes.json에 없는 경우 실행할 fallback 액션을 결정합니다.
+   * 매칭되거나 fallback이 비활성화된 경우 null을 반환합니다.
+   *
+   * 동기 검사로 동작 — 기존 navigate 동기 실행 경로를 보존하기 위해 await을 피함.
+   *
+   * 동작:
+   * - `params.fallback === false` → null (fallback 비활성화)
+   * - `params.fallback` 미지정 → 기본 openWindow
+   * - `params.fallback: string` → 해당 핸들러명
+   * - `params.fallback: { handler, params }` → 상세 지정
+   *
+   * @param finalPath query 병합이 완료된 최종 경로
+   * @param params navigate params
+   * @returns fallback 액션 정의 또는 null (정상 navigate 진행)
+   * @since engine-v1.40.0
+   */
+  private resolveNavigateFallbackAction(
+    finalPath: string,
+    params: Record<string, any>
+  ): { handler: string; params: Record<string, any> } | null {
+    const fallbackOption = params.fallback;
+
+    // 명시적 비활성화
+    if (fallbackOption === false) {
+      return null;
+    }
+
+    // replace: true는 쿼리 갱신 전용으로 실제 경로 이동이 아니므로 fallback 대상 아님
+    if (params.replace === true) {
+      return null;
+    }
+
+    const templateApp = (window as any).__templateApp;
+    const router = templateApp?.getRouter?.();
+    if (!router || typeof router.match !== 'function') {
+      return null;
+    }
+
+    // 라우트가 아직 로드되지 않은 경우 fallback 미적용 — 초기 부팅 단계 또는 테스트 환경 보호
+    if (typeof router.getRoutes === 'function' && router.getRoutes().length === 0) {
+      return null;
+    }
+
+    const pathname = finalPath.split('?')[0];
+    if (router.match(pathname)) {
+      // 현재 템플릿에 등록된 경로 — 정상 navigate
+      return null;
+    }
+
+    // 미등록 경로 — fallback 핸들러 결정
+    return this.resolveNavigateFallback(fallbackOption, finalPath, params);
+  }
+
+  /**
+   * navigate fallback 옵션을 정규화하여 { handler, params } 구조로 변환합니다.
+   *
+   * @param fallbackOption params.fallback 원본 값 (undefined | string | object)
+   * @param finalPath query 병합 완료된 경로
+   * @param originalParams 원래 navigate params
+   * @returns fallback 핸들러 정의
+   * @since engine-v1.40.0
+   */
+  private resolveNavigateFallback(
+    fallbackOption: any,
+    finalPath: string,
+    _originalParams: Record<string, any>
+  ): { handler: string; params: Record<string, any> } {
+    // 기본값: openWindow
+    if (fallbackOption == null) {
+      return {
+        handler: 'openWindow',
+        params: { path: finalPath, target: '_blank' },
+      };
+    }
+
+    // 문자열: 핸들러명만 지정
+    if (typeof fallbackOption === 'string') {
+      return {
+        handler: fallbackOption,
+        params: { path: finalPath },
+      };
+    }
+
+    // 객체: 상세 지정 { handler, params }
+    if (typeof fallbackOption === 'object' && typeof fallbackOption.handler === 'string') {
+      return {
+        handler: fallbackOption.handler,
+        params: {
+          path: finalPath,
+          ...(fallbackOption.params || {}),
+        },
+      };
+    }
+
+    // 알 수 없는 형태 — 기본값으로 폴백
+    logger.warn('resolveNavigateFallback: unrecognized fallback option, using openWindow', fallbackOption);
+    return {
+      handler: 'openWindow',
+      params: { path: finalPath, target: '_blank' },
+    };
+  }
+
+  /**
+   * 이동 후 스크롤 위치를 적용합니다. (@since engine-v1.37.0)
+   *
+   * **단축 문법**:
+   * - `"top"` (기본) → `#app` 내부의 모든 스크롤 컨테이너 + window 를 상단으로 리셋
+   * - `"preserve"` → 스크롤 위치 유지 (no-op)
+   * - `number` → window 를 (0, n) 으로
+   * - `{ x, y }` → window 를 (x, y) 로
+   * - `"#id"` / `".class"` → 해당 엘리먼트로 `scrollIntoView`
+   *
+   * **확장 객체 문법** (@since engine-v1.37.0):
+   * ```ts
+   * {
+   *   container?: string;                    // 스크롤 컨테이너 선택자 (생략 시 window)
+   *   to?: string | number | { x?, y? } | 'top';  // 이동 대상 (생략 시 'top')
+   *   block?: 'start' | 'center' | 'end' | 'nearest';  // scrollIntoView block (기본 'start')
+   *   offset?: number;                       // sticky 헤더 보정 (px, 양수 = 위쪽 여유)
+   * }
+   * ```
+   *
+   * 새 레이아웃이 DOM에 반영된 뒤 스크롤되도록 requestAnimationFrame으로 다음 tick에 실행합니다.
+   *
+   * @param scroll 스크롤 옵션
+   * @param scrollBehavior 스크롤 애니메이션 ('instant' | 'smooth')
+   * @param defaultValue 옵션 미지정 시 기본 동작 ('top' | 'preserve')
+   */
+  private applyScrollOption(
+    scroll: unknown,
+    scrollBehavior: unknown,
+    defaultValue: 'top' | 'preserve'
+  ): void {
+    const effective = scroll === undefined ? defaultValue : scroll;
+    if (effective === 'preserve') {
+      return;
+    }
+
+    // 기본값 'instant' — CSS scroll-behavior: smooth 가 전역 적용된 환경에서도
+    // 페이지 전환 시 즉시 스크롤되도록 'auto' 대신 'instant' 사용.
+    // 'smooth' 명시 시에만 부드러운 스크롤 적용.
+    const behavior = (
+      scrollBehavior === 'smooth' ? 'smooth' : 'instant'
+    ) as ScrollBehavior;
+
+    // 확장 객체 형태 감지: container/to/block/offset 중 하나라도 있으면 확장 형태
+    const isExtendedForm = (v: unknown): boolean => {
+      if (typeof v !== 'object' || v === null) return false;
+      const obj = v as Record<string, unknown>;
+      return 'container' in obj || 'to' in obj || 'block' in obj || 'offset' in obj;
+    };
+
+    // 컨테이너에 특정 Y 좌표로 스크롤
+    const scrollTargetTo = (
+      target: HTMLElement | Window,
+      y: number,
+      x: number = 0
+    ) => {
+      if (target === window) {
+        window.scrollTo({ top: y, left: x, behavior });
+      } else {
+        (target as HTMLElement).scrollTo({ top: y, left: x, behavior });
+      }
+    };
+
+    // 엘리먼트를 지정된 컨테이너 안으로 스크롤 (block/offset 적용)
+    const scrollElementIntoTarget = (
+      el: HTMLElement,
+      container: HTMLElement | Window,
+      block: ScrollLogicalPosition,
+      offset: number
+    ) => {
+      if (container === window) {
+        // window 컨텍스트: 네이티브 scrollIntoView 사용 후 offset 보정
+        el.scrollIntoView({ behavior, block });
+        if (offset) {
+          window.scrollBy({ top: -offset, left: 0, behavior });
+        }
+        return;
+      }
+      const c = container as HTMLElement;
+      const elRect = el.getBoundingClientRect();
+      const cRect = c.getBoundingClientRect();
+      const relativeTop = c.scrollTop + (elRect.top - cRect.top);
+      let top: number;
+      if (block === 'center') {
+        top = relativeTop - (c.clientHeight - el.clientHeight) / 2;
+      } else if (block === 'end') {
+        top = relativeTop - (c.clientHeight - el.clientHeight);
+      } else {
+        // 'start' | 'nearest' → 기본 시작
+        top = relativeTop;
+      }
+      top -= offset;
+      c.scrollTo({ top: Math.max(0, top), left: 0, behavior });
+    };
+
+    // #app 내부의 모든 스크롤 컨테이너를 상단으로 리셋
+    const resetAllScrollContainers = () => {
+      window.scrollTo({ top: 0, left: 0, behavior });
+      const root = document.getElementById('app') ?? document.body;
+      if (!root) return;
+      const candidates = root.querySelectorAll<HTMLElement>('*');
+      candidates.forEach((el) => {
+        if (el.scrollTop === 0 && el.scrollLeft === 0) return;
+        const style = window.getComputedStyle(el);
+        const oy = style.overflowY;
+        const ox = style.overflowX;
+        const scrollable =
+          oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll';
+        if (scrollable) {
+          el.scrollTo({ top: 0, left: 0, behavior });
+        }
+      });
+    };
+
+    const run = () => {
+      try {
+        // --- 확장 객체 문법 ---
+        if (isExtendedForm(effective)) {
+          const ext = effective as {
+            container?: string;
+            to?: unknown;
+            block?: ScrollLogicalPosition;
+            offset?: number;
+          };
+          const block: ScrollLogicalPosition = ext.block ?? 'start';
+          const offset: number = typeof ext.offset === 'number' ? ext.offset : 0;
+
+          // 컨테이너 해석: 지정되면 해당 엘리먼트, 아니면 window
+          let container: HTMLElement | Window = window;
+          if (typeof ext.container === 'string' && ext.container.length > 0) {
+            const el = document.querySelector(ext.container) as HTMLElement | null;
+            if (!el) {
+              logger.warn(
+                `applyScrollOption: container not found: ${ext.container}`
+              );
+              return;
+            }
+            container = el;
+          }
+
+          const to = ext.to ?? 'top';
+
+          // to: 'top' → 컨테이너(또는 window)를 상단으로
+          if (to === 'top') {
+            if (container === window) {
+              resetAllScrollContainers();
+            } else {
+              scrollTargetTo(container, 0);
+            }
+            return;
+          }
+
+          // to: number → Y 좌표
+          if (typeof to === 'number') {
+            scrollTargetTo(container, to - offset);
+            return;
+          }
+
+          // to: { x, y } → 좌표
+          if (
+            typeof to === 'object' &&
+            to !== null &&
+            ('x' in (to as object) || 'y' in (to as object))
+          ) {
+            const { x = 0, y = 0 } = to as { x?: number; y?: number };
+            scrollTargetTo(container, y - offset, x);
+            return;
+          }
+
+          // to: '#id' / '.class' → 엘리먼트로 스크롤
+          if (
+            typeof to === 'string' &&
+            (to.startsWith('#') || to.startsWith('.'))
+          ) {
+            const el = document.querySelector(to) as HTMLElement | null;
+            if (el) {
+              scrollElementIntoTarget(el, container, block, offset);
+            } else {
+              logger.warn(`applyScrollOption: target element not found: ${to}`);
+            }
+            return;
+          }
+
+          logger.warn('applyScrollOption: invalid "to" value in extended form', to);
+          return;
+        }
+
+        // --- 단축 문법 ---
+        if (effective === 'top') {
+          resetAllScrollContainers();
+          return;
+        }
+        if (typeof effective === 'number') {
+          window.scrollTo({ top: effective, left: 0, behavior });
+          return;
+        }
+        if (
+          typeof effective === 'object' &&
+          effective !== null &&
+          ('x' in (effective as object) || 'y' in (effective as object))
+        ) {
+          const { x = 0, y = 0 } = effective as { x?: number; y?: number };
+          window.scrollTo({ top: y, left: x, behavior });
+          return;
+        }
+        if (
+          typeof effective === 'string' &&
+          (effective.startsWith('#') || effective.startsWith('.'))
+        ) {
+          const el = document.querySelector(effective);
+          if (el) {
+            (el as HTMLElement).scrollIntoView({ behavior, block: 'start' });
+          }
+          return;
+        }
+      } catch (err) {
+        logger.warn('applyScrollOption: failed to apply scroll', err);
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+    } else {
+      run();
+    }
   }
 
   /**
@@ -2731,6 +3136,9 @@ export class ActionDispatcher {
 
     // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음)
     window.history.replaceState(null, '', finalPath);
+
+    // 이동 후 스크롤 위치 적용 (기본: preserve — URL만 교체하는 용도이므로 유지)
+    this.applyScrollOption(params.scroll, params.scrollBehavior, 'preserve');
   }
 
   /**
@@ -3116,7 +3524,7 @@ export class ActionDispatcher {
     context: ActionContext
   ): Promise<Record<string, any> | undefined> {
     logger.log('[handleSetState] START, params:', params);
-    const { target = 'component', scope, merge, ...payload } = params;
+    const { target = 'component', scope, merge, __render, ...payload } = params;
 
     // DevTools 추적 시작
     const devTools = getDevTools();
@@ -3194,7 +3602,8 @@ export class ActionDispatcher {
       };
 
       logger.log('setState global:', finalPayload);
-      this.globalStateUpdater(finalPayload);
+      // engine-v1.42.0: __render 옵션 전파 (executeAction에서 action.render → __render로 변환)
+      this.globalStateUpdater(finalPayload, { render: __render });
 
       // DevTools: 상태 변경 완료 (global은 즉시 완료)
       // Note: 실제 렌더링은 비동기로 발생하므로 setTimeout으로 완료 처리
@@ -3358,9 +3767,10 @@ export class ActionDispatcher {
           ? this.deepMergeWithState(resolvedPayload, currentLocal)
           : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
         logger.log('[handleSetState] finalLocal (merged):', finalLocal);
+        // engine-v1.42.0: __render 옵션 전파
         this.globalStateUpdater({
           _local: finalLocal,
-        });
+        }, { render: __render });
 
         // engine-v1.17.2: 다음 setState에서 최신 _local 참조 가능하도록 pending 상태 업데이트
         (window as any).__g7PendingLocalState = finalLocal;
@@ -5624,7 +6034,7 @@ export class ActionDispatcher {
    *
    * @param updater 전역 상태 업데이트 함수
    */
-  setGlobalStateUpdater(updater: (updates: any) => void): void {
+  setGlobalStateUpdater(updater: (updates: any, options?: { render?: boolean }) => void): void {
     this.globalStateUpdater = updater;
   }
 
@@ -6056,6 +6466,45 @@ export class ActionDispatcher {
   }
 
   /**
+   * 프로그래매틱 호출(G7Core.state.setLocal, G7Core.dispatch)에 대한 디바운스를 처리합니다.
+   *
+   * 레이아웃 JSON 액션의 debounce와 동일한 타이머 인프라(debounceTimers, pendingDebounceFlushers)를
+   * 사용하여 컴포넌트 언마운트 시 자동 정리 및 flushPendingDebounceTimers 연동을 보장합니다.
+   *
+   * @param key debounce 고유 키 (동일 키의 이전 타이머를 취소)
+   * @param delay 디바운스 지연 시간 (ms)
+   * @param callback 지연 후 실행할 콜백
+   *
+   * @since engine-v1.41.0
+   *
+   * @example
+   * ```ts
+   * // G7Core.state.setLocal({ debounce: 300, debounceKey: 'my-key' })에서 호출
+   * actionDispatcher.debouncedCall('my-key', 300, () => {
+   *   G7Core.state.setLocal(updates);
+   * });
+   * ```
+   */
+  debouncedCall(key: string, delay: number, callback: () => void): void {
+    // 기존 타이머 취소
+    const existingTimer = this.debounceTimers.get(key);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this.debounceTimers.delete(key);
+    }
+
+    const timer = setTimeout(() => {
+      this.debounceTimers.delete(key);
+      this.pendingDebounceFlushers.delete(key);
+      callback();
+    }, delay);
+
+    this.debounceTimers.set(key, timer);
+    // flushPendingDebounceTimers에서 즉시 실행 가능하도록 등록
+    this.pendingDebounceFlushers.set(key, callback);
+  }
+
+  /**
    * 대기 중인 모든 debounce 액션을 즉시 실행합니다.
    *
    * 비디바운스 액션이 실행되기 전에 호출하여, 디바운스로 인해
@@ -6078,8 +6527,15 @@ export class ActionDispatcher {
       this.debounceTimers.delete(key + '_leading');
       this.pendingDebounceFlushers.delete(key);
 
-      // 즉시 실행
+      // 즉시 실행 (render: false 콜백 포함)
       flushFn();
+    }
+
+    // engine-v1.42.0: flush된 콜백 중 render: false로 등록된 것이 있을 수 있음
+    // 저장 직전 등 flush 시점에는 항상 최신 상태를 React 트리에 반영해야 하므로
+    // 빈 업데이트로 강제 렌더 트리거 (render: true가 기본값)
+    if (this.globalStateUpdater) {
+      this.globalStateUpdater({});
     }
   }
 

@@ -4,12 +4,12 @@ namespace Modules\Sirsoft\Page\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 
 /**
  * 페이지 목록 API 컬렉션 (관리자용)
  */
-class PageCollection extends ResourceCollection
+class PageCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
 

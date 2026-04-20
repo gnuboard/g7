@@ -88,6 +88,15 @@ const MobileNav: React.FC<MobileNavProps> = ({
 }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
 
+  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
+  const G7Core = (window as any).G7Core;
+  const useResponsive = G7Core?.useResponsive;
+  const responsiveValue = useResponsive?.();
+  // lg 미만(< 1024px)에서만 드로어 노출 — 데스크톱은 Header의 탭 nav 사용
+  const isPortable = responsiveValue
+    ? responsiveValue.width < 1024
+    : typeof window !== 'undefined' && window.innerWidth < 1024;
+
   // ESC 키로 닫기
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -115,10 +124,12 @@ const MobileNav: React.FC<MobileNavProps> = ({
   };
 
   if (!isOpen) return null;
+  // 데스크톱(lg+)에서는 모바일 드로어 자체를 노출하지 않음 (위지윅 overrideWidth 호환)
+  if (!isPortable) return null;
 
   return (
     <Div
-      className="fixed inset-0 z-50 lg:hidden"
+      className="fixed inset-0 z-50"
       onClick={handleOverlayClick}
     >
       {/* 오버레이 */}

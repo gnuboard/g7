@@ -62,4 +62,8 @@ return [
     // Claim Reason related
     'claim_reason_not_found' => 'Claim reason not found.',
     'claim_reason_in_use' => 'Cannot delete a reason in use by order cancellations. (Used :count times)',
+
+    // Shipping Type related
+    'shipping_type_not_found' => 'Shipping type not found.',
+    'shipping_type_in_use' => 'Cannot delete shipping type (:name) in use by orders. (Used :count times)',
 ];

@@ -1689,6 +1689,75 @@ hr {
   color: #991b1b;
 }
 
+/* 기존 DB 테이블 감지 인라인 카드 (#244)
+   .test-result .alert 가 display:flex 라 카드 자식이 가로로 정렬되므로
+   block 으로 오버라이드하고 카드 내부에 자체 spacing 적용 */
+.test-result .db-existing-tables-card {
+  display: block;
+  align-items: initial;
+  gap: 0;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: var(--border-radius-lg);
+  color: #78350f;
+  box-shadow: var(--shadow-sm);
+}
+
+.test-result .db-existing-tables-card .db-existing-header {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-sm);
+}
+
+.test-result .db-existing-tables-card .db-existing-desc {
+  margin: 0 0 var(--spacing-md) 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.test-result .db-existing-tables-card .db-existing-tables-label,
+.test-result .db-existing-tables-card .db-existing-backup-label {
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.test-result .db-existing-tables-card .db-existing-tables-list {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid #fde68a;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: 0 0 var(--spacing-sm) 0;
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.test-result .db-existing-tables-card .code-box {
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.test-result .db-existing-tables-card .db-backup-confirm-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid #fde68a;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+}
+
+.test-result .db-existing-tables-card .db-backup-confirm-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
 /* 다크모드 테스트 결과 (Step 3: DB/PHP 연결 테스트) */
 [data-theme="dark"] .test-result .alert-success {
   background: linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, rgba(52, 211, 153, 0.15) 100%);
@@ -3706,5 +3775,462 @@ body {
 
   .selection-summary .summary-count {
     font-size: var(--font-size-xl);
+  }
+}
+
+/* ============================================================
+   설치 진행 방식 선택 (SSE / 폴링)
+   ============================================================ */
+.installation-mode-card {
+  margin-bottom: var(--spacing-md);
+}
+
+.installation-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.installation-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.installation-mode-option:hover {
+  border-color: var(--color-primary, #3b82f6);
+  background-color: var(--bg-hover, #f9fafb);
+}
+
+.installation-mode-option input[type="radio"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.installation-mode-option input[type="radio"]:checked + .installation-mode-text strong {
+  color: var(--color-primary, #3b82f6);
+}
+
+.installation-mode-option:has(input[type="radio"]:checked) {
+  border-color: var(--color-primary, #3b82f6);
+  background-color: var(--bg-selected, #eff6ff);
+}
+
+.installation-mode-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.installation-mode-text strong {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.installation-mode-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .installation-mode-option {
+    border-color: var(--border-color-dark, #374151);
+  }
+  .installation-mode-option:has(input[type="radio"]:checked) {
+    background-color: var(--bg-selected-dark, #1e3a8a33);
+  }
+}
+
+/* ============================================================
+   Step 3: 기존 DB 테이블 감지 배지 + 모달
+   ============================================================ */
+.db-existing-tables-badge {
+  margin-top: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.db-existing-tables-badge:hover {
+  opacity: 0.9;
+}
+
+.modal-existing-tables {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+
+.modal-existing-tables.modal-open {
+  display: block;
+}
+
+.modal-existing-tables .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-existing-tables .modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-card, #fff);
+  padding: var(--spacing-lg, 24px);
+  border-radius: var(--radius-md, 8px);
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.modal-existing-tables .modal-title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-warning, #d97706);
+}
+
+.modal-existing-tables .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.modal-existing-tables .modal-tables-label,
+.modal-existing-tables .modal-backup-label {
+  margin: var(--spacing-sm) 0 4px 0;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.modal-existing-tables .modal-tables-list {
+  padding: var(--spacing-sm);
+  background: var(--bg-muted, #f3f4f6);
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.modal-existing-tables .modal-confirm-checkbox {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+  margin-top: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.modal-existing-tables .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.btn-danger {
+  background-color: var(--color-danger, #dc2626);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover, #b91c1c);
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Step 4 의존성 경고 */
+.dependency-warning-list {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+}
+.dependency-warning-list li {
+  margin-bottom: 4px;
+  font-size: var(--font-size-sm);
+}
+
+/* Step 4 자동 선택된 확장 카드 */
+.extension-card.dep-auto-selected.selected {
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.08);
+}
+
+.extension-card.dep-auto-selected.selected .extension-card-icon {
+  background-color: #d97706;
+  color: white;
+}
+
+.extension-card.dep-auto-selected.selected .extension-card-select {
+  color: #d97706;
+}
+
+.extension-card.dep-auto-selected.selected .extension-card-footer {
+  border-top-color: rgba(217, 119, 6, 0.2);
+}
+
+/* 자동 선택 배지 */
+.dep-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #92400e;
+  background-color: rgba(217, 119, 6, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.dep-auto-badge i {
+  font-size: 0.6rem;
+}
+
+.dep-auto-badge-owner {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* 버전 충돌 표시 */
+.dep-version-conflict {
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+  font-size: 0.8em;
+}
+
+/* 의존성 잠금 토스트 */
+.dep-lock-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 12px 20px;
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.dep-lock-toast i {
+  margin-right: 6px;
+  color: #fbbf24;
+}
+
+.dep-lock-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 다크 모드 */
+[data-theme="dark"] .extension-card.dep-auto-selected.selected {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.12);
+}
+
+[data-theme="dark"] .extension-card.dep-auto-selected.selected .extension-card-icon {
+  background-color: #f59e0b;
+}
+
+[data-theme="dark"] .dep-auto-badge {
+  color: #fcd34d;
+  background-color: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .dep-lock-toast {
+  background-color: #334155;
+}
+
+/* ========================================================================
+   Step 3 Vendor 설치 방식 카드
+   ======================================================================== */
+
+.vendor-mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.vendor-mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--bg-color);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.vendor-mode-card:hover:not(.disabled) {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.vendor-mode-card.selected {
+  border-color: var(--primary-color);
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.vendor-mode-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background-color: var(--bg-gray, rgba(0, 0, 0, 0.03));
+}
+
+.vendor-mode-card.disabled:hover {
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+/* 네이티브 라디오 버튼 숨김 (카드 전체가 클릭 타겟) */
+.vendor-mode-card-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+/* 헤더 — 아이콘 + 제목 + 체크 아이콘 */
+.vendor-mode-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.vendor-mode-card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-gray, rgba(0, 0, 0, 0.05));
+  border-radius: var(--border-radius);
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.vendor-mode-card.selected .vendor-mode-card-icon {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.vendor-mode-card-title-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vendor-mode-card-title {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color);
+  line-height: 1.3;
+}
+
+/* 우측 체크 아이콘 (선택 시 표시) */
+.vendor-mode-card-check {
+  font-size: 1.25rem;
+  color: var(--border-color);
+  transition: all 0.2s ease;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.vendor-mode-card.selected .vendor-mode-card-check {
+  color: var(--primary-color);
+}
+
+.vendor-mode-card:hover:not(.disabled) .vendor-mode-card-check {
+  color: var(--primary-color);
+}
+
+/* 배지 */
+.vendor-mode-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.vendor-mode-card-badge-recommended {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--primary-color);
+}
+
+.vendor-mode-card-badge-dev {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #9333ea;
+}
+
+.vendor-mode-card-badge-shared {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+/* 설명 */
+.vendor-mode-card-description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* 상태 메시지 */
+.vendor-mode-card-status {
+  margin: 0;
+  padding-top: var(--spacing-xs);
+  border-top: 1px dashed var(--border-color);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vendor-mode-card-status-ok {
+  color: var(--color-success, #10b981);
+}
+
+.vendor-mode-card-status-error {
+  color: var(--color-error, #ef4444);
+}
+
+/* 반응형 — 좁은 화면에서는 1열 */
+@media (max-width: 640px) {
+  .vendor-mode-cards {
+    grid-template-columns: 1fr;
   }
 }

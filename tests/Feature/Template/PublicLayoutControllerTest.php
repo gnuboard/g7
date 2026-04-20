@@ -192,15 +192,15 @@ class PublicLayoutControllerTest extends TestCase
         ]);
 
         // 캐시 초기화
-        Cache::forget("layout.{$template->identifier}.{$layout->name}");
-        Cache::forget("template.{$template->id}.layout.{$layout->name}");
+        Cache::forget("g7:core:layout.{$template->identifier}.{$layout->name}.v0");
+        Cache::forget("g7:core:template.{$template->id}.layout.{$layout->name}");
 
         // Act: 첫 번째 요청 (캐시 생성)
         $response1 = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");
         $response1->assertStatus(200);
 
         // 캐시가 생성되었는지 확인
-        $this->assertTrue(Cache::has("layout.{$template->identifier}.{$layout->name}"));
+        $this->assertTrue(Cache::has("g7:core:layout.{$template->identifier}.{$layout->name}.v0"));
 
         // Act: 두 번째 요청 (캐시에서 조회)
         $response2 = $this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json");

@@ -9,6 +9,14 @@
         "title": "{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title",
         "description": "{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
     },
+    "computed": {
+        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "post"
+        ]
+    },
     "data_sources": [
         {
             "id": "post",
@@ -44,9 +52,6 @@
             }
         }
     ],
-    "computed": {
-        "commentRootMap": "{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}"
-    },
     "slots": {
         "content": [
             {

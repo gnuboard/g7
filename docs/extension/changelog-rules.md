@@ -23,6 +23,7 @@
 5. [API 엔드포인트](#5-api-엔드포인트)
 6. [관리 화면 표시](#6-관리-화면-표시)
 7. [템플릿 예시](#7-템플릿-예시)
+8. [코어 버전 제약 정책](#8-코어-버전-제약-정책)
 
 ---
 
@@ -198,6 +199,46 @@ setState(selectedX) → apiCall(changelog)
 ### Added
 - 초기 기능 구현
 ```
+
+---
+
+## 8. 코어 버전 제약 정책
+
+확장 manifest(`module.json`, `plugin.json`, `template.json`)의 `g7_version` 과 `dependencies.{modules|plugins}` 버전 제약 작성 규칙.
+
+### 표기 규칙
+
+- 형식: `>=X.Y.Z[-prerelease]` 통일 (공백 없음). 예: `>=7.0.0-beta.2`, `>=1.0.0-beta.2`
+- 캐럿(`^`), 틸드(`~`), 엄격 일치(`=`) 사용 금지
+- placeholder 금지: 실존하지 않는 버전(`0.1.0`, `0.0.1` 등) 을 적어 사실상 "아무 버전이나 허용" 상태로 두지 않음
+
+### `g7_version` — 코어 최소 요구 버전
+
+- 확장이 실제로 의존하는 코어 API/기능의 **최초 도입 버전**을 최소값으로 기재
+- 확장 `version` 이 bump 될 때 `g7_version` 재검토 필수
+- 번들 확장은 일반적으로 코어의 현재 릴리스와 같은 단계(beta.X, rc.X, X.Y.Z)를 하한으로 둠
+- 예: 알림 시스템 3계층(NotificationDefinition/Template) 을 사용하는 모듈은 최소 `>=7.0.0-beta.2`
+
+### `dependencies.{modules|plugins}` — 확장 간 버전 제약
+
+- A 확장이 B 확장의 공개 Service/Contract/Model/Route/훅을 사용한다면 `dependencies.{type}.B: ">=X.Y.Z"` 기재
+- B 에서 공개 표면이 변경되거나 새 API 가 도입되어 A 가 그것을 소비하게 되면 A 의 최소 버전 제약을 **그 API 최초 도입 버전**으로 상향
+- 실존하지 않는 placeholder 버전(`>=0.1.0` 등)은 금지 — 버전 게이팅 무효화 유발
+
+### 버전 제약 재검토 트리거
+
+다음 이벤트 발생 시 관련 확장 manifest 를 전수 재검토한다.
+
+| 이벤트 | 재검토 대상 |
+|--------|------------|
+| 코어 공개 확장 표면 변경 (AbstractModule/AbstractPlugin/HookManager/Contracts 등) | 모든 번들 확장의 `g7_version` |
+| 코어 minor/major/beta 번호 변경 | 번들 확장 전체 `g7_version` |
+| 번들 모듈/플러그인의 공개 Service/Contract/Model/Route/훅/CHANGELOG 변경 | 해당 확장을 `dependencies` 에 선언한 모든 확장 |
+
+### CHANGELOG 기재
+
+- `g7_version` 상향: `### Changed` 에 `- 코어 최소 요구 버전을 X.Y.Z 로 상향`
+- `dependencies.{id}` 상향: `### Changed` 에 `- {id} 의존성 버전 제약을 실제 릴리스 버전에 맞춰 정비` 또는 `- {id} 최소 버전을 X.Y.Z 로 상향` (변경 이유에 따라)
 
 ---
 

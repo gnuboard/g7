@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Nav } from '../basic/Nav';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
+import { Select } from '../basic/Select';
 
 export interface Tab {
   id: string | number;
@@ -21,12 +22,10 @@ export interface TabNavigationProps {
   variant?: 'default' | 'pills' | 'underline';
   className?: string;
   style?: React.CSSProperties;
-  /** 모바일에서 그리드 레이아웃 사용 (기본: true) */
-  mobileGrid?: boolean;
-  /** 모바일 그리드 컬럼 수 (기본: 3) */
-  mobileColumns?: number;
   /** 숨길 탭 ID 목록 (동적 조건부 탭 노출용) */
   hiddenTabIds?: (string | number)[];
+  /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
+  mobileBreakpoint?: number;
 }
 
 /**
@@ -34,12 +33,15 @@ export interface TabNavigationProps {
  *
  * 탭 네비게이션을 제공하는 컴포넌트입니다.
  * 여러 탭을 전환할 수 있으며, 아이콘과 뱃지를 지원합니다.
- * 모바일에서는 그리드 레이아웃으로 표시합니다.
+ *
+ * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
+ * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
+ * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
  *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
  *
- * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span
+ * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span + Select
  *
  * @example
  * // 레이아웃 JSON 사용 예시
@@ -47,7 +49,6 @@ export interface TabNavigationProps {
  *   "name": "TabNavigation",
  *   "props": {
  *     "activeTabId": 1,
- *     "mobileColumns": 3,
  *     "tabs": [
  *       {"id": 1, "label": "프로필", "iconName": "user"},
  *       {"id": 2, "label": "설정", "iconName": "cog", "badge": 3},
@@ -64,22 +65,16 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   variant = 'underline',
   className = '',
   style,
-  mobileGrid = true,
-  mobileColumns = 3,
   hiddenTabIds = [],
+  mobileBreakpoint = 768,
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // 모바일 감지 (768px 기준)
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
+  const G7Core = (window as any).G7Core;
+  const useResponsive = G7Core?.useResponsive;
+  const responsiveValue = useResponsive?.();
+  const isMobile = responsiveValue
+    ? responsiveValue.width < mobileBreakpoint
+    : typeof window !== 'undefined' && window.innerWidth < mobileBreakpoint;
 
   const handleTabClick = (tab: Tab) => {
     if (!tab.disabled && tab.id !== activeTabId) {
@@ -87,21 +82,50 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
+  const handleSelectChange = (
+    e: React.ChangeEvent<HTMLSelectElement> | { target: { value: string | number } }
+  ) => {
+    const selectedId = e.target.value;
+    const numericId = Number(selectedId);
+    const finalId =
+      typeof selectedId === 'string' && selectedId !== '' && !Number.isNaN(numericId)
+        ? numericId
+        : selectedId;
+    const selectedTab = tabs.find((tab) => String(tab.id) === String(finalId));
+    if (selectedTab) {
+      handleTabClick(selectedTab);
+    }
+  };
+
+  const visibleTabs = hiddenTabIds.length > 0
+    ? tabs.filter((tab) => !hiddenTabIds.includes(tab.id))
+    : tabs;
+
+  // 모바일: Select 드롭다운 단일 렌더
+  if (isMobile) {
+    return (
+      <Div className={`relative ${className}`} style={style}>
+        <Select
+          value={activeTabId !== undefined ? String(activeTabId) : ''}
+          onChange={handleSelectChange}
+          options={visibleTabs.map((tab) => ({
+            value: String(tab.id),
+            label: tab.badge !== undefined ? `${tab.label} (${tab.badge})` : tab.label,
+            disabled: tab.disabled,
+          }))}
+          className="w-full"
+        />
+      </Div>
+    );
+  }
+
   const getTabClasses = (tab: Tab) => {
     const isActive = tab.id === activeTabId;
-    const baseClasses = isMobile && mobileGrid
-      ? 'flex flex-col items-center justify-center gap-3 pt-4 pb-2 font-medium text-sm transition-all'
-      : 'flex items-center gap-2 px-3 py-2 font-medium text-sm transition-all shrink-0 whitespace-nowrap';
+    const baseClasses =
+      'flex items-center gap-2 px-3 py-2 font-medium text-sm transition-all shrink-0 whitespace-nowrap';
 
     if (tab.disabled) {
       return `${baseClasses} opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600`;
-    }
-
-    // 모바일 그리드 스타일
-    if (isMobile && mobileGrid) {
-      return isActive
-        ? `${baseClasses} text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 rounded-lg`
-        : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg`;
     }
 
     switch (variant) {
@@ -123,65 +147,36 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
-  // 모바일 그리드 컬럼 클래스
-  const getGridColumnsClass = () => {
-    switch (mobileColumns) {
-      case 2:
-        return 'grid-cols-2';
-      case 4:
-        return 'grid-cols-4';
-      case 3:
-      default:
-        return 'grid-cols-3';
-    }
-  };
-
-  const navClasses = isMobile && mobileGrid
-    ? `grid ${getGridColumnsClass()} gap-1 p-1 bg-gray-50 dark:bg-gray-800 rounded-lg`
-    : variant === 'underline'
+  const navClasses =
+    variant === 'underline'
       ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
       : 'flex gap-2';
 
-  const renderTabButton = (tab: Tab) => (
-    <Button
-      key={tab.id}
-      type="button"
-      onClick={() => handleTabClick(tab)}
-      disabled={tab.disabled}
-      className={getTabClasses(tab)}
-    >
-      {tab.iconName && (
-        <Icon name={tab.iconName} size="sm"/>
-      )}
-
-      {isMobile && mobileGrid && tab.badge !== undefined ? (
-        <Div className="flex items-center gap-1">
-          <Span className="text-xs">{tab.label}</Span>
-          <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
-            <Span>{tab.badge}</Span>
-          </Div>
-        </Div>
-      ) : (
-        <>
-          <Span className={isMobile && mobileGrid ? 'text-xs' : ''}>{tab.label}</Span>
-          {tab.badge !== undefined && (
-            <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
-              <Span>{tab.badge}</Span>
-            </Div>
-          )}
-        </>
-      )}
-    </Button>
-  );
-
-  const visibleTabs = hiddenTabIds.length > 0
-    ? tabs.filter((tab) => !hiddenTabIds.includes(tab.id))
-    : tabs;
-
+  // 데스크톱: 탭 버튼 단일 렌더
   return (
     <Div className={`relative ${className}`} style={style}>
       <Nav className={navClasses}>
-        {visibleTabs.map((tab) => renderTabButton(tab))}
+        {visibleTabs.map((tab) => (
+          <Button
+            key={tab.id}
+            type="button"
+            onClick={() => handleTabClick(tab)}
+            disabled={tab.disabled}
+            className={getTabClasses(tab)}
+          >
+            {tab.iconName && (
+              <Icon name={tab.iconName} size="sm" />
+            )}
+
+            <Span>{tab.label}</Span>
+
+            {tab.badge !== undefined && (
+              <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                <Span>{tab.badge}</Span>
+              </Div>
+            )}
+          </Button>
+        ))}
       </Nav>
     </Div>
   );

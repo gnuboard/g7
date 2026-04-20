@@ -86,6 +86,8 @@ export interface DataGridFooterCell {
     text?: string;
 }
 export interface DataGridProps {
+    /** DOM id (transition_overlay.target / overlay_target 으로 spinner mount 영역 지정용) */
+    id?: string;
     columns: DataGridColumn[];
     data: any[];
     sortable?: boolean;

@@ -495,12 +495,14 @@ $content = $layoutData;
 ### 무효화 메서드
 
 ```php
+use App\Contracts\Extension\CacheInterface;
+
 protected function invalidateLayoutCache(string $moduleIdentifier): void
 {
-    // 1. 태그 기반 캐시 삭제
-    if (method_exists(Cache::getStore(), 'tags')) {
-        Cache::tags(['layouts', $moduleIdentifier])->flush();
-    }
+    $cache = app(CacheInterface::class); // 드라이버가 `g7:core:` 접두사 자동 적용
+
+    // 1. 태그 기반 캐시 삭제 (CacheInterface::flushTags)
+    $cache->flushTags(['layouts', $moduleIdentifier]);
 
     // 2. 개별 레이아웃 캐시 삭제
     $moduleLayouts = TemplateLayout::where('source_type', LayoutSourceType::Module)
@@ -508,8 +510,7 @@ protected function invalidateLayoutCache(string $moduleIdentifier): void
         ->get();
 
     foreach ($moduleLayouts as $layout) {
-        $cacheKey = "layout.{$layout->template_id}.{$layout->name}";
-        Cache::forget($cacheKey);
+        $cache->forget("template.{$layout->template_id}.layout.{$layout->name}");
     }
 }
 ```

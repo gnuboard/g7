@@ -411,13 +411,25 @@
       },
       "children": [
         {
-          "type": "composite",
-          "name": "HtmlContent",
+          "id": "reply_html_content",
+          "type": "extension_point",
+          "name": "html_content",
           "props": {
             "content": "{{item?.content}}",
             "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
-            "className": "{{_local.expandedReplies?.[item.id] ? '' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
-          }
+            "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{item?.content}}",
+                "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
+                "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+              }
+            }
+          ]
         },
         {
           "type": "basic",

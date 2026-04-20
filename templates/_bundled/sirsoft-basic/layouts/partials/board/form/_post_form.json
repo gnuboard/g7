@@ -498,9 +498,11 @@
               "event": "change",
               "handler": "setState",
               "params": {
-                "target": "_local",
-                "key": "form.category",
-                "value": "{{$event.target.value}}"
+                "target": "local",
+                "form": {
+                  "category": "{{$event.target.value}}"
+                },
+                "hasChanges": true
               }
             }
           ]
@@ -565,28 +567,44 @@
       "children": [
         {
           "comment": "내용 에디터",
-          "type": "composite",
-          "name": "HtmlEditor",
+          "id": "content_section",
+          "type": "extension_point",
+          "name": "html_editor",
           "props": {
+            "name": "content",
             "content": "{{_local.form?.content ?? ''}}",
             "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
             "rows": 15,
             "placeholder": "$t:board.form.content_placeholder",
             "label": "$t:board.form.content",
-            "showHtmlModeToggle": true,
-            "name": "content"
+            "showHtmlModeToggle": true
           },
-          "actions": [
+          "default": [
             {
-              "event": "onIsHtmlChange",
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "form": {
-                  "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+              "type": "composite",
+              "name": "HtmlEditor",
+              "props": {
+                "name": "content",
+                "content": "{{_local.form?.content ?? ''}}",
+                "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
+                "rows": 15,
+                "placeholder": "$t:board.form.content_placeholder",
+                "label": "$t:board.form.content",
+                "showHtmlModeToggle": true
+              },
+              "actions": [
+                {
+                  "event": "onIsHtmlChange",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+                    }
+                  }
                 }
-              }
+              ]
             }
           ]
         }

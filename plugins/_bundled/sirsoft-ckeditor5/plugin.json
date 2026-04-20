@@ -1,0 +1,32 @@
+{
+    "identifier": "sirsoft-ckeditor5",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "CKEditor 5 WYSIWYG 에디터",
+        "en": "CKEditor 5 WYSIWYG Editor"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. 플러그인 설치만으로 기존 HtmlEditor가 교체됩니다.",
+        "en": "WYSIWYG editor plugin using CKEditor 5. Installing this plugin replaces the default HtmlEditor."
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

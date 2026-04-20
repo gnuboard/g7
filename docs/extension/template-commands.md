@@ -147,7 +147,7 @@ php artisan template:check-updates sirsoft-admin_basic
 템플릿을 업데이트합니다.
 
 ```bash
-php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
+php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
 ```
 
 **인수**:
@@ -156,6 +156,7 @@ php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
 **옵션**:
 - `--layout-strategy=overwrite`: 레이아웃 전략 (`overwrite` | `keep`)
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
 
 **수행 작업**:
 - 레이아웃 전략 검증 (`overwrite` | `keep` 외 FAILURE)
@@ -174,6 +175,9 @@ php artisan template:update sirsoft-admin_basic --layout-strategy=keep
 
 # 강제 재설치
 php artisan template:update sirsoft-admin_basic --force
+
+# GitHub 장애/잘못된 태그 우회 — _bundled 단독 사용
+php artisan template:update sirsoft-admin_basic --source=bundled
 ```
 
 ---

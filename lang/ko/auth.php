@@ -37,11 +37,4 @@ return [
     'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
     'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
     'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
-
-    // 메일 템플릿 관련 메시지 (템플릿 본문은 DB 관리)
-    'mail_template_not_found' => '메일 템플릿을 찾을 수 없습니다: :type',
-    'mail_template_updated' => '메일 템플릿이 수정되었습니다.',
-    'mail_template_toggled' => '메일 템플릿 활성 상태가 변경되었습니다.',
-    'mail_template_reset' => '메일 템플릿이 기본값으로 복원되었습니다.',
-    'mail_template_reset_not_found' => '기본 템플릿 데이터를 찾을 수 없습니다: :type',
 ];

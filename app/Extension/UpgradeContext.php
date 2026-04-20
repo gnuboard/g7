@@ -80,4 +80,32 @@ class UpgradeContext
             currentStep: $stepVersion,
         );
     }
+
+    /**
+     * 업그레이드 스텝의 spawn 프로세스(proc_open)에 전달할 환경변수 기본 세트를 반환합니다.
+     *
+     * 코어 업그레이드의 `updateVersionInEnv()` 는 Step 11 (마지막) 에서 실행되므로,
+     * Step 10 의 upgrade step / spawn 은 디스크 `.env` 의 `APP_VERSION` 이 여전히
+     * `fromVersion` 상태에서 부팅된다. 이 때 `CoreServiceProvider::boot()` 의
+     * `validateAndDeactivateIncompatibleExtensions` 가 확장 manifest 의 요구 버전과
+     * 구 APP_VERSION 을 비교하여 전 확장을 자동 비활성화하는 회귀가 발생한다.
+     *
+     * 본 헬퍼는 `APP_VERSION` 을 `toVersion` 으로 명시 전달해 spawn 자식이 새 버전 기준으로
+     * 호환성 판정을 수행하도록 보장한다. 반환값을 `proc_open` 의 `$env` 인자로 그대로 넘기거나
+     * `array_merge` 로 확장 전용 env 와 합쳐 사용한다.
+     *
+     * 추가 키를 병합할 때 예시:
+     *   $env = $context->spawnEnv(['MY_FLAG' => '1']);
+     *
+     * @param  array<string, string>  $additional  병합할 추가 env 쌍 (APP_VERSION 보다 나중에 적용되어 덮어쓸 수 있음)
+     * @return array<string, string>
+     */
+    public function spawnEnv(array $additional = []): array
+    {
+        return array_merge(
+            $_ENV,
+            ['APP_VERSION' => $this->toVersion],
+            $additional,
+        );
+    }
 }

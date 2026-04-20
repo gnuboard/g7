@@ -60,6 +60,24 @@ class FileHandleHelper
             return [];
         }
 
+        // 존재하지 않는 디렉토리는 잠금이 있을 수 없음 → WMI 전체 스캔 회피
+        // (Get-Process 의 Modules 열거는 수백 프로세스에 접근 핸들을 열어 20초+ 소요 가능)
+        if (! is_dir($directoryPath)) {
+            $output('[lock-detect] 디렉토리가 존재하지 않으므로 잠금 감지를 건너뜁니다: '.$directoryPath);
+
+            return [];
+        }
+
+        // 파일이 전혀 없는 디렉토리도 파일 수준 잠금이 있을 수 없음
+        // 디렉토리 핸들 자체를 잠그는 드문 케이스는 Restart Manager 로는 감지 불가하고
+        // WMI 모듈 검색의 비용이 압도적으로 크므로 빠른 경로로 처리한다.
+        $files = self::sampleFiles($directoryPath, $maxFiles);
+        if (empty($files)) {
+            $output('[lock-detect] 디렉토리가 비어 있으므로 잠금 감지를 건너뜁니다: '.$directoryPath);
+
+            return [];
+        }
+
         $allProcesses = [];
 
         // 1순위: WMI CommandLine + 프로세스 모듈 검색
@@ -70,27 +88,18 @@ class FileHandleHelper
         }
 
         // 2순위: Restart Manager API (파일 수준 잠금)
-        $files = self::sampleFiles($directoryPath, $maxFiles);
-        if (! empty($files)) {
-            $output('[lock-detect] 2단계: Restart Manager API ('.count($files).'개 파일)...');
-            $rmResults = self::detectViaRestartManager($files, $onOutput);
-            foreach ($rmResults as $proc) {
-                if (! isset($allProcesses[$proc['pid']])) {
-                    $allProcesses[$proc['pid']] = $proc;
-                }
+        $output('[lock-detect] 2단계: Restart Manager API ('.count($files).'개 파일)...');
+        $rmResults = self::detectViaRestartManager($files, $onOutput);
+        foreach ($rmResults as $proc) {
+            if (! isset($allProcesses[$proc['pid']])) {
+                $allProcesses[$proc['pid']] = $proc;
             }
         }
 
         // 3순위: handle.exe 폴백
-        if (empty($allProcesses)) {
-            $output('[lock-detect] 3단계: handle.exe 폴백...');
-            $handleResults = self::detectViaHandle($directoryPath, $onOutput);
-            foreach ($handleResults as $proc) {
-                if (! isset($allProcesses[$proc['pid']])) {
-                    $allProcesses[$proc['pid']] = $proc;
-                }
-            }
-        }
+        // 빈 결과 = "잠금 없음" 이라는 정상 응답이므로 폴백을 호출하지 않는다.
+        // (handle.exe 는 Sysinternals 외부 도구이고, Windows Store App Execution Alias 와
+        //  충돌하는 경우 무한 대기하므로 명시적으로 사용 가능한 경우에만 호출.)
 
         // 현재 PHP 프로세스 제외
         $currentPid = self::currentPid();
@@ -165,12 +174,8 @@ class FileHandleHelper
         $processes = self::findLockingProcesses($directoryPath, 30, $onOutput);
 
         if (empty($processes)) {
-            $output('');
-            $output('ℹ️  잠금 프로세스가 감지되지 않았습니다.');
-            $output('   수동 해결: 해당 디렉토리를 참조하는 프로세스를 닫은 후 재시도하세요.');
-            $output('');
-
-            return false;
+            // 해제할 잠금이 없으므로 호출자는 안전하게 진행 가능
+            return true;
         }
 
         $output('');
@@ -224,9 +229,14 @@ class FileHandleHelper
     /**
      * WMI로 해당 디렉토리 경로를 참조하는 프로세스를 탐지합니다.
      *
-     * Get-CimInstance Win32_Process의 CommandLine에 디렉토리 경로가 포함된 프로세스와,
-     * Get-Process의 Modules에서 해당 디렉토리 내 DLL을 로드한 프로세스를 찾습니다.
-     * Node.js 워처, IDE, 파일 탐색기 등 프로세스 종류 무관하게 감지합니다.
+     * Get-CimInstance Win32_Process의 CommandLine에 디렉토리 경로가 포함된 프로세스를 찾습니다.
+     *
+     * 과거 버전은 Get-Process 의 Modules 컬렉션(로드된 DLL) 까지 스캔했지만,
+     * 이는 모든 프로세스에 접근 핸들을 열어 DLL 테이블을 열거하므로
+     * 활성 프로세스가 수백 개인 Windows 환경에서 20초+ 블로킹을 유발합니다.
+     * Modules 스캔은 Node.js native addon 등 드문 케이스만 감지하므로
+     * 비용 대비 효과가 낮아 CommandLine 검색만 유지합니다.
+     * (Node 워처, IDE, 파일 탐색기 등 실사용 케이스는 CommandLine 으로 충분히 감지됩니다.)
      *
      * @param  string  $directoryPath  디렉토리 경로
      * @param  \Closure|null  $onOutput  진단 출력 콜백
@@ -247,25 +257,21 @@ class FileHandleHelper
         $escapedPath = str_replace("'", "''", $normalizedPath);
 
         // 간결한 인라인 PowerShell — 임시 파일 불필요
+        // CommandLine 검색만 수행 (Modules 스캔은 수백 프로세스 핸들 오픈으로 인해 제거됨)
         $psCommand = implode('; ', [
             '$ErrorActionPreference = "SilentlyContinue"',
             '$p = "'.addcslashes($escapedPath, '"').'"',
             '$pl = $p.ToLower()',
             '$r = @{}',
-            // Strategy 1: CommandLine search
             'Get-CimInstance Win32_Process | ForEach-Object { if ($_.CommandLine) { $cl = $_.CommandLine.ToLower().Replace("/","\\"); if ($cl.Contains($pl)) { $r[$_.ProcessId] = "$($_.ProcessId)|$($_.Name)|$($_.CommandLine.Substring(0,[Math]::Min(120,$_.CommandLine.Length)))" } } }',
-            // Strategy 2: Modules search
-            'Get-Process | ForEach-Object { if (-not $r.ContainsKey($_.Id)) { try { foreach ($m in $_.Modules) { if ($m.FileName -and $m.FileName.ToLower().StartsWith($pl)) { $r[$_.Id] = "$($_.Id)|$($_.ProcessName)|module:$($m.FileName)"; break } } } catch {} } }',
-            // Output
             'foreach ($v in $r.Values) { Write-Output $v }',
         ]);
 
-        $cmdOutput = [];
-        $exitCode = 0;
-        exec(
-            'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '.escapeshellarg($psCommand).' 2>NUL',
-            $cmdOutput,
-            $exitCode
+        // exec() 대신 proc_open 사용 — PHPUnit 환경에서 상속된 부모 파이프로 인한
+        // PowerShell 하위 프로세스 블로킹을 회피한다.
+        [$cmdOutput, $exitCode] = self::runCommandWithTimeout(
+            'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command '.escapeshellarg($psCommand),
+            30
         );
 
         $output("[WMI] PowerShell exit code: {$exitCode}, 출력: ".count($cmdOutput).'줄');
@@ -320,13 +326,15 @@ class FileHandleHelper
         $stderrPath = $scriptPath.'.err';
 
         try {
-            $cmdOutput = [];
-            $exitCode = 0;
-            exec(
-                'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File '.escapeshellarg($scriptPath).' 2>'.escapeshellarg($stderrPath),
-                $cmdOutput,
-                $exitCode
+            [$cmdOutput, $exitCode, $stderrCaptured] = self::runCommandWithTimeout(
+                'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File '.escapeshellarg($scriptPath),
+                30,
+                true
             );
+
+            if ($stderrCaptured !== '') {
+                @file_put_contents($stderrPath, $stderrCaptured);
+            }
 
             $output("[RestartManager] exit code: {$exitCode}, 출력: ".count($cmdOutput).'줄');
 
@@ -480,14 +488,25 @@ PSFOOTER;
             return [];
         }
 
-        $cmdOutput = [];
-        $exitCode = 0;
+        // PATH 에 handle.exe 가 있는지 사전 검사 (없는 경우 즉시 skip)
+        // - handle.exe 미설치 시 cmd.exe 가 명령을 찾는 데 수십 초가 걸리거나
+        //   EULA 다이얼로그로 인해 무한 대기에 빠질 수 있음.
+        // - 결과는 정적 캐시하여 같은 프로세스에서 반복 검사 회피.
+        static $handleAvailable = null;
+        if ($handleAvailable === null) {
+            $handleAvailable = self::isCommandAvailable('handle.exe');
+        }
+
+        if (! $handleAvailable) {
+            $logOutput('[handle.exe] PATH 에서 찾을 수 없어 건너뜁니다.');
+
+            return [];
+        }
 
         $dirPath = str_replace('/', '\\', $directoryPath);
-        exec(
-            'handle.exe -nobanner -accepteula '.escapeshellarg($dirPath).' 2>NUL',
-            $cmdOutput,
-            $exitCode
+        [$cmdOutput, $exitCode] = self::runCommandWithTimeout(
+            'handle.exe -nobanner -accepteula '.escapeshellarg($dirPath),
+            5
         );
 
         if ($exitCode !== 0 || empty($cmdOutput)) {
@@ -499,6 +518,43 @@ PSFOOTER;
         $logOutput('[handle.exe] '.count($cmdOutput).'줄 출력 수신');
 
         return self::parseHandleOutput($cmdOutput);
+    }
+
+    /**
+     * Windows PATH 에서 명령어 실행 파일이 발견되는지 빠르게 확인합니다.
+     *
+     * Windows Store App Execution Alias(`%LOCALAPPDATA%\Microsoft\WindowsApps\*.exe`)는
+     * 실제 실행 파일이 아닌 0바이트 stub 으로, 호출 시 Microsoft Store 앱을 실행하려
+     * 시도하면서 무한 대기를 유발합니다. PATH 검색 결과에서 이런 경로를 제외합니다.
+     *
+     * @param  string  $command  명령어 파일명 (예: 'handle.exe')
+     */
+    private static function isCommandAvailable(string $command): bool
+    {
+        if (! self::isWindows()) {
+            return false;
+        }
+
+        // `where` 는 PATH 검색이 빠르며, 미발견 시 1초 이내에 exit code 1 반환
+        [$out, $code] = self::runCommandWithTimeout('where '.escapeshellarg($command), 3);
+
+        if ($code !== 0 || empty($out)) {
+            return false;
+        }
+
+        // Windows Store App Execution Alias 경로 제외
+        foreach ($out as $path) {
+            $path = trim($path);
+            if ($path === '' || stripos($path, '\\Microsoft\\WindowsApps\\') !== false) {
+                continue;
+            }
+            // 0 바이트 파일은 stub 으로 간주
+            if (@filesize($path) > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ========================================================================
@@ -604,6 +660,116 @@ PSFOOTER;
         }
 
         return $processes;
+    }
+
+    /**
+     * 외부 명령을 타임아웃과 함께 실행합니다 (부모 파이프 비상속).
+     *
+     * exec()/shell_exec() 는 내부적으로 `sh -c` 또는 `cmd.exe /c` 를 통해 자식
+     * 프로세스를 스폰하며, 부모 PHP 프로세스의 stdin/stdout/stderr 핸들을 그대로
+     * 상속시킵니다. PHPUnit 과 같이 stdout 을 자체 파이프로 모니터링하는 환경에서는
+     * 자식 프로세스가 상속된 파이프에 블로킹 쓰기를 수행할 때 무한 대기가 발생합니다.
+     *
+     * proc_open 으로 자체 파이프를 명시적으로 열면 상속을 차단하여 이 문제를 회피합니다.
+     * 또한 poll 루프에서 deadline 을 초과하면 강제 종료(TerminateProcess)합니다.
+     *
+     * @param  string  $command  실행할 명령 문자열
+     * @param  int  $timeoutSeconds  최대 실행 시간(초)
+     * @param  bool  $returnStderr  true 면 세 번째 요소로 stderr 문자열을 함께 반환
+     * @return array{0: string[], 1: int, 2?: string} [stdout 라인 배열, exit code, (stderr 문자열)]
+     */
+    private static function runCommandWithTimeout(string $command, int $timeoutSeconds, bool $returnStderr = false): array
+    {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $pipes = [];
+        $process = @proc_open($command, $descriptors, $pipes, null, null, [
+            'bypass_shell' => false,
+            'create_new_console' => false,
+        ]);
+
+        if (! is_resource($process)) {
+            return $returnStderr ? [[], -1, ''] : [[], -1];
+        }
+
+        // stdin 즉시 닫기 (하위 프로세스가 입력 대기 방지)
+        fclose($pipes[0]);
+
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
+
+        $stdout = '';
+        $stderr = '';
+        $deadline = microtime(true) + $timeoutSeconds;
+        $timedOut = false;
+
+        while (true) {
+            $status = proc_get_status($process);
+            if (! $status['running']) {
+                break;
+            }
+
+            if (microtime(true) >= $deadline) {
+                $timedOut = true;
+                break;
+            }
+
+            $read = [$pipes[1], $pipes[2]];
+            $write = null;
+            $except = null;
+            // 100ms 씩 poll (Windows 는 select() 정확도 한계)
+            $ready = @stream_select($read, $write, $except, 0, 100_000);
+
+            if ($ready > 0) {
+                foreach ($read as $stream) {
+                    $chunk = fread($stream, 8192);
+                    if ($chunk !== false && $chunk !== '') {
+                        if ($stream === $pipes[1]) {
+                            $stdout .= $chunk;
+                        } else {
+                            $stderr .= $chunk;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 남은 출력 흡수
+        $stdout .= stream_get_contents($pipes[1]) ?: '';
+        $stderr .= stream_get_contents($pipes[2]) ?: '';
+
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        if ($timedOut) {
+            // Windows: taskkill /F /T 로 자식 트리까지 종료
+            $status = proc_get_status($process);
+            if (! empty($status['pid'])) {
+                if (PHP_OS_FAMILY === 'Windows') {
+                    @exec('taskkill /F /T /PID '.$status['pid'].' 2>NUL');
+                } else {
+                    @posix_kill($status['pid'], 9);
+                }
+            }
+            proc_terminate($process, 9);
+        }
+
+        $exitCode = proc_close($process);
+
+        $lines = $stdout === '' ? [] : preg_split("/\r\n|\n|\r/", rtrim($stdout, "\r\n"));
+        if ($lines === false) {
+            $lines = [];
+        }
+
+        if ($returnStderr) {
+            return [$lines, $exitCode, $stderr];
+        }
+
+        return [$lines, $exitCode];
     }
 
     /**

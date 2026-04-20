@@ -2,7 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Repositories\Contracts;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\ReportLog;
 
@@ -31,6 +34,7 @@ interface ReportRepositoryInterface
      * ID로 신고를 조회합니다.
      *
      * @param  int  $id  신고 ID
+     * @return Report|null 신고 모델 또는 null
      */
     public function find(int $id): ?Report;
 
@@ -38,8 +42,9 @@ interface ReportRepositoryInterface
      * ID로 신고를 조회하며, 없으면 예외를 발생시킵니다.
      *
      * @param  int  $id  신고 ID
+     * @return Report 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): Report;
 
@@ -48,8 +53,9 @@ interface ReportRepositoryInterface
      *
      * @param  int  $id  신고 ID
      * @param  array  $data  수정할 데이터
+     * @return Report 수정된 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function update(int $id, array $data): Report;
 
@@ -57,8 +63,9 @@ interface ReportRepositoryInterface
      * 신고를 삭제합니다 (소프트 삭제).
      *
      * @param  int  $id  신고 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function delete(int $id): bool;
 
@@ -66,8 +73,9 @@ interface ReportRepositoryInterface
      * 신고를 영구 삭제합니다.
      *
      * @param  int  $id  신고 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function forceDelete(int $id): bool;
 
@@ -99,15 +107,6 @@ interface ReportRepositoryInterface
     public function paginateGrouped(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     /**
-     * 특정 대상(게시글/댓글)에 대한 모든 신고를 조회합니다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  string  $targetType  대상 타입 (post/comment)
-     * @param  int  $targetId  대상 ID
-     */
-    public function findByTarget(int $boardId, string $targetType, int $targetId): \Illuminate\Database\Eloquent\Collection;
-
-    /**
      * 특정 대상에 대한 모든 신고의 상태를 일괄 변경합니다.
      *
      * @param  int  $boardId  게시판 ID
@@ -117,15 +116,6 @@ interface ReportRepositoryInterface
      * @return int 변경된 행 수
      */
     public function bulkUpdateStatusByTarget(int $boardId, string $targetType, int $targetId, array $data): int;
-
-    /**
-     * 취소된 신고를 포함하여 동일 대상의 케이스를 조회합니다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  string  $targetType  대상 타입 (post/comment)
-     * @param  int  $targetId  대상 ID
-     */
-    public function findByTargetWithTrashed(int $boardId, string $targetType, int $targetId): \Illuminate\Database\Eloquent\Collection;
 
     /**
      * 사용자의 오늘(자정 기준) 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
@@ -175,7 +165,7 @@ interface ReportRepositoryInterface
      * @param  array  $data  로그 생성 데이터
      * @return ReportLog 생성된 로그 모델
      *
-     * @throws \Modules\Sirsoft\Board\Exceptions\DuplicateReportException
+     * @throws DuplicateReportException
      */
     public function createLog(array $data): ReportLog;
 
@@ -183,9 +173,8 @@ interface ReportRepositoryInterface
      * 신고 케이스의 신고자 로그를 페이지네이션으로 반환합니다.
      *
      * @param  int  $reportId  신고 케이스 ID
-     * @param  int  $perPage   페이지당 항목 수
-     * @param  int  $page      페이지 번호
-     * @return LengthAwarePaginator
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int  $page  페이지 번호
      */
     public function paginateLogsByReport(int $reportId, int $perPage = 10, int $page = 1): LengthAwarePaginator;
 
@@ -199,4 +188,17 @@ interface ReportRepositoryInterface
      * @return bool 이미 신고 여부
      */
     public function hasUserReported(int $userId, int $boardId, string $targetType, int $targetId): bool;
+
+    /**
+     * 특정 사용자가 여러 대상을 신고했는지 일괄 확인합니다.
+     *
+     * N+1 방지를 위해 복수 대상의 신고 여부를 한 번의 쿼리로 조회합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $boardId  게시판 ID
+     * @param  string  $targetType  대상 타입 (post/comment)
+     * @param  array<int>  $targetIds  대상 ID 목록
+     * @return array<int> 신고한 대상 ID 목록
+     */
+    public function getReportedTargetIds(int $userId, int $boardId, string $targetType, array $targetIds): array;
 }

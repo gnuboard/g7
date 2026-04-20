@@ -131,7 +131,7 @@ class LayoutRepositoryCacheTest extends TestCase
                 'name' => 'sirsoft-tosspayments.plugin_settings',
             ]);
 
-        $cacheKey = "template.{$this->template->id}.layout.sirsoft-tosspayments.plugin_settings";
+        $cacheKey = "g7:core:template.{$this->template->id}.layout.sirsoft-tosspayments.plugin_settings";
         Cache::put($cacheKey, ['version' => '1.0.0', 'components' => []], 3600);
 
         // 캐시가 존재하는지 확인
@@ -141,7 +141,7 @@ class LayoutRepositoryCacheTest extends TestCase
         $layouts = $this->repository->getBySourceIdentifier('sirsoft-tosspayments', LayoutSourceType::Plugin);
 
         foreach ($layouts as $layout) {
-            Cache::forget("template.{$layout->template_id}.layout.{$layout->name}");
+            Cache::forget("g7:core:template.{$layout->template_id}.layout.{$layout->name}");
         }
 
         // Then: 캐시가 삭제됨
@@ -153,17 +153,17 @@ class LayoutRepositoryCacheTest extends TestCase
     {
         // Given: PublicLayoutController 형식의 버전 포함 캐시 키가 존재
         $cacheVersion = time();
-        Cache::put('extension_cache_version', $cacheVersion);
+        Cache::put('g7:core:ext.cache_version', $cacheVersion);
 
-        $cacheKey = "layout.sirsoft-admin_basic.sirsoft-tosspayments.plugin_settings.v{$cacheVersion}";
+        $cacheKey = "g7:core:layout.sirsoft-admin_basic.sirsoft-tosspayments.plugin_settings.v{$cacheVersion}";
         Cache::put($cacheKey, ['version' => '1.0.0', 'components' => []], 3600);
 
         // 캐시가 존재하는지 확인
         $this->assertNotNull(Cache::get($cacheKey));
 
         // When: 현재 캐시 버전을 읽어 올바른 캐시 키를 삭제
-        $currentVersion = (int) Cache::get('extension_cache_version', 0);
-        Cache::forget("layout.sirsoft-admin_basic.sirsoft-tosspayments.plugin_settings.v{$currentVersion}");
+        $currentVersion = (int) Cache::get('g7:core:ext.cache_version', 0);
+        Cache::forget("g7:core:layout.sirsoft-admin_basic.sirsoft-tosspayments.plugin_settings.v{$currentVersion}");
 
         // Then: 버전 포함 캐시가 삭제됨
         $this->assertNull(Cache::get($cacheKey));

@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
+use App\Models\NotificationDefinition;
+use App\Services\NotificationDefinitionService;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -154,6 +156,14 @@ class BoardSettingsService implements ModuleSettingsInterface
 
             // defaults 스키마에 맞게 정규화
             $categoryDefaults = $defaultValues[$category] ?? [];
+
+            // Toggle/체크박스 OFF 시 키 미전송 대응: boolean 기본값 필드가 누락되면 false로 채움
+            foreach ($categoryDefaults as $key => $defaultValue) {
+                if (is_bool($defaultValue) && ! array_key_exists($key, $categorySettings)) {
+                    $categorySettings[$key] = false;
+                }
+            }
+
             $processedSettings = $this->normalizeCategoryData($categorySettings, $categoryDefaults);
 
             if (! $this->saveCategorySettings($category, $processedSettings)) {
@@ -164,7 +174,52 @@ class BoardSettingsService implements ModuleSettingsInterface
         // 캐시 초기화
         $this->settings = null;
 
+        // report_policy 설정 변경 시 알림 정의 활성 상태 동기화
+        // 저장된 최종 설정을 사용 (boolean 보정 후 값)
+        if (isset($settings['report_policy'])) {
+            $savedReportPolicy = $this->loadCategorySettings('report_policy');
+            $this->syncNotificationDefinitionStatus($savedReportPolicy);
+        }
+
         return $success;
+    }
+
+    /**
+     * 신고 정책 알림 설정에 따라 notification_definitions 활성 상태를 동기화합니다.
+     *
+     * 설정 OFF 시 해당 알림 정의를 비활성화하여
+     * NotificationHookListener가 훅을 구독하지 않도록 합니다.
+     *
+     * @param array $reportPolicy 신고 정책 설정
+     * @return void
+     */
+    private function syncNotificationDefinitionStatus(array $reportPolicy): void
+    {
+        $syncMap = [
+            'notify_admin_on_report' => 'report_received_admin',
+            'notify_author_on_report_action' => 'report_action',
+        ];
+
+        $changed = false;
+
+        foreach ($syncMap as $settingKey => $definitionType) {
+            if (! array_key_exists($settingKey, $reportPolicy)) {
+                continue;
+            }
+
+            $updated = NotificationDefinition::where('type', $definitionType)
+                ->where('extension_identifier', 'sirsoft-board')
+                ->update(['is_active' => (bool) $reportPolicy[$settingKey]]);
+
+            if ($updated > 0) {
+                $changed = true;
+            }
+        }
+
+        // 알림 정의 캐시 무효화 (NotificationHookListener가 새 상태를 읽도록)
+        if ($changed) {
+            app(NotificationDefinitionService::class)->invalidateAllCache();
+        }
     }
 
     /**

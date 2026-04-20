@@ -9,6 +9,18 @@
         "title": "{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}",
         "description": "{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"
     },
+    "state": {
+        "form": {
+            "is_active": true
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "role_check",
+            "clone_source",
+            "permissions"
+        ]
+    },
     "data_sources": [
         {
             "id": "role",
@@ -107,11 +119,6 @@
             }
         }
     ],
-    "state": {
-        "form": {
-            "is_active": true
-        }
-    },
     "slots": {
         "content": [
             {
@@ -267,7 +274,6 @@
                         "name": "Form",
                         "dataKey": "form",
                         "trackChanges": true,
-                        "blur_until_loaded": "{{_global.isSaving}}",
                         "props": {
                             "id": "role_form",
                             "className": "mt-6 space-y-6"
@@ -301,17 +307,45 @@
                                         },
                                         "errorHandling": {
                                             "403": {
-                                                "handler": "toast",
+                                                "handler": "sequence",
                                                 "params": {
-                                                    "type": "error",
-                                                    "message": "$t:auth.permission_denied"
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isSaving": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:auth.permission_denied"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             },
                                             "500": {
-                                                "handler": "toast",
+                                                "handler": "sequence",
                                                 "params": {
-                                                    "type": "error",
-                                                    "message": "$t:errors.server_error"
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "isSaving": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:errors.server_error"
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         },

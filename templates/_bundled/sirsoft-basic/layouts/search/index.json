@@ -6,21 +6,24 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-ecommerce" }
+            ],
             "data_sources": [],
             "page_type": "search",
-            "toggle_setting": "$module_settings:seo.seo_search_result",
+            "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_search_result",
             "vars": {
-                "keyword_name": "$query:q",
-                "commerce_name": "$module_settings:basic_info.shop_name",
                 "site_name": "$core_settings:general.site_name"
             },
             "priority": 0.3,
             "changefreq": "daily",
             "og": {
-                "type": "website"
+                "type": "website",
+                "title": "{{_seo.search.title ?? ''}}"
             },
             "structured_data": {
-                "@type": "SearchResultsPage"
+                "@type": "SearchResultsPage",
+                "name": "{{_seo.search.title ?? ''}}"
             }
         }
     },

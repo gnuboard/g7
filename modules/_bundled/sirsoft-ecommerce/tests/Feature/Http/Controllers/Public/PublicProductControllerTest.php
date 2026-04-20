@@ -381,6 +381,7 @@ class PublicProductControllerTest extends ModuleTestCase
                 'shipping_fee_formatted',
                 'short_description',
                 'description',
+                'description_mode',
                 'has_options',
                 'option_groups',
                 'is_wishlisted',
@@ -684,6 +685,39 @@ class PublicProductControllerTest extends ModuleTestCase
         $this->assertEquals('대한민국', $values[0]['value']);
         $this->assertEquals('제조자', $values[1]['label']);
         $this->assertEquals('(주)삼성', $values[1]['value']);
+    }
+
+    /**
+     * 상품 상세 조회 시 description_mode 반환 테스트
+     */
+    #[Test]
+    public function test_show_returns_description_mode(): void
+    {
+        // Given: HTML 모드 상품
+        $htmlProduct = Product::factory()->onSale()->create([
+            'description_mode' => 'html',
+            'description' => ['ko' => '<p>HTML 설명</p>', 'en' => '<p>HTML description</p>'],
+        ]);
+
+        // When
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $htmlProduct->id);
+
+        // Then
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.description_mode', 'html');
+
+        // Given: text 모드 상품 (기본값)
+        $textProduct = Product::factory()->onSale()->create([
+            'description_mode' => 'text',
+            'description' => ['ko' => '텍스트 설명', 'en' => 'Text description'],
+        ]);
+
+        // When
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $textProduct->id);
+
+        // Then
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.description_mode', 'text');
     }
 
     /**

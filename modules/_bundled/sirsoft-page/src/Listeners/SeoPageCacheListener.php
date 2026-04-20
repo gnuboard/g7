@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Page\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -77,7 +77,7 @@ class SeoPageCacheListener implements HookListenerInterface
             $cache->invalidateByLayout('search/index');
 
             // Sitemap 캐시 무효화
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             Log::debug('[SEO] Page change cache invalidated', [
                 'page_id' => $page->id ?? null,

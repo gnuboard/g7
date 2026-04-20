@@ -448,7 +448,9 @@
                   "type": "extension_point",
                   "name": "address_search_slot",
                   "props": {
-                    "readOnlyFields": ["zipcode", "address"],
+                    "readOnlyFields": ["zipcode", "address"]
+                  },
+                  "callbacks": {
                     "onAddressSelect": {
                       "handler": "sequence",
                       "actions": [

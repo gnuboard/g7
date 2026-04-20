@@ -78,6 +78,7 @@ function scanTemplates(): array
 
         // dependencies 처리: 객체 형태면 모듈/플러그인 키를 배열로 변환
         $dependencies = extractDependenciesFromJson($data);
+        $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
 
         $templateInfo = [
             'identifier' => $identifier,
@@ -86,6 +87,7 @@ function scanTemplates(): array
             'description' => $description,
             'type' => $type,
             'dependencies' => $dependencies,
+            'dependencies_detailed' => $dependenciesDetailed,
             'author' => $author,
             'directory' => $dir,
         ];
@@ -155,6 +157,7 @@ function scanModules(): array
         }
 
         $dependencies = extractDependenciesFromJson($data);
+        $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -162,6 +165,7 @@ function scanModules(): array
             'version' => $data['version'] ?? '1.0.0',
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
+            'dependencies_detailed' => $dependenciesDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
         ];
@@ -225,6 +229,7 @@ function scanPlugins(): array
         }
 
         $dependencies = extractDependenciesFromJson($data);
+        $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -232,6 +237,7 @@ function scanPlugins(): array
             'version' => $data['version'] ?? '1.0.0',
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
+            'dependencies_detailed' => $dependenciesDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
         ];
@@ -241,7 +247,7 @@ function scanPlugins(): array
 }
 
 /**
- * JSON 매니페스트에서 의존성 배열 추출
+ * JSON 매니페스트에서 의존성 identifier 배열 추출 (하위 호환 유지).
  *
  * dependencies 구조:
  * - 객체 형태: { "modules": {"sirsoft-ecommerce": ">=1.0.0"}, "plugins": {...} }
@@ -257,19 +263,70 @@ function extractDependenciesFromJson(array $data): array
 
     if (is_array($rawDeps)) {
         if (isset($rawDeps['modules']) || isset($rawDeps['plugins'])) {
-            // 객체 형태: { modules: {...}, plugins: {...} }
             foreach (['modules', 'plugins'] as $depType) {
                 if (! empty($rawDeps[$depType]) && is_array($rawDeps[$depType])) {
                     $dependencies = array_merge($dependencies, array_keys($rawDeps[$depType]));
                 }
             }
         } else {
-            // 배열 형태: ['module1', 'module2']
             $dependencies = array_values($rawDeps);
         }
     }
 
     return $dependencies;
+}
+
+/**
+ * JSON 매니페스트에서 타입+버전이 보존된 의존성 상세 배열 추출.
+ *
+ * 반환: [['type' => 'modules'|'plugins', 'identifier' => '...', 'version' => '>=0.1.1'], ...]
+ * 프론트엔드 validateExtensionSelection()에서 의존성 그래프 검증에 사용합니다.
+ *
+ * @param  array  $data  JSON 매니페스트 데이터
+ * @return array 의존성 상세 배열
+ */
+function extractDependenciesDetailedFromJson(array $data): array
+{
+    $rawDeps = $data['dependencies'] ?? [];
+    $detailed = [];
+
+    if (!is_array($rawDeps)) {
+        return $detailed;
+    }
+
+    if (isset($rawDeps['modules']) || isset($rawDeps['plugins'])) {
+        foreach (['modules', 'plugins'] as $depType) {
+            if (! empty($rawDeps[$depType]) && is_array($rawDeps[$depType])) {
+                foreach ($rawDeps[$depType] as $identifier => $version) {
+                    if (is_int($identifier)) {
+                        // 배열 원소: 값이 identifier
+                        $detailed[] = [
+                            'type' => $depType,
+                            'identifier' => (string) $version,
+                            'version' => '*',
+                        ];
+                    } else {
+                        $detailed[] = [
+                            'type' => $depType,
+                            'identifier' => (string) $identifier,
+                            'version' => is_string($version) ? $version : '*',
+                        ];
+                    }
+                }
+            }
+        }
+    } else {
+        // 레거시 배열 형태 — 타입을 알 수 없으므로 'unknown'으로 표기
+        foreach ($rawDeps as $identifier) {
+            $detailed[] = [
+                'type' => 'unknown',
+                'identifier' => (string) $identifier,
+                'version' => '*',
+            ];
+        }
+    }
+
+    return $detailed;
 }
 
 // ===== 메인 실행 =====

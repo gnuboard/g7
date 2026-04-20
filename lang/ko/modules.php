@@ -37,6 +37,7 @@ return [
             'permissions_created' => ':count개 권한 생성됨',
             'menus_created' => ':count개 메뉴 생성됨',
             'already_installed' => '모듈 ":module"이(가) 이미 설치되어 있습니다.',
+            'force_reinstall' => '모듈 ":module" 을(를) 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
         ],
         'activate' => [
             'success' => '모듈 ":module" 활성화 완료',
@@ -122,6 +123,8 @@ return [
     'no_update_available' => '업데이트할 내용이 없습니다.',
     'check_updates_success' => '업데이트 확인이 완료되었습니다.',
     'check_updates_failed' => '업데이트 확인에 실패했습니다.',
+    'check_modified_layouts_success' => '수정된 레이아웃 확인이 완료되었습니다.',
+    'check_modified_layouts_failed' => '수정된 레이아웃 확인에 실패했습니다: :error',
     'not_installed' => '모듈 ":module"이(가) 설치되지 않았습니다.',
 
     // _pending 관련 메시지
@@ -154,6 +157,7 @@ return [
 
     // 오류 메시지
     'errors' => [
+        'force_update_no_source' => ':module 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'zip_open_failed' => 'ZIP 파일을 열 수 없습니다.',
         'module_json_not_found' => 'module.json 파일을 찾을 수 없습니다.',
         'module_json_invalid' => 'module.json 파일 형식이 올바르지 않습니다.',
@@ -172,6 +176,7 @@ return [
         'unknown_error' => '알 수 없는 오류가 발생했습니다.',
         'invalid_permission_structure' => '모듈 ":identifier"의 권한 구조가 올바르지 않습니다: :reason',
         'invalid_translation_path' => '모듈 ":identifier"의 언어 파일 경로가 올바르지 않습니다. ":wrong_path" 대신 ":correct_path"를 사용해야 합니다.',
+        'seo_variable_conflict' => '모듈 ":identifier"의 SEO 변수명이 기존 확장과 충돌합니다: :reason',
         'layout_validation_json_error' => '레이아웃 파일 :file의 JSON 파싱에 실패했습니다: :error',
         'layout_validation_missing_name' => '레이아웃 파일 :file에 layout_name이 누락되었습니다.',
         'layout_validation_partial_error' => '레이아웃 파일 :file의 partial 처리에 실패했습니다: :error (partial: :partial)',
@@ -186,6 +191,8 @@ return [
         'reload_failed' => '모듈 다시 로드에 실패했습니다.',
         'delete_directory_failed' => '모듈 디렉토리 삭제에 실패했습니다.',
         'update_failed' => '모듈 ":module" 업데이트에 실패했습니다: :error',
+        'invalid_layout_strategy' => '유효하지 않은 레이아웃 전략입니다. (overwrite 또는 keep만 허용)',
+        'invalid_vendor_mode' => '유효하지 않은 Vendor 설치 모드입니다. (auto, composer, bundled만 허용)',
     ],
 
     // 유효성 검사 메시지

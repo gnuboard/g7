@@ -324,8 +324,13 @@
     "unread_count": "읽지 않은 알림 {{count}}건",
     "mark_all_read": "모두 읽음",
     "delete_all": "모두 삭제",
+    "delete_all_title": "알림 전체 삭제",
     "delete_all_confirm": "모든 알림을 삭제하시겠습니까?",
+    "delete_all_success": "모든 알림이 삭제되었습니다.",
+    "delete_all_failed": "알림 삭제에 실패했습니다.",
     "all_deleted": "모든 알림이 삭제되었습니다.",
+    "unread_only": "안 읽은 알림만",
+    "new_notification_received": "새 알림이 도착했습니다.",
     "empty": "알림이 없습니다.",
     "type": {
       "order": "주문",

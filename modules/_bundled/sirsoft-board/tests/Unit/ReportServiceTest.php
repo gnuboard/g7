@@ -65,7 +65,8 @@ class ReportServiceTest extends ModuleTestCase
             $this->postRepository,
             $this->commentRepository,
             $this->boardRepository,
-            $this->userRepository
+            $this->userRepository,
+            app(\App\Contracts\Extension\CacheInterface::class)
         );
 
         $this->user = User::factory()->create();

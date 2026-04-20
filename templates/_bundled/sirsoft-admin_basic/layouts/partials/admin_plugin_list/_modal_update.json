@@ -295,6 +295,240 @@
               ]
             }
           ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              },
+              "text": "$t:admin.plugins.modals.layout_strategy_title"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.hasModifiedPluginLayouts}}",
+              "props": {
+                "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
+              },
+              "text": "$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_global.hasModifiedPluginLayouts}}",
+              "props": {
+                "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
+              },
+              "text": "$t:admin.plugins.modals.no_modified_layouts"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "plugin_layout_strategy",
+                        "value": "overwrite",
+                        "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}",
+                        "className": "mt-0.5"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "pluginLayoutStrategy": "overwrite"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:admin.plugins.modals.layout_strategy_overwrite"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.plugins.modals.layout_strategy_overwrite_desc"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "radio",
+                        "name": "plugin_layout_strategy",
+                        "value": "keep",
+                        "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}",
+                        "className": "mt-0.5"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "pluginLayoutStrategy": "keep"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:admin.plugins.modals.layout_strategy_keep"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.plugins.modals.layout_strategy_keep_desc"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedPluginLayouts && _global.modifiedPluginLayouts.length > 0}}",
+                  "props": {
+                    "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-xs font-medium text-amber-700 dark:text-amber-300 mb-2"
+                      },
+                      "text": "$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "space-y-1 max-h-40 overflow-y-auto"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "iteration": {
+                            "source": "_global.modifiedPluginLayouts",
+                            "item_var": "modLayout"
+                          },
+                          "props": {
+                            "className": "flex items-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded"
+                          },
+                          "children": [
+                            {
+                              "type": "composite",
+                              "name": "Icon",
+                              "props": {
+                                "name": "file-alt",
+                                "className": "text-amber-500 shrink-0"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "font-mono flex-1 text-gray-700 dark:text-gray-300"
+                              },
+                              "text": "{{modLayout.name}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                              },
+                              "text": "{{modLayout.updated_at}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1"
+                      },
+                      "children": [
+                        {
+                          "type": "composite",
+                          "name": "Icon",
+                          "props": {
+                            "name": "info-circle",
+                            "size": "xs"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:admin.plugins.modals.modified_layouts_keep_notice"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -353,7 +587,10 @@
                   "auth_required": true,
                   "target": "/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update",
                   "params": {
-                    "method": "POST"
+                    "method": "POST",
+                    "body": {
+                      "layout_strategy": "{{_global.pluginLayoutStrategy ?? 'overwrite'}}"
+                    }
                   },
                   "onSuccess": [
                     {
@@ -367,7 +604,11 @@
                       "handler": "setState",
                       "params": {
                         "target": "global",
-                        "selectedPlugin": null
+                        "selectedPlugin": null,
+                        "pluginLayoutStrategy": "overwrite",
+                        "hasModifiedPluginLayouts": false,
+                        "modifiedPluginLayoutsCount": 0,
+                        "modifiedPluginLayouts": []
                       }
                     },
                     {

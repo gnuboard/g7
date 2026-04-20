@@ -36,7 +36,11 @@ class PublicPageResource extends BaseApiResource
                 ? $this->formatDateTimeStringForUser($this->published_at)
                 : null,
             'seo_meta' => $this->seo_meta,
+            'current_version' => $this->current_version,
             'attachments' => PageAttachmentResource::collection($this->whenLoaded('attachments')),
+            'created_at' => $this->created_at
+                ? $this->formatDateTimeStringForUser($this->created_at)
+                : null,
             'updated_at' => $this->updated_at
                 ? $this->formatDateTimeStringForUser($this->updated_at)
                 : null,

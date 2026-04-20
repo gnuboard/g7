@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\StorageInterface;
 use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
@@ -31,6 +32,15 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
     protected array $storageServices = [];
 
     /**
+     * CacheInterface가 필요한 서비스 클래스 목록
+     *
+     * 이 배열에 정의된 서비스들은 자동으로 CacheInterface가 주입됩니다.
+     *
+     * @var array<int, class-string>
+     */
+    protected array $cacheServices = [];
+
+    /**
      * Repository 인터페이스와 구현체 매핑
      *
      * @var array<class-string, class-string>
@@ -54,6 +64,9 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
 
         // StorageInterface 바인딩
         $this->registerStorageBindings();
+
+        // CacheInterface 바인딩
+        $this->registerCacheBindings();
     }
 
     /**
@@ -96,6 +109,27 @@ abstract class BaseModuleServiceProvider extends ServiceProvider
                 return $this->app->make(ModuleManager::class)
                     ->getModule($this->moduleIdentifier)
                     ->getStorage();
+            });
+    }
+
+    /**
+     * CacheInterface를 필요로 하는 서비스에 자동 바인딩합니다.
+     *
+     * 각 서비스의 생성자에서 CacheInterface를 주입받으면,
+     * 해당 모듈의 Cache 인스턴스가 자동으로 주입됩니다.
+     */
+    protected function registerCacheBindings(): void
+    {
+        if (empty($this->cacheServices)) {
+            return;
+        }
+
+        $this->app->when($this->cacheServices)
+            ->needs(CacheInterface::class)
+            ->give(function () {
+                return $this->app->make(ModuleManager::class)
+                    ->getModule($this->moduleIdentifier)
+                    ->getCache();
             });
     }
 

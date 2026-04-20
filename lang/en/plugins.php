@@ -45,6 +45,8 @@ return [
     'no_update_available' => 'No update available.',
     'check_updates_success' => 'Update check completed.',
     'check_updates_failed' => 'Update check failed.',
+    'check_modified_layouts_success' => 'Modified layouts check completed.',
+    'check_modified_layouts_failed' => 'Modified layouts check failed: :error',
     'not_installed' => 'Plugin ":plugin" is not installed.',
 
     // _pending related messages
@@ -81,8 +83,10 @@ return [
 
     // Error messages
     'errors' => [
+        'force_update_no_source' => 'Cannot force update :plugin. Neither bundle nor GitHub URL is available.',
         'invalid_permission_structure' => 'Invalid permission structure for plugin ":identifier": :reason',
         'invalid_translation_path' => 'Invalid translation path for plugin ":identifier". Use ":correct_path" instead of ":wrong_path".',
+        'seo_variable_conflict' => 'SEO variable name conflict in plugin ":identifier": :reason',
         'plugin_not_found' => 'Plugin ":name" not found.',
         'plugin_not_active' => 'Plugin ":name" is not active.',
         // Asset serving error messages
@@ -104,6 +108,8 @@ return [
         'reload_failed' => 'Failed to reload plugin.',
         'delete_directory_failed' => 'Failed to delete plugin directory.',
         'update_failed' => 'Failed to update plugin ":plugin": :error',
+        'invalid_layout_strategy' => 'Invalid layout strategy. (only overwrite or keep allowed)',
+        'invalid_vendor_mode' => 'Invalid vendor installation mode. (only auto, composer, bundled allowed)',
         'github_url_invalid' => 'Invalid GitHub URL format.',
         'github_download_failed' => 'Failed to download from GitHub.',
         'github_repo_not_found' => 'GitHub repository not found.',
@@ -152,6 +158,7 @@ return [
             'roles_created' => ':count roles created',
             'permissions_created' => ':count permissions created',
             'already_installed' => 'Plugin ":plugin" is already installed.',
+            'force_reinstall' => 'Force reinstalling plugin ":plugin" (overwriting active directory)...',
         ],
         'activate' => [
             'success' => 'Plugin ":plugin" activated successfully',

@@ -215,7 +215,7 @@ class Plugin implements PluginInterface
 | 메서드 | 반환 타입 | 설명 |
 |--------|----------|------|
 | `getIdentifier()` | `string` | 디렉토리명에서 자동 추론 (예: `sirsoft-payment`) |
-| `getVendor()` | `string` | 디렉토리명에서 자동 추론 (예: `sirsoft`) |
+| `getVendor()` | `string` | `plugin.json` 의 `vendor` 필드를 우선 사용. 값이 없으면 디렉토리명의 첫 단어로 폴백 (예: `sirsoft`) |
 
 ### 기본값 제공 메서드 (필요시 오버라이드)
 
@@ -226,9 +226,13 @@ class Plugin implements PluginInterface
 | `activate()` | `true` | 활성화 로직 |
 | `deactivate()` | `true` | 비활성화 로직 |
 | `getDynamicTables()` | `[]` | 런타임 동적 생성 테이블 목록 (언인스톨 시 Manager가 삭제) |
+| `getDynamicPermissionIdentifiers()` | `[]` | 런타임 생성 권한 식별자 — stale cleanup 보존 대상 |
+| `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견) |
+
+> **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
 
 ---
 
@@ -311,7 +315,7 @@ plugins/_bundled/sirsoft-payment/
 
 | 디렉토리 | 설명 |
 |----------|------|
-| `plugin.json` | 메타데이터 SSoT (이름, 버전, 설명, 의존성, 라이선스 등) |
+| `plugin.json` | 메타데이터 SSoT (이름, 버전, 설명, 의존성, 라이선스 등) — 버전 제약 정책은 [changelog-rules.md](changelog-rules.md#8-코어-버전-제약-정책) 참조 |
 | `plugin.php` | PluginInterface 구현 파일 (루트에 위치) |
 | `LICENSE` | 라이선스 전문 (MIT 등) — API 엔드포인트 `GET /api/admin/plugins/{identifier}/license`로 제공 |
 | `composer.json` | PSR-4 오토로딩 + 외부 패키지 의존성 설정 |
@@ -1141,6 +1145,64 @@ php artisan plugin:seed sirsoft-payment --force
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](extension-update-system.md) "개발자 버전 업데이트 가이드" 참조
+
+---
+
+## SEO 변수 선언 (seoVariables)
+
+플러그인이 SEO 메타 데이터(제목/설명)에 동적 변수를 제공하려면 `seoVariables()` 메서드를 오버라이드합니다. 모듈과 동일한 API입니다.
+
+### 오버라이드 시점
+
+- 플러그인이 SEO 대상 페이지(예: 결제 완료 페이지)를 layout_extensions로 확장하는 경우
+- 플러그인 설정의 SEO 템플릿에서 `{key}` 변수 치환이 필요한 경우
+
+### 구조
+
+```php
+public function seoVariables(): array
+{
+    return [
+        '_common' => [
+            'site_name' => ['source' => 'core_setting', 'key' => 'general.site_name'],
+        ],
+        'checkout' => [
+            'payment_name' => ['source' => 'setting', 'key' => 'basic.payment_name'],
+        ],
+    ];
+}
+```
+
+### 소스 타입
+
+| source | 설명 | 자동 해석 |
+|--------|------|----------|
+| `setting` | 해당 플러그인의 설정 값 | ✅ |
+| `core_setting` | 코어 설정 값 | ✅ |
+| `query` | URL 쿼리 파라미터 | ✅ |
+| `route` | URL 라우트 파라미터 | ✅ |
+| `data` | 데이터소스 응답 데이터 (레이아웃 `vars`에서 매핑 필요) | ❌ |
+
+### 레이아웃에서 사용
+
+레이아웃 JSON의 `meta.seo.extensions`에 플러그인을 선언합니다.
+
+```json
+{
+    "meta": {
+        "seo": {
+            "extensions": [{ "type": "plugin", "id": "sirsoft-payment" }],
+            "page_type": "checkout"
+        }
+    }
+}
+```
+
+- `_common` 키: 모든 page_type에 공통 적용 (page_type별 선언이 우선)
+- 설치 시 `ValidatesSeoVariables` 트레이트가 변수명 고유성 검증
+- `data` 소스 변수만 `vars`에서 표현식 매핑 필요, 나머지 소스는 자동 해석
+
+> 상세: [seo-system.md](../backend/seo-system.md) "SEO 변수 시스템" 참조
 
 ---
 

@@ -12,6 +12,7 @@
 3. TagInput: creatable, delimiters, splitOnPaste, isMulti, tagVariants 색상 맵핑
 4. MultilingualInput: layout('inline'|'tabs'|'compact'), availableLocales, inputType
 5. Toggle: size('sm'|'md'|'lg'), description 텍스트 | RadioGroup: inline 가로 배치
+6. HtmlContent: isHtml prop으로 HTML/텍스트 분기 — DB *_mode 필드 → isHtml 연동 패턴 필수 숙지
 ```
 
 ---
@@ -26,6 +27,7 @@
 6. [Checkbox](#checkbox)
 7. [RadioGroup](#radiogroup)
 8. [SearchBar](#searchbar)
+9. [HtmlContent](#htmlcontent)
 
 ---
 
@@ -571,6 +573,82 @@
 
 ---
 
+## HtmlContent
+
+HTML 콘텐츠와 일반 텍스트를 안전하게 렌더링하는 컴포넌트입니다.
+
+### Props
+
+| Prop | 타입 | 필수 | 기본값 | 설명 |
+|------|------|------|--------|------|
+| `content` | `string` | ❌ | `''` | 렌더링할 콘텐츠 (HTML 또는 텍스트) |
+| `text` | `string` | ❌ | - | 레이아웃 JSON용 콘텐츠 (`content`보다 우선) |
+| `isHtml` | `boolean` | ❌ | `true` | HTML 렌더링 여부 |
+| `className` | `string` | ❌ | `''` | 컨테이너 CSS 클래스 |
+| `purifyConfig` | `object` | ❌ | - | DOMPurify 커스텀 설정 (isHtml=true 시만) |
+
+### isHtml에 따른 렌더링 분기
+
+| `isHtml` | 렌더링 방식 | 스타일 |
+|----------|-----------|--------|
+| `true` | `dangerouslySetInnerHTML` + DOMPurify 정화 | `prose dark:prose-invert` (Tailwind Typography) |
+| `false` | React 텍스트 노드 (이스케이프됨) | `whitespace-pre-wrap` (줄바꿈 보존) |
+
+### DB `*_mode` 필드 → `isHtml` 연동 패턴 (CRITICAL)
+
+G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'html'`)으로 관리합니다.
+이 값이 API를 거쳐 프론트엔드 `isHtml` prop으로 변환되는 전체 흐름을 이해해야 합니다.
+
+#### 데이터 흐름
+
+```text
+1. DB 컬럼        → description_mode: 'text' | 'html'
+2. API Resource   → 'description_mode' => $this->description_mode
+3. 레이아웃 JSON  → "isHtml": "{{(product.data?.description_mode ?? 'text') === 'html'}}"
+4. HtmlContent    → isHtml=true → HTML 렌더링 / isHtml=false → 텍스트 렌더링
+```
+
+#### 적용 사례
+
+| 기능 | DB 컬럼 | API Resource 필드 | 레이아웃 표현식 |
+|------|---------|-------------------|----------------|
+| 상품 설명 | `products.description_mode` | `description_mode` | `{{(product.data?.description_mode ?? 'text') === 'html'}}` |
+| 게시글 본문 | `posts.content_mode` | `content_mode` | `{{(post?.data?.content_mode ?? 'text') === 'html'}}` |
+| 페이지 콘텐츠 | `pages.content_mode` | `content_mode` | `{{(page?.data?.content_mode ?? 'html') === 'html'}}` |
+| 공통정보 | `common_infos.content_mode` | `common_info.content_mode` | `{{product.data?.common_info?.content_mode === 'html'}}` |
+
+#### 레이아웃 JSON 사용 예시
+
+```json
+{
+  "type": "composite",
+  "name": "HtmlContent",
+  "props": {
+    "content": "{{product.data?.description_localized ?? ''}}",
+    "isHtml": "{{(product.data?.description_mode ?? 'text') === 'html'}}",
+    "className": "prose dark:prose-invert max-w-none"
+  }
+}
+```
+
+#### 주의사항
+
+```text
+1. API Resource에 *_mode 필드 누락 시 → 프론트엔드 기본값('text')으로 fallback → HTML 미렌더링
+2. Admin Resource와 Public Resource 양쪽 모두에 *_mode 필드 포함 필수
+3. 기본값은 기능별로 다름: 상품/게시글은 'text', 페이지는 'html'
+4. isHtml=true 시 DOMPurify 자동 적용 — 별도 sanitize 불필요
+5. 백엔드에서도 description_mode='html'일 때 HTMLPurifier로 서버 사이드 정화
+```
+
+### 보안
+
+- `isHtml=true`: DOMPurify FORBID 방식 — `script`, `iframe`, `form` 등 위험 태그 차단, 나머지 허용
+- 외부 링크(`http://`, `https://`)에 `rel="noopener noreferrer"` 자동 추가
+- `purifyConfig`로 커스터마이징 가능하나, 보안 기본값(`FORBID_TAGS`, `FORBID_ATTR`)은 항상 유지
+
+---
+
 ## 관련 문서
 
 - [컴포넌트 Props (Basic/DataGrid/Modal)](component-props.md)
@@ -578,3 +656,5 @@
 - [컴포넌트 고급 기능](components-advanced.md)
 - [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
 - [액션 핸들러 - 커스텀 콜백](actions.md#커스텀-이벤트-event-필드)
+- [보안 가이드 - HTML 렌더링](security.md#htmlcontent--htmleditor-html-렌더링이-필요한-경우)
+- [에디터 컴포넌트](editors.md)

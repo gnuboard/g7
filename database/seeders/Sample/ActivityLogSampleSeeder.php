@@ -5,7 +5,7 @@ namespace Database\Seeders\Sample;
 use App\Enums\ActivityLogType;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
-use App\Models\MailTemplate;
+use App\Models\NotificationTemplate;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\Schedule;
@@ -80,7 +80,7 @@ class ActivityLogSampleSeeder extends Seeder
         $count += $this->seedAttachmentLogs($admins);
 
         // 메일 템플릿 로그
-        $count += $this->seedMailTemplateLogs($admins);
+        $count += $this->seedNotificationTemplateLogs($admins);
 
         // 모듈/플러그인 설정 로그
         $count += $this->seedExtensionSettingsLogs($admins);
@@ -810,35 +810,35 @@ class ActivityLogSampleSeeder extends Seeder
      * @param  Collection  $admins  관리자 컬렉션
      * @return int 생성된 레코드 수
      */
-    private function seedMailTemplateLogs(Collection $admins): int
+    private function seedNotificationTemplateLogs(Collection $admins): int
     {
-        $mailTemplates = MailTemplate::get();
-        if ($mailTemplates->isEmpty()) {
-            $this->command->info('  - 메일 템플릿 데이터 없음 - 메일 템플릿 로그 스킵');
+        $templates = NotificationTemplate::with('definition')->get();
+        if ($templates->isEmpty()) {
+            $this->command->info('  - 알림 템플릿 데이터 없음 - 알림 템플릿 로그 스킵');
 
             return 0;
         }
 
-        $morphType = (new MailTemplate)->getMorphClass();
+        $morphType = (new NotificationTemplate)->getMorphClass();
 
         $actions = [
             [
-                'action' => 'mail_template.update', 'key' => 'mail_template_update', 'loggable' => true,
-                'params' => fn ($mt) => ['template_name' => $mt->type],
-                'changes' => fn ($mt) => null,
-                'properties' => fn ($mt) => ['template_type' => $mt->type, 'locale' => ['ko', 'en'][array_rand(['ko', 'en'])]],
+                'action' => 'notification_template.update', 'key' => 'notification_template_update', 'loggable' => true,
+                'params' => fn ($t) => ['template_name' => $t->definition?->type ?? $t->channel],
+                'changes' => fn ($t) => null,
+                'properties' => fn ($t) => ['template_type' => $t->definition?->type ?? '', 'channel' => $t->channel, 'locale' => ['ko', 'en'][array_rand(['ko', 'en'])]],
             ],
             [
-                'action' => 'mail_template.toggle_active', 'key' => 'mail_template_toggle_active', 'loggable' => true,
-                'params' => fn ($mt) => ['template_name' => $mt->type],
-                'changes' => fn ($mt) => null,
-                'properties' => fn ($mt) => ['template_type' => $mt->type, 'is_active' => (bool) mt_rand(0, 1)],
+                'action' => 'notification_template.toggle_active', 'key' => 'notification_template_toggle_active', 'loggable' => true,
+                'params' => fn ($t) => ['template_name' => $t->definition?->type ?? $t->channel],
+                'changes' => fn ($t) => null,
+                'properties' => fn ($t) => ['template_type' => $t->definition?->type ?? '', 'channel' => $t->channel, 'is_active' => (bool) mt_rand(0, 1)],
             ],
         ];
 
-        $count = $this->generateResourceLogs($mailTemplates, $admins, ActivityLogType::Admin, $morphType, $actions);
+        $count = $this->generateResourceLogs($templates, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 메일 템플릿 로그: {$count}건");
+        $this->command->info("  - 알림 템플릿 로그: {$count}건");
 
         return $count;
     }

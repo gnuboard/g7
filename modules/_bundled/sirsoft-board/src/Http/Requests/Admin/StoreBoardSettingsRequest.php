@@ -57,12 +57,34 @@ class StoreBoardSettingsRequest extends FormRequest
             'spam_security.view_count_cache_ttl',
         ];
 
+        $booleanFields = [
+            'basic_defaults.use_comment',
+            'basic_defaults.use_reply',
+            'basic_defaults.show_view_count',
+            'basic_defaults.use_report',
+            'basic_defaults.use_file_upload',
+            'basic_defaults.notify_admin_on_post',
+            'basic_defaults.notify_author',
+            'report_policy.notify_admin_on_report',
+            'report_policy.notify_author_on_report_action',
+            'seo.seo_boards',
+            'seo.seo_board',
+            'seo.seo_post_detail',
+        ];
+
         $data = $this->all();
 
         foreach ($integerFields as $field) {
             [$category, $key] = explode('.', $field, 2);
             if (isset($data[$category][$key]) && is_string($data[$category][$key]) && $data[$category][$key] !== '') {
                 $data[$category][$key] = intval($data[$category][$key]);
+            }
+        }
+
+        foreach ($booleanFields as $field) {
+            [$category, $key] = explode('.', $field, 2);
+            if (isset($data[$category][$key])) {
+                $data[$category][$key] = filter_var($data[$category][$key], FILTER_VALIDATE_BOOLEAN);
             }
         }
 
@@ -78,7 +100,16 @@ class StoreBoardSettingsRequest extends FormRequest
     {
         return [
             // 현재 탭 정보 (메타 데이터)
-            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general'],
+            '_tab' => ['sometimes', 'string', 'in:basic_defaults,report_policy,spam_security,general,seo,notifications,notification_definitions'],
+
+            // ========================================
+            // notifications (알림 채널 설정) 카테고리
+            // ========================================
+            'notifications' => ['sometimes', 'array'],
+            'notifications.channels' => ['sometimes', 'array'],
+            'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
+            'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
+            'notifications.channels.*.sort_order' => ['nullable', 'integer', 'min:0'],
 
             // ========================================
             // basic_defaults (기본 설정) 카테고리
@@ -112,10 +143,6 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.allowed_extensions.*' => ['string', 'max:20'],
             'basic_defaults.notify_admin_on_post' => ['nullable', 'boolean'],
             'basic_defaults.notify_author' => ['nullable', 'boolean'],
-            'basic_defaults.notify_admin_on_post_channels' => ['nullable', 'array'],
-            'basic_defaults.notify_admin_on_post_channels.*' => ['string', 'in:mail'],
-            'basic_defaults.notify_author_channels' => ['nullable', 'array'],
-            'basic_defaults.notify_author_channels.*' => ['string', 'in:mail'],
             'basic_defaults.new_display_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
             // default_board_permissions는 flat key 구조 (예: {"posts.read": ["admin","user"], "manager": ["admin"]})
             // Laravel dot notation으로 하위 키를 개별 검증하면 flat key가 중첩 배열로 파싱되어 데이터 유실됨
@@ -133,11 +160,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'report_policy.rejection_limit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'report_policy.notify_admin_on_report' => ['nullable', 'boolean'],
             'report_policy.notify_admin_on_report_scope' => ['nullable', 'string', 'in:per_case,per_report'],
-            'report_policy.notify_admin_on_report_channels' => ['nullable', 'array'],
-            'report_policy.notify_admin_on_report_channels.*' => ['string', 'in:mail'],
             'report_policy.notify_author_on_report_action' => ['nullable', 'boolean'],
-            'report_policy.notify_author_on_report_action_channels' => ['nullable', 'array'],
-            'report_policy.notify_author_on_report_action_channels.*' => ['string', 'in:mail'],
 
             // ========================================
             // report_permissions (신고 관리 권한) — 설정값이 아닌 DB 권한 데이터
@@ -163,6 +186,20 @@ class StoreBoardSettingsRequest extends FormRequest
             'spam_security.comment_cooldown_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
             'spam_security.report_cooldown_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
             'spam_security.view_count_cache_ttl' => ['nullable', 'integer', 'min:60', 'max:604800'],
+
+            // ========================================
+            // seo (SEO 설정) 카테고리
+            // ========================================
+            'seo' => ['sometimes', 'array'],
+            'seo.meta_boards_title' => ['nullable', 'string', 'max:500'],
+            'seo.meta_boards_description' => ['nullable', 'string', 'max:1000'],
+            'seo.meta_board_title' => ['nullable', 'string', 'max:500'],
+            'seo.meta_board_description' => ['nullable', 'string', 'max:1000'],
+            'seo.meta_post_title' => ['nullable', 'string', 'max:500'],
+            'seo.meta_post_description' => ['nullable', 'string', 'max:1000'],
+            'seo.seo_boards' => ['nullable', 'boolean'],
+            'seo.seo_board' => ['nullable', 'boolean'],
+            'seo.seo_post_detail' => ['nullable', 'boolean'],
         ];
     }
 
@@ -201,7 +238,7 @@ class StoreBoardSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display'];
+        $validCategories = ['basic_defaults', 'report_policy', 'spam_security', 'display', 'seo', 'notifications'];
 
         return array_filter(
             $validated,

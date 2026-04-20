@@ -9,9 +9,9 @@
 
 ```text
 1. Laravel Reverb 사용 (WebSocket)
-2. 이벤트: ShouldBroadcast 인터페이스 구현
-3. 채널: public, private, presence
-4. 훅 연동: HookManager에서 broadcast() 호출
+2. 브로드캐스트 필수: HookManager::broadcast($channel, $eventName, $payload) 사용
+3. 채널: public, private, presence (인증은 routes/channels.php)
+4. 개별 Event 클래스 직접 생성 금지 → HookManager::broadcast() 사용
 5. 클라이언트: Laravel Echo + Pusher-js
 ```
 
@@ -103,63 +103,83 @@ VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
 > **주의**: 프로덕션 환경에서는 `REVERB_VERIFY_SSL=true`로 설정해야 합니다.
 
+### 클라이언트/서버 endpoint 분리 (리버스 프록시 환경)
+
+WebSocket은 두 가지 endpoint를 가집니다:
+
+| Endpoint | 용도 | 사용 주체 | 예시 |
+|----------|------|---------|------|
+| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `g7.dev:443` (https) |
+| 서버 (내부) | 백엔드가 broadcast HTTP API 호출 | Pusher SDK → Reverb (Laravel queue worker 내부) | `127.0.0.1:8080` (http) |
+
+**환경설정 → 드라이버 → 웹소켓**에서 두 endpoint를 분리 입력할 수 있습니다:
+
+- 호스트/포트/프로토콜 (클라이언트) — 브라우저용 외부 endpoint
+- 서버 호스트/포트/프로토콜 (내부) — 백엔드 broadcast HTTP API용
+
+서버 endpoint가 비어있으면 클라이언트 값으로 fallback (단일 호스트 환경 호환). 리버스 프록시 환경(예: Apache가 `/apps/*`를 Reverb로 프록시하지 못하는 경우)에서는 반드시 server endpoint를 `127.0.0.1:8080` 등 내부 직접 주소로 입력해야 합니다. 그렇지 않으면 Pusher SDK가 외부 host로 POST하여 Apache가 받아 `Method Not Allowed` 발생.
+
+`SettingsServiceProvider::applyWebsocketConfig()`는 클라이언트 endpoint를 `g7.websocket.client.{host,port,scheme}` config 키에, 서버 endpoint를 `broadcasting.connections.reverb.options.*` 및 `reverb.apps.apps.0.options.*`에 분리 적용합니다. Blade(`admin.blade.php`/`app.blade.php`)는 `g7.websocket.client.*`를 우선 읽어 브라우저로 전달합니다.
+
+### Settings 저장 시 큐 워커 재시작 자동화
+
+`SettingsService::saveSettings()`는 drivers 탭 저장 시 자동으로 `Artisan::call('queue:restart')`를 호출합니다. 이는 long-running queue worker가 SettingsServiceProvider boot 시점의 config를 메모리에 캐싱하기 때문입니다. drivers 변경이 워커에 반영되려면 워커가 정상 종료 후 supervisor/스크립트로 재시작되어야 합니다.
+
 ---
 
-## 브로드캐스트 이벤트 생성
+## HookManager::broadcast() API
 
-### 기본 구조
+### 사용법
 
 ```php
-<?php
+use App\Extension\HookManager;
 
-namespace App\Events\Dashboard;
+// 기본 사용법 — 채널, 이벤트명, 데이터
+HookManager::broadcast('core.admin.dashboard', 'dashboard.stats.updated', [
+    'type' => 'stats',
+    'data' => $statsData,
+]);
 
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-/**
- * 대시보드 업데이트 브로드캐스트 이벤트
- */
-class DashboardUpdated implements ShouldBroadcast
-{
-    use Dispatchable, InteractsWithSockets, SerializesModels;
-
-    /**
-     * 이벤트 인스턴스를 생성합니다.
-     *
-     * @param string $type 업데이트 타입 ('stats', 'resources', 'activities')
-     * @param array $data 업데이트된 데이터
-     */
-    public function __construct(
-        public string $type,
-        public array $data
-    ) {}
-
-    /**
-     * 브로드캐스트할 채널을 반환합니다.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
-    {
-        return [new PrivateChannel('admin.dashboard')];
-    }
-
-    /**
-     * 브로드캐스트 이벤트명을 반환합니다.
-     *
-     * @return string
-     */
-    public function broadcastAs(): string
-    {
-        return "dashboard.{$this->type}.updated";
-    }
-}
+// 사용자별 알림 브로드캐스트 — UUID 사용 (User ID 노출 방지, 보안 강화)
+HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.received', [
+    'subject' => '새 주문',
+    'body' => '주문이 접수되었습니다.',
+    'type' => 'order_created',
+]);
 ```
+
+### 파라미터
+
+| 파라미터 | 타입 | 설명 | 예시 |
+|---------|------|------|------|
+| `$channel` | string | Private 채널명 | `'core.admin.dashboard'`, `'core.user.notifications.{uuid}'` |
+| `$eventName` | string | 클라이언트 수신 이벤트명 | `'dashboard.stats.updated'` |
+| `$payload` | array | 브로드캐스트 데이터 | `['type' => 'stats', 'data' => [...]]` |
+
+### 절대 금지
+
+```
+❌ broadcast(new SpecificEvent(...))  — 개별 Event 클래스 직접 생성/사용 금지
+❌ event(new SpecificEvent(...))      — event() 헬퍼 직접 사용 금지
+✅ HookManager::broadcast(...)       — 유일한 브로드캐스트 방법
+```
+
+내부적으로 `GenericBroadcastEvent`를 사용하지만, 이는 HookManager의 구현 디테일이므로 외부에서 직접 참조하지 않습니다.
+
+### Graceful Skip (안전한 건너뛰기)
+
+`HookManager::broadcast()`는 아래 조건에서 브로드캐스트를 **시도하지 않고 즉시 반환**합니다:
+
+| 조건 | 동작 |
+|------|------|
+| 관리자 환경설정 → 드라이버 → 웹소켓 사용 OFF (`websocket_enabled=false`) | `SettingsServiceProvider::applyWebsocketConfig()`가 `broadcasting.default`를 `'null'`로 강제 → 즉시 return |
+| `BROADCAST_CONNECTION=null` 또는 `log` | 즉시 return (연결 시도 없음) |
+| 드라이버의 `host` 미설정 (예: `REVERB_HOST` 비어있음) | 즉시 return (연결 시도 없음) |
+| 설정 정상이나 서버 미실행 (cURL 연결 실패) | `Log::warning` 기록 후 return (예외 미전파) |
+
+브로드캐스팅은 부가 기능이므로 실패해도 메인 작업(사용자 업데이트, 주문 처리, 알림 발송 등)을 중단시키지 않습니다. 개별 리스너에서 try-catch를 추가할 필요가 없습니다.
+
+> **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 PO가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
 
 ### 채널 타입
 
@@ -169,17 +189,96 @@ class DashboardUpdated implements ShouldBroadcast
 | Private | `PrivateChannel` | 인증된 사용자만 접근 | ✅ |
 | Presence | `PresenceChannel` | 인증 + 접속자 목록 공유 | ✅ |
 
-### 이벤트 발생
+현재 `HookManager::broadcast()`는 Private 채널만 지원합니다. Public/Presence 채널이 필요한 경우 HookManager 확장이 필요합니다.
+
+---
+
+## 채널 네이밍 규칙
+
+코어와 확장(모듈/플러그인) 간 채널명 충돌을 방지하기 위한 필수 컨벤션:
+
+| 소스 | 패턴 | 예시 |
+|------|------|------|
+| 코어 | `core.*` | `core.admin.dashboard`, `core.user.notifications.{id}` |
+| 모듈 | `module.{identifier}.*` | `module.sirsoft-ecommerce.orders.{id}` |
+| 플러그인 | `plugin.{identifier}.*` | `plugin.sirsoft-payment.status.{id}` |
+
+---
+
+## 모듈/플러그인 채널 등록
+
+모듈/플러그인에서 WebSocket 채널이 필요한 경우 `getChannels()` 메서드를 오버라이드합니다.
+`ModuleManager`/`PluginManager`가 로드 시 자동으로 `Broadcast::channel()`에 등록합니다.
+
+### 모듈 예시
 
 ```php
-// 방법 1: broadcast() 헬퍼 (권장)
-broadcast(new DashboardUpdated('stats', $statsData));
+// modules/sirsoft-ecommerce/src/module.php
+class EcommerceModule extends AbstractModule
+{
+    public function getChannels(): array
+    {
+        return [
+            'module.sirsoft-ecommerce.orders.{id}' => [
+                'permission' => 'sirsoft-ecommerce.orders.read',
+            ],
+            'module.sirsoft-ecommerce.cart.{cartKey}' => [
+                // permission 없음 → 인증만 필요
+            ],
+        ];
+    }
+}
+```
 
-// 방법 2: event() 헬퍼
-event(new DashboardUpdated('resources', $resourceData));
+### 플러그인 예시
 
-// 방법 3: 즉시 전송 (큐 미사용)
-broadcast(new DashboardUpdated('alerts', $alertData))->toOthers();
+```php
+// plugins/sirsoft-payment/src/plugin.php
+class PaymentPlugin extends AbstractPlugin
+{
+    public function getChannels(): array
+    {
+        return [
+            'plugin.sirsoft-payment.status.{id}' => [
+                'permission' => 'sirsoft-payment.payments.read',
+            ],
+        ];
+    }
+}
+```
+
+### 채널 정의 형식
+
+| 키 | 타입 | 설명 | 기본값 |
+|-----|------|------|--------|
+| `permission` | `string\|null` | 권한 식별자 (`hasPermission()` 체크) | `null` (인증만) |
+| `type` | `string` | 채널 타입 (`private`) | `private` |
+
+### 프론트엔드에서 수신
+
+모듈 레이아웃에서 WebSocket 데이터소스를 정의합니다:
+
+```json
+{
+    "id": "order_updates_ws",
+    "type": "websocket",
+    "channel": "module.sirsoft-ecommerce.orders.{{_global.currentUser?.id}}",
+    "event": "order.updated",
+    "channel_type": "private",
+    "target_source": "orders"
+}
+```
+
+### 모듈에서 브로드캐스트 전송
+
+훅 리스너에서 `HookManager::broadcast()`를 호출합니다:
+
+```php
+HookManager::broadcast(
+    "module.sirsoft-ecommerce.orders.{$userId}",
+    'order.updated',
+    ['order_id' => $order->id, 'status' => $order->status]
+);
 ```
 
 ---
@@ -193,19 +292,40 @@ broadcast(new DashboardUpdated('alerts', $alertData))->toOthers();
 
 use Illuminate\Support\Facades\Broadcast;
 
-// 사용자별 Private 채널
-Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
+// 사용자별 Private 채널 — UUID 사용 (User ID 노출 방지)
+Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
+    return $user->uuid === $uuid && $user->hasPermission('core.user-notifications.read', \App\Enums\PermissionType::User);
 });
 
 // 관리자 대시보드 채널 - 권한 체크
-Broadcast::channel('admin.dashboard', function ($user) {
+Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
 });
 
-// 특정 리소스 채널
-Broadcast::channel('orders.{orderId}', function ($user, $orderId) {
-    return $user->hasPermission('ecommerce.orders.read');
+// 모듈 리소스 채널 (모듈의 getChannels()로 자동 등록 — 참고용 예시)
+// Broadcast::channel('module.sirsoft-ecommerce.orders.{orderId}', function ($user, $orderId) {
+//     return $user->hasPermission('sirsoft-ecommerce.orders.read');
+// });
+```
+
+### 사용자별 채널은 UUID 사용 (보안)
+
+```php
+// ✅ DO: UUID 기반 — 다른 사용자 채널 추측 사실상 불가능
+Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
+    return $user->uuid === $uuid && $user->hasPermission('core.user-notifications.read', \App\Enums\PermissionType::User);
+});
+
+// 백엔드 broadcast 시
+HookManager::broadcast(
+    "core.user.notifications.{$user->uuid}",
+    'notification.received',
+    ['subject' => '...', 'body' => '...']
+);
+
+// ❌ DON'T: 정수 ID — 1, 2, 3... 순차 ID 노출로 채널 추측 가능
+Broadcast::channel('core.user.notifications.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
 });
 ```
 
@@ -213,7 +333,7 @@ Broadcast::channel('orders.{orderId}', function ($user, $orderId) {
 
 ```php
 // ✅ DO: boolean 반환 (Private 채널)
-Broadcast::channel('admin.dashboard', function ($user) {
+Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
 });
 
@@ -226,7 +346,7 @@ Broadcast::channel('chat.{roomId}', function ($user, $roomId) {
 });
 
 // ❌ DON'T: 예외 던지기
-Broadcast::channel('admin.dashboard', function ($user) {
+Broadcast::channel('core.admin.dashboard', function ($user) {
     throw new \Exception('Unauthorized'); // 금지
 });
 ```
@@ -263,57 +383,59 @@ const pusherOptions = {
 
 ---
 
-## 훅을 통한 이벤트 발생
+## 훅을 통한 브로드캐스트 발생
 
-Service 계층에서 데이터 변경 시 훅 리스너를 통해 브로드캐스트 이벤트를 발생시킵니다.
+Service 계층에서 데이터 변경 시 훅 리스너를 통해 `HookManager::broadcast()`를 호출합니다.
 
-### config/hooks.php
-
-```php
-return [
-    'listeners' => [
-        // 대시보드 통계 업데이트 시 브로드캐스트
-        'core.dashboard.stats_updated' => [
-            \App\Listeners\BroadcastDashboardStats::class,
-        ],
-
-        // 사용자 생성 시 대시보드 통계 업데이트
-        'core.user.after_create' => [
-            \App\Listeners\UpdateDashboardStatsOnUserChange::class,
-        ],
-    ],
-];
-```
-
-### 리스너 구현
+### 리스너 구현 패턴
 
 ```php
 <?php
 
-namespace App\Listeners;
+namespace App\Listeners\Dashboard;
 
-use App\Events\Dashboard\DashboardUpdated;
+use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\HookManager;
 use App\Services\DashboardService;
 
-class BroadcastDashboardStats
+class DashboardStatsListener implements HookListenerInterface
 {
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'core.user.after_create' => ['method' => 'handleStatsUpdate', 'priority' => 10],
+            'core.user.after_update' => ['method' => 'handleStatsUpdate', 'priority' => 10],
+        ];
+    }
+
     public function __construct(
         private DashboardService $dashboardService
     ) {}
 
+    public function handle(...$args): void {}
+
     /**
-     * 대시보드 통계 브로드캐스트
-     *
-     * @param array $data 훅 데이터
-     * @return void
+     * 대시보드 통계 업데이트를 브로드캐스트합니다.
      */
-    public function handle(array $data): void
+    public function handleStatsUpdate(...$args): void
     {
-        $stats = $this->dashboardService->getStats();
-        broadcast(new DashboardUpdated('stats', $stats));
+        HookManager::broadcast('core.admin.dashboard', 'dashboard.stats.updated', [
+            'type' => 'stats',
+            'data' => $this->dashboardService->getStats(),
+        ]);
     }
 }
 ```
+
+### 큐 워커에서의 사용자 컨텍스트
+
+훅 리스너는 기본적으로 큐로 디스패치되며, 큐 워커는 별도 프로세스이므로 `Auth::user()`/`request()->ip()`/`App::getLocale()`이 모두 리셋됩니다. 그러나 G7은 디스패치 시점의 컨텍스트를 자동 캡처/복원하므로 워커에서도 평소처럼 사용할 수 있습니다:
+
+- broadcast 페이로드에 `Auth::user()->name` 같은 사용자 정보를 포함시켜도 안전
+- 활동로그/알림 발송 시 행위자가 실제 로그인 사용자로 정상 기록
+- 다국어 메시지가 원래 요청 로케일로 발송
+
+> 자세한 동작과 플러그인 확장 방법은 [extension/hooks.md "사용자 컨텍스트 자동 복원"](../extension/hooks.md) 참조
 
 ---
 
@@ -328,7 +450,7 @@ class BroadcastDashboardStats
 
 namespace App\Console\Commands;
 
-use App\Events\Dashboard\DashboardUpdated;
+use App\Extension\HookManager;
 use App\Services\DashboardService;
 use Illuminate\Console\Command;
 
@@ -339,8 +461,10 @@ class BroadcastDashboardResources extends Command
 
     public function handle(DashboardService $dashboardService): int
     {
-        $resources = $dashboardService->getSystemResources();
-        broadcast(new DashboardUpdated('resources', $resources));
+        HookManager::broadcast('core.admin.dashboard', 'dashboard.resources.updated', [
+            'type' => 'resources',
+            'data' => $dashboardService->getSystemResources(),
+        ]);
 
         $this->info('시스템 리소스 정보가 브로드캐스트되었습니다.');
         return Command::SUCCESS;

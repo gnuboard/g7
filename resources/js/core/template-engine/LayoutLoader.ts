@@ -321,6 +321,20 @@ export interface LayoutData {
           /** 커스텀 로딩 텍스트 (미지정 시 nav.loading 번역 키 사용) */
           text?: string;
       };
+      /**
+       * spinner 가 표시되어야 할 데이터소스 ID 목록
+       *
+       * blocking 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가
+       * fetch 완료될 때까지 transition_overlay 가 표시됩니다.
+       *
+       * 호환되는 loading_strategy: blocking, progressive
+       * 자동 무시되는 케이스: background, websocket, 존재하지 않는 ID
+       *
+       * 백엔드 검증(UpdateLayoutContentRequest)에서 background/websocket ID 는 사전 차단됩니다.
+       *
+       * @since engine-v1.30.0
+       */
+      wait_for?: string[];
   };
 
   /**

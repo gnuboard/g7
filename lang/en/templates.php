@@ -4,6 +4,7 @@ return [
     'title' => 'Template Management',
 
     'errors' => [
+        'force_update_no_source' => 'Cannot force update :template. Neither bundle nor GitHub URL is available.',
         'not_found' => 'Template not found. (:template)',
         'not_installed' => 'Template is not installed. (:template)',
         'already_active' => 'Template is already active.',
@@ -221,6 +222,7 @@ return [
         'install' => [
             'success' => 'Template ":template" installed successfully',
             'already_installed' => 'Template ":template" is already installed.',
+            'force_reinstall' => 'Force reinstalling template ":template" (overwriting active directory)...',
             'layouts_created' => ':count layout(s) created',
             'type' => 'Type: :type',
             'version' => 'Version: :version',

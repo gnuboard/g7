@@ -4,8 +4,13 @@ export interface FileInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
     accept?: string;
     /** 최대 파일 크기 (MB) */
     maxSize?: number;
-    /** 파일 선택 시 콜백 */
-    onChange?: (file: File | null) => void;
+    /** 파일 선택 시 콜백 ({ target: { value } } 패턴) */
+    onChange?: (event: {
+        target: {
+            value: File | null;
+            name: string;
+        };
+    }) => void;
     /** 에러 발생 시 콜백 */
     onError?: (error: string) => void;
     /** 버튼 텍스트 */

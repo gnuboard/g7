@@ -49,7 +49,7 @@
                   "searchBgColor": "{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}",
                   "queryTextColor": "#FFFFFF"
                 },
-                "callbackAction": "{{extensionPointProps.onAddressSelect}}",
+                "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",
                 "targetFields": "{{extensionPointProps.targetFields}}"
               }
             }

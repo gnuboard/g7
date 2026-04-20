@@ -869,6 +869,7 @@ return [
         'is_active_required' => 'Please select active status.',
         'is_active_boolean' => 'Active status must be true or false.',
         'base_fee_zero_not_allowed' => 'Shipping fee cannot be 0 for non-free shipping policies.',
+        'custom_shipping_name_required' => 'Please enter a shipping method name when selecting custom.',
         'ranges' => [
             'first_min_zero' => 'The first tier must start at 0.',
             'last_max_unlimited' => 'The last tier must have no upper limit.',
@@ -1124,6 +1125,9 @@ return [
         'seo.meta_search_description' => 'Search Page Description',
         'seo.meta_product_title' => 'Product Page Title',
         'seo.meta_product_description' => 'Product Page Description',
+        'seo.meta_shop_index_title' => 'Shop Main Page Title',
+        'seo.meta_shop_index_description' => 'Shop Main Page Description',
+        'seo.seo_shop_index' => 'Shop Main Page SEO',
         'seo.seo_user_agents' => 'SEO User Agents',
 
         // Order settings
@@ -1351,6 +1355,17 @@ return [
             'seo_product_detail' => [
                 'boolean' => 'Product detail page SEO option must be true or false.',
             ],
+            'meta_shop_index_title' => [
+                'string' => 'Shop main page title must be a string.',
+                'max' => 'Shop main page title cannot exceed 500 characters.',
+            ],
+            'meta_shop_index_description' => [
+                'string' => 'Shop main page description must be a string.',
+                'max' => 'Shop main page description cannot exceed 1000 characters.',
+            ],
+            'seo_shop_index' => [
+                'boolean' => 'Shop main page SEO option must be true or false.',
+            ],
             'seo_user_agents' => [
                 'string' => 'SEO user agent must be a string.',
                 'max' => 'SEO user agent cannot exceed 100 characters.',
@@ -1495,6 +1510,27 @@ return [
             'address_api_provider' => [
                 'string' => 'Address API provider must be a string.',
                 'max' => 'Address API provider must not exceed 50 characters.',
+            ],
+            'types' => [
+                'duplicate_code' => 'Duplicate shipping type code found.',
+                'name_required' => 'Shipping type name is required.',
+                'code' => [
+                    'required_with' => 'Shipping type code is required.',
+                    'string' => 'Shipping type code must be a string.',
+                    'max' => 'Shipping type code must not exceed 50 characters.',
+                    'regex' => 'Shipping type code must contain only lowercase letters, numbers, hyphens, and underscores.',
+                ],
+                'name' => [
+                    'required_with' => 'Shipping type name is required.',
+                    'array' => 'Shipping type name must be a multilingual array.',
+                ],
+                'category' => [
+                    'required_with' => 'Shipping type category is required.',
+                    'in' => 'Shipping type category must be one of: domestic, international, other.',
+                ],
+                'is_active' => [
+                    'boolean' => 'Shipping type active status must be true or false.',
+                ],
             ],
             'carriers' => [
                 'duplicate_code' => 'Duplicate carrier code found.',

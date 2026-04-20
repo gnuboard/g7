@@ -129,8 +129,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Board $board 삭제된 게시판
      */
-    public function handleBoardAfterDelete(Board $board): void
+    public function handleBoardAfterDelete(?Board $board): void
     {
+        if ($board === null) {
+            return;
+        }
+
         $this->logActivity('board.delete', [
             'loggable' => $board,
             'description_key' => 'sirsoft-board::activity_log.description.board_delete',
@@ -217,8 +221,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param BoardType $boardType 삭제된 게시판 유형
      */
-    public function handleBoardTypeAfterDelete(BoardType $boardType): void
+    public function handleBoardTypeAfterDelete(?BoardType $boardType): void
     {
+        if ($boardType === null) {
+            return;
+        }
+
         $this->logActivity('board_type.delete', [
             'loggable' => $boardType,
             'description_key' => 'sirsoft-board::activity_log.description.board_type_delete',
@@ -282,8 +290,12 @@ class BoardActivityLogListener implements HookListenerInterface
      * @param Post $deletedPost 삭제된 게시글
      * @param string $slug 게시판 슬러그
      */
-    public function handlePostAfterDelete(Post $deletedPost, string $slug): void
+    public function handlePostAfterDelete(?Post $deletedPost, string $slug): void
     {
+        if ($deletedPost === null) {
+            return;
+        }
+
         $deletedPost->loadMissing('board');
 
         $this->logActivity('post.delete', [
@@ -389,8 +401,12 @@ class BoardActivityLogListener implements HookListenerInterface
      * @param Comment $deletedComment 삭제된 댓글
      * @param string $slug 게시판 슬러그
      */
-    public function handleCommentAfterDelete(Comment $deletedComment, string $slug): void
+    public function handleCommentAfterDelete(?Comment $deletedComment, string $slug): void
     {
+        if ($deletedComment === null) {
+            return;
+        }
+
         $this->logActivity('comment.delete', [
             'loggable' => $deletedComment,
             'description_key' => 'sirsoft-board::activity_log.description.comment_delete',
@@ -440,8 +456,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Attachment $attachment 업로드된 첨부파일
      */
-    public function handleAttachmentAfterUpload(Attachment $attachment): void
+    public function handleAttachmentAfterUpload(?Attachment $attachment): void
     {
+        if ($attachment === null) {
+            return; // 큐 워커 시점에 모델이 이미 사라진 경우 스킵
+        }
+
         $this->logActivity('attachment.upload', [
             'loggable' => $attachment,
             'description_key' => 'sirsoft-board::activity_log.description.board_attachment_upload',
@@ -459,8 +479,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Attachment $attachment 삭제된 첨부파일
      */
-    public function handleAttachmentAfterDelete(Attachment $attachment): void
+    public function handleAttachmentAfterDelete(?Attachment $attachment): void
     {
+        if ($attachment === null) {
+            return;
+        }
+
         $this->logActivity('attachment.delete', [
             'loggable' => $attachment,
             'description_key' => 'sirsoft-board::activity_log.description.board_attachment_delete',
@@ -481,8 +505,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Report $report 생성된 신고
      */
-    public function handleReportAfterCreate(Report $report): void
+    public function handleReportAfterCreate(?Report $report): void
     {
+        if ($report === null) {
+            return;
+        }
+
         $this->logActivity('report.create', [
             'loggable' => $report,
             'description_key' => 'sirsoft-board::activity_log.description.report_create',
@@ -496,8 +524,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Report $updatedReport 상태 변경된 신고
      */
-    public function handleReportAfterUpdateStatus(Report $updatedReport): void
+    public function handleReportAfterUpdateStatus(?Report $updatedReport): void
     {
+        if ($updatedReport === null) {
+            return;
+        }
+
         $this->logActivity('report.update_status', [
             'loggable' => $updatedReport,
             'description_key' => 'sirsoft-board::activity_log.description.report_update_status',
@@ -542,8 +574,12 @@ class BoardActivityLogListener implements HookListenerInterface
      *
      * @param Report $report 삭제된 신고
      */
-    public function handleReportAfterDelete(Report $report): void
+    public function handleReportAfterDelete(?Report $report): void
     {
+        if ($report === null) {
+            return;
+        }
+
         $this->logActivity('report.delete', [
             'loggable' => $report,
             'description_key' => 'sirsoft-board::activity_log.description.report_delete',

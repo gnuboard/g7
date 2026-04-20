@@ -84,6 +84,17 @@ interface RoleRepositoryInterface
     public function findExtensionRoleByIdentifier(string $identifier, ExtensionOwnerType $extensionType, string $extensionIdentifier): ?Role;
 
     /**
+     * 확장이 소유한 모든 역할을 조회합니다.
+     *
+     * stale cleanup 진입점에서 현재 DB 에 존재하는 확장 역할 전체를 얻기 위해 사용.
+     *
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @return Collection 해당 확장 소유 역할 컬렉션
+     */
+    public function getByExtension(ExtensionOwnerType $extensionType, string $extensionIdentifier): Collection;
+
+    /**
      * 역할에 권한을 할당합니다.
      *
      * @param  Role  $role  역할 모델

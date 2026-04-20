@@ -70,7 +70,7 @@
                                     "name": "Select",
                                     "props": {
                                         "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}",
-                                        "value": "{{_computed.activeCountrySetting?.shipping_method ?? 'parcel'}}",
+                                        "value": "{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}",
                                         "options": "{{_computed.shippingMethodOptions ?? []}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
@@ -93,6 +93,45 @@
                                         "className": "text-red-500 dark:text-red-400 text-xs mt-0.5"
                                     },
                                     "text": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_computed.activeCountrySetting?.shipping_method === 'custom'}}",
+                                    "props": {
+                                        "className": "mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "props": {
+                                                "value": "{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}",
+                                                "layout": "inline",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder",
+                                                "error": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + (_global.locale || 'ko')]?.[0] ?? ''}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.updateCountryField",
+                                                    "params": {
+                                                        "field": "custom_shipping_name",
+                                                        "value": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         }

@@ -1121,19 +1121,6 @@ return [
         'settings_retrieved' => 'Active extra fee template settings retrieved successfully.',
     ],
 
-    // Mail template management
-    'mail_template_fetch_success' => 'Mail templates retrieved successfully.',
-    'mail_template_fetch_failed' => 'Failed to retrieve mail templates.',
-    'mail_template_save_success' => 'Mail template has been saved.',
-    'mail_template_save_error' => 'Failed to save mail template.',
-    'mail_template_toggle_success' => 'Mail template status has been changed.',
-    'mail_template_toggle_failed' => 'Failed to change mail template status.',
-    'mail_template_reset_success' => 'Mail template has been reset to default.',
-    'mail_template_reset_failed' => 'Failed to reset mail template.',
-    'mail_template_reset_no_default' => 'Default template data not found.',
-    'mail_template_preview_success' => 'Mail template preview generated.',
-    'mail_template_preview_failed' => 'Failed to generate mail template preview.',
-
     // Product 1:1 Inquiries
     'inquiries' => [
         'fetch_success'         => 'Inquiry list retrieved successfully.',

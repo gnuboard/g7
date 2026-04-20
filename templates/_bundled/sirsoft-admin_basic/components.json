@@ -3057,6 +3057,19 @@
         }
       },
       {
+        "name": "PageLoading",
+        "type": "composite",
+        "description": "transition_overlay spinner 스타일에서 사용하는 페이지 로딩 인디케이터 (React 트리 외부 렌더링용 인라인 스타일 컴포넌트)",
+        "path": "src/components/composite/PageLoading.tsx",
+        "props": {
+          "options": {
+            "type": "object",
+            "required": false,
+            "description": "엔진이 transition_overlay.spinner.text 등을 전달하는 옵션 객체"
+          }
+        }
+      },
+      {
         "name": "Toggle",
         "type": "composite",
         "description": "Toggle switch component with Flowbite styling and light/dark mode support",

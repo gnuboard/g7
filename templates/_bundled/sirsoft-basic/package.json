@@ -1,6 +1,6 @@
 {
   "name": "sirsoft-basic",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Gnuboard7 Basic User Template Components - Nexibase Style",
   "type": "module",
   "main": "dist/components.js",

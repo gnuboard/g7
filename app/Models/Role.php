@@ -3,15 +3,32 @@
 namespace App\Models;
 
 use App\Enums\ExtensionOwnerType;
+use App\Models\Concerns\HasUserOverrides;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * 역할 모델.
+ *
+ * 관리자 UI 에서 수정한 필드(name/description) 는 `HasUserOverrides` trait 에 의해
+ * `user_overrides` 컬럼에 자동 누적 기록되며, 이후 코어/확장 업데이트의 `syncRole()`
+ * 경로에서 필드 단위로 보존됩니다.
+ */
 class Role extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUserOverrides;
+
+    /**
+     * `HasUserOverrides` 가 추적할 필드.
+     *
+     * `ExtensionRoleSyncHelper::syncRole()` L79~85 의 upsert 시 필드 단위 보존 대상과 일치.
+     *
+     * @var array<int, string>
+     */
+    protected array $trackableFields = ['name', 'description'];
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [

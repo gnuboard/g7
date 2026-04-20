@@ -37,11 +37,4 @@ return [
     'reset_token_expired' => 'Password reset token has expired. Please request again.',
     'password_reset_email_sent' => 'Password reset email has been sent.',
     'email_send_failed' => 'Failed to send email. Please try again later.',
-
-    // Mail template messages (template body managed in DB)
-    'mail_template_not_found' => 'Mail template not found: :type',
-    'mail_template_updated' => 'Mail template has been updated.',
-    'mail_template_toggled' => 'Mail template active status has been changed.',
-    'mail_template_reset' => 'Mail template has been reset to default.',
-    'mail_template_reset_not_found' => 'Default template data not found: :type',
 ];

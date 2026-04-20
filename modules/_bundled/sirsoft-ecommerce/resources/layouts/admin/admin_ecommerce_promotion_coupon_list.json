@@ -8,6 +8,25 @@
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
     },
+    "computed": {
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterTargetType": "{{_local.filter.targetType ?? query.target_type ?? 'all'}}",
+        "filterDiscountType": "{{_local.filter.discountType ?? query.discount_type ?? 'all'}}",
+        "filterIssueStatus": "{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}",
+        "filterIssueMethod": "{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}",
+        "filterIssueCondition": "{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}",
+        "filterMinBenefitAmount": "{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}",
+        "filterMaxBenefitAmount": "{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}",
+        "filterMinOrderAmount": "{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}",
+        "filterCreatedStartDate": "{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}",
+        "filterCreatedEndDate": "{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}",
+        "filterValidStartDate": "{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}",
+        "filterValidEndDate": "{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}",
+        "filterIssueStartDate": "{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}",
+        "filterIssueEndDate": "{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}",
+        "filterCreatedBy": "{{_local.filter.createdBy ?? query.created_by ?? ''}}"
+    },
     "state": {
         "visibleFilters": [
             "searchField",
@@ -57,24 +76,11 @@
         "sortBy": "created_at_desc",
         "perPage": "10"
     },
-    "computed": {
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterTargetType": "{{_local.filter.targetType ?? query.target_type ?? 'all'}}",
-        "filterDiscountType": "{{_local.filter.discountType ?? query.discount_type ?? 'all'}}",
-        "filterIssueStatus": "{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}",
-        "filterIssueMethod": "{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}",
-        "filterIssueCondition": "{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}",
-        "filterMinBenefitAmount": "{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}",
-        "filterMaxBenefitAmount": "{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}",
-        "filterMinOrderAmount": "{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}",
-        "filterCreatedStartDate": "{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}",
-        "filterCreatedEndDate": "{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}",
-        "filterValidStartDate": "{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}",
-        "filterValidEndDate": "{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}",
-        "filterIssueStartDate": "{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}",
-        "filterIssueEndDate": "{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}",
-        "filterCreatedBy": "{{_local.filter.createdBy ?? query.created_by ?? ''}}"
+    "transition_overlay": {
+        "wait_for": [
+            "coupons",
+            "couponIssues"
+        ]
     },
     "data_sources": [
         {
@@ -111,11 +117,15 @@
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 },
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -230,7 +240,8 @@
                     "issue_end_date": "{{_local.filter.issueEndDate}}",
                     "created_by": "{{_local.filter.createdBy}}",
                     "page": 1
-                }
+                },
+                "transition_overlay_target": "pc_data_table__body"
             }
         }
     },

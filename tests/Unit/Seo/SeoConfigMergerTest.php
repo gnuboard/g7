@@ -5,6 +5,7 @@ namespace Tests\Unit\Seo;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\AbstractModule;
 use App\Extension\AbstractPlugin;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Seo\SeoConfigMerger;
@@ -38,6 +39,7 @@ class SeoConfigMergerTest extends TestCase
             $this->moduleManager,
             $this->pluginManager,
             $this->templateRepository,
+            new CoreCacheDriver('array'),
         );
     }
 
@@ -297,8 +299,8 @@ class SeoConfigMergerTest extends TestCase
 
         $this->assertEquals($result1, $result2);
 
-        // 캐시 키 존재 확인
-        $this->assertTrue(Cache::has('seo:config:merged:sirsoft-basic'));
+        // 캐시 키 존재 확인 — CoreCacheDriver 와 Cache 파사드는 동일 스토어 사용
+        $this->assertTrue(Cache::store('array')->has('g7:core:seo.config.sirsoft-basic'));
     }
 
     /**
@@ -311,17 +313,17 @@ class SeoConfigMergerTest extends TestCase
 
         // 첫 호출
         $this->merger->getMergedConfig('sirsoft-basic');
-        $this->assertTrue(Cache::has('seo:config:merged:sirsoft-basic'));
+        $this->assertTrue(Cache::store('array')->has('g7:core:seo.config.sirsoft-basic'));
 
         // 캐시 클리어
         $this->merger->clearCache('sirsoft-basic');
-        $this->assertFalse(Cache::has('seo:config:merged:sirsoft-basic'));
+        $this->assertFalse(Cache::store('array')->has('g7:core:seo.config.sirsoft-basic'));
 
         // 재호출 — 캐시 미스이므로 다시 빌드
         $result = $this->merger->getMergedConfig('sirsoft-basic');
 
         $this->assertNotEmpty($result);
-        $this->assertTrue(Cache::has('seo:config:merged:sirsoft-basic'));
+        $this->assertTrue(Cache::store('array')->has('g7:core:seo.config.sirsoft-basic'));
     }
 
     /**

@@ -127,9 +127,14 @@ class ExtensionRoleSyncHelper
     /**
      * 현재 확장에 속하지 않는 stale 권한을 정리합니다.
      *
-     * ⚠️ 주의: 이 메서드는 정적 정의(getPermissions()) 기반으로만 판단하므로,
-     * 확장이 런타임에 동적으로 생성한 권한도 삭제됩니다.
-     * 자동 호출은 폐기되었으며, 필요 시 UpgradeStep에서 명시적으로 호출하세요.
+     * Permission 은 설계상 **관리자가 직접 수정할 수 없는 테이블** 이므로 `user_overrides`
+     * 컬럼 자체가 없습니다 (Menu/Role 과 달리). 따라서 단순 diff 로 삭제합니다.
+     * 자식 권한도 동일하게 순수 orphan 삭제.
+     *
+     * 자동 호출 경로:
+     *  - `CoreUpdateService::syncCoreRolesAndPermissions()` 말미 (완전 동기화 원칙)
+     *  - `ModuleManager::updateModule()` 말미
+     *  - UpgradeStep 에서 명시 호출
      *
      * @param  ExtensionOwnerType  $extensionType  확장 타입
      * @param  string  $extensionIdentifier  확장 식별자
@@ -147,18 +152,22 @@ class ExtensionRoleSyncHelper
 
         $deleted = 0;
         foreach ($existingPermissions as $permission) {
-            if (! in_array($permission->identifier, $currentIdentifiers, true)) {
-                // 역할 연결 해제
-                $permission->roles()->detach();
-                // 자식 권한도 정리
-                foreach ($permission->children as $child) {
-                    $child->roles()->detach();
-                    $this->permissionRepository->delete($child);
-                    $deleted++;
-                }
-                $this->permissionRepository->delete($permission);
+            if (in_array($permission->identifier, $currentIdentifiers, true)) {
+                continue;
+            }
+
+            // 역할 연결 해제
+            $permission->roles()->detach();
+
+            // 자식 권한도 정리 (orphan 회피)
+            foreach ($permission->children as $child) {
+                $child->roles()->detach();
+                $this->permissionRepository->delete($child);
                 $deleted++;
             }
+
+            $this->permissionRepository->delete($permission);
+            $deleted++;
         }
 
         if ($deleted > 0) {
@@ -166,6 +175,70 @@ class ExtensionRoleSyncHelper
                 'extension_type' => $extensionType->value,
                 'extension_identifier' => $extensionIdentifier,
                 'deleted' => $deleted,
+            ]);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * 현재 확장에 속하지 않는 stale 역할을 정리합니다.
+     *
+     * 정책:
+     *  - config/확장 정의에 없는 역할은 **user_overrides 유무 무관 삭제**
+     *  - 필드 단위 보존은 upsert 시점(`syncRole()`) 에서만 작동
+     *  - 예외: `user_roles` 피벗에 참조 사용자가 있으면 **삭제 차단** + 경고 로그
+     *    (사용자를 다른 역할로 수동 재배정 후 재실행)
+     *
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array  $currentIdentifiers  현재 유효한 역할 식별자 목록
+     * @return int 삭제된 역할 수
+     */
+    public function cleanupStaleRoles(
+        ExtensionOwnerType $extensionType,
+        string $extensionIdentifier,
+        array $currentIdentifiers,
+    ): int {
+        $existingRoles = $this->roleRepository->getByExtension($extensionType, $extensionIdentifier);
+
+        $deleted = 0;
+        $blocked = 0;
+
+        foreach ($existingRoles as $role) {
+            if (in_array($role->identifier, $currentIdentifiers, true)) {
+                continue;
+            }
+
+            // user_roles 피벗 참조 검사 — 하나라도 있으면 삭제 차단 (안전 가드)
+            $userCount = $role->users()->count();
+            if ($userCount > 0) {
+                Log::warning('stale 역할 삭제 차단 — 참조 사용자 존재', [
+                    'identifier' => $role->identifier,
+                    'id' => $role->id,
+                    'user_count' => $userCount,
+                    'remediation' => '사용자를 다른 역할로 재배정 후 재실행 필요',
+                ]);
+                $blocked++;
+
+                continue;
+            }
+
+            // 조건 통과 → 삭제 (role_permissions, role_menus 는 cascade 또는 모델 이벤트로 정리)
+            $this->roleRepository->delete($role);
+            Log::info('stale 역할 삭제', [
+                'identifier' => $role->identifier,
+                'id' => $role->id,
+            ]);
+            $deleted++;
+        }
+
+        if ($deleted > 0 || $blocked > 0) {
+            Log::info('stale 역할 정리 결과', [
+                'extension_type' => $extensionType->value,
+                'extension_identifier' => $extensionIdentifier,
+                'deleted' => $deleted,
+                'blocked' => $blocked,
             ]);
         }
 

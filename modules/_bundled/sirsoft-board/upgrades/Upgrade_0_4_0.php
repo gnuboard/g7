@@ -38,6 +38,15 @@ class Upgrade_0_4_0 implements UpgradeStepInterface
      */
     private function seedMailTemplates(UpgradeContext $context): void
     {
+        // 1.0.0-beta.2 이후 mail_templates 시스템이 notification_templates 로 통합되며
+        // BoardMailTemplate 모델/시더 클래스가 제거되었습니다.
+        // 클래스가 존재하는 경우(beta.2 이전 코드베이스)에만 레거시 시드를 수행합니다.
+        if (! class_exists(BoardMailTemplate::class) || ! class_exists(BoardMailTemplateSeeder::class)) {
+            $context->logger->info('[v0.4.0] BoardMailTemplate 클래스 부재 — 레거시 시드 스킵 (beta.2 이후 정상)');
+
+            return;
+        }
+
         if (! Schema::hasTable('board_mail_templates')) {
             $context->logger->warning('[v0.4.0] board_mail_templates 테이블이 존재하지 않습니다. 마이그레이션을 먼저 실행하세요.');
 

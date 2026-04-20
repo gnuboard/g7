@@ -133,6 +133,23 @@ private function logActivity(string $action, array $context): void
 1. **ActivityLogProcessor**: 리스너에서 명시적으로 전달하지 않은 `user_id`, `ip_address`, `user_agent`를 자동 주입
 2. **ActivityLogHandler**: context에서 구조화 데이터를 추출하여 `ActivityLog::create()` 호출
 
+### 큐 워커에서의 사용자 컨텍스트
+
+훅 리스너가 큐로 디스패치되는 경우(기본 동작), 큐 워커는 별도 프로세스이므로 `Auth::user()` / `request()->ip()` 등이 모두 리셋됩니다. 이로 인해 활동로그 행위자가 "시스템"으로 잘못 기록될 수 있습니다.
+
+`HookContextCapture`가 디스패치 시점에 다음 항목을 자동 캡처하여 워커에서 복원합니다:
+
+| 항목 | 복원 효과 |
+| ---- | --------- |
+| `user_id` | 활동로그 actor가 실제 로그인 사용자로 정상 기록 |
+| `ip_address` / `user_agent` | Processor가 자동 주입하는 IP/UA가 원래 요청 값으로 정상 기록 |
+| `path` | `ResolvesActivityLogType::resolveLogType()`이 워커에서 정상 동작 (Admin/User/System 분류) |
+| `locale` | 다국어 메시지가 원래 요청 로케일로 발송 |
+
+리스너 코드는 변경 불필요 — `Log::channel('activity')->info()` 호출만으로 동작합니다.
+
+> 자세한 큐 컨텍스트 동작은 [extension/hooks.md "사용자 컨텍스트 자동 복원"](../extension/hooks.md) 참조
+
 ### Context 배열 구조
 
 | 키 | 타입 | 필수 | 설명 |

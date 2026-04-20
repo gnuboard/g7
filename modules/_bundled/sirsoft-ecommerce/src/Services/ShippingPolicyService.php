@@ -166,13 +166,16 @@ class ShippingPolicyService
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.shipping_policy.before_delete', $shippingPolicy);
 
+        // 삭제 전 ID 캡처 (삭제 후 모델 id가 null이 될 수 있음)
+        $shippingPolicyId = $shippingPolicy->id;
+
         // 국가별 설정 명시적 삭제 (DB CASCADE에 의존하지 않음)
         $shippingPolicy->countrySettings()->delete();
 
         $result = $this->repository->delete($shippingPolicy);
 
         // 삭제 후 훅
-        HookManager::doAction('sirsoft-ecommerce.shipping_policy.after_delete', $shippingPolicy->id);
+        HookManager::doAction('sirsoft-ecommerce.shipping_policy.after_delete', $shippingPolicyId);
 
         return $result;
     }

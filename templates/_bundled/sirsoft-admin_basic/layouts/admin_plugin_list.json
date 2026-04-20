@@ -12,6 +12,11 @@
     "state": {
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "plugins"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -721,8 +726,31 @@
                                                                                             "handler": "setState",
                                                                                             "params": {
                                                                                                 "target": "global",
-                                                                                                "selectedPlugin": "{{row}}"
+                                                                                                "selectedPlugin": "{{row}}",
+                                                                                                "pluginLayoutStrategy": "overwrite",
+                                                                                                "hasModifiedPluginLayouts": false,
+                                                                                                "modifiedPluginLayoutsCount": 0,
+                                                                                                "modifiedPluginLayouts": []
                                                                                             }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "apiCall",
+                                                                                            "auth_required": true,
+                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/check-modified-layouts",
+                                                                                            "params": {
+                                                                                                "method": "GET"
+                                                                                            },
+                                                                                            "onSuccess": [
+                                                                                                {
+                                                                                                    "handler": "setState",
+                                                                                                    "params": {
+                                                                                                        "target": "global",
+                                                                                                        "hasModifiedPluginLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                                                                                        "modifiedPluginLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                                                                                        "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                                                                                    }
+                                                                                                }
+                                                                                            ]
                                                                                         },
                                                                                         {
                                                                                             "handler": "apiCall",
@@ -838,13 +866,7 @@
                                                                                                     }
                                                                                                 },
                                                                                                 {
-                                                                                                    "handler": "reloadRoutes"
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "reloadTranslations"
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "reloadPluginHandlers",
+                                                                                                    "handler": "reloadExtensions",
                                                                                                     "params": {
                                                                                                         "pluginInfo": "{{result}}",
                                                                                                         "action": "{{$event.target.checked ? 'add' : 'remove'}}"

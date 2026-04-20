@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductWishlist;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -26,7 +25,7 @@ class WishlistControllerTest extends ModuleTestCase
     {
         return ShippingPolicy::create([
             'name' => ['ko' => '테스트 배송정책', 'en' => 'Test Shipping Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'charge_policy' => ChargePolicyEnum::FREE,
             'base_fee' => 0,
             'countries' => ['KR'],

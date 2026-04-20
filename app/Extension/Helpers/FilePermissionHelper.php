@@ -3,6 +3,7 @@
 namespace App\Extension\Helpers;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 class FilePermissionHelper
 {
@@ -10,11 +11,15 @@ class FilePermissionHelper
      * 디렉토리를 재귀적으로 복사하면서 기존 파일/디렉토리의 퍼미션을 보존합니다.
      *
      * - 기존 디렉토리: 퍼미션/소유자/그룹 유지
-     * - 신규 디렉토리: 부모 디렉토리의 퍼미션 상속
+     * - 신규 디렉토리: 부모 디렉토리의 퍼미션/소유자/그룹 상속
      * - 기존 파일: 퍼미션/소유자/그룹 유지한 채 내용만 교체
-     * - 신규 파일: PHP 기본 퍼미션 적용 (umask 기반)
+     * - 신규 파일: 부모 디렉토리의 소유자/그룹 상속 (퍼미션은 PHP 기본 umask)
      * - removeOrphans=false: 소스에 없고 대상에만 있는 파일 유지 (사용자 추가 파일 보호)
      * - removeOrphans=true: 소스에 없고 대상에만 있는 파일/디렉토리 삭제 (excludes 제외)
+     *
+     * 신규 항목의 소유권 상속은 sudo 로 실행된 업데이트 프로세스가 root 소유로 파일을
+     * 생성하는 것을 방지한다. vendor/ 처럼 cleanDirectory 후 재생성되는 디렉토리 구조
+     * 전체가 기존 부모(= vendor/) 의 소유권을 승계하도록 보장한다.
      *
      * @param string $source 소스 디렉토리 경로
      * @param string $destination 대상 디렉토리 경로
@@ -27,10 +32,8 @@ class FilePermissionHelper
     public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false): void
     {
         if (! File::isDirectory($destination)) {
-            // 신규 디렉토리: 부모 디렉토리의 퍼미션 상속
-            $parentDir = dirname($destination);
-            $parentPerms = File::isDirectory($parentDir) ? (fileperms($parentDir) & 0777) : 0755;
-            File::ensureDirectoryExists($destination, $parentPerms, true);
+            // 신규 디렉토리: 부모 디렉토리의 퍼미션/소유권 상속
+            static::createDirectoryInheritingParent($destination);
         }
         // 기존 디렉토리: 퍼미션 건드리지 않음 (그대로 유지)
 
@@ -130,7 +133,11 @@ class FilePermissionHelper
      * 퍼미션과 소유권을 보존하면서 파일을 복사합니다.
      *
      * - 기존 파일: 복사 후 원래 퍼미션/소유자/그룹 복원
-     * - 신규 파일: PHP 기본 퍼미션 적용 (umask 기반)
+     * - 신규 파일: 부모 디렉토리의 소유자/그룹 상속 (퍼미션은 PHP 기본 umask)
+     *
+     * 신규 파일에 부모 소유권을 상속시키는 이유는 sudo 로 실행된 업데이트가 root 소유로
+     * 파일을 생성하는 문제를 방지하기 위함이다. vendor/ 내부처럼 cleanDirectory 후
+     * 전량 재생성되는 경로에서 필요하다.
      *
      * @param string $source 소스 파일
      * @param string $destination 대상 파일
@@ -138,11 +145,12 @@ class FilePermissionHelper
      */
     public static function copyFile(string $source, string $destination): void
     {
+        $isExisting = File::exists($destination);
         $existingPerms = null;
         $existingOwner = null;
         $existingGroup = null;
 
-        if (File::exists($destination)) {
+        if ($isExisting) {
             $existingPerms = fileperms($destination);
             $existingOwner = fileowner($destination);
             $existingGroup = filegroup($destination);
@@ -151,14 +159,192 @@ class FilePermissionHelper
         File::ensureDirectoryExists(dirname($destination));
         File::copy($source, $destination);
 
-        if ($existingPerms !== null) {
-            @chmod($destination, $existingPerms);
+        if ($isExisting) {
+            // 기존 파일: 원래 퍼미션/소유권 복원
+            if ($existingPerms !== null) {
+                @chmod($destination, $existingPerms);
+            }
+            if ($existingOwner !== null && function_exists('chown')) {
+                @chown($destination, $existingOwner);
+            }
+            if ($existingGroup !== null && function_exists('chgrp')) {
+                @chgrp($destination, $existingGroup);
+            }
+        } else {
+            // 신규 파일: 부모 디렉토리의 소유자/그룹 상속
+            static::inheritOwnershipFromParent($destination);
         }
-        if ($existingOwner !== null && function_exists('chown')) {
-            @chown($destination, $existingOwner);
+    }
+
+    /**
+     * 부모 디렉토리의 퍼미션·소유자·그룹을 상속하여 신규 디렉토리를 생성합니다.
+     *
+     * @param string $path 생성할 디렉토리 경로
+     * @return void
+     */
+    protected static function createDirectoryInheritingParent(string $path): void
+    {
+        $parentDir = dirname($path);
+        $parentExists = File::isDirectory($parentDir);
+        $parentPerms = $parentExists ? (fileperms($parentDir) & 0777) : 0755;
+
+        File::ensureDirectoryExists($path, $parentPerms, true);
+
+        if ($parentExists) {
+            static::applyOwnership($path, fileowner($parentDir), filegroup($parentDir));
         }
-        if ($existingGroup !== null && function_exists('chgrp')) {
-            @chgrp($destination, $existingGroup);
+    }
+
+    /**
+     * 부모 디렉토리의 소유자·그룹을 대상 경로에 상속합니다.
+     *
+     * @param string $path 소유권을 상속받을 파일 또는 디렉토리
+     * @return void
+     */
+    protected static function inheritOwnershipFromParent(string $path): void
+    {
+        $parentDir = dirname($path);
+        if (! File::isDirectory($parentDir)) {
+            return;
+        }
+
+        static::applyOwnership($path, fileowner($parentDir), filegroup($parentDir));
+    }
+
+    /**
+     * 소유자·그룹을 적용합니다. sudo 없이 실행 시 silent fail 로 현행 동작 유지.
+     *
+     * @param string $path 대상 경로
+     * @param int|false $owner fileowner() 반환값 (false 허용)
+     * @param int|false $group filegroup() 반환값 (false 허용)
+     * @return void
+     */
+    protected static function applyOwnership(string $path, int|false $owner, int|false $group): void
+    {
+        if ($owner !== false && function_exists('chown')) {
+            @chown($path, $owner);
+        }
+        if ($group !== false && function_exists('chgrp')) {
+            @chgrp($path, $group);
+        }
+    }
+
+    /**
+     * 웹서버(www-data 등) 계정의 소유자를 추정합니다.
+     *
+     * Laravel 표준상 웹서버가 쓰기 접근해야 하는 디렉토리(`storage/*`, `bootstrap/cache`)
+     * 를 순회하여 base_path() 소유자와 **다른** 첫 소유자를 "웹서버 계정" 으로 판정한다.
+     * 모든 후보가 base_path() 와 동일하면 대칭 구성으로 보고 base_path() 소유자를 반환.
+     *
+     * 사용 예:
+     * - sudo 실행된 업데이트가 원본 스냅샷을 수집하지 못한 경우의 fallback
+     * - 외부 프로세스(composer 등) 가 root 로 오염시킨 경로의 원본 추정
+     *
+     * @return array{0: int|false, 1: int|false, 2: string}  [owner, group, source]
+     */
+    public static function inferWebServerOwnership(): array
+    {
+        $baseOwner = @fileowner(base_path());
+        $baseGroup = @filegroup(base_path());
+
+        if ($baseOwner === false) {
+            return [false, false, 'none'];
+        }
+
+        $candidates = [
+            'storage/logs',
+            'storage/framework/views',
+            'storage/framework/cache',
+            'storage/app',
+            'storage',
+            'bootstrap/cache',
+        ];
+
+        foreach ($candidates as $candidate) {
+            $path = base_path($candidate);
+            if (! File::isDirectory($path)) {
+                continue;
+            }
+
+            $owner = @fileowner($path);
+            if ($owner !== false && $owner !== $baseOwner) {
+                return [$owner, @filegroup($path), $candidate];
+            }
+        }
+
+        return [$baseOwner, $baseGroup, 'base_path (대칭 구성)'];
+    }
+
+    /**
+     * 경로와 그 하위 항목의 소유자·그룹을 재귀적으로 복원합니다.
+     *
+     * 현재 소유자가 기준과 이미 일치하면 해당 항목은 스킵. symbolic link 는 링크 자체만
+     * 처리하고 대상은 따라가지 않는다. @chown/@chgrp suppress 로 권한 부족 / chown 미지원
+     * 환경에서도 silent fail.
+     *
+     * @param string $path 대상 경로 (파일 또는 디렉토리)
+     * @param int $owner 기준 소유자 UID
+     * @param int|false $group 기준 그룹 GID (false = 그룹 유지)
+     * @return int 실제 소유권을 변경한 항목 수
+     */
+    public static function chownRecursive(string $path, int $owner, int|false $group): int
+    {
+        if (! function_exists('chown')) {
+            return 0;
+        }
+
+        // 재귀 전체 기간 동안 실패/성공을 집계하고 종료 시 요약 로그를 남긴다.
+        // 경로당 개별 로그는 재귀가 깊어지면 로그 폭주 유발 → 최초 실패 1건만 즉시 로깅.
+        $report = ['changed' => 0, 'failed' => 0, 'first_failure' => null];
+        self::chownRecursiveInternal($path, $owner, $group, $report);
+
+        if ($report['failed'] > 0) {
+            Log::warning('chownRecursive: 부분 실패', [
+                'root' => $path,
+                'owner' => $owner,
+                'group' => $group,
+                'changed' => $report['changed'],
+                'failed' => $report['failed'],
+                'first_failure' => $report['first_failure'],
+            ]);
+        }
+
+        return $report['changed'];
+    }
+
+    /**
+     * chownRecursive 의 내부 재귀 구현. 실패 카운터를 참조 전달로 집계한다.
+     *
+     * @param  string  $path  대상 경로
+     * @param  int  $owner  기준 소유자 UID
+     * @param  int|false  $group  기준 그룹 GID
+     * @param  array{changed:int, failed:int, first_failure:string|null}  $report  집계 구조 (참조)
+     */
+    private static function chownRecursiveInternal(string $path, int $owner, int|false $group, array &$report): void
+    {
+        $currentOwner = @fileowner($path);
+        if ($currentOwner !== false && $currentOwner !== $owner) {
+            if (@chown($path, $owner)) {
+                $report['changed']++;
+            } else {
+                if ($report['first_failure'] === null) {
+                    $report['first_failure'] = $path;
+                    Log::warning('chown 최초 실패', ['path' => $path, 'owner' => $owner]);
+                }
+                $report['failed']++;
+            }
+            if ($group !== false && function_exists('chgrp')) {
+                @chgrp($path, $group);
+            }
+        }
+
+        if (! is_dir($path) || is_link($path)) {
+            return;
+        }
+
+        $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
+        foreach ($items as $item) {
+            self::chownRecursiveInternal($item->getPathname(), $owner, $group, $report);
         }
     }
 }

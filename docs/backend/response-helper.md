@@ -268,10 +268,10 @@ class MenuService
      */
     public function getAdminMenus(): array
     {
-        // 1. 캐시 사용 (권장)
-        return Cache::remember('admin_menus', 3600, function () {
+        // 1. 캐시 사용 — CacheInterface DI (드라이버가 `g7:core:` 접두사 자동 적용)
+        return $this->cache->remember('admin_menus', function () {
             return $this->repository->getActiveMenus();
-        });
+        }, 3600);
     }
 
     /**

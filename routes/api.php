@@ -8,32 +8,39 @@ use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateContro
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
-use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
-use App\Http\Controllers\Api\Admin\MailSendLogController as AdminMailSendLogController;
-use App\Http\Controllers\Api\Admin\MailTemplateController as AdminMailTemplateController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
+use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
+use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
+use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
+use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
+use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
+// Auth Controllers (Authenticated Users)
+use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
 // Public Controllers
-use App\Http\Controllers\Api\Public\PublicAttachmentController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
+use App\Http\Controllers\Api\Public\PublicAttachmentController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
 use App\Http\Controllers\Api\Public\PublicModuleController;
 use App\Http\Controllers\Api\Public\PublicPluginController;
 use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
+use App\Http\Middleware\RefreshTokenExpiration;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -111,8 +118,8 @@ Route::group([], function () {
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
-Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (\Illuminate\Http\Request $request) {
-    return \Illuminate\Support\Facades\Broadcast::auth($request);
+Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
 
 // 인증 관련 라우트 (인증 불필요, 속도 제한 없음 - 공개 API)
@@ -143,7 +150,7 @@ Route::prefix('auth')->group(function () {
 
 // 사용자 API (권한 기반 인증, 속도 제한 적용)
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
-Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), \App\Http\Middleware\RefreshTokenExpiration::class])->group(function () {
+Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
     // 사용자 인증
     Route::prefix('auth')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])
@@ -158,6 +165,31 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
         Route::post('refresh', [UserAuthController::class, 'refresh'])
             ->middleware('permission:user,core.auth.refresh')
             ->name('api.user.auth.refresh');
+    });
+
+    // 사용자 알림
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [UserNotificationController::class, 'index'])
+            ->middleware('permission:user,core.user-notifications.read')
+            ->name('api.user.notifications.index');
+        Route::get('unread-count', [UserNotificationController::class, 'unreadCount'])
+            ->middleware('permission:user,core.user-notifications.read')
+            ->name('api.user.notifications.unread-count');
+        Route::patch('{notification}/read', [UserNotificationController::class, 'markAsRead'])
+            ->middleware('permission:user,core.user-notifications.update')
+            ->name('api.user.notifications.read');
+        Route::post('read-batch', [UserNotificationController::class, 'markBatchAsRead'])
+            ->middleware('permission:user,core.user-notifications.update')
+            ->name('api.user.notifications.read-batch');
+        Route::post('read-all', [UserNotificationController::class, 'markAllAsRead'])
+            ->middleware('permission:user,core.user-notifications.update')
+            ->name('api.user.notifications.read-all');
+        Route::delete('all', [UserNotificationController::class, 'destroyAll'])
+            ->middleware('permission:user,core.user-notifications.delete')
+            ->name('api.user.notifications.destroy-all');
+        Route::delete('{notification}', [UserNotificationController::class, 'destroy'])
+            ->middleware('permission:user,core.user-notifications.delete')
+            ->name('api.user.notifications.destroy');
     });
 
     // 사용자 프로필
@@ -177,7 +209,7 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
 });
 
 // 마이페이지 API (/api/me) - 프로필 관리용 단축 엔드포인트
-Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), \App\Http\Middleware\RefreshTokenExpiration::class])->group(function () {
+Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
     Route::get('/', [UserProfileController::class, 'show'])->name('api.me.show');
     Route::put('/', [UserProfileController::class, 'update'])->name('api.me.update');
     Route::delete('/', [UserProfileController::class, 'destroy'])->name('api.me.destroy');
@@ -204,8 +236,30 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('refresh', [AdminAuthController::class, 'refresh'])->name('api.admin.auth.refresh');
     });
 
-    // 알림 (더미 - 추후 구현 예정)
-    Route::get('notifications', [AdminNotificationController::class, 'index'])->name('api.admin.notifications.index');
+    // 관리자 알림
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [AdminNotificationController::class, 'index'])
+            ->middleware('permission:admin,core.notifications.read')
+            ->name('api.admin.notifications.index');
+        Route::get('unread-count', [AdminNotificationController::class, 'unreadCount'])
+            ->middleware('permission:admin,core.notifications.read')
+            ->name('api.admin.notifications.unread-count');
+        Route::post('read-batch', [AdminNotificationController::class, 'markBatchAsRead'])
+            ->middleware('permission:admin,core.notifications.update')
+            ->name('api.admin.notifications.read-batch');
+        Route::post('read-all', [AdminNotificationController::class, 'markAllAsRead'])
+            ->middleware('permission:admin,core.notifications.update')
+            ->name('api.admin.notifications.read-all');
+        Route::patch('{notification}/read', [AdminNotificationController::class, 'markAsRead'])
+            ->middleware('permission:admin,core.notifications.update')
+            ->name('api.admin.notifications.read');
+        Route::delete('all', [AdminNotificationController::class, 'destroyAll'])
+            ->middleware('permission:admin,core.notifications.delete')
+            ->name('api.admin.notifications.destroy-all');
+        Route::delete('{notification}', [AdminNotificationController::class, 'destroy'])
+            ->middleware('permission:admin,core.notifications.delete')
+            ->name('api.admin.notifications.destroy');
+    });
 
     // 대시보드 API
     Route::prefix('dashboard')->group(function () {
@@ -246,6 +300,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('activate', [AdminModuleController::class, 'activate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.activate');
         Route::post('deactivate', [AdminModuleController::class, 'deactivate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.deactivate');
         Route::post('check-updates', [AdminModuleController::class, 'checkUpdates'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.check-updates');
+        Route::get('{moduleName}/check-modified-layouts', [AdminModuleController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.check-modified-layouts');
         Route::post('{moduleName}/update', [AdminModuleController::class, 'performUpdate'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.update');
         Route::post('refresh-layouts', [AdminModuleController::class, 'refreshLayouts'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.refresh-layouts');
         Route::delete('uninstall', [AdminModuleController::class, 'uninstall'])->middleware('permission:admin,core.modules.uninstall')->name('api.admin.modules.uninstall');
@@ -266,6 +321,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('activate', [AdminPluginController::class, 'activate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.activate');
         Route::post('deactivate', [AdminPluginController::class, 'deactivate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.deactivate');
         Route::post('check-updates', [AdminPluginController::class, 'checkUpdates'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.check-updates');
+        Route::get('{pluginName}/check-modified-layouts', [AdminPluginController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.check-modified-layouts');
         Route::post('{pluginName}/update', [AdminPluginController::class, 'performUpdate'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.update');
         Route::post('refresh-layouts', [AdminPluginController::class, 'refreshLayouts'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.refresh-layouts');
         Route::delete('uninstall', [AdminPluginController::class, 'uninstall'])->middleware('permission:admin,core.plugins.uninstall')->name('api.admin.plugins.uninstall');
@@ -290,6 +346,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('restore', [AdminSettingsController::class, 'restore'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.restore');
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
+        Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
     });
@@ -396,20 +453,31 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
     });
 
-    // 템플릿 관리
-    Route::prefix('mail-templates')->group(function () {
-        Route::get('/', [AdminMailTemplateController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.mail-templates.index');
-        Route::put('{mailTemplate}', [AdminMailTemplateController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.mail-templates.update');
-        Route::patch('{mailTemplate}/toggle-active', [AdminMailTemplateController::class, 'toggleActive'])->middleware('permission:admin,core.settings.update')->name('api.admin.mail-templates.toggle-active');
-        Route::post('preview', [AdminMailTemplateController::class, 'preview'])->middleware('permission:admin,core.settings.read')->name('api.admin.mail-templates.preview');
-        Route::post('{mailTemplate}/reset', [AdminMailTemplateController::class, 'reset'])->middleware('permission:admin,core.settings.update')->name('api.admin.mail-templates.reset');
+    // 알림 정의 관리
+    Route::prefix('notification-definitions')->group(function () {
+        Route::get('/', [AdminNotificationDefinitionController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.index');
+        Route::get('{definition}', [AdminNotificationDefinitionController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.show');
+        Route::put('{definition}', [AdminNotificationDefinitionController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.update');
+        Route::patch('{definition}/toggle-active', [AdminNotificationDefinitionController::class, 'toggleActive'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.toggle-active');
+        Route::post('{definition}/reset', [AdminNotificationDefinitionController::class, 'reset'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.reset');
     });
 
-    // 메일 발송 이력
-    Route::prefix('mail-send-logs')->group(function () {
-        Route::get('/', [AdminMailSendLogController::class, 'index'])->middleware('permission:admin,core.mail-send-logs.read')->name('api.admin.mail-send-logs.index');
-        Route::delete('{mailSendLog}', [AdminMailSendLogController::class, 'destroy'])->middleware('permission:admin,core.mail-send-logs.delete')->name('api.admin.mail-send-logs.destroy');
-        Route::post('bulk-delete', [AdminMailSendLogController::class, 'bulkDestroy'])->middleware('permission:admin,core.mail-send-logs.delete')->name('api.admin.mail-send-logs.bulk-destroy');
+    // 알림 템플릿 관리
+    Route::prefix('notification-templates')->group(function () {
+        Route::put('{template}', [AdminNotificationTemplateController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-templates.update');
+        Route::patch('{template}/toggle-active', [AdminNotificationTemplateController::class, 'toggleActive'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-templates.toggle-active');
+        Route::post('preview', [AdminNotificationTemplateController::class, 'preview'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-templates.preview');
+        Route::post('{template}/reset', [AdminNotificationTemplateController::class, 'reset'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-templates.reset');
+    });
+
+    // 알림 채널 관리
+    Route::get('notification-channels', [AdminNotificationChannelController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-channels.index');
+
+    // 알림 발송 이력
+    Route::prefix('notification-logs')->group(function () {
+        Route::get('/', [AdminNotificationLogController::class, 'index'])->middleware('permission:admin,core.notification-logs.read')->name('api.admin.notification-logs.index');
+        Route::delete('{notificationLog}', [AdminNotificationLogController::class, 'destroy'])->middleware('permission:admin,core.notification-logs.delete')->name('api.admin.notification-logs.destroy');
+        Route::post('bulk-delete', [AdminNotificationLogController::class, 'bulkDestroy'])->middleware('permission:admin,core.notification-logs.delete')->name('api.admin.notification-logs.bulk-destroy');
     });
 
     Route::prefix('templates')->group(function () {

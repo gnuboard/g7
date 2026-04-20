@@ -114,12 +114,26 @@ class UserNotificationSettingsListener implements HookListenerInterface
     /**
      * 생성 데이터 필터: 알림 설정 필드 추출 후 세션에 임시 저장
      *
+     * 체크박스 해제 시 브라우저가 키 자체를 전송하지 않으므로,
+     * 요청에 알림 필드가 하나라도 있으면 미전송 필드는 false로 명시 저장합니다.
+     *
      * @param  array  $data  요청 데이터
      * @return array 알림 필드가 제거된 데이터
      */
     public function filterCreateData(array $data): array
     {
         $notificationData = $this->extractNotificationData($data);
+        $hasAnyNotificationField = ! empty(array_intersect_key($data, array_flip(self::NOTIFICATION_FIELDS)));
+
+        if ($hasAnyNotificationField) {
+            // 미전송 필드는 false로 채움
+            foreach (self::NOTIFICATION_FIELDS as $field) {
+                if (! array_key_exists($field, $notificationData)) {
+                    $notificationData[$field] = false;
+                }
+            }
+        }
+
         if (! empty($notificationData)) {
             session(['board_notification_data' => $notificationData]);
         }
@@ -130,6 +144,9 @@ class UserNotificationSettingsListener implements HookListenerInterface
     /**
      * 수정 데이터 필터: 알림 설정 필드 추출 후 즉시 저장
      *
+     * 체크박스 해제 시 브라우저가 키 자체를 전송하지 않으므로,
+     * 요청에 알림 필드가 하나라도 있으면 미전송 필드는 false로 명시 저장합니다.
+     *
      * @param  array  $data  요청 데이터
      * @param  User  $user  수정 대상 사용자
      * @return array 알림 필드가 제거된 데이터
@@ -137,7 +154,18 @@ class UserNotificationSettingsListener implements HookListenerInterface
     public function filterUpdateData(array $data, User $user): array
     {
         $notificationData = $this->extractNotificationData($data);
-        if (! empty($notificationData)) {
+
+        // 알림 필드가 하나라도 요청에 포함되었거나, 이미 설정 레코드가 있으면 저장
+        $hasAnyNotificationField = ! empty(array_intersect_key($data, array_flip(self::NOTIFICATION_FIELDS)));
+        $hasExistingSettings = $this->service->getByUserId($user->id) !== null;
+
+        if ($hasAnyNotificationField || $hasExistingSettings) {
+            // 미전송 필드는 false로 채움 (체크박스 해제 = 키 미전송)
+            foreach (self::NOTIFICATION_FIELDS as $field) {
+                if (! array_key_exists($field, $notificationData)) {
+                    $notificationData[$field] = false;
+                }
+            }
             $this->service->createOrUpdate($user->id, $notificationData);
         }
 

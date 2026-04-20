@@ -33,11 +33,58 @@
           },
           "children": [
             {
-              "comment": "읽지 않은 알림 카운트",
+              "comment": "좌측: 카운트 + 안 읽은 알림만 필터",
               "type": "basic",
-              "name": "Span",
-              "props": { "className": "text-sm text-red-500 dark:text-red-400 font-medium" },
-              "text": "$t:mypage.notifications.unread_count|count={{userNotifications.data?.unread_count ?? 0}}"
+              "name": "Div",
+              "props": { "className": "flex items-center gap-4" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-red-500 dark:text-red-400 font-medium" },
+                  "text": "$t:mypage.notifications.unread_count|count={{userNotifications.data?.unread_count ?? 0}}"
+                },
+                {
+                  "comment": "안 읽은 알림만 필터 토글",
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-center gap-1.5 cursor-pointer select-none" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "checked": "{{_local.userNotificationsUnreadOnly ?? false}}",
+                        "className": "w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "sequence",
+                          "actions": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "userNotificationsUnreadOnly": "{{$event.target.checked}}",
+                                "notificationsPage": 1
+                              }
+                            },
+                            { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs text-gray-600 dark:text-gray-400" },
+                      "text": "$t:mypage.notifications.unread_only"
+                    }
+                  ]
+                }
+              ]
             },
             {
               "comment": "액션 버튼 그룹",
@@ -54,17 +101,18 @@
                   "type": "basic",
                   "name": "Button",
                   "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
-                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" },
+                  "props": { "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors", "type": "button" },
                   "text": "$t:mypage.notifications.mark_all_read",
                   "actions": [
                     {
                       "type": "click",
                       "handler": "apiCall",
                       "auth_required": true,
-                      "target": "/api/notifications/read-all",
-                      "params": { "method": "PUT" },
+                      "target": "/api/user/notifications/read-all",
+                      "params": { "method": "POST" },
                       "onSuccess": [
                         { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "notification_unread_count" } },
                         { "handler": "setState", "params": { "target": "global", "notificationCount": 0 } }
                       ]
                     }
@@ -74,26 +122,13 @@
                   "type": "basic",
                   "name": "Button",
                   "if": "{{userNotifications.data.data && userNotifications.data.data.length > 0}}",
-                  "props": { "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors" },
+                  "props": { "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors", "type": "button" },
                   "text": "$t:mypage.notifications.delete_all",
                   "actions": [
                     {
                       "type": "click",
-                      "handler": "confirm",
-                      "params": { "message": "$t:mypage.notifications.delete_all_confirm" },
-                      "onConfirm": [
-                        {
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/notifications",
-                          "params": { "method": "DELETE" },
-                          "onSuccess": [
-                            { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
-                            { "handler": "setState", "params": { "target": "global", "notificationCount": 0 } },
-                            { "handler": "toast", "params": { "type": "success", "message": "$t:mypage.notifications.all_deleted" } }
-                          ]
-                        }
-                      ]
+                      "handler": "openModal",
+                      "target": "notification_delete_all_confirm_modal"
                     }
                   ]
                 }
@@ -132,16 +167,17 @@
                       "handler": "apiCall",
                       "if": "{{!notification.read_at}}",
                       "auth_required": true,
-                      "target": "/api/notifications/{{notification.id}}/read",
-                      "params": { "method": "PUT" },
+                      "target": "/api/user/notifications/{{notification.id}}/read",
+                      "params": { "method": "PATCH" },
                       "onSuccess": [
-                        { "handler": "setState", "params": { "target": "global", "notificationCount": "{{Math.max(0, _global.notificationCount - 1)}}" } }
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "notification_unread_count" } },
+                        { "handler": "setState", "params": { "target": "global", "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}" } }
                       ]
                     },
                     {
                       "handler": "navigate",
-                      "if": "{{notification.link}}",
-                      "target": "{{notification.link}}"
+                      "if": "{{notification.url}}",
+                      "params": { "path": "{{notification.url}}" }
                     }
                   ]
                 }
@@ -221,16 +257,17 @@
                                   "type": "basic",
                                   "name": "Span",
                                   "props": { "className": "text-sm text-gray-900 dark:text-white truncate {{notification.read_at ? '' : 'font-semibold'}}" },
-                                  "text": "{{notification.title}}"
+                                  "text": "{{notification.subject ?? ''}}"
                                 },
                                 {
-                                  "comment": "타입 태그",
+                                  "comment": "타입 태그 — type_label은 BE의 NotificationDefinition.name(다국어)에서 해석된 값. 미정의 type은 식별자 fallback",
                                   "type": "basic",
                                   "name": "Span",
+                                  "if": "{{notification.type_label}}",
                                   "props": {
                                     "className": "flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}"
                                   },
-                                  "text": "$t:mypage.notifications.type.{{notification.type}}"
+                                  "text": "{{notification.type_label}}"
                                 }
                               ]
                             },
@@ -238,7 +275,7 @@
                               "comment": "삭제 버튼",
                               "type": "basic",
                               "name": "Button",
-                              "props": { "className": "flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" },
+                              "props": { "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors", "type": "button" },
                               "children": [
                                 { "type": "basic", "name": "Icon", "props": { "name": "trash-can", "className": "w-4 h-4" } }
                               ],
@@ -251,14 +288,15 @@
                                   "type": "click",
                                   "handler": "apiCall",
                                   "auth_required": true,
-                                  "target": "/api/notifications/{{notification.id}}",
+                                  "target": "/api/user/notifications/{{notification.id}}",
                                   "params": { "method": "DELETE" },
                                   "onSuccess": [
                                     { "handler": "refetchDataSource", "params": { "dataSourceId": "userNotifications" } },
+                                    { "handler": "refetchDataSource", "params": { "dataSourceId": "notification_unread_count" } },
                                     {
                                       "handler": "setState",
                                       "if": "{{!notification.read_at}}",
-                                      "params": { "target": "global", "notificationCount": "{{Math.max(0, _global.notificationCount - 1)}}" }
+                                      "params": { "target": "global", "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}" }
                                     }
                                   ]
                                 }
@@ -271,7 +309,7 @@
                           "type": "basic",
                           "name": "P",
                           "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-1" },
-                          "text": "{{notification.message}}"
+                          "text": "{{notification.body ?? ''}}"
                         },
                         {
                           "comment": "날짜",

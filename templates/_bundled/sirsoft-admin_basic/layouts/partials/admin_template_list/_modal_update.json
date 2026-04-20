@@ -314,16 +314,16 @@
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{_global.hasModifiedLayouts}}",
+              "if": "{{_global.hasModifiedTemplateLayouts}}",
               "props": {
                 "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
               },
-              "text": "$t:admin.templates.modals.modified_layouts_warning|count={{_global.modifiedLayoutsCount ?? 0}}"
+              "text": "$t:admin.templates.modals.modified_layouts_warning|count={{_global.modifiedTemplateLayoutsCount ?? 0}}"
             },
             {
               "type": "basic",
               "name": "Div",
-              "if": "{{!_global.hasModifiedLayouts}}",
+              "if": "{{!_global.hasModifiedTemplateLayouts}}",
               "props": {
                 "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
               },
@@ -443,7 +443,7 @@
                 {
                   "type": "basic",
                   "name": "Div",
-                  "if": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedLayouts && _global.modifiedLayouts.length > 0}}",
+                  "if": "{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedTemplateLayouts && _global.modifiedTemplateLayouts.length > 0}}",
                   "props": {
                     "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
                   },
@@ -454,7 +454,7 @@
                       "props": {
                         "className": "text-xs font-medium text-amber-700 dark:text-amber-300 mb-2"
                       },
-                      "text": "$t:admin.templates.modals.modified_layouts_list_title|count={{_global.modifiedLayouts?.length ?? 0}}"
+                      "text": "$t:admin.templates.modals.modified_layouts_list_title|count={{_global.modifiedTemplateLayouts?.length ?? 0}}"
                     },
                     {
                       "type": "basic",
@@ -467,7 +467,7 @@
                           "type": "basic",
                           "name": "Div",
                           "iteration": {
-                            "source": "_global.modifiedLayouts",
+                            "source": "_global.modifiedTemplateLayouts",
                             "item_var": "modLayout"
                           },
                           "props": {
@@ -615,9 +615,9 @@
                         "target": "global",
                         "selectedTemplate": null,
                         "templateLayoutStrategy": "overwrite",
-                        "hasModifiedLayouts": false,
-                        "modifiedLayoutsCount": 0,
-                        "modifiedLayouts": []
+                        "hasModifiedTemplateLayouts": false,
+                        "modifiedTemplateLayoutsCount": 0,
+                        "modifiedTemplateLayouts": []
                       }
                     },
                     {

@@ -428,9 +428,9 @@
                                           "target": "global",
                                           "selectedTemplate": "{{row}}",
                                           "templateLayoutStrategy": "overwrite",
-                                          "hasModifiedLayouts": false,
-                                          "modifiedLayoutsCount": 0,
-                                          "modifiedLayouts": []
+                                          "hasModifiedTemplateLayouts": false,
+                                          "modifiedTemplateLayoutsCount": 0,
+                                          "modifiedTemplateLayouts": []
                                         }
                                       },
                                       {
@@ -445,9 +445,9 @@
                                             "handler": "setState",
                                             "params": {
                                               "target": "global",
-                                              "hasModifiedLayouts": "{{response.data?.has_modified_layouts ?? false}}",
-                                              "modifiedLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                              "modifiedLayouts": "{{response.data?.modified_layouts ?? []}}"
+                                              "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                              "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                              "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}"
                                             }
                                           }
                                         ]

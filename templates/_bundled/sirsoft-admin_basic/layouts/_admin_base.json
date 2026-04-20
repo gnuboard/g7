@@ -6,6 +6,14 @@
     "description": "$t:admin.base_layout_description",
     "is_base": true
   },
+  "transition_overlay": {
+    "enabled": true,
+    "style": "spinner",
+    "target": "right_content_area",
+    "spinner": {
+      "component": "PageLoading"
+    }
+  },
   "data_sources": [
     {
       "id": "admin_menu",
@@ -32,7 +40,24 @@
       "method": "GET",
       "auto_fetch": true,
       "auth_required": true,
-      "loading_strategy": "progressive"
+      "loading_strategy": "progressive",
+      "params": {
+        "per_page": 15,
+        "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
+      }
+    },
+    {
+      "id": "notification_unread_count",
+      "type": "api",
+      "endpoint": "/api/admin/notifications/unread-count",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "initGlobal": {
+        "key": "adminNotificationCount",
+        "path": "unread_count"
+      }
     },
     {
       "id": "installed_modules",
@@ -59,6 +84,32 @@
         "key": "installedPlugins",
         "path": "data"
       }
+    },
+    {
+      "id": "notification_ws",
+      "type": "websocket",
+      "channel": "core.user.notifications.{{current_user.data.uuid}}",
+      "event": "notification.received",
+      "channel_type": "private",
+      "target_source": "notification_unread_count",
+      "onReceive": [
+        {
+          "handler": "refetchDataSource",
+          "params": { "dataSourceId": "notification_unread_count" }
+        },
+        {
+          "handler": "refetchDataSource",
+          "params": { "dataSourceId": "notifications" }
+        },
+        {
+          "handler": "toast",
+          "params": {
+            "type": "info",
+            "message": "{{$args[0].subject ?? '$t:admin.new_notification_received'}}",
+            "duration": 5000
+          }
+        }
+      ]
     }
   ],
   "components": [
@@ -205,13 +256,211 @@
                       "type": "composite",
                       "name": "NotificationCenter",
                       "props": {
-                        "notifications": "{{notifications.data.data}}",
+                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                        "unreadCount": "{{_global.adminNotificationCount ?? 0}}",
+                        "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
                         "titleText": "$t:admin.notifications",
-                        "emptyText": "$t:admin.no_notifications"
+                        "emptyText": "$t:admin.no_notifications",
+                        "markAllReadText": "$t:admin.notifications_mark_all_read",
+                        "deleteAllText": "$t:admin.notifications_delete_all",
+                        "unreadOnlyText": "$t:admin.notifications_unread_only",
+                        "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
+                        "dropdownAlign": "left"
                       },
-                      "data_binding": {
-                        "notifications": "notifications.data.data"
-                      }
+                      "actions": [
+                        {
+                          "event": "onClose",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/read-batch",
+                                "params": {
+                                  "method": "POST",
+                                  "body": {
+                                    "ids": "{{$args[0]}}"
+                                  }
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onNotificationClick",
+                          "handler": "parallel",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "navigate",
+                                "params": { "path": "{{$args[0].url ?? '/admin/notification-logs'}}" }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/{{$args[0].id}}/read",
+                                "params": {
+                                  "method": "PATCH"
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onMarkAllRead",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/read-all",
+                                "params": { "method": "POST" },
+                                "onSuccess": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": 1,
+                                      "notificationsHasMore": null,
+                                      "notificationsLoadingMore": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notifications" }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onUnreadOnlyToggle",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsUnreadOnly": "{{$args[0]}}",
+                                  "notificationsCurrentPage": 1,
+                                  "notificationsHasMore": null,
+                                  "notificationsLoadingMore": false
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": { "dataSourceId": "notifications" }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onDelete",
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/admin/notifications/{{$args[0].id}}",
+                          "params": { "method": "DELETE" },
+                          "onSuccess": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "notificationsCurrentPage": 1,
+                                "notificationsHasMore": null
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": { "dataSourceId": "notifications" }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": { "dataSourceId": "notification_unread_count" }
+                            }
+                          ]
+                        },
+                        {
+                          "event": "onDeleteAll",
+                          "handler": "openModal",
+                          "target": "notification_delete_all_confirm_modal"
+                        },
+                        {
+                          "event": "onLoadMore",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsLoadingMore": true
+                                }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications",
+                                "params": {
+                                  "method": "GET",
+                                  "query": {
+                                    "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                    "per_page": 15
+                                  }
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "appendDataSource",
+                                    "params": {
+                                      "dataSourceId": "notifications",
+                                      "dataPath": "data.data",
+                                      "newData": "{{response.data.data ?? []}}"
+                                    }
+                                  },
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                      "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                      "notificationsLoadingMore": false
+                                    }
+                                  }
+                                ],
+                                "onError": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsLoadingMore": false
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -404,13 +653,210 @@
                       "type": "composite",
                       "name": "NotificationCenter",
                       "props": {
-                        "notifications": "{{notifications.data.data}}",
+                        "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
+                        "unreadCount": "{{_global.adminNotificationCount ?? 0}}",
+                        "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
+                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
                         "titleText": "$t:admin.notifications",
-                        "emptyText": "$t:admin.no_notifications"
+                        "emptyText": "$t:admin.no_notifications",
+                        "markAllReadText": "$t:admin.notifications_mark_all_read",
+                        "deleteAllText": "$t:admin.notifications_delete_all",
+                        "unreadOnlyText": "$t:admin.notifications_unread_only",
+                        "unreadOnly": "{{_global.notificationsUnreadOnly ?? true}}"
                       },
-                      "data_binding": {
-                        "notifications": "notifications.data.data"
-                      }
+                      "actions": [
+                        {
+                          "event": "onClose",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/read-batch",
+                                "params": {
+                                  "method": "POST",
+                                  "body": {
+                                    "ids": "{{$args[0]}}"
+                                  }
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onNotificationClick",
+                          "handler": "parallel",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "navigate",
+                                "params": { "path": "{{$args[0].url ?? '/admin/notification-logs'}}" }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/{{$args[0].id}}/read",
+                                "params": {
+                                  "method": "PATCH"
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onMarkAllRead",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications/read-all",
+                                "params": { "method": "POST" },
+                                "onSuccess": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": 1,
+                                      "notificationsHasMore": null,
+                                      "notificationsLoadingMore": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notifications" }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notification_unread_count" }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onUnreadOnlyToggle",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsUnreadOnly": "{{$args[0]}}",
+                                  "notificationsCurrentPage": 1,
+                                  "notificationsHasMore": null,
+                                  "notificationsLoadingMore": false
+                                }
+                              },
+                              {
+                                "handler": "refetchDataSource",
+                                "params": { "dataSourceId": "notifications" }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "event": "onDelete",
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/admin/notifications/{{$args[0].id}}",
+                          "params": { "method": "DELETE" },
+                          "onSuccess": [
+                            {
+                              "handler": "setState",
+                              "params": {
+                                "target": "global",
+                                "notificationsCurrentPage": 1,
+                                "notificationsHasMore": null
+                              }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": { "dataSourceId": "notifications" }
+                            },
+                            {
+                              "handler": "refetchDataSource",
+                              "params": { "dataSourceId": "notification_unread_count" }
+                            }
+                          ]
+                        },
+                        {
+                          "event": "onDeleteAll",
+                          "handler": "openModal",
+                          "target": "notification_delete_all_confirm_modal"
+                        },
+                        {
+                          "event": "onLoadMore",
+                          "handler": "sequence",
+                          "params": {
+                            "actions": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notificationsLoadingMore": true
+                                }
+                              },
+                              {
+                                "handler": "apiCall",
+                                "auth_required": true,
+                                "target": "/api/admin/notifications",
+                                "params": {
+                                  "method": "GET",
+                                  "query": {
+                                    "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
+                                    "per_page": 15
+                                  }
+                                },
+                                "onSuccess": [
+                                  {
+                                    "handler": "appendDataSource",
+                                    "params": {
+                                      "dataSourceId": "notifications",
+                                      "dataPath": "data.data",
+                                      "newData": "{{response.data.data ?? []}}"
+                                    }
+                                  },
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": "{{response.data.pagination.current_page}}",
+                                      "notificationsHasMore": "{{response.data.pagination.has_more_pages}}",
+                                      "notificationsLoadingMore": false
+                                    }
+                                  }
+                                ],
+                                "onError": [
+                                  {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsLoadingMore": false
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -461,6 +907,9 @@
     },
     {
       "partial": "partials/_modal_changelog.json"
+    },
+    {
+      "partial": "partials/_modal_notification_delete_all_confirm.json"
     }
   ]
 }

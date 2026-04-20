@@ -44,16 +44,16 @@ use App\Extension\AbstractPlugin;
 
 class Plugin extends AbstractPlugin
 {
-    public function getDependencies(): array
-    {
-        return ['sirsoft-ecommerce' => '>=1.0.0'];
-    }
 }
 PHP);
         File::put($this->stubPluginDir.'/plugin.json', json_encode([
             'identifier' => 'test-depcheck',
             'version' => '1.0.0',
             'name' => ['ko' => '의존성 테스트', 'en' => 'Dep Test'],
+            'dependencies' => [
+                'modules' => ['sirsoft-ecommerce' => '>=1.0.0'],
+                'plugins' => [],
+            ],
         ]));
     }
 
@@ -157,12 +157,14 @@ PHP);
     }
 
     /**
-     * enrichDependencies가 모듈 의존성의 identifier를 올바르게 반환하는지 테스트합니다.
-     * (버전 문자열이 아닌 실제 identifier)
+     * enrichDependencies가 중첩 모듈 의존성의 identifier를 올바르게 반환하는지 테스트합니다.
+     *
+     * manifest(plugin.json)의 dependencies 필드는 중첩 구조
+     * ['modules' => [...], 'plugins' => [...]] 로 저장되므로 enrichDependencies는
+     * 해당 구조를 그대로 파싱합니다 (커밋 72156e6f0, 2026-02-23).
      */
     public function test_enrich_dependencies_returns_module_identifier_not_version(): void
     {
-        // 모듈 생성
         Module::create([
             'identifier' => 'sirsoft-ecommerce',
             'vendor' => 'sirsoft',
@@ -172,25 +174,24 @@ PHP);
             'description' => ['ko' => '이커머스 모듈', 'en' => 'Ecommerce module'],
         ]);
 
-        // protected 메서드 테스트를 위해 리플렉션 사용
         $reflection = new \ReflectionMethod($this->pluginManager, 'enrichDependencies');
 
-        $dependencies = ['sirsoft-ecommerce' => '>=1.0.0'];
+        $dependencies = [
+            'modules' => ['sirsoft-ecommerce' => '>=1.0.0'],
+        ];
         $result = $reflection->invoke($this->pluginManager, $dependencies);
 
         $this->assertCount(1, $result);
         $this->assertEquals('sirsoft-ecommerce', $result[0]['identifier']);
         $this->assertEquals('module', $result[0]['type']);
-        // 버전 문자열이 identifier로 사용되지 않아야 함
         $this->assertNotEquals('>=1.0.0', $result[0]['identifier']);
     }
 
     /**
-     * enrichDependencies가 플러그인 의존성도 올바르게 처리하는지 테스트합니다.
+     * enrichDependencies가 중첩 플러그인 의존성도 올바르게 처리하는지 테스트합니다.
      */
     public function test_enrich_dependencies_returns_plugin_identifier(): void
     {
-        // 플러그인 생성
         Plugin::create([
             'identifier' => 'sirsoft-payment',
             'vendor' => 'sirsoft',
@@ -202,7 +203,9 @@ PHP);
 
         $reflection = new \ReflectionMethod($this->pluginManager, 'enrichDependencies');
 
-        $dependencies = ['sirsoft-payment' => '>=1.0.0'];
+        $dependencies = [
+            'plugins' => ['sirsoft-payment' => '>=1.0.0'],
+        ];
         $result = $reflection->invoke($this->pluginManager, $dependencies);
 
         $this->assertCount(1, $result);
@@ -211,18 +214,37 @@ PHP);
     }
 
     /**
-     * enrichDependencies가 미등록 의존성을 unknown 타입으로 반환하는지 테스트합니다.
+     * enrichDependencies가 미등록 의존성의 identifier를 그대로 반환하는지 테스트합니다.
+     *
+     * DB에 없는 의존성은 name 필드에 identifier를 사용하지만 type은 여전히
+     * 선언된 구조(module/plugin)를 따릅니다.
      */
-    public function test_enrich_dependencies_returns_unknown_for_missing(): void
+    public function test_enrich_dependencies_returns_identifier_for_missing(): void
     {
         $reflection = new \ReflectionMethod($this->pluginManager, 'enrichDependencies');
 
-        $dependencies = ['nonexistent-extension' => '>=1.0.0'];
+        $dependencies = [
+            'plugins' => ['nonexistent-extension' => '>=1.0.0'],
+        ];
         $result = $reflection->invoke($this->pluginManager, $dependencies);
 
         $this->assertCount(1, $result);
         $this->assertEquals('nonexistent-extension', $result[0]['identifier']);
-        $this->assertEquals('unknown', $result[0]['type']);
+        $this->assertEquals('nonexistent-extension', $result[0]['name']);
+        $this->assertEquals('plugin', $result[0]['type']);
+    }
+
+    /**
+     * enrichDependencies가 중첩 구조가 아닌 경우 빈 배열을 반환하는지 테스트합니다.
+     */
+    public function test_enrich_dependencies_returns_empty_for_non_nested_structure(): void
+    {
+        $reflection = new \ReflectionMethod($this->pluginManager, 'enrichDependencies');
+
+        $dependencies = ['sirsoft-payment' => '>=1.0.0'];
+        $result = $reflection->invoke($this->pluginManager, $dependencies);
+
+        $this->assertCount(0, $result);
     }
 
     /**
@@ -243,7 +265,7 @@ PHP);
         // 의존성이 있는 플러그인 Mock
         $plugin = \Mockery::mock(\App\Contracts\Extension\PluginInterface::class);
         $plugin->shouldReceive('getDependencies')
-            ->andReturn(['sirsoft-ecommerce' => '>=1.0.0']);
+            ->andReturn(['modules' => ['sirsoft-ecommerce' => '>=1.0.0']]);
 
         // protected 메서드 리플렉션
         $reflection = new \ReflectionMethod($this->pluginManager, 'checkDependencies');
@@ -269,7 +291,7 @@ PHP);
 
         $plugin = \Mockery::mock(\App\Contracts\Extension\PluginInterface::class);
         $plugin->shouldReceive('getDependencies')
-            ->andReturn(['sirsoft-ecommerce' => '>=1.0.0']);
+            ->andReturn(['modules' => ['sirsoft-ecommerce' => '>=1.0.0']]);
 
         $reflection = new \ReflectionMethod($this->pluginManager, 'checkDependencies');
 
@@ -284,7 +306,7 @@ PHP);
     {
         $plugin = \Mockery::mock(\App\Contracts\Extension\PluginInterface::class);
         $plugin->shouldReceive('getDependencies')
-            ->andReturn(['nonexistent-module' => '>=1.0.0']);
+            ->andReturn(['modules' => ['nonexistent-module' => '>=1.0.0']]);
 
         $reflection = new \ReflectionMethod($this->pluginManager, 'checkDependencies');
 
@@ -309,7 +331,7 @@ PHP);
 
         $plugin = \Mockery::mock(\App\Contracts\Extension\PluginInterface::class);
         $plugin->shouldReceive('getDependencies')
-            ->andReturn(['sirsoft-payment' => '>=1.0.0']);
+            ->andReturn(['plugins' => ['sirsoft-payment' => '>=1.0.0']]);
 
         $reflection = new \ReflectionMethod($this->pluginManager, 'checkDependencies');
 

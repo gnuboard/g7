@@ -15,6 +15,8 @@ interface SortableItemWrapperProps {
   id: string | number;
   /** 드래그 핸들 CSS 선택자 (예: "[data-drag-handle]") */
   handle?: string;
+  /** 래퍼 HTML 요소 (기본: "div", Table 내부에서는 "tr" 사용) @since engine-v1.18.0 */
+  as?: React.ElementType;
   /** 자식 요소 */
   children: React.ReactNode;
 }
@@ -26,11 +28,15 @@ interface SortableItemWrapperProps {
  * SortableProvider를 통해 listeners를 하위 컴포넌트에 전달합니다.
  * DynamicRenderer가 data-drag-handle 속성을 감지하여 자동으로 listeners를 적용합니다.
  *
+ * `as` prop으로 래퍼 요소를 지정할 수 있습니다 (예: Table 내부에서 "tr" 사용).
+ *
  * @since engine-v1.14.0
+ * @since engine-v1.18.0 `as` prop 추가
  */
 export const SortableItemWrapper: React.FC<SortableItemWrapperProps> = ({
   id,
   handle,
+  as: WrapperElement = 'div',
   children,
 }) => {
   const {
@@ -51,7 +57,7 @@ export const SortableItemWrapper: React.FC<SortableItemWrapperProps> = ({
 
 
   return (
-    <div
+    <WrapperElement
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -63,7 +69,7 @@ export const SortableItemWrapper: React.FC<SortableItemWrapperProps> = ({
       <SortableProvider value={{ listeners, handle, isDragging }}>
         {children}
       </SortableProvider>
-    </div>
+    </WrapperElement>
   );
 };
 

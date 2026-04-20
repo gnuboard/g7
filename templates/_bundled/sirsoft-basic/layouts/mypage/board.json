@@ -33,7 +33,9 @@
       "endpoint": "/api/modules/sirsoft-board/me/activity-stats",
       "method": "GET",
       "auto_fetch": true,
-      "auth_required": true
+      "auth_required": true,
+      "lazy": true,
+      "blur_until_loaded": true
     },
     {
       "id": "myPosts",

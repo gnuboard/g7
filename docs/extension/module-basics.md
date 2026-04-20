@@ -107,7 +107,7 @@
 | 메서드 | 반환 타입 | 설명 |
 |--------|----------|------|
 | `getIdentifier()` | `string` | 디렉토리명에서 자동 추론 (예: `sirsoft-ecommerce`) |
-| `getVendor()` | `string` | 디렉토리명에서 자동 추론 (예: `sirsoft`) |
+| `getVendor()` | `string` | `module.json` 의 `vendor` 필드를 우선 사용. 값이 없으면 디렉토리명의 첫 단어로 폴백 (예: `sirsoft`) |
 
 ### 기본값 제공 메서드 (필요시 오버라이드)
 
@@ -123,12 +123,42 @@
 | `getViews()` | `[]` | 뷰 파일 |
 | `getPermissions()` | `[]` | 권한 목록 (resource_route_key, owner_key, roles scope_type 지원) |
 | `getRoles()` | `[]` | 역할 목록 |
+| `getDynamicPermissionIdentifiers()` | `[]` | 런타임 생성 권한 식별자 — stale cleanup 보존 대상 (아래 참조) |
+| `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
+| `getDynamicMenuSlugs()` | `[]` | 런타임 생성 메뉴 slug — stale cleanup 보존 대상 |
 | `getConfig()` | `[]` | 설정 |
 | `getAdminMenus()` | `[]` | 관리자 메뉴 |
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
 | `getMetadata()` | `[]` | 메타데이터 |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견) |
+
+#### 동적 권한/역할/메뉴 보존 규칙
+
+모듈이 런타임에 `Permission::updateOrCreate` / `Role::firstOrCreate` / `Menu::create` 등으로 동적 엔티티를 만드는 경우(예: sirsoft-board 의 게시판 slug 별 권한·역할·메뉴), 업데이트 시 `cleanupStale*` 로직이 **정적 정의에 없다** 는 이유로 전수 삭제되는 회귀가 발생한다. 이를 방지하려면 아래 3개 메서드를 override 해 **현재 DB 에 존재해야 하는 동적 식별자 전체** 를 반환한다.
+
+```php
+public function getDynamicPermissionIdentifiers(): array
+{
+    if (! Schema::hasTable('boards')) { return []; }
+    $actions = array_keys((array) config('sirsoft-board.board_permission_definitions', []));
+    $module = $this->getIdentifier();
+    $ids = [];
+    foreach (Board::query()->select('slug')->get() as $board) {
+        $ids[] = "{$module}.{$board->slug}";                 // 카테고리
+        foreach ($actions as $a) {
+            $ids[] = "{$module}.{$board->slug}.{$a}";        // 액션
+        }
+    }
+    return $ids;
+}
+```
+
+보존 원칙:
+
+- **업데이트 경로**: `updateModule()` → `cleanupStaleModuleEntries()` 는 정적 + 동적 식별자를 병합한 expected 목록을 기준으로 stale 판정. 동적 식별자가 정확히 반환되면 유실 없음.
+- **언인스톨 경로**: `uninstallModule($deleteData=false)` 는 권한·메뉴·역할을 **보존** (재설치 시 사용자 역할 할당 복원). `deleteData=true` 일 때만 전수 삭제.
+- **설치 경로**: `installModule(--force)` 는 cleanup 을 실행하지 않아 동적 엔티티 유실 없음.
 
 ### 간결한 모듈 구현 예시
 
@@ -504,7 +534,7 @@ modules/_bundled/sirsoft-ecommerce/
 
 | 디렉토리 | 설명 |
 |----------|------|
-| `module.json` | 메타데이터 SSoT (이름, 버전, 설명, 의존성, 라이선스 등) |
+| `module.json` | 메타데이터 SSoT (이름, 버전, 설명, 의존성, 라이선스 등) — 버전 제약 정책은 [changelog-rules.md](changelog-rules.md#8-코어-버전-제약-정책) 참조 |
 | `module.php` | ModuleInterface 구현 (진입점) |
 | `LICENSE` | 라이선스 전문 (MIT 등) — API 엔드포인트 `GET /api/admin/modules/{identifier}/license`로 제공 |
 | `composer.json` | PSR-4 오토로딩 + 외부 패키지 의존성 설정 |
@@ -611,6 +641,78 @@ powershell -Command "npm run test:run"
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](./extension-update-system.md) "개발자 버전 업데이트 가이드" 참조
+
+---
+
+## SEO 변수 선언 (seoVariables)
+
+모듈이 SEO 메타 데이터(제목/설명)에 동적 변수를 제공하려면 `seoVariables()` 메서드를 오버라이드합니다.
+
+### 오버라이드 시점
+
+- 모듈이 SEO 대상 페이지를 제공하는 경우 (상품 상세, 카테고리 목록 등)
+- 모듈 설정의 SEO 템플릿(`seo.meta_{page_type}_title`)에서 `{key}` 변수 치환이 필요한 경우
+
+### 구조
+
+```php
+public function seoVariables(): array
+{
+    return [
+        // _common: 모든 page_type에 공통 적용
+        '_common' => [
+            'site_name' => ['source' => 'core_setting', 'key' => 'general.site_name'],
+            'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+        ],
+        // page_type별 변수
+        'product' => [
+            'product_name' => ['source' => 'data', 'key' => 'product.data.name'],
+            'product_description' => ['source' => 'data', 'key' => 'product.data.short_description'],
+        ],
+        'category' => [
+            'category_name' => ['source' => 'data', 'key' => 'category.data.name'],
+        ],
+        'search' => [
+            'keyword_name' => ['source' => 'query', 'key' => 'q'],
+        ],
+    ];
+}
+```
+
+### 소스 타입
+
+| source | 설명 | 자동 해석 |
+|--------|------|----------|
+| `setting` | 해당 모듈의 설정 값 | ✅ |
+| `core_setting` | 코어 설정 값 | ✅ |
+| `query` | URL 쿼리 파라미터 | ✅ |
+| `route` | URL 라우트 파라미터 | ✅ |
+| `data` | 데이터소스 응답 데이터 (레이아웃 `vars`에서 매핑 필요) | ❌ |
+
+### 레이아웃에서 사용
+
+레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
+
+```json
+{
+    "meta": {
+        "seo": {
+            "extensions": [{ "type": "module", "id": "sirsoft-ecommerce" }],
+            "page_type": "product",
+            "vars": {
+                "product_name": "{{product.data.name ?? ''}}",
+                "product_description": "{{product.data.short_description ?? ''}}"
+            }
+        }
+    }
+}
+```
+
+- `setting`, `core_setting`, `query`, `route` 소스는 SeoRenderer가 자동 해석
+- `data` 소스 변수는 `vars`에서 표현식으로 매핑 필요
+- 설치 시 `ValidatesSeoVariables` 트레이트가 변수명 고유성 검증
+
+> 상세: [seo-system.md](../backend/seo-system.md) "SEO 변수 시스템" 참조
 
 ---
 

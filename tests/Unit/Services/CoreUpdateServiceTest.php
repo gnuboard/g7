@@ -145,67 +145,13 @@ class CoreUpdateServiceTest extends TestCase
     }
 
     // ========================================================================
-    // buildGithubHeaders() - GitHub API 헤더 생성
-    // ========================================================================
-
-    /**
-     * 토큰 없이 기본 헤더만 생성되는지 검증합니다.
-     */
-    public function test_build_github_headers_without_token(): void
-    {
-        $method = new \ReflectionMethod(CoreUpdateService::class, 'buildGithubHeaders');
-
-        $headers = $method->invoke($this->service, '');
-
-        $this->assertCount(2, $headers);
-        $this->assertContains('User-Agent: G7', $headers);
-        $this->assertContains('Accept: application/vnd.github.v3+json', $headers);
-    }
-
-    /**
-     * 토큰이 있을 때 Authorization 헤더가 포함되는지 검증합니다.
-     */
-    public function test_build_github_headers_with_token(): void
-    {
-        $method = new \ReflectionMethod(CoreUpdateService::class, 'buildGithubHeaders');
-
-        $headers = $method->invoke($this->service, 'ghp_test_token_123');
-
-        $this->assertCount(3, $headers);
-        $this->assertContains('Authorization: Bearer ghp_test_token_123', $headers);
-    }
-
-    // ========================================================================
-    // extractHttpStatusCode() - HTTP 상태 코드 추출
-    // ========================================================================
-
-    /**
-     * HTTP 응답 헤더에서 상태 코드를 올바르게 추출하는지 검증합니다.
-     */
-    public function test_extract_http_status_code(): void
-    {
-        $method = new \ReflectionMethod(CoreUpdateService::class, 'extractHttpStatusCode');
-
-        // 일반 200 응답
-        $this->assertEquals(200, $method->invoke($this->service, ['HTTP/1.1 200 OK']));
-
-        // 404 응답
-        $this->assertEquals(404, $method->invoke($this->service, ['HTTP/1.1 404 Not Found']));
-
-        // 리다이렉트 후 최종 상태 코드
-        $this->assertEquals(200, $method->invoke($this->service, [
-            'HTTP/1.1 302 Found',
-            'Location: https://example.com',
-            'HTTP/1.1 200 OK',
-        ]));
-
-        // 빈 헤더
-        $this->assertEquals(0, $method->invoke($this->service, []));
-    }
-
-    // ========================================================================
     // getChangelog() - CHANGELOG.md 파싱
     // ========================================================================
+
+    // 참고: GitHub API 헤더/상태코드/URL 해석/다운로드 로직은 `GithubHelper`로 이관되어
+    // `GithubHelperTest`에서 Http::fake() 기반으로 검증합니다. CoreUpdateService에 있던
+    // buildGithubHeaders / extractHttpStatusCode / resolveGithubArchiveUrl / downloadArchive
+    // 중복 구현은 제거되었습니다. (`allow_url_fopen=Off` 대응)
 
     /**
      * CHANGELOG.md 파일을 파싱하여 올바른 버전 엔트리를 반환하는지 검증합니다.
@@ -529,7 +475,7 @@ MD;
         // 파일 내용 검증
         $content = File::get($reportPath);
 
-        $this->assertStringContainsString('G7 코어 업데이트 실패 리포트', $content);
+        $this->assertStringContainsString('그누보드7 코어 업데이트 실패 리포트', $content);
         $this->assertStringContainsString('시작 버전: 1.0.0', $content);
         $this->assertStringContainsString('대상 버전: 2.0.0', $content);
         $this->assertStringContainsString('테스트 오류 메시지', $content);
@@ -909,28 +855,6 @@ MD;
     }
 
     // ========================================================================
-    // resolveGithubArchiveUrl() — GitHub URL 해석
-    // ========================================================================
-
-    /**
-     * resolveGithubArchiveUrl이 유효하지 않은 태그에 대해 null을 반환하는지 검증합니다.
-     */
-    public function test_resolve_github_archive_url_returns_null_for_invalid_tag(): void
-    {
-        $authHeaders = $this->invokeProtectedMethod($this->service, 'buildGithubHeaders', ['']);
-
-        $result = $this->invokeProtectedMethod($this->service, 'resolveGithubArchiveUrl', [
-            'nonexistent-owner',
-            'nonexistent-repo',
-            '999.999.999',
-            'zipball',
-            $authHeaders,
-        ]);
-
-        $this->assertNull($result);
-    }
-
-    // ========================================================================
     // validatePendingUpdate() — 패키지 검증 (G7 프로젝트 확인)
     // ========================================================================
 
@@ -1002,6 +926,109 @@ MD;
         $reflection->setAccessible(true);
 
         return $reflection->invoke($object, ...$args);
+    }
+
+    // ========================================================================
+    // extractZipToPending() — 외부 ZIP 추출
+    // ========================================================================
+
+    /**
+     * 평탄 루트 G7 ZIP 을 _pending 으로 추출하고 검증을 통과하는지 확인합니다.
+     */
+    public function test_extract_zip_to_pending_flat_layout(): void
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive not available');
+        }
+
+        $pendingBase = storage_path('test_core_zip_pending_'.uniqid());
+        $this->tempDirs[] = $pendingBase;
+        File::ensureDirectoryExists($pendingBase);
+        config(['app.update.pending_path' => $pendingBase]);
+
+        $zipDir = storage_path('test_core_zip_src_'.uniqid());
+        $this->tempDirs[] = $zipDir;
+        File::ensureDirectoryExists($zipDir);
+        $zipPath = $zipDir.DIRECTORY_SEPARATOR.'g7.zip';
+
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE);
+        $zip->addFromString('composer.json', '{"name":"g7/core"}');
+        $zip->addFromString('app/.gitkeep', '');
+        $zip->addFromString('config/app.php', "<?php\nreturn ['version' => '9.9.9'];");
+        $zip->close();
+
+        $result = $this->service->extractZipToPending($zipPath);
+        $this->assertTrue(File::exists($result.DIRECTORY_SEPARATOR.'composer.json'));
+        $this->assertTrue(File::isDirectory($result.DIRECTORY_SEPARATOR.'app'));
+    }
+
+    /**
+     * 래퍼 디렉토리(owner-repo-hash/) 를 자동 감지하여 그 내부를 반환하는지 검증합니다.
+     */
+    public function test_extract_zip_to_pending_unwraps_wrapper_directory(): void
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive not available');
+        }
+
+        $pendingBase = storage_path('test_core_zip_pending_wrap_'.uniqid());
+        $this->tempDirs[] = $pendingBase;
+        File::ensureDirectoryExists($pendingBase);
+        config(['app.update.pending_path' => $pendingBase]);
+
+        $zipDir = storage_path('test_core_zip_wrap_src_'.uniqid());
+        $this->tempDirs[] = $zipDir;
+        File::ensureDirectoryExists($zipDir);
+        $zipPath = $zipDir.DIRECTORY_SEPARATOR.'g7-wrap.zip';
+
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE);
+        $zip->addFromString('g7-core-abc123/composer.json', '{"name":"g7/core"}');
+        $zip->addFromString('g7-core-abc123/app/.gitkeep', '');
+        $zip->addFromString('g7-core-abc123/config/app.php', "<?php\nreturn ['version' => '7.0.1'];");
+        $zip->close();
+
+        $result = $this->service->extractZipToPending($zipPath);
+        $this->assertStringEndsWith('g7-core-abc123', $result);
+        $this->assertTrue(File::exists($result.DIRECTORY_SEPARATOR.'composer.json'));
+    }
+
+    /**
+     * ZIP 파일이 존재하지 않을 때 RuntimeException 이 발생하는지 검증합니다.
+     */
+    public function test_extract_zip_to_pending_throws_when_zip_missing(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->service->extractZipToPending(storage_path('nonexistent_'.uniqid().'.zip'));
+    }
+
+    /**
+     * ZIP 내용이 G7 패키지가 아닐 때 검증에서 RuntimeException 이 발생하는지 확인합니다.
+     */
+    public function test_extract_zip_to_pending_throws_for_invalid_package(): void
+    {
+        if (! class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive not available');
+        }
+
+        $pendingBase = storage_path('test_core_zip_pending_invalid_'.uniqid());
+        $this->tempDirs[] = $pendingBase;
+        File::ensureDirectoryExists($pendingBase);
+        config(['app.update.pending_path' => $pendingBase]);
+
+        $zipDir = storage_path('test_core_zip_invalid_src_'.uniqid());
+        $this->tempDirs[] = $zipDir;
+        File::ensureDirectoryExists($zipDir);
+        $zipPath = $zipDir.DIRECTORY_SEPARATOR.'invalid.zip';
+
+        $zip = new \ZipArchive;
+        $zip->open($zipPath, \ZipArchive::CREATE);
+        $zip->addFromString('README.md', '# not g7');
+        $zip->close();
+
+        $this->expectException(\RuntimeException::class);
+        $this->service->extractZipToPending($zipPath);
     }
 
     /**

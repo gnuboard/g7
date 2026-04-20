@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Exceptions\DuplicateAddressException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\StoreUserAddressRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UpdateUserAddressRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\UserAddressCollection;
@@ -112,8 +113,13 @@ class UserAddressController extends AuthBaseController
             return ResponseHelper::success('sirsoft-ecommerce::messages.address.created', [
                 'address' => new UserAddressResource($address),
             ], 201);
-        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
-            throw $e;
+        } catch (DuplicateAddressException $e) {
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.address.name_duplicate',
+                409,
+                ['duplicate_address_id' => $e->getDuplicateAddressId()]
+            );
         } catch (Exception $e) {
             Log::error('User address creation failed', [
                 'message' => $e->getMessage(),

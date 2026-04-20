@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.2] - 2026-04-20
+
+### Changed
+
+- 코어 최소 요구 버전을 7.0.0-beta.2 로 상향
+- extension JSON: `extensionPointProps.onAddressSelect` → `extensionPointCallbacks.onAddressSelect` 참조 변경 (extension_point props/callbacks 분리)
+
 ## [1.0.0-beta.1] - 2026-04-01
 
 ### Changed

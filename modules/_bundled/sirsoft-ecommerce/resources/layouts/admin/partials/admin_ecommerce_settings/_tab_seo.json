@@ -454,6 +454,134 @@
                   ]
                 }
               ]
+            },
+            {
+              "id": "accordion_shop_index_page",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "card-accordion"
+              },
+              "children": [
+                {
+                  "id": "accordion_shop_index_page_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-header"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "card-accordion-title"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_page"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-down",
+                        "className": "card-accordion-icon open"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "accordion_shop_index_page_body",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-body space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_shop_index_title",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "seo.meta_shop_index_title",
+                            "placeholder": "{commerce_name}",
+                            "className": "{{_local.errors?.['seo.meta_shop_index_title'] ? 'input input-error w-full' : 'input w-full'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_shop_index_title']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_shop_index_title']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.available_variables: {commerce_name}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_shop_index_description",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Textarea",
+                          "props": {
+                            "name": "seo.meta_shop_index_description",
+                            "placeholder": "$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.shop_index_description_placeholder",
+                            "rows": 3,
+                            "className": "{{_local.errors?.['seo.meta_shop_index_description'] ? 'input input-error w-full resize-none' : 'input w-full resize-none'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_shop_index_description']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_shop_index_description']?.[0] ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -606,6 +734,33 @@
                           "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.product_detail"
                         }
                       ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "flex items-center gap-2 cursor-pointer"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "name": "seo.seo_shop_index",
+                            "className": "checkbox",
+                            "checked": true
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-secondary"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.shop_index"
+                        }
+                      ]
                     }
                   ]
                 }
@@ -680,7 +835,7 @@
                           "props": {
                             "className": "text-heading"
                           },
-                          "text": "234.5 MB"
+                          "text": "{{seoStats?.data?.size_formatted ?? '-'}}"
                         }
                       ]
                     },
@@ -691,7 +846,14 @@
                         "type": "button",
                         "className": "btn btn-danger"
                       },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache"
+                      "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "openModal",
+                          "target": "modal_clear_seo_cache"
+                        }
+                      ]
                     }
                   ]
                 }

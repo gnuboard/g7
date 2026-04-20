@@ -83,6 +83,8 @@ Phase 6: 빌드 및 설치
 
 ## Phase 1: 필수 메타데이터 파일
 
+> `g7_version` / `dependencies` 등 버전 제약 작성 규칙은 [changelog-rules.md](changelog-rules.md#8-코어-버전-제약-정책) 참조.
+
 ### 1.1 template.json
 
 ```json

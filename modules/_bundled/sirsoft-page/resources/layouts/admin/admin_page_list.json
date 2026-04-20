@@ -13,6 +13,11 @@
         "searchField": "all",
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "pages"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -188,7 +193,8 @@
                                                     "query": {
                                                         "published": "",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ],
@@ -217,7 +223,8 @@
                                                     "query": {
                                                         "published": "1",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ],
@@ -246,7 +253,8 @@
                                                     "query": {
                                                         "published": "0",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ],
@@ -340,7 +348,8 @@
                                                         "filters[0][value]": "{{$event.target.value}}",
                                                         "filters[0][operator]": "like",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ]
@@ -364,7 +373,8 @@
                                                         "filters[0][value]": "{{_local.searchQuery || ''}}",
                                                         "filters[0][operator]": "like",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ],
@@ -455,7 +465,8 @@
                                                                         "filters[0][value]": "{{$event.target.value}}",
                                                                         "filters[0][operator]": "like",
                                                                         "page": 1
-                                                                    }
+                                                                    },
+                                                                    "transition_overlay_target": "pages_data_grid__body"
                                                                 }
                                                             }
                                                         ]
@@ -481,7 +492,8 @@
                                                                 "filters[0][value]": "{{_local.searchQuery || ''}}",
                                                                 "filters[0][operator]": "like",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "pages_data_grid__body"
                                                         }
                                                     }
                                                 ],
@@ -561,7 +573,8 @@
                                                         "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                                                         "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ]
@@ -602,7 +615,8 @@
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "pages_data_grid__body"
                                                 }
                                             }
                                         ]
@@ -859,7 +873,8 @@
                                     "mergeQuery": true,
                                     "query": {
                                         "page": "{{$args[0]}}"
-                                    }
+                                    },
+                                    "transition_overlay_target": "pages_data_grid__body"
                                 }
                             },
                             {

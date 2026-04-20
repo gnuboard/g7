@@ -296,6 +296,9 @@
                       }
                     },
                     {
+                      "handler": "reloadExtensions"
+                    },
+                    {
                       "handler": "closeModal"
                     }
                   ],

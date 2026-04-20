@@ -1,0 +1,51 @@
+{
+  "index": {
+    "title": "게시판 관리",
+    "description": "게시판 목록을 관리합니다",
+    "search_placeholder": "게시판 검색...",
+    "search": "검색",
+    "add_board": "게시판 추가",
+    "post_count": "게시글:",
+    "created_at": "생성일:",
+    "categories_label": "분류:",
+    "empty_title": "게시판이 없습니다",
+    "empty_description": "등록된 게시판이 없습니다.",
+    "filter_all_types": "전체 유형",
+    "filter_type_basic": "기본형",
+    "filter_type_gallery": "갤러리형",
+    "filter_type_card": "카드형",
+    "status": "상태",
+    "active": "활성화",
+    "inactive": "비활성화"
+  },
+  "create": {
+    "title": "게시판 생성"
+  },
+  "edit": {
+    "title": "게시판 수정"
+  },
+  "columns": {
+    "type": "유형",
+    "name": "게시판명",
+    "slug": "슬러그",
+    "posts_count": "게시글 수",
+    "created_at": "생성일"
+  },
+  "actions": {
+    "edit": "수정",
+    "manage_posts": "게시글 관리",
+    "copy": "복사",
+    "delete": "삭제"
+  },
+  "messages": {
+    "create_success": "게시판이 생성되었습니다",
+    "update_success": "게시판이 수정되었습니다",
+    "delete_success": "게시판이 삭제되었습니다",
+    "deleted": "게시판이 삭제되었습니다",
+    "copy_success": "게시판이 복사되었습니다",
+    "save_failed": "저장에 실패하였습니다",
+    "table_not_found": "게시판 테이블이 존재하지 않아 삭제할 수 없습니다",
+    "activated": "게시판이 활성화되었습니다",
+    "deactivated": "게시판이 비활성화되었습니다"
+  }
+}

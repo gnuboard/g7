@@ -19,10 +19,16 @@
     {
       "id": "userNotifications",
       "type": "api",
-      "endpoint": "/api/notifications?page={{_local.notificationsPage ?? 1}}",
+      "endpoint": "/api/user/notifications",
       "method": "GET",
       "auto_fetch": true,
-      "loading_strategy": "progressive"
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "params": {
+        "page": "{{_local.notificationsPage ?? 1}}",
+        "sort_order": "desc",
+        "read": "{{_local.userNotificationsUnreadOnly ? 'unread' : 'all'}}"
+      }
     }
   ],
   "init_actions": [
@@ -30,7 +36,8 @@
       "handler": "setState",
       "params": {
         "target": "local",
-        "notificationsPage": 1
+        "notificationsPage": 1,
+        "userNotificationsUnreadOnly": false
       }
     }
   ],

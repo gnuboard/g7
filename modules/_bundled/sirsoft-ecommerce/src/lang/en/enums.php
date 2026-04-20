@@ -94,18 +94,6 @@ return [
         'pickup_complete' => 'Picked Up',
     ],
 
-    // Shipping Type (matches ShippingTypeEnum values)
-    'shipping_type' => [
-        'domestic_parcel' => 'Domestic Parcel',
-        'domestic_express' => 'Domestic Express',
-        'domestic_quick' => 'Quick Service',
-        'international_ems' => 'International EMS',
-        'international_standard' => 'International Standard',
-        'pickup' => 'Store Pickup',
-        'cvs' => 'Convenience Store',
-        'digital' => 'Digital Product',
-    ],
-
     // Option Status
     'option_status' => [
         'ordered' => 'Ordered',
@@ -195,20 +183,6 @@ return [
         'used' => 'Used',
         'expired' => 'Expired',
         'cancelled' => 'Cancelled',
-    ],
-
-    // Shipping Method
-    'shipping_method' => [
-        'parcel' => 'Parcel',
-        'freight' => 'Freight',
-        'express' => 'Express',
-        'economy' => 'Economy',
-        'ems' => 'EMS',
-        'collect' => 'Collect on Delivery',
-        'quick' => 'Quick Service',
-        'direct' => 'Direct Delivery',
-        'pickup' => 'Pickup',
-        'other' => 'Other',
     ],
 
     // Charge Policy

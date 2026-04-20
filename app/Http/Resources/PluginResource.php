@@ -94,6 +94,7 @@ class PluginResource extends BaseApiResource
             'version' => $this->getValue('version', '1.0.0'),
             'description' => $this->getLocalizedField('description'),
             'github_url' => $this->getValue('github_url'),
+            'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'status' => $this->getValue('status', 'uninstalled'),
             'is_installed' => $this->getValue('is_installed', false),

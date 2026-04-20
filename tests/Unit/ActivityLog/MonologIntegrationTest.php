@@ -186,17 +186,19 @@ class MonologIntegrationTest extends TestCase
         $authUser = User::factory()->create();
         $this->actingAs($authUser);
 
-        $explicitUserId = 99999;
+        // 명시 user_id는 인증 사용자와 다른 실제 User여야 함 (FK 제약)
+        $explicitUser = User::factory()->create();
 
         Log::channel('activity')->info('system.impersonate', [
             'log_type' => ActivityLogType::System,
-            'user_id' => $explicitUserId,
+            'user_id' => $explicitUser->id,
             'ip_address' => '172.16.0.1',
             'user_agent' => 'CLI/1.0',
         ]);
 
         $log = ActivityLog::first();
-        $this->assertEquals($explicitUserId, $log->user_id);
+        $this->assertEquals($explicitUser->id, $log->user_id);
+        $this->assertNotEquals($authUser->id, $log->user_id);
         $this->assertEquals('172.16.0.1', $log->ip_address);
         $this->assertEquals('CLI/1.0', $log->user_agent);
     }

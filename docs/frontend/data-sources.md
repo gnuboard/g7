@@ -301,7 +301,7 @@
 | 모드 | 토큰 전송 | 토큰 없을 때 | 사용 사례 |
 |------|----------|-------------|----------|
 | `none` (기본) | ❌ 안 보냄 | 정상 요청 | 공개 API (상품 목록, 게시판 등) |
-| `required` | ✅ 필수 | 요청 실패 | 마이페이지, 관리자 API |
+| `required` | ✅ 필수 | **요청 스킵 → fallback 사용** | 마이페이지, 관리자 API |
 | `optional` | ✅ 있으면 전송 | 비회원으로 요청 | **장바구니, 위시리스트** (비회원/회원 공용) |
 
 ### 사용 예시
@@ -335,12 +335,22 @@
 ### 동작 원리
 
 ```text
+auth_mode: "required" 동작 흐름:
+
+1. 토큰 유무 확인 (AuthManager.isAuthenticated())
+2. 토큰 있음 → ApiClient 사용 (Authorization: Bearer xxx)
+3. 토큰 없음 → 요청 스킵, fallback 데이터 사용 (API 호출하지 않음)
+
 auth_mode: "optional" 동작 흐름:
 
 1. 토큰 유무 확인 (AuthManager.isAuthenticated())
 2. 토큰 있음 → ApiClient 사용 (Authorization: Bearer xxx)
 3. 토큰 없음 → 일반 fetch 사용 (headers에 X-Cart-Key 등 포함 가능)
 ```
+
+> **중요**: `auth_mode: "required"`에서 토큰이 없으면 API 요청 자체를 하지 않습니다.
+> `fallback`이 정의되어 있으면 fallback 데이터가 렌더링에 사용되고, 없으면 데이터 없이 처리됩니다.
+> 이를 통해 비로그인 상태에서 인증 필수 API 호출로 인한 401 → 로그인 리다이렉트 문제를 방지합니다.
 
 ### 하위 호환성
 

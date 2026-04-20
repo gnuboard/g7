@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends AdminBaseController
@@ -38,7 +36,7 @@ class AuthController extends AdminBaseController
 
             // 관리자 권한 확인
             if (!$user->isAdmin()) {
-                return ResponseHelper::forbidden('auth.admin_required');
+                return $this->forbidden('auth.admin_required');
             }
 
             // 사용자 정보는 Resource로, 토큰은 그대로
@@ -46,7 +44,7 @@ class AuthController extends AdminBaseController
 
             return $this->success('auth.admin_login_success', $data);
         } catch (ValidationException $e) {
-            return ResponseHelper::unauthorized('auth.login_failed', [], 'core');
+            return $this->unauthorized('auth.login_failed');
         }
     }
 
@@ -99,7 +97,7 @@ class AuthController extends AdminBaseController
             }
             return $this->success('common.success', $data);
         } catch (ValidationException $e) {
-            return ResponseHelper::unauthorized('auth.unauthenticated', [], 'core');
+            return $this->unauthorized('auth.unauthenticated');
         }
     }
 }

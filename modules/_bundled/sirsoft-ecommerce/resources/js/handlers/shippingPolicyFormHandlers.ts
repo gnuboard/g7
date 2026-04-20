@@ -23,6 +23,7 @@ interface ActionWithParams {
 interface CountrySetting {
     country_code: string;
     shipping_method: string;
+    custom_shipping_name: Record<string, string> | null;
     carrier: string | null;
     currency_code: string;
     charge_policy: string;
@@ -78,6 +79,7 @@ const REQUIRES_UNIT_VALUE = [
 
 const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
     shipping_method: 'parcel',
+    custom_shipping_name: null,
     carrier: null,
     currency_code: 'KRW',
     charge_policy: 'fixed',

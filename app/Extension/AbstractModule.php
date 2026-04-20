@@ -2,10 +2,13 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
+use Illuminate\Database\Seeder;
 use ReflectionClass;
 
 /**
@@ -31,6 +34,11 @@ abstract class AbstractModule implements ModuleInterface
      * 스토리지 드라이버 인스턴스 (캐시)
      */
     private ?StorageInterface $storage = null;
+
+    /**
+     * 캐시 드라이버 인스턴스 (캐시)
+     */
+    private ?CacheInterface $cache = null;
 
     /**
      * manifest JSON 캐시
@@ -121,14 +129,22 @@ abstract class AbstractModule implements ModuleInterface
     }
 
     /**
-     * 벤더명 반환 (디렉토리명에서 자동 추론)
+     * 벤더명 반환
      *
-     * 디렉토리명이 'sirsoft-sample'이면 벤더명은 'sirsoft'
+     * module.json 의 vendor 필드를 우선 사용합니다.
+     * 값이 없으면 디렉토리명의 첫 단어(예: 'sirsoft-sample' → 'sirsoft')로 폴백합니다.
+     *
+     * @return string 사람이 읽는 벤더/개발자명 또는 폴백으로 얻은 식별자 prefix
      */
     final public function getVendor(): string
     {
-        $identifier = $this->getIdentifier();
-        $parts = explode('-', $identifier);
+        $manifestVendor = $this->loadManifest()['vendor'] ?? null;
+
+        if (is_string($manifestVendor) && $manifestVendor !== '') {
+            return $manifestVendor;
+        }
+
+        $parts = explode('-', $this->getIdentifier());
 
         return $parts[0];
     }
@@ -362,6 +378,52 @@ abstract class AbstractModule implements ModuleInterface
     }
 
     /**
+     * 런타임에 동적으로 생성되는 권한 식별자 목록을 반환합니다.
+     *
+     * `getPermissions()` 는 모듈 정의 시점의 **정적** 권한 구조를 반환하지만,
+     * 일부 모듈(예: sirsoft-board — 게시판 slug 당 권한 세트)은 런타임에 권한을
+     * 동적으로 생성합니다. 이런 권한은 저장 시 `extension_type=module` +
+     * `extension_identifier={module}` 로 기록되므로, `ModuleManager::cleanupStaleModuleEntries()`
+     * 가 **정적 정의에 없다는 이유로 전부 stale 로 오판해 삭제** 하는 회귀가 일어납니다.
+     *
+     * 동적 권한을 보유한 모듈은 본 메서드를 override 해 현재 DB/설정에 존재해야 하는
+     * 동적 권한 식별자(카테고리 + 액션 전체)를 flat 배열로 반환하세요. 반환값은
+     * cleanup 대상에서 자동 제외됩니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicPermissionIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
+     * 런타임에 동적으로 생성되는 역할 식별자 목록을 반환합니다.
+     *
+     * `getRoles()` 정적 정의 외에 런타임에 추가되는 역할(예: 게시판 별 manager/step)이
+     * 있을 때 override 하세요. 반환된 식별자는 stale cleanup 대상에서 제외됩니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicRoleIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
+     * 런타임에 동적으로 생성되는 메뉴 slug 목록을 반환합니다.
+     *
+     * `getAdminMenus()` 정적 정의 외에 런타임에 추가되는 메뉴(예: 게시판 별 메뉴)가
+     * 있을 때 override 하세요. 반환된 slug 는 stale cleanup 대상에서 제외됩니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicMenuSlugs(): array
+    {
+        return [];
+    }
+
+    /**
      * 모듈 설정 정보 반환
      *
      * 기본적으로 빈 배열 반환
@@ -420,6 +482,27 @@ abstract class AbstractModule implements ModuleInterface
     }
 
     /**
+     * 브로드캐스트 채널 정의를 반환합니다.
+     *
+     * 모듈에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
+     * 반환된 채널은 ModuleManager가 자동으로 Broadcast::channel()에 등록합니다.
+     *
+     * 네이밍 규칙: module.{identifier}.{resource}.{param}
+     *
+     * @return array<string, array{permission?: string, type?: string}>
+     *                                                                  [
+     *                                                                  'module.vendor-module.orders.{id}' => [
+     *                                                                  'permission' => 'vendor-module.orders.read',  // 권한 체크 (선택)
+     *                                                                  'type' => 'private',                          // 채널 타입 (기본: private)
+     *                                                                  ],
+     *                                                                  ]
+     */
+    public function getChannels(): array
+    {
+        return [];
+    }
+
+    /**
      * 스케줄 작업 목록 반환
      *
      * 모듈에서 등록하는 스케줄 작업 목록입니다.
@@ -453,7 +536,7 @@ abstract class AbstractModule implements ModuleInterface
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)
      * 오버라이드하여 실행할 시더와 순서를 명시적으로 정의하세요.
      *
-     * @return array<class-string<\Illuminate\Database\Seeder>> 시더 클래스명 배열 (FQCN)
+     * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
      */
     public function getSeeders(): array
     {
@@ -463,12 +546,19 @@ abstract class AbstractModule implements ModuleInterface
     /**
      * 모듈 의존성 반환
      *
-     * 기본적으로 빈 배열 반환
-     * 모듈 개발자가 의존성이 필요한 경우 오버라이드
+     * module.json 의 dependencies 필드를 반환합니다.
+     * 중첩 구조 형식: ['modules' => [identifier => version, ...], 'plugins' => [...]]
+     *
+     * 기본 구현은 manifest JSON 파싱 결과를 그대로 반환하므로 모듈 개발자는
+     * module.json 에 의존성을 정의하면 되고 PHP 오버라이드는 권장하지 않습니다.
+     *
+     * @return array 중첩 구조 의존성 배열
      */
     public function getDependencies(): array
     {
-        return [];
+        $dependencies = $this->loadManifest()['dependencies'] ?? [];
+
+        return is_array($dependencies) ? $dependencies : [];
     }
 
     /**
@@ -622,6 +712,43 @@ abstract class AbstractModule implements ModuleInterface
         $config = json_decode(file_get_contents($path), true);
 
         return is_array($config) ? $config : [];
+    }
+
+    /**
+     * SEO 변수 메타데이터를 반환합니다.
+     *
+     * 모듈이 SEO 렌더링에 제공하는 변수를 page_type별로 선언합니다.
+     * SeoRenderer가 이 메서드를 호출하여 변수를 수집하고 자동 해석합니다.
+     *
+     * 각 변수는 source 타입에 따라 해석 방식이 결정됩니다:
+     * - setting: 모듈 환경설정 값 (엔진 자동 해석)
+     * - core_setting: 코어 설정 값 (엔진 자동 해석)
+     * - query: URL 쿼리 파라미터 (엔진 자동 해석)
+     * - route: 라우트 파라미터 (엔진 자동 해석)
+     * - data: 데이터소스 응답 필드 (템플릿 개발자가 vars에서 매핑)
+     *
+     * 기본적으로 빈 배열 반환.
+     * 모듈 개발자가 SEO 변수가 필요한 경우 오버라이드하세요.
+     *
+     * @return array page_type별 변수 정의 배열
+     *               [
+     *               'product' => [
+     *               'product_name' => [
+     *               'description' => '상품명',
+     *               'source' => 'data',
+     *               'required' => true,
+     *               ],
+     *               'commerce_name' => [
+     *               'description' => '쇼핑몰명',
+     *               'source' => 'setting',
+     *               'key' => 'basic_info.shop_name',
+     *               ],
+     *               ],
+     *               ]
+     */
+    public function seoVariables(): array
+    {
+        return [];
     }
 
     /**
@@ -780,6 +907,38 @@ abstract class AbstractModule implements ModuleInterface
     public function getStorageDisk(): string
     {
         return 'modules';
+    }
+
+    /**
+     * 모듈 캐시 드라이버 인스턴스 반환
+     *
+     * 모듈별로 격리된 캐시를 제공합니다.
+     * 접두사 패턴: g7:module.{identifier}:{key}
+     *
+     * @return CacheInterface 캐시 드라이버 인스턴스
+     */
+    public function getCache(): CacheInterface
+    {
+        if ($this->cache === null) {
+            $this->cache = new ModuleCacheDriver(
+                $this->getIdentifier(),
+                $this->getCacheStore()
+            );
+        }
+
+        return $this->cache;
+    }
+
+    /**
+     * 모듈에서 사용할 캐시 스토어 이름 반환
+     *
+     * 기본값은 환경설정 캐시 드라이버이며, 모듈 개발자가 다른 스토어를 사용하려면 오버라이드합니다.
+     *
+     * @return string 캐시 스토어 이름
+     */
+    public function getCacheStore(): string
+    {
+        return config('cache.default');
     }
 
     /**

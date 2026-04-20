@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Traits;
 use App\Enums\PermissionType;
 use App\Http\Middleware\PermissionMiddleware;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * 게시판 권한 체크 Trait
@@ -125,7 +126,22 @@ trait ChecksBoardPermission
     }
 
     /**
+     * 권한 캐시를 초기화합니다.
+     *
+     * 테스트 환경에서 동일 Request 인스턴스가 재사용되는 경우 호출합니다.
+     *
+     * @return void
+     */
+    public static function clearPermissionCache(): void
+    {
+        request()->attributes->remove('_board_permission_cache');
+    }
+
+    /**
      * PermissionMiddleware를 통해 권한을 확인합니다.
+     *
+     * 동일 요청 내에서 같은 권한 조합에 대한 결과를 캐싱합니다.
+     * 캐시는 request()->instance()를 키로 사용하여 요청 단위로 자동 격리됩니다.
      *
      * @param  string  $permission  권한 식별자 (파이프로 복수 권한 구분)
      * @param  PermissionType  $type  권한 타입
@@ -134,11 +150,22 @@ trait ChecksBoardPermission
      */
     protected function checkPermissionViaMiddleware(string $permission, PermissionType $type, bool $requireAll = true): bool
     {
+        $request = request();
+        $userId = Auth::id() ?? 'guest';
+        $cacheKey = $userId . '|' . $permission . '|' . $type->value . '|' . ($requireAll ? '1' : '0');
+
+        // 요청 인스턴스에 권한 캐시를 저장하여 요청 단위로 자동 격리
+        $cache = $request->attributes->get('_board_permission_cache', []);
+
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
         $middleware = app(PermissionMiddleware::class);
         $passed = false;
 
         $middleware->handle(
-            request(),
+            $request,
             function () use (&$passed) {
                 $passed = true;
 
@@ -148,6 +175,9 @@ trait ChecksBoardPermission
             $permission,
             $requireAll ? 'true' : 'false'
         );
+
+        $cache[$cacheKey] = $passed;
+        $request->attributes->set('_board_permission_cache', $cache);
 
         return $passed;
     }

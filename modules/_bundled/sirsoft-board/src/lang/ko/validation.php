@@ -148,13 +148,6 @@ return [
     'notify_author' => [
         'required' => '작성자 이메일 알림 여부는 필수입니다.',
     ],
-    'notify_author_channels' => [
-        'array' => '작성자 알림 채널은 배열이어야 합니다.',
-    ],
-    'notify_admin_on_post_channels' => [
-        'array' => '관리자 알림 채널은 배열이어야 합니다.',
-    ],
-
     // 보안 설정 검증 메시지
     'blocked_keywords' => [
         'string' => '금지어 목록은 문자열이어야 합니다.',
@@ -318,9 +311,6 @@ return [
             'spam_security.comment_cooldown_seconds' => '댓글 작성 쿨다운(초)',
             'spam_security.report_cooldown_seconds' => '신고 쿨다운(초)',
             'spam_security.view_count_cache_ttl' => '조회수 캐시 유효시간(초)',
-            // notification_channels
-            'notification_channels.notify_admin_on_post_channels' => '관리자 알림 채널',
-            'notification_channels.notify_author_channels' => '작성자 알림 채널',
         ],
         'post' => [
             'title' => '제목',

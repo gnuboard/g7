@@ -9,7 +9,7 @@ use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 주문 목록 조회 요청
@@ -53,7 +53,7 @@ class OrderListRequest extends FormRequest
 
             // 배송유형 (다중선택)
             'shipping_type' => ['nullable', 'array'],
-            'shipping_type.*' => ['string', Rule::in(ShippingTypeEnum::values())],
+            'shipping_type.*' => ['string', Rule::in(ShippingType::pluck('code')->toArray())],
 
             // 결제수단 (다중선택)
             'payment_method' => ['nullable', 'array'],

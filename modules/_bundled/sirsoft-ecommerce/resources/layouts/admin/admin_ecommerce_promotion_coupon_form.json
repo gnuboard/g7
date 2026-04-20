@@ -13,8 +13,14 @@
             "target_type": "product_amount",
             "issue_method": "direct",
             "issue_condition": "manual",
-            "name": { "ko": "", "en": "" },
-            "description": { "ko": "", "en": "" },
+            "name": {
+                "ko": "",
+                "en": ""
+            },
+            "description": {
+                "ko": "",
+                "en": ""
+            },
             "discount_type": "fixed",
             "discount_value": null,
             "discount_max_amount": null,
@@ -54,6 +60,11 @@
         "selectedProductIds": [],
         "selectedCategoryIds": []
     },
+    "transition_overlay": {
+        "wait_for": [
+            "categories"
+        ]
+    },
     "data_sources": [
         {
             "id": "coupon",
@@ -75,11 +86,15 @@
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 },
                 "404": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             },
             "errorCondition": {

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Listeners\Dashboard;
 
-use App\Events\Dashboard\DashboardUpdated;
+use App\Events\GenericBroadcastEvent;
 use App\Listeners\Dashboard\DashboardModuleListener;
 use App\Services\DashboardService;
 use Illuminate\Support\Facades\Event;
@@ -19,7 +19,7 @@ class DashboardModuleListenerTest extends TestCase
      */
     public function test_listener_broadcasts_stats_on_module_change(): void
     {
-        Event::fake([DashboardUpdated::class]);
+        Event::fake([GenericBroadcastEvent::class]);
 
         $mockService = Mockery::mock(DashboardService::class);
         $mockService->shouldReceive('getStats')->once()->andReturn([
@@ -27,10 +27,12 @@ class DashboardModuleListenerTest extends TestCase
         ]);
 
         $listener = new DashboardModuleListener($mockService);
-        $listener->handle();
+        $listener->handleModuleUpdate();
 
-        Event::assertDispatched(DashboardUpdated::class, function ($event) {
-            return $event->type === 'stats';
+        Event::assertDispatched(GenericBroadcastEvent::class, function ($event) {
+            return $event->channel === 'core.admin.dashboard'
+                && $event->eventName === 'dashboard.stats.updated'
+                && $event->payload['type'] === 'stats';
         });
     }
 

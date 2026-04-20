@@ -13,6 +13,10 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
             value: string | number;
         };
     }) => void;
+    /** 드롭다운 내 검색 input 활성화 (engine-v1.40.0+) */
+    searchable?: boolean;
+    /** 검색 input placeholder */
+    searchPlaceholder?: string;
 }
 /**
  * 커스텀 Select 컴포넌트

@@ -2,12 +2,24 @@
     "version": "1.0.0",
     "layout_name": "admin_user_form",
     "permissions": {
-        "or": ["core.users.create", "core.users.update"]
+        "or": [
+            "core.users.create",
+            "core.users.update"
+        ]
     },
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:admin.users.form.page_description_edit' : '$t:admin.users.form.page_description_create'}}"
+    },
+    "state": {
+        "activeTab": "basic_info"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "user",
+            "roles"
+        ]
     },
     "data_sources": [
         {
@@ -271,16 +283,12 @@
             }
         ]
     },
-    "state": {
-        "activeTab": "basic_info"
-    },
     "slots": {
         "content": [
             {
                 "id": "user_form_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": true,
                 "dataKey": "form",
                 "props": {
                     "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
@@ -311,149 +319,177 @@
                                             "description": "{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"
                                         },
                                         "children": [
-                                    {
-                                        "id": "header_cancel_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
-                                        },
-                                        "actions": [
                                             {
-                                                "type": "click",
-                                                "handler": "navigateBack"
-                                            }
-                                        ],
-                                        "children": [
-                                            {
+                                                "id": "header_cancel_button",
                                                 "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:common.cancel"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "header_save_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "disabled": "{{_global.isSaving}}",
-                                            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "sequence",
+                                                "name": "Button",
+                                                "props": {
+                                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                                },
                                                 "actions": [
                                                     {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "isSaving": true
-                                                        }
-                                                    },
+                                                        "type": "click",
+                                                        "handler": "navigateBack"
+                                                    }
+                                                ],
+                                                "children": [
                                                     {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
-                                                        "params": {
-                                                            "method": "{{route?.id ? 'PUT' : 'POST'}}",
-                                                            "body": "{{_local.form}}"
-                                                        },
-                                                        "errorHandling": {
-                                                            "403": {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
-                                                                }
-                                                            },
-                                                            "500": {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:errors.server_error"
-                                                                }
-                                                            }
-                                                        },
-                                                        "onSuccess": [
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:common.cancel"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "header_save_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "props": {
+                                                    "disabled": "{{_global.isSaving}}",
+                                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
                                                             {
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "global",
-                                                                    "isSaving": false
+                                                                    "isSaving": true
                                                                 }
                                                             },
                                                             {
-                                                                "handler": "toast",
+                                                                "handler": "apiCall",
+                                                                "auth_required": true,
+                                                                "target": "{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}",
                                                                 "params": {
-                                                                    "type": "success",
-                                                                    "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/users"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "global",
-                                                                    "isSaving": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "errors": "{{error.errors ?? null}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "$t:admin.users.form.validation_error"
-                                                                }
+                                                                    "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                                    "body": "{{_local.form}}"
+                                                                },
+                                                                "errorHandling": {
+                                                                    "403": {
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "isSaving": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "$t:auth.permission_denied"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "500": {
+                                                                        "handler": "sequence",
+                                                                        "params": {
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "isSaving": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "$t:errors.server_error"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "isSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "path": "/admin/users"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "isSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "errors": "{{error.errors ?? null}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "$t:admin.users.form.validation_error"
+                                                                        }
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{!_global.isSaving}}",
+                                                        "props": {
+                                                            "name": "save",
+                                                            "size": "sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{_global.isSaving}}",
+                                                        "props": {
+                                                            "name": "spinner",
+                                                            "size": "sm",
+                                                            "spin": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
+                                                    }
                                                 ]
-                                            }
-                                        ],
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "if": "{{!_global.isSaving}}",
-                                                "props": {
-                                                    "name": "save",
-                                                    "size": "sm"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "if": "{{_global.isSaving}}",
-                                                "props": {
-                                                    "name": "spinner",
-                                                    "size": "sm",
-                                                    "spin": true
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "{{_global.isSaving ? $t:common.saving : $t:common.save}}"
                                             }
                                         ]
                                     }
-                                ]
-                            }
                                 ]
                             },
                             {
@@ -1215,7 +1251,10 @@
                                                         "type": "extension_point",
                                                         "name": "address_search_slot",
                                                         "props": {
-                                                            "readOnlyFields": ["zipcode", "address"],
+                                                            "readOnlyFields": [
+                                                                "zipcode",
+                                                                "address"
+                                                            ],
                                                             "targetFields": {
                                                                 "zipcode": "form.zipcode",
                                                                 "address": "form.address",
@@ -1309,17 +1348,8 @@
                                                 "props": {
                                                     "name": "language",
                                                     "className": "w-full",
-                                                    "defaultValue": "ko",
-                                                    "options": [
-                                                        {
-                                                            "label": "$t:admin.users.form.language_options.ko",
-                                                            "value": "ko"
-                                                        },
-                                                        {
-                                                            "label": "$t:admin.users.form.language_options.en",
-                                                            "value": "en"
-                                                        }
-                                                    ]
+                                                    "defaultValue": "{{$locale}}",
+                                                    "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
                                                 }
                                             }
                                         ]
@@ -1344,7 +1374,9 @@
                                                     "name": "timezone",
                                                     "className": "w-full",
                                                     "defaultValue": "Asia/Seoul",
-                                                    "options": "{{_global.appConfig?.supportedTimezones?.map(tz => ({ value: tz, label: $t('admin.users.form.timezone_options.' + tz) })) ?? []}}"
+                                                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
+                                                    "searchable": true,
+                                                    "searchPlaceholder": "{{$t('common.search')}}"
                                                 }
                                             }
                                         ]
@@ -1662,17 +1694,45 @@
                                                 },
                                                 "errorHandling": {
                                                     "403": {
-                                                        "handler": "toast",
+                                                        "handler": "sequence",
                                                         "params": {
-                                                            "type": "error",
-                                                            "message": "$t:auth.permission_denied"
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isSaving": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:auth.permission_denied"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
                                                     },
                                                     "500": {
-                                                        "handler": "toast",
+                                                        "handler": "sequence",
                                                         "params": {
-                                                            "type": "error",
-                                                            "message": "$t:errors.server_error"
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isSaving": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:errors.server_error"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
                                                     }
                                                 },

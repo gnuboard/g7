@@ -1,0 +1,724 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "이커머스 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록"
+    },
+    "id": "tab_content_ecommerce_notification_definitions",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'notification_definitions'}}",
+    "props": {
+        "className": "mt-6 space-y-6"
+    },
+    "children": [
+        {
+            "id": "ecommerce_notif_header",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.description"
+                }
+            ]
+        },
+        {
+            "id": "ecommerce_channel_toggles",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H4",
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.channel_management"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{availableChannels?.data?.channels ?? []}}",
+                                "item_var": "ch",
+                                "index_var": "chIdx"
+                            },
+                            "props": {
+                                "className": "flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{ch.icon ?? 'fas fa-bell'}}",
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{ch.source_label?.[$locale] ?? ch.source_label?.ko ?? ch.source}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "checked": "{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}",
+                                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.notifications.channels": "{{(_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ecommerce_channel_sub_tabs",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "iteration": {
+                        "source": "{{(availableChannels?.data?.channels ?? []).filter(c => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false)}}",
+                        "item_var": "ch",
+                        "index_var": "chIdx"
+                    },
+                    "props": {
+                        "type": "button",
+                        "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{ch.icon ?? 'fas fa-bell'}}",
+                                "className": "text-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeNotificationChannel": "{{ch.id}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/settings",
+                                            "replace": true,
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "channel": "{{ch.id}}",
+                                                "page": 1
+                                            },
+                                            "transition_overlay_target": "ecommerce_notif_channel_content"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ecommerce_notif_channel_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "ecommerce_notif_list_info",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.total_count|count={{ecommerceNotificationDefinitions?.data?.pagination?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.per_page_label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "notifPerPage",
+                                        "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                        "value": "{{String(query.per_page || 20)}}",
+                                        "options": [
+                                            {
+                                                "value": "10",
+                                                "label": "10"
+                                            },
+                                            {
+                                                "value": "20",
+                                                "label": "20"
+                                            },
+                                            {
+                                                "value": "50",
+                                                "label": "50"
+                                            }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/settings",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "per_page": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ecommerce_notif_definitions_list",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{ecommerceNotificationDefinitions?.data?.data ?? []}}",
+                                "item_var": "def",
+                                "index_var": "defIdx"
+                            },
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-shrink-0 pt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "{{(_local.expandedNotifications ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                                                "size": "sm"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "expandedNotifications": "{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-1 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex flex-wrap items-center gap-2 mb-1"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "H4",
+                                                                            "props": {
+                                                                                "className": "text-base font-medium text-gray-900 dark:text-white"
+                                                                            },
+                                                                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
+                                                                            },
+                                                                            "text": "{{def.type}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                            },
+                                                                            "text": "{{def.is_active ? '$t:sirsoft-ecommerce.admin.settings.notification_definitions.active' : '$t:sirsoft-ecommerce.admin.settings.notification_definitions.inactive'}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "if": "{{def.is_default}}",
+                                                                            "props": {
+                                                                                "className": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                            },
+                                                                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.default_badge"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400 truncate"
+                                                                    },
+                                                                    "text": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{!(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "props": {
+                                                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel"
+                                                                },
+                                                                {
+                                                                    "id": "ecommerce_recipients_badge",
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []).length > 0}}",
+                                                                    "props": {
+                                                                        "className": "flex flex-wrap items-center gap-1.5 mt-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                                            },
+                                                                            "text": "$t:admin.settings.notification_definitions.recipients_label"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "iteration": {
+                                                                                "source": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []}}",
+                                                                                "item_var": "rcpt"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + rcpt.relation + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + (rcpt.display_name ?? rcpt.value ?? '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{rcpt.exclude_trigger_user}}",
+                                                                                    "props": {
+                                                                                        "className": "text-purple-500 dark:text-purple-400"
+                                                                                    },
+                                                                                    "text": "$t:admin.settings.notification_definitions.recipients.badge.exclude_self"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "if": "{{(def.variables ?? []).length > 0}}",
+                                                                    "props": {
+                                                                        "className": "flex flex-wrap gap-1 mt-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "iteration": {
+                                                                                "source": "{{def.variables ?? []}}",
+                                                                                "item_var": "v"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded font-mono"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "{"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "{{v.key}}"
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "}"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex items-center gap-3 flex-shrink-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                    "props": {
+                                                                        "checked": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.is_active ?? false}}",
+                                                                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                                                                    },
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "apiCall",
+                                                                            "auth_required": true,
+                                                                            "target": "{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.id + '/toggle-active'}}",
+                                                                            "params": {
+                                                                                "method": "PATCH"
+                                                                            },
+                                                                            "onSuccess": [
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "ecommerceNotificationDefinitions"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "message": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.toggle_success",
+                                                                                        "type": "success"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "disabled": "{{_computed.isNotificationReadOnly}}",
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_edit",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "params": {
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "editingDefinition": "{{def}}",
+                                                                                            "editingTemplate": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                                                                            "editingRecipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}",
+                                                                                            "editLang": "{{$locale}}",
+                                                                                            "templateErrors": null,
+                                                                                            "isSaving": false
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "openModal",
+                                                                                        "target": "modal_ecommerce_notification_template_edit"
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{!def.is_default || (def.templates ?? []).some(t => t.is_default === false)}}",
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "disabled": "{{_computed.isNotificationReadOnly}}",
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.btn_reset",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "resetTargetId": "{{def.id}}",
+                                                                                        "resetTargetName": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.types.{{def.type}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "modal_ecommerce_notification_definition_reset"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(_local.expandedNotifications ?? {})[def.id]}}",
+                                                    "props": {
+                                                        "className": "mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 block"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.body_preview"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "HtmlContent",
+                                                            "props": {
+                                                                "content": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}",
+                                                                "isHtml": true,
+                                                                "className": "prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ecommerce_notif_empty",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(ecommerceNotificationDefinitions?.data?.data ?? []).length === 0}}",
+                    "props": {
+                        "className": "text-center py-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fa-solid fa-envelope",
+                                "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.empty_message"
+                        }
+                    ]
+                },
+                {
+                    "id": "ecommerce_notif_pagination",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-center mt-4"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "Pagination",
+                            "props": {
+                                "currentPage": "{{ecommerceNotificationDefinitions?.data?.pagination?.current_page || 1}}",
+                                "totalPages": "{{ecommerceNotificationDefinitions?.data?.pagination?.last_page || 1}}"
+                            },
+                            "actions": [
+                                {
+                                    "event": "onPageChange",
+                                    "type": "action",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "page": "{{$args[0]}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

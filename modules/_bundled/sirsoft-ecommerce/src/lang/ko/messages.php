@@ -1110,19 +1110,6 @@ return [
         'settings_retrieved' => '활성 추가배송비 템플릿 설정을 조회했습니다.',
     ],
 
-    // 메일 템플릿 관리
-    'mail_template_fetch_success' => '메일 템플릿 목록을 조회했습니다.',
-    'mail_template_fetch_failed' => '메일 템플릿 목록 조회에 실패했습니다.',
-    'mail_template_save_success' => '메일 템플릿이 저장되었습니다.',
-    'mail_template_save_error' => '메일 템플릿 저장에 실패했습니다.',
-    'mail_template_toggle_success' => '메일 템플릿 상태가 변경되었습니다.',
-    'mail_template_toggle_failed' => '메일 템플릿 상태 변경에 실패했습니다.',
-    'mail_template_reset_success' => '메일 템플릿이 기본값으로 복원되었습니다.',
-    'mail_template_reset_failed' => '메일 템플릿 복원에 실패했습니다.',
-    'mail_template_reset_no_default' => '기본 템플릿 데이터를 찾을 수 없습니다.',
-    'mail_template_preview_success' => '메일 템플릿 미리보기가 생성되었습니다.',
-    'mail_template_preview_failed' => '메일 템플릿 미리보기 생성에 실패했습니다.',
-
     // 상품 1:1 문의
     'inquiries' => [
         'fetch_success'         => '문의 목록을 조회했습니다.',

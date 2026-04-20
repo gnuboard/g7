@@ -2,10 +2,13 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
+use Illuminate\Database\Seeder;
 use ReflectionClass;
 
 /**
@@ -33,6 +36,11 @@ abstract class AbstractPlugin implements PluginInterface
      * 스토리지 드라이버 인스턴스 (캐시)
      */
     private ?StorageInterface $storage = null;
+
+    /**
+     * 캐시 드라이버 인스턴스 (캐시)
+     */
+    private ?CacheInterface $cache = null;
 
     /**
      * manifest JSON 캐시
@@ -123,14 +131,22 @@ abstract class AbstractPlugin implements PluginInterface
     }
 
     /**
-     * 벤더명 반환 (디렉토리명에서 자동 추론)
+     * 벤더명 반환
      *
-     * 디렉토리명이 'sirsoft-sample'이면 벤더명은 'sirsoft'
+     * plugin.json 의 vendor 필드를 우선 사용합니다.
+     * 값이 없으면 디렉토리명의 첫 단어(예: 'sirsoft-sample' → 'sirsoft')로 폴백합니다.
+     *
+     * @return string 사람이 읽는 벤더/개발자명 또는 폴백으로 얻은 식별자 prefix
      */
     final public function getVendor(): string
     {
-        $identifier = $this->getIdentifier();
-        $parts = explode('-', $identifier);
+        $manifestVendor = $this->loadManifest()['vendor'] ?? null;
+
+        if (is_string($manifestVendor) && $manifestVendor !== '') {
+            return $manifestVendor;
+        }
+
+        $parts = explode('-', $this->getIdentifier());
 
         return $parts[0];
     }
@@ -354,6 +370,29 @@ abstract class AbstractPlugin implements PluginInterface
     }
 
     /**
+     * 런타임에 동적으로 생성되는 권한 식별자 목록을 반환합니다.
+     *
+     * 동적 권한(예: 사용자 입력에 따라 생성되는 권한)을 보유한 플러그인이 override.
+     * `PluginManager::cleanupStalePluginEntries()` 가 정의 기반 stale 판정에서 이들을 제외합니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicPermissionIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
+     * 런타임에 동적으로 생성되는 역할 식별자 목록을 반환합니다.
+     *
+     * @return array<int, string>
+     */
+    public function getDynamicRoleIdentifiers(): array
+    {
+        return [];
+    }
+
+    /**
      * 플러그인 설정 파일 경로 반환
      *
      * 기본적으로 빈 배열 반환
@@ -402,6 +441,27 @@ abstract class AbstractPlugin implements PluginInterface
     }
 
     /**
+     * 브로드캐스트 채널 정의를 반환합니다.
+     *
+     * 플러그인에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
+     * 반환된 채널은 PluginManager가 자동으로 Broadcast::channel()에 등록합니다.
+     *
+     * 네이밍 규칙: plugin.{identifier}.{resource}.{param}
+     *
+     * @return array<string, array{permission?: string, type?: string}>
+     *                                                                  [
+     *                                                                  'plugin.vendor-plugin.status.{id}' => [
+     *                                                                  'permission' => 'vendor-plugin.status.read',
+     *                                                                  'type' => 'private',
+     *                                                                  ],
+     *                                                                  ]
+     */
+    public function getChannels(): array
+    {
+        return [];
+    }
+
+    /**
      * 스케줄 작업 목록 반환
      *
      * 플러그인에서 등록하는 스케줄 작업 목록입니다.
@@ -435,7 +495,7 @@ abstract class AbstractPlugin implements PluginInterface
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)
      * 오버라이드하여 실행할 시더와 순서를 명시적으로 정의하세요.
      *
-     * @return array<class-string<\Illuminate\Database\Seeder>> 시더 클래스명 배열 (FQCN)
+     * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
      */
     public function getSeeders(): array
     {
@@ -445,12 +505,19 @@ abstract class AbstractPlugin implements PluginInterface
     /**
      * 플러그인 의존성 반환
      *
-     * 기본적으로 빈 배열 반환
-     * 플러그인 개발자가 의존성이 필요한 경우 오버라이드
+     * plugin.json 의 dependencies 필드를 반환합니다.
+     * 중첩 구조 형식: ['modules' => [identifier => version, ...], 'plugins' => [...]]
+     *
+     * 기본 구현은 manifest JSON 파싱 결과를 그대로 반환하므로 플러그인 개발자는
+     * plugin.json 에 의존성을 정의하면 되고 PHP 오버라이드는 권장하지 않습니다.
+     *
+     * @return array 중첩 구조 의존성 배열
      */
     public function getDependencies(): array
     {
-        return [];
+        $dependencies = $this->loadManifest()['dependencies'] ?? [];
+
+        return is_array($dependencies) ? $dependencies : [];
     }
 
     /**
@@ -540,6 +607,43 @@ abstract class AbstractPlugin implements PluginInterface
         $config = json_decode(file_get_contents($path), true);
 
         return is_array($config) ? $config : [];
+    }
+
+    /**
+     * SEO 변수 메타데이터를 반환합니다.
+     *
+     * 플러그인이 SEO 렌더링에 제공하는 변수를 page_type별로 선언합니다.
+     * SeoRenderer가 이 메서드를 호출하여 변수를 수집하고 자동 해석합니다.
+     *
+     * 각 변수는 source 타입에 따라 해석 방식이 결정됩니다:
+     * - setting: 플러그인 환경설정 값 (엔진 자동 해석)
+     * - core_setting: 코어 설정 값 (엔진 자동 해석)
+     * - query: URL 쿼리 파라미터 (엔진 자동 해석)
+     * - route: 라우트 파라미터 (엔진 자동 해석)
+     * - data: 데이터소스 응답 필드 (템플릿 개발자가 vars에서 매핑)
+     *
+     * 기본적으로 빈 배열 반환.
+     * 플러그인 개발자가 SEO 변수가 필요한 경우 오버라이드하세요.
+     *
+     * @return array page_type별 변수 정의 배열
+     *               [
+     *               'product' => [
+     *               'product_name' => [
+     *               'description' => '상품명',
+     *               'source' => 'data',
+     *               'required' => true,
+     *               ],
+     *               'commerce_name' => [
+     *               'description' => '쇼핑몰명',
+     *               'source' => 'setting',
+     *               'key' => 'basic_info.shop_name',
+     *               ],
+     *               ],
+     *               ]
+     */
+    public function seoVariables(): array
+    {
+        return [];
     }
 
     /**
@@ -771,6 +875,38 @@ abstract class AbstractPlugin implements PluginInterface
     public function getStorageDisk(): string
     {
         return 'plugins';
+    }
+
+    /**
+     * 플러그인 캐시 드라이버 인스턴스 반환
+     *
+     * 플러그인별로 격리된 캐시를 제공합니다.
+     * 접두사 패턴: g7:plugin.{identifier}:{key}
+     *
+     * @return CacheInterface 캐시 드라이버 인스턴스
+     */
+    public function getCache(): CacheInterface
+    {
+        if ($this->cache === null) {
+            $this->cache = new PluginCacheDriver(
+                $this->getIdentifier(),
+                $this->getCacheStore()
+            );
+        }
+
+        return $this->cache;
+    }
+
+    /**
+     * 플러그인에서 사용할 캐시 스토어 이름 반환
+     *
+     * 기본값은 환경설정 캐시 드라이버이며, 플러그인 개발자가 다른 스토어를 사용하려면 오버라이드합니다.
+     *
+     * @return string 캐시 스토어 이름
+     */
+    public function getCacheStore(): string
+    {
+        return config('cache.default');
     }
 
     /**

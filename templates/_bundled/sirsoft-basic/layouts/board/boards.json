@@ -6,7 +6,15 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-board" }
+            ],
             "data_sources": ["boardList"],
+            "page_type": "boards",
+            "toggle_setting": "$module_settings:sirsoft-board:seo.seo_boards",
+            "vars": {
+                "site_name": "$core_settings:general.site_name"
+            },
             "priority": 0.5,
             "changefreq": "weekly",
             "og": {
@@ -24,7 +32,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true,
+            "auth_mode": "optional",
             "refetchOnMount": true,
             "errorHandling": {
                 "403": {

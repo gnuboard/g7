@@ -27,6 +27,16 @@ vi.mock('../../api/ApiClient', () => ({
   getApiClient: vi.fn(() => mockApiClientInstance),
 }));
 
+// AuthManager 모킹 (기본: 인증된 상태)
+const mockIsAuthenticated = vi.fn(() => true);
+vi.mock('../../auth/AuthManager', () => ({
+  AuthManager: {
+    getInstance: vi.fn(() => ({
+      isAuthenticated: mockIsAuthenticated,
+    })),
+  },
+}));
+
 // ErrorHandlingResolver 모킹
 const mockResolverExecute = vi.fn();
 const mockResolverResolve = vi.fn(() => ({
@@ -1063,6 +1073,147 @@ describe('DataSourceManager', () => {
       expect(results[0].id).toBe('user');
       expect(results[0].state).toBe('success');
       expect(results[0].data).toEqual({ data: null });
+    });
+  });
+
+  describe('auth_mode: required + 토큰 없을 때 요청 스킵', () => {
+    it('auth_required: true이고 토큰이 없으면 요청을 스킵하고 fallback을 사용해야 함', async () => {
+      // 비인증 상태 설정
+      mockIsAuthenticated.mockReturnValue(false);
+
+      const sources: DataSource[] = [
+        {
+          id: 'notifications',
+          type: 'api',
+          endpoint: '/api/user/notifications/unread-count',
+          method: 'GET',
+          auto_fetch: true,
+          auth_required: true,
+          loading_strategy: 'progressive',
+          fallback: { data: { unread_count: 0 } },
+        },
+      ];
+
+      const results = await manager.fetchDataSources(sources, {});
+
+      // API 호출이 일어나지 않아야 함
+      expect(mockApiClientInstance.get).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      // fallback 데이터가 사용되어야 함
+      expect(results.notifications).toEqual({ data: { unread_count: 0 } });
+
+      // 인증 상태 복원
+      mockIsAuthenticated.mockReturnValue(true);
+    });
+
+    it('auth_mode: "required"이고 토큰이 없으면 요청을 스킵하고 fallback을 사용해야 함', async () => {
+      mockIsAuthenticated.mockReturnValue(false);
+
+      const sources: DataSource[] = [
+        {
+          id: 'user_data',
+          type: 'api',
+          endpoint: '/api/user/profile',
+          method: 'GET',
+          auto_fetch: true,
+          auth_mode: 'required',
+          loading_strategy: 'progressive',
+          fallback: { data: null },
+        },
+      ];
+
+      const results = await manager.fetchDataSources(sources, {});
+
+      expect(mockApiClientInstance.get).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(results.user_data).toEqual({ data: null });
+
+      mockIsAuthenticated.mockReturnValue(true);
+    });
+
+    it('auth_required: true이고 토큰이 없고 fallback이 없으면 에러 상태여야 함', async () => {
+      mockIsAuthenticated.mockReturnValue(false);
+
+      const sources: DataSource[] = [
+        {
+          id: 'secure_data',
+          type: 'api',
+          endpoint: '/api/admin/data',
+          method: 'GET',
+          auto_fetch: true,
+          auth_required: true,
+          loading_strategy: 'progressive',
+        },
+      ];
+
+      const results = await manager.fetchDataSources(sources, {});
+
+      // API 호출이 일어나지 않아야 함
+      expect(mockApiClientInstance.get).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      // fallback 없으므로 결과에 데이터가 없어야 함
+      expect(results.secure_data).toBeUndefined();
+
+      mockIsAuthenticated.mockReturnValue(true);
+    });
+
+    it('auth_required: true이고 토큰이 있으면 정상적으로 API를 호출해야 함', async () => {
+      mockIsAuthenticated.mockReturnValue(true);
+
+      const mockResponse = { data: { unread_count: 5 } };
+      mockApiClientInstance.get.mockResolvedValue(mockResponse);
+
+      const sources: DataSource[] = [
+        {
+          id: 'notifications',
+          type: 'api',
+          endpoint: '/api/user/notifications/unread-count',
+          method: 'GET',
+          auto_fetch: true,
+          auth_required: true,
+          loading_strategy: 'progressive',
+          fallback: { data: { unread_count: 0 } },
+        },
+      ];
+
+      const results = await manager.fetchDataSources(sources, {});
+
+      // API 호출이 발생해야 함
+      expect(mockApiClientInstance.get).toHaveBeenCalled();
+      expect(results.notifications).toEqual(mockResponse);
+    });
+
+    it('auth_mode: "optional"이고 토큰이 없으면 일반 fetch로 요청해야 함 (스킵하지 않음)', async () => {
+      mockIsAuthenticated.mockReturnValue(false);
+
+      const mockResponse = { data: { count: 3 } };
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const sources: DataSource[] = [
+        {
+          id: 'cart',
+          type: 'api',
+          endpoint: '/api/cart',
+          method: 'GET',
+          auto_fetch: true,
+          auth_mode: 'optional',
+          loading_strategy: 'progressive',
+        },
+      ];
+
+      const results = await manager.fetchDataSources(sources, {});
+
+      // ApiClient가 아닌 일반 fetch가 사용되어야 함
+      expect(mockApiClientInstance.get).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalled();
+      expect(results.cart).toEqual(mockResponse);
+
+      mockIsAuthenticated.mockReturnValue(true);
     });
   });
 

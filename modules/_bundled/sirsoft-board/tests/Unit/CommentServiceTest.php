@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use Mockery;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -51,11 +52,12 @@ class CommentServiceTest extends TestCase
         $mockBoard->id = 1;
         $this->boardRepository->shouldReceive('findBySlug')->andReturn($mockBoard);
 
-        // CommentService 생성 (Phase 8: boardRepository 추가)
+        // CommentService 생성 (#252: CacheInterface 추가)
         $this->service = new CommentService(
             $this->boardRepository,
             $this->commentRepository,
-            $this->postRepository
+            $this->postRepository,
+            Mockery::mock(CacheInterface::class)->shouldIgnoreMissing()
         );
     }
 
@@ -213,7 +215,7 @@ class CommentServiceTest extends TestCase
      */
     public function test_create_comment_succeeds_when_post_is_published(): void
     {
-        // 훅 리스너(BoardNotificationListener)가 Board 테이블을 조회하는 것을 방지 (순수 단위 테스트)
+        // 훅 리스너(BoardNotificationDataListener)가 Board 테이블을 조회하는 것을 방지 (순수 단위 테스트)
         HookManager::clearAction('sirsoft-board.comment.before_create');
         HookManager::clearAction('sirsoft-board.comment.after_create');
         HookManager::clearFilter('sirsoft-board.comment.filter_create_data');

@@ -1245,6 +1245,19 @@ function initDispatchAPI(G7Core: any): void {
       _isDispatchFallbackContext: !actionContext?.setState,
     };
 
+    // engine-v1.41.0: debounce 옵션 처리
+    // ActionDispatcher의 debouncedCall을 사용하여 기존 타이머 인프라 활용
+    if (action.debounce) {
+      const debounceKey = action.debounceKey || `dispatch-${action.handler}`;
+      const delay = typeof action.debounce === 'number' ? action.debounce : action.debounce.delay;
+      actionDispatcher.debouncedCall(debounceKey, delay, () => {
+        // 디바운스 타이머 fire 시 최신 컨텍스트로 액션 실행
+        const { debounce: _d, debounceKey: _k, ...actionWithoutDebounce } = action;
+        actionDispatcher.dispatchAction(actionWithoutDebounce, context);
+      });
+      return { success: true, debounced: true };
+    }
+
     try {
       return await actionDispatcher.dispatchAction(action, context);
     } catch (error) {
@@ -1323,6 +1336,49 @@ function hasOnlyNumericKeys(obj: Record<string, any>): boolean {
  * @param source 병합할 소스 객체
  * @returns 병합된 결과 객체
  */
+/**
+ * base 객체에 없는 leaf 키만 extra에서 추가합니다.
+ *
+ * deepMerge와 달리 base에 이미 존재하는 값(배열 포함)은 절대 덮어쓰지 않습니다.
+ * extra에만 존재하는 키는 재귀적으로 추가됩니다.
+ *
+ * 용도: setLocal에서 dynamicLocal(actionContext.state)의 setState 전용 키를 globalLocal에
+ * 안전하게 추가할 때 사용. dynamicLocal의 stale 배열(init_actions 기본값)이 globalLocal의
+ * 정상 API 데이터를 덮어쓰는 것을 방지합니다.
+ *
+ * @since engine-v1.41.0
+ *
+ * @example
+ * ```ts
+ * const base = { form: { category_ids: [381, 384], name: 'A' } };
+ * const extra = { form: { category_ids: [], options: [] }, selectedProducts: [1] };
+ * addMissingLeafKeys(base, extra);
+ * // → { form: { category_ids: [381, 384], name: 'A', options: [] }, selectedProducts: [1] }
+ * // base의 category_ids는 보존, extra의 selectedProducts와 options는 추가
+ * ```
+ */
+function addMissingLeafKeys(base: Record<string, any>, extra: Record<string, any>): Record<string, any> {
+  const result = { ...base };
+  for (const key of Object.keys(extra)) {
+    if (!(key in result)) {
+      // base에 없는 키: extra 값 그대로 추가
+      result[key] = extra[key];
+    } else if (
+      result[key] !== null &&
+      typeof result[key] === 'object' &&
+      !Array.isArray(result[key]) &&
+      extra[key] !== null &&
+      typeof extra[key] === 'object' &&
+      !Array.isArray(extra[key])
+    ) {
+      // 양쪽 모두 plain object: 재귀적으로 처리
+      result[key] = addMissingLeafKeys(result[key], extra[key]);
+    }
+    // base에 이미 존재하는 leaf 값(배열, 문자열, 숫자 등): 건너뜀 (base 값 보존)
+  }
+  return result;
+}
+
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
   // 특수 케이스: target이 배열이고 source가 숫자 키만 가진 객체인 경우
   // → 배열 요소를 인덱스별로 병합
@@ -1402,7 +1458,7 @@ function initStateAPI(G7Core: any): void {
      * @param updates 업데이트할 상태 객체
      * @param options 병합 옵션 { merge?: 'replace' | 'shallow' | 'deep' }
      */
-    set: (updates: Record<string, any>, options?: { merge?: 'replace' | 'shallow' | 'deep' }) => {
+    set: (updates: Record<string, any>, options?: { merge?: 'replace' | 'shallow' | 'deep'; render?: boolean }) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.setGlobalState && templateApp?.getGlobalState) {
         const mergeMode = options?.merge || 'deep';
@@ -1421,7 +1477,8 @@ function initStateAPI(G7Core: any): void {
           finalState = deepMerge(currentState, converted);
         }
 
-        templateApp.setGlobalState(finalState);
+        // engine-v1.42.0: render 옵션 전파
+        templateApp.setGlobalState(finalState, { render: options?.render });
       } else {
         logger.warn('G7Core.state.set: TemplateApp이 초기화되지 않았습니다.');
       }
@@ -1467,8 +1524,25 @@ function initStateAPI(G7Core: any): void {
      * }
      * ```
      */
-    setLocal: (updates: Record<string, any>, options?: { scope?: 'current' | 'parent' | 'root'; merge?: 'replace' | 'shallow' | 'deep' }) => {
+    setLocal: (updates: Record<string, any>, options?: { scope?: 'current' | 'parent' | 'root'; merge?: 'replace' | 'shallow' | 'deep'; debounce?: number; debounceKey?: string; render?: boolean }) => {
       const templateApp = (window as any).__templateApp;
+
+      // engine-v1.41.0: debounce 옵션 처리
+      // ActionDispatcher의 debouncedCall을 사용하여 기존 타이머 인프라 활용
+      // 컴포넌트 언마운트 시 자동 정리 + flushPendingDebounceTimers 연동
+      if (options?.debounce) {
+        const actionDispatcher = templateApp?.getActionDispatcher?.();
+        if (actionDispatcher) {
+          const key = options.debounceKey || `setLocal-${Object.keys(updates).join(',')}`;
+          // 디바운스 타이머 fire 시 원래 setLocal 로직을 debounce 없이 재호출
+          const { debounce: _d, debounceKey: _k, ...restOptions } = options;
+          actionDispatcher.debouncedCall(key, options.debounce, () => {
+            G7Core.state.setLocal(updates, restOptions);
+          });
+          return;
+        }
+      }
+
       const scope = options?.scope ?? 'current';
       const mergeMode = options?.merge || 'deep';
 
@@ -1520,20 +1594,22 @@ function initStateAPI(G7Core: any): void {
       // globalLocal(=templateApp.getGlobalState()._local)에는 없음.
       // setLocal 후 openModal 시 __g7PendingLocalState가 $parent._local 스냅샷으로 사용되므로,
       // dynamicState의 값(예: selectedProducts)이 누락되는 문제 발생.
-      // actionContext.state를 globalLocal과 병합하여 currentSnapshot에 전체 _local을 반영.
       //
       // engine-v1.24.7: 모달 내부에서 호출 시 actionContext.state 병합 제외
-      // 모달의 localDynamicState를 globalState._local에 병합하면
-      // 페이지의 dataContext._local이 모달 데이터(cancelItems, refundLoading 등)로 오염됨.
-      // → updateTemplateData 경유 재렌더링 시 페이지 DataGrid 등이 깨지는 버그 발생.
-      // __g7LayoutContextStack에 항목이 있으면 모달이 열린 상태이므로,
-      // actionContext.state는 모달의 localDynamicState → 병합 대상에서 제외.
-      // 페이지 컨텍스트에서만 dynamicLocal을 병합하여 engine-v1.22.1 기능 유지.
+      //
+      // engine-v1.41.0: deepMerge(globalLocal, dynamicLocal)은 stale dynamicLocal의 빈 배열이
+      // globalLocal의 정상 배열을 교체하는 오염 경로를 생성함 (CKEditor + SPA 네비게이션 시 재현).
+      // dynamicLocal은 actionContext.state(=컴포넌트 렌더 시점 스냅샷)이므로
+      // init_actions 기본값(category_ids:[], options:[])을 포함할 수 있음.
+      // globalLocal은 최신 committed 상태이므로 dynamicLocal과 충돌 시 globalLocal이 정확함.
+      // → globalLocal을 기반으로 dynamicLocal에서 globalLocal에 없는 키만 추가하는
+      //   addMissingLeafKeys 전략으로 변경. v1.22.1 목적(setState 전용 키 보존)은 유지하면서
+      //   stale 배열 덮어쓰기 방지.
       const layoutContextStack = (window as any).__g7LayoutContextStack || [];
       const isInsideModal = layoutContextStack.length > 0;
       const dynamicLocal = (!isInsideModal && actionContext?.state) ? actionContext.state : undefined;
       const baseLocal = dynamicLocal
-        ? deepMerge(globalLocal, dynamicLocal)
+        ? addMissingLeafKeys(globalLocal, dynamicLocal)
         : globalLocal;
       const currentSnapshot = pendingState || baseLocal;
       let mergedPending: Record<string, any>;
@@ -1546,9 +1622,10 @@ function initStateAPI(G7Core: any): void {
       }
 
       // 1. 전역 _local 상태 업데이트 (핵심!)
+      // engine-v1.42.0: render 옵션 전파 — render: false이면 값만 저장, React 렌더링 건너뜀
       if (templateApp?.setGlobalState) {
-        templateApp.setGlobalState({ _local: mergedPending });
-        logger.log(`[setLocal] globalLocal updated via setGlobalState (mergeMode=${mergeMode}):`, converted);
+        templateApp.setGlobalState({ _local: mergedPending }, { render: options?.render });
+        logger.log(`[setLocal] globalLocal updated via setGlobalState (mergeMode=${mergeMode}, render=${options?.render ?? true}):`, converted);
       }
 
       // 2. pendingState도 업데이트 (같은 이벤트 루프 내 후속 getLocal() 호출용)
@@ -2665,10 +2742,14 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
 
   // updateQueryParams 노출 (같은 페이지 내 쿼리 변경 시 컴포넌트 리마운트 없이 데이터 갱신)
   // navigate 핸들러에서 replace: true 사용 시 자동 호출됨
-  G7Core.updateQueryParams = async (newPath: string) => {
+  // options.transitionOverlayTarget: 호출별 transition_overlay.target 동적 override (@since engine-v1.36.0)
+  G7Core.updateQueryParams = async (
+    newPath: string,
+    options?: { transitionOverlayTarget?: string }
+  ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
-      return templateApp.updateQueryParams(newPath);
+      return templateApp.updateQueryParams(newPath, options);
     }
     logger.warn('G7Core.updateQueryParams: TemplateApp이 초기화되지 않았습니다.');
   };

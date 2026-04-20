@@ -94,18 +94,6 @@ return [
         'pickup_complete' => '방문수령완료',
     ],
 
-    // 배송유형 (ShippingTypeEnum 값과 일치)
-    'shipping_type' => [
-        'domestic_parcel' => '국내택배',
-        'domestic_express' => '국내특급',
-        'domestic_quick' => '퀵서비스',
-        'international_ems' => '국제EMS',
-        'international_standard' => '국제일반',
-        'pickup' => '방문수령',
-        'cvs' => '편의점택배',
-        'digital' => '디지털상품',
-    ],
-
     // 옵션상태
     'option_status' => [
         'ordered' => '주문완료',
@@ -195,20 +183,6 @@ return [
         'used' => '사용완료',
         'expired' => '기간만료',
         'cancelled' => '취소됨',
-    ],
-
-    // 배송방법
-    'shipping_method' => [
-        'parcel' => '택배',
-        'freight' => '화물',
-        'express' => '특급',
-        'economy' => '이코노미',
-        'ems' => 'EMS',
-        'collect' => '착불',
-        'quick' => '퀵서비스',
-        'direct' => '직접배송',
-        'pickup' => '방문수령',
-        'other' => '기타',
     ],
 
     // 과금정책

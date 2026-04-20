@@ -2,7 +2,8 @@
 
 namespace App\Extension\Traits;
 
-use Illuminate\Support\Facades\Cache;
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\Log;
 trait ClearsTemplateCaches
 {
     /**
+     * 캐시 버전 키 (드라이버 접두사 `g7:core:` 다음에 붙음).
+     */
+    private static string $extensionCacheVersionKey = 'ext.cache_version';
+
+    /**
      * 확장 기능 캐시 버전을 증가시킵니다.
      *
      * 모듈/플러그인/템플릿 활성화/비활성화/설치/삭제 시 호출되어
@@ -25,7 +31,7 @@ trait ClearsTemplateCaches
     {
         try {
             $newVersion = time();
-            Cache::put('extension_cache_version', $newVersion);
+            self::resolveExtensionCache()->put(self::$extensionCacheVersionKey, $newVersion);
 
             Log::info('확장 기능 캐시 버전 증가', [
                 'new_version' => $newVersion,
@@ -44,7 +50,7 @@ trait ClearsTemplateCaches
      */
     public static function getExtensionCacheVersion(): int
     {
-        return (int) Cache::get('extension_cache_version', 0);
+        return (int) self::resolveExtensionCache()->get(self::$extensionCacheVersionKey, 0);
     }
 
     /**
@@ -81,5 +87,20 @@ trait ClearsTemplateCaches
     protected function clearAllTemplateLayoutCaches(): void
     {
         Log::info('템플릿 레이아웃 캐시 무효화 (캐시 버전 증가로 처리)');
+    }
+
+    /**
+     * CacheInterface 인스턴스를 컨테이너에서 lazy 조회합니다.
+     *
+     * 컨테이너 미구성 환경(예: 일부 단위 테스트)에서도 동작하도록
+     * fallback 으로 직접 CoreCacheDriver 를 생성합니다.
+     */
+    private static function resolveExtensionCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 }

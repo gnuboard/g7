@@ -6,6 +6,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\ScheduleFrequency;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleType;
+use App\Models\Concerns\HasUserOverrides;
 use Cron\CronExpression;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,13 +15,47 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * 스케줄 모델
+ * 스케줄 모델.
  *
  * 스케줄(크론) 작업을 관리하는 모델입니다.
+ *
+ * @since 7.0.0-beta.2 (HasUserOverrides 사전 설계)
+ *
+ * 현재는 시더 없이 사용자 수동 생성 중심입니다.
+ * 사용자가 trackable 필드를 수정하면 trait 의 Eloquent updating 이벤트가
+ * user_overrides 에 자동 기록합니다.
+ *
+ * 다음 버전에서 스케줄을 DB 로 관리할 때, 코어·확장 seeder 는
+ * `GenericEntitySyncHelper` 를 호출하여 아래 패턴으로 동기화하면 됩니다
+ * (사용자 수정 보존 + stale cleanup 자동 동작):
+ *
+ * ```php
+ * $helper = app(\App\Extension\Helpers\GenericEntitySyncHelper::class);
+ * $definedNames = [];
+ * foreach ($defaultSchedules as $data) {
+ *     $helper->sync(Schedule::class, ['name' => $data['name']], $data);
+ *     $definedNames[] = $data['name'];
+ * }
+ * $helper->cleanupStale(Schedule::class,
+ *     ['extension_type' => $extType, 'extension_identifier' => $extId],
+ *     'name', $definedNames);
+ * ```
  */
 class Schedule extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUserOverrides;
+
+    /**
+     * 사용자 수정 보존 대상 필드.
+     *
+     * @var array<int, string>
+     */
+    protected array $trackableFields = [
+        'expression',
+        'command',
+        'timeout',
+        'is_active',
+    ];
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
@@ -63,6 +98,7 @@ class Schedule extends Model
         'extension_type',
         'extension_identifier',
         'created_by',
+        'user_overrides',
     ];
 
     /**
@@ -83,6 +119,7 @@ class Schedule extends Model
             'timeout' => 'integer',
             'last_run_at' => 'datetime',
             'next_run_at' => 'datetime',
+            'user_overrides' => 'array',
         ];
     }
 

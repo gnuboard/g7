@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 
 /**
  * 배송정책 국가별 설정 모델
@@ -20,6 +19,7 @@ class ShippingPolicyCountrySetting extends Model
         'shipping_policy_id',
         'country_code',
         'shipping_method',
+        'custom_shipping_name',
         'currency_code',
         'charge_policy',
         'base_fee',
@@ -43,7 +43,7 @@ class ShippingPolicyCountrySetting extends Model
         'extra_fee_enabled' => 'boolean',
         'extra_fee_multiply' => 'boolean',
         'is_active' => 'boolean',
-        'shipping_method' => ShippingMethodEnum::class,
+        'custom_shipping_name' => 'array',
         'charge_policy' => ChargePolicyEnum::class,
     ];
 

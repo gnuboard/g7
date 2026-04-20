@@ -2,36 +2,30 @@
 
 namespace Tests\Unit\ActivityLog\Drivers;
 
-use App\ActivityLog\Drivers\DatabaseActivityLogDriver;
 use App\Enums\ActivityLogType;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * DatabaseActivityLogDriver 테스트
+ * Database 활동 로그 동작 테스트 (Monolog 'activity' 채널 기반)
  *
- * 데이터베이스 드라이버의 로그 저장 기능을 검증합니다.
+ * 구버전 DatabaseActivityLogDriver 클래스는 폐기되었고,
+ * 현재는 Log::channel('activity')->info() → ActivityLogHandler → DB 저장 흐름을 사용합니다.
+ * 본 테스트는 그 흐름이 정상적으로 모든 필드를 저장하는지 검증합니다.
  */
 class DatabaseActivityLogDriverTest extends TestCase
 {
     use RefreshDatabase;
 
-    private DatabaseActivityLogDriver $driver;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->driver = new DatabaseActivityLogDriver;
-    }
-
     /**
-     * 드라이버 이름이 'database'인지 확인
+     * 채널 이름이 'activity'로 설정되어 있는지 확인
      */
-    public function test_driver_name_is_database(): void
+    public function test_channel_name_is_activity(): void
     {
-        $this->assertEquals('database', $this->driver->getName());
+        $this->assertEquals('activity', config('activity_log.channel'));
     }
 
     /**
@@ -39,18 +33,15 @@ class DatabaseActivityLogDriverTest extends TestCase
      */
     public function test_log_saves_to_database(): void
     {
-        $log = $this->driver->log(
-            ActivityLogType::Admin,
-            'test.action',
-            'Test description'
-        );
+        Log::channel('activity')->info('test.action', [
+            'log_type' => ActivityLogType::Admin,
+            'description_key' => 'test.description',
+        ]);
 
-        $this->assertInstanceOf(ActivityLog::class, $log);
         $this->assertDatabaseHas('activity_logs', [
-            'id' => $log->id,
             'log_type' => ActivityLogType::Admin->value,
             'action' => 'test.action',
-            'description' => 'Test description',
+            'description_key' => 'test.description',
         ]);
     }
 
@@ -61,20 +52,21 @@ class DatabaseActivityLogDriverTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $log = $this->driver->log(
-            ActivityLogType::User,
-            'user.login',
-            'User logged in',
-            $user,
-            ['browser' => 'Chrome'],
-            $user->id,
-            '192.168.1.1',
-            'Mozilla/5.0'
-        );
+        Log::channel('activity')->info('user.login', [
+            'log_type' => ActivityLogType::User,
+            'description_key' => 'user.login.description',
+            'loggable' => $user,
+            'properties' => ['browser' => 'Chrome'],
+            'user_id' => $user->id,
+            'ip_address' => '192.168.1.1',
+            'user_agent' => 'Mozilla/5.0',
+        ]);
+
+        $log = ActivityLog::where('action', 'user.login')->firstOrFail();
 
         $this->assertEquals(ActivityLogType::User, $log->log_type);
         $this->assertEquals('user.login', $log->action);
-        $this->assertEquals('User logged in', $log->description);
+        $this->assertEquals('user.login.description', $log->description_key);
         $this->assertEquals($user->getMorphClass(), $log->loggable_type);
         $this->assertEquals($user->id, $log->loggable_id);
         $this->assertEquals(['browser' => 'Chrome'], $log->properties);
@@ -90,41 +82,34 @@ class DatabaseActivityLogDriverTest extends TestCase
     {
         $longUserAgent = str_repeat('a', 600);
 
-        $log = $this->driver->log(
-            ActivityLogType::Admin,
-            'test.action',
-            'Test',
-            null,
-            null,
-            null,
-            null,
-            $longUserAgent
-        );
+        Log::channel('activity')->info('test.action', [
+            'log_type' => ActivityLogType::Admin,
+            'user_agent' => $longUserAgent,
+        ]);
+
+        $log = ActivityLog::where('action', 'test.action')->firstOrFail();
 
         $this->assertEquals(500, mb_strlen($log->user_agent));
     }
 
     /**
-     * null 값들이 정상적으로 처리되는지 확인
+     * 선택적 필드(loggable, properties)가 미지정 시 null로 저장되는지 확인
+     *
+     * 주의: ip_address/user_agent/user_id는 ActivityLogProcessor가
+     * Auth/Request에서 자동 주입하므로, 본 테스트는 그 외 nullable 필드만 검증합니다.
      */
     public function test_nullable_fields_are_handled(): void
     {
-        $log = $this->driver->log(
-            ActivityLogType::System,
-            'system.task',
-            'System task completed',
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        Log::channel('activity')->info('system.task', [
+            'log_type' => ActivityLogType::System,
+        ]);
+
+        $log = ActivityLog::where('action', 'system.task')->firstOrFail();
 
         $this->assertNull($log->loggable_type);
         $this->assertNull($log->loggable_id);
         $this->assertNull($log->properties);
-        $this->assertNull($log->user_id);
-        $this->assertNull($log->ip_address);
-        $this->assertNull($log->user_agent);
+        $this->assertNull($log->changes);
+        $this->assertNull($log->description_key);
     }
 }

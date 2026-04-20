@@ -21,7 +21,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -168,7 +167,7 @@ class PluginExtensibilityTest extends ModuleTestCase
 
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => $chargePolicy,
             'base_fee' => $baseFee,

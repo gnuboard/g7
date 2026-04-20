@@ -28,6 +28,18 @@ vi.mock('../../api/ApiClient', () => ({
   getApiClient: vi.fn(() => mockApiClientInstance),
 }));
 
+// AuthManager 모킹 (기본: 인증된 상태)
+// engine-v1.32.1: auth_required: true 데이터소스는 토큰이 없으면 요청을 스킵하므로
+// auth_required: true 케이스를 검증하려면 인증된 상태로 모킹해야 함
+const mockIsAuthenticated = vi.fn(() => true);
+vi.mock('../../auth/AuthManager', () => ({
+  AuthManager: {
+    getInstance: vi.fn(() => ({
+      isAuthenticated: mockIsAuthenticated,
+    })),
+  },
+}));
+
 // fetch 모킹
 global.fetch = vi.fn();
 

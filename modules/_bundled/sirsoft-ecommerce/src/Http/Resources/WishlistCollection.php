@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * 위시리스트 목록을 페이지네이션과 함께 반환합니다.
  * Public API이므로 abilities는 포함하지 않습니다.
  */
-class WishlistCollection extends ResourceCollection
+class WishlistCollection extends BaseApiCollection
 {
     /**
      * 위시리스트 컬렉션을 배열로 변환합니다.

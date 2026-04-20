@@ -6,11 +6,22 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-board" }
+            ],
             "data_sources": ["posts"],
+            "page_type": "board",
+            "toggle_setting": "$module_settings:sirsoft-board:seo.seo_board",
+            "vars": {
+                "site_name": "$core_settings:general.site_name",
+                "board_name": "{{posts.data.board.name ?? ''}}",
+                "board_description": "{{posts.data.board.description ?? ''}}"
+            },
             "priority": 0.6,
             "changefreq": "daily",
             "og": {
-                "type": "website"
+                "type": "website",
+                "description": "{{_seo.board.description ?? posts.data.board.description ?? ''}}"
             },
             "structured_data": {
                 "@type": "ItemList"

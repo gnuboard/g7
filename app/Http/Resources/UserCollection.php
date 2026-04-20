@@ -3,14 +3,11 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
-use App\Http\Resources\Traits\HasRowNumber;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class UserCollection extends ResourceCollection
+class UserCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
-    use HasRowNumber;
 
     /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.

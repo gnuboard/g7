@@ -285,19 +285,6 @@ return [
         'stats_failed' => '활동 통계 조회에 실패했습니다.',
     ],
 
-    // 메일 템플릿 관리 메시지
-    'mail_template_fetch_success' => '메일 템플릿 목록을 조회했습니다.',
-    'mail_template_fetch_failed' => '메일 템플릿 목록 조회에 실패했습니다.',
-    'mail_template_save_success' => '메일 템플릿이 저장되었습니다.',
-    'mail_template_save_error' => '메일 템플릿 저장에 실패했습니다.',
-    'mail_template_toggle_success' => '메일 템플릿 상태가 변경되었습니다.',
-    'mail_template_toggle_failed' => '메일 템플릿 상태 변경에 실패했습니다.',
-    'mail_template_reset_success' => '메일 템플릿이 기본값으로 복원되었습니다.',
-    'mail_template_reset_failed' => '메일 템플릿 복원에 실패했습니다.',
-    'mail_template_reset_no_default' => '기본 템플릿 데이터를 찾을 수 없습니다.',
-    'mail_template_preview_success' => '메일 템플릿 미리보기가 생성되었습니다.',
-    'mail_template_preview_failed' => '메일 템플릿 미리보기 생성에 실패했습니다.',
-
     // 테이블 관련 메시지
     'invalid_slug_format' => '슬러그 형식이 올바르지 않습니다. 소문자로 시작하고 소문자, 숫자, 하이픈만 사용할 수 있습니다. (슬러그: :slug)',
     'invalid_slug_length' => '슬러그 길이가 올바르지 않습니다. 1-50자 이내로 입력해주세요. (슬러그: :slug)',

@@ -390,14 +390,26 @@
                 },
                 {
                   "comment": "일반 글인 경우 - 내용",
+                  "id": "parent_post_html_content",
+                  "type": "extension_point",
+                  "name": "html_content",
                   "if": "{{post?.data?.parent?.status !== 'blinded' && !(post?.data?.parent?.is_secret && post?.data?.parent?.content === null)}}",
-                  "type": "composite",
-                  "name": "HtmlContent",
                   "props": {
                     "content": "{{post?.data?.parent?.content ?? ''}}",
                     "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                    "className": "{{_local?.parentContentExpanded ? '' : '[&_img]:hidden [&_table]:hidden'}}"
-                  }
+                    "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{post?.data?.parent?.content ?? ''}}",
+                        "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
+                        "className": "{{_local?.parentContentExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                      }
+                    }
+                  ]
                 }
               ]
             },
@@ -570,13 +582,24 @@
                   ]
                 },
                 {
-                  "type": "composite",
-                  "name": "HtmlContent",
+                  "type": "extension_point",
+                  "name": "html_content",
                   "props": {
                     "content": "{{post?.data?.content ?? ''}}",
                     "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
                     "className": "prose dark:prose-invert max-w-none"
-                  }
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{post?.data?.content ?? ''}}",
+                        "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                        "className": "prose dark:prose-invert max-w-none"
+                      }
+                    }
+                  ]
                 }
               ]
             },
@@ -819,14 +842,25 @@
             },
             {
               "comment": "게시글 내용 (정상)",
-              "type": "composite",
-              "name": "HtmlContent",
+              "type": "extension_point",
+              "name": "html_content",
               "if": "{{post?.data?.status !== 'blinded' && post?.data?.content !== null}}",
               "props": {
                 "content": "{{post?.data?.content ?? ''}}",
                 "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
                 "className": "prose dark:prose-invert max-w-none mb-6"
-              }
+              },
+              "default": [
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{post?.data?.content ?? ''}}",
+                    "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                    "className": "prose dark:prose-invert max-w-none mb-6"
+                  }
+                }
+              ]
             }
           ]
         },

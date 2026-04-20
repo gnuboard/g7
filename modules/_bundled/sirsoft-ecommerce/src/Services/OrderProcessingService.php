@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OrderAmountChangedException;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -762,7 +762,7 @@ class OrderProcessingService
                 'order_option_id' => $orderOption->id,
                 'shipping_policy_id' => $shippingPolicy->policyId ?? null,
                 'shipping_status' => ShippingStatusEnum::PENDING->value,
-                'shipping_type' => $shippingType->value,
+                'shipping_type' => $shippingType,
                 'base_shipping_amount' => $shippingPolicy->shippingAmount ?? 0,
                 'extra_shipping_amount' => $shippingPolicy->extraShippingAmount ?? 0,
                 'total_shipping_amount' => $totalShippingFee,
@@ -784,23 +784,32 @@ class OrderProcessingService
      *
      * @param object|null $shippingPolicy 배송 정책
      * @param TempOrder $tempOrder 임시 주문
-     * @return ShippingTypeEnum
+     * @return string
      */
-    protected function determineShippingType(?object $shippingPolicy, TempOrder $tempOrder): ShippingTypeEnum
+    protected function determineShippingType(?object $shippingPolicy, TempOrder $tempOrder): string
     {
         // 배송 정책에 type이 있으면 사용
         if ($shippingPolicy && ! empty($shippingPolicy->type)) {
-            return ShippingTypeEnum::tryFrom($shippingPolicy->type) ?? ShippingTypeEnum::DOMESTIC_PARCEL;
+            $validCodes = ShippingType::where('is_active', true)->pluck('code')->toArray();
+            if (in_array($shippingPolicy->type, $validCodes)) {
+                return $shippingPolicy->type;
+            }
         }
 
         // 배송지 국가로 판단 (임시 주문에서)
         $shippingCountry = $tempOrder->shipping_address['country_code'] ?? 'KR';
 
         if ($shippingCountry !== 'KR') {
-            return ShippingTypeEnum::INTERNATIONAL_STANDARD;
+            return ShippingType::where('category', 'international')
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->value('code') ?? 'international_standard';
         }
 
-        return ShippingTypeEnum::DOMESTIC_PARCEL;
+        return ShippingType::where('category', 'domestic')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->value('code') ?? 'parcel';
     }
 
     /**
@@ -1069,6 +1078,9 @@ class OrderProcessingService
         });
 
         HookManager::doAction('sirsoft-ecommerce.order.after_payment_complete', $order);
+
+        // 주문 확인 알림 훅 (결제 완료 = 주문 확인 시점)
+        HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
         // 임시주문 정리 (PG 결제 완료 시점에 삭제, 이미 삭제된 경우 no-op)
         if ($order->user_id) {

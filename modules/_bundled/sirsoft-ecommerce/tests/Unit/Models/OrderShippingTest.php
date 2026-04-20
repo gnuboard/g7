@@ -5,10 +5,10 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Models;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -45,15 +45,15 @@ class OrderShippingTest extends ModuleTestCase
         $this->assertEquals(ShippingStatusEnum::PREPARING, $shipping->shipping_status);
     }
 
-    public function test_order_shipping_casts_type_to_enum(): void
+    public function test_order_shipping_stores_shipping_type_as_string(): void
     {
         $order = OrderFactory::new()->create();
         $shipping = OrderShippingFactory::new()->forOrder($order)->create([
-            'shipping_type' => ShippingTypeEnum::DOMESTIC_PARCEL->value,
+            'shipping_type' => 'parcel',
         ]);
 
-        $this->assertInstanceOf(ShippingTypeEnum::class, $shipping->shipping_type);
-        $this->assertEquals(ShippingTypeEnum::DOMESTIC_PARCEL, $shipping->shipping_type);
+        $this->assertIsString($shipping->shipping_type);
+        $this->assertEquals('parcel', $shipping->shipping_type);
     }
 
     public function test_preparing_shipping_has_no_tracking(): void
@@ -90,7 +90,7 @@ class OrderShippingTest extends ModuleTestCase
         $order = OrderFactory::new()->create();
         $shipping = OrderShippingFactory::new()->forOrder($order)->pickup()->create();
 
-        $this->assertEquals(ShippingTypeEnum::PICKUP, $shipping->shipping_type);
+        $this->assertEquals('pickup', $shipping->shipping_type);
         $this->assertNull($shipping->carrier_id);
         $this->assertNull($shipping->tracking_number);
         $this->assertNotNull($shipping->visit_date);
@@ -131,9 +131,17 @@ class OrderShippingTest extends ModuleTestCase
 
     public function test_is_domestic_returns_true_for_domestic_shipping(): void
     {
+        ShippingType::clearCodeCache();
+        ShippingType::firstOrCreate(['code' => 'parcel'], [
+            'name' => ['ko' => '택배', 'en' => 'Parcel'],
+            'category' => 'domestic',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
         $order = OrderFactory::new()->create();
         $shipping = OrderShippingFactory::new()->forOrder($order)->create([
-            'shipping_type' => ShippingTypeEnum::DOMESTIC_PARCEL,
+            'shipping_type' => 'parcel',
         ]);
 
         $this->assertTrue($shipping->isDomestic());
@@ -141,9 +149,17 @@ class OrderShippingTest extends ModuleTestCase
 
     public function test_is_international_returns_true_for_international_shipping(): void
     {
+        ShippingType::clearCodeCache();
+        ShippingType::firstOrCreate(['code' => 'international_ems'], [
+            'name' => ['ko' => '국제EMS', 'en' => 'International EMS'],
+            'category' => 'international',
+            'is_active' => false,
+            'sort_order' => 8,
+        ]);
+
         $order = OrderFactory::new()->create();
         $shipping = OrderShippingFactory::new()->forOrder($order)->create([
-            'shipping_type' => ShippingTypeEnum::INTERNATIONAL_EMS,
+            'shipping_type' => 'international_ems',
         ]);
 
         $this->assertTrue($shipping->isInternational());

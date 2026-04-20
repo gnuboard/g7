@@ -122,6 +122,15 @@ interface BoardRepositoryInterface
     public function getBoardRecentPosts(string $slug, int $limit): array;
 
     /**
+     * 게시판 ID로 최근 게시물을 조회합니다 (slug 재조회 없음).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBoardRecentPostsById(int $boardId, int $limit): array;
+
+    /**
      * 게시판의 게시글 개수를 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -193,6 +202,22 @@ interface BoardRepositoryInterface
      * @return Collection 활성 게시판 컬렉션
      */
     public function getActiveBoardsOrdered(string $orderBy = 'created_at', string $orderDirection = 'desc'): Collection;
+
+    /**
+     * 활성 게시판의 통계를 조회합니다 (게시판 수, 게시글 수, 댓글 수).
+     *
+     * @return object{boards_count: int, posts_total: int, comments_total: int}
+     */
+    public function getActiveBoardStats(): object;
+
+    /**
+     * 메뉴용 경량 게시판 목록을 조회합니다.
+     *
+     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     *
+     * @return Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     */
+    public function getActiveBoardsForMenu(): Collection;
 
     /**
      * 특정 유형의 게시판 개수를 반환합니다.

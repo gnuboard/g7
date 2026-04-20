@@ -184,7 +184,7 @@ role_permissions 피벗:
 ### 사용 예시
 
 ```php
-// 권한만 체크 (scope는 DB 설정에 따라 자동 적용)
+// 관리자 컨텍스트 — permission:admin + admin 타입 권한 식별자
 Route::get('{user}', [AdminUserController::class, 'show'])
     ->middleware('permission:admin,core.users.read');
 
@@ -193,7 +193,28 @@ Route::put('{user}', [AdminUserController::class, 'update'])
 
 Route::put('{menu}', [AdminMenuController::class, 'update'])
     ->middleware('permission:admin,core.menus.update');
+
+// 사용자 컨텍스트 — permission:user + user 타입 권한 식별자
+Route::get('/api/user/notifications', [UserNotificationController::class, 'index'])
+    ->middleware('permission:user,core.user-notifications.read');
+
+Route::patch('/api/user/notifications/{notification}/read', [UserNotificationController::class, 'markAsRead'])
+    ->middleware('permission:user,core.user-notifications.update');
+
+Route::delete('/api/user/notifications/{notification}', [UserNotificationController::class, 'destroy'])
+    ->middleware('permission:user,core.user-notifications.delete');
 ```
+
+### 권한 type 일치 규칙 (CRITICAL)
+
+```text
+⚠️ CRITICAL: PermissionMiddleware는 (식별자, type) 두 필드 모두 매칭하여 권한 행을 조회합니다.
+✅ permission:admin,xxx → DB의 (identifier='xxx', type='admin') 행 필요
+✅ permission:user,xxx  → DB의 (identifier='xxx', type='user')  행 필요
+❌ 사용자 라우트에 admin 타입 권한 식별자를 사용하면 항상 403 (type 불일치)
+```
+
+`permissions.identifier` 컬럼은 단일 unique 제약이므로 같은 식별자로 admin/user 두 행을 동시에 만들 수 없습니다. 사용자 컨텍스트 권한이 필요하면 **별도 식별자**(예: `core.user-notifications.*`)를 정의하세요. 상세 규칙은 [extension/permissions.md](../extension/permissions.md#권한-타입-permission-type) 참조.
 
 ### 목록 엔드포인트 필터링
 

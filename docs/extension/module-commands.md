@@ -220,7 +220,7 @@ php artisan module:check-updates sirsoft-ecommerce
 #### 모듈 업데이트
 
 ```bash
-php artisan module:update [identifier] [--force]
+php artisan module:update [identifier] [--force] [--source=auto|bundled|github] [--layout-strategy=overwrite|keep] [--vendor-mode=auto|composer|bundled]
 ```
 
 **인수**:
@@ -228,6 +228,9 @@ php artisan module:update [identifier] [--force]
 
 **옵션**:
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub > `_bundled` 우선순위, `bundled` = `_bundled` 단독, `github` = GitHub 단독)
+- `--layout-strategy`: 사용자 수정 레이아웃 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 수정분 보존)
+- `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
 
 **수행 작업**:
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
@@ -239,6 +242,8 @@ php artisan module:update [identifier] [--force]
 ```bash
 php artisan module:update sirsoft-ecommerce
 php artisan module:update sirsoft-ecommerce --force  # 강제 재설치
+php artisan module:update sirsoft-ecommerce --source=bundled  # GitHub 장애/잘못된 태그 우회
+php artisan module:update sirsoft-ecommerce --source=github --force  # 긴급 핫픽스 태그로만 강제 설치
 ```
 
 #### 모듈 캐시 초기화

@@ -5,9 +5,15 @@
   "props": { "className": "space-y-4" },
   "children": [
     {
-      "comment": "=== 가격 섹션 ===",
+      "comment": "=== 가격 섹션 (데스크톱 전용 — 모바일은 _price_mobile.json에서 표시) ===",
       "type": "basic",
       "name": "Div",
+      "if": "{{false}}",
+      "responsive": {
+        "desktop": {
+          "if": "{{true}}"
+        }
+      },
       "props": { "className": "mb-4" },
       "children": [
         {

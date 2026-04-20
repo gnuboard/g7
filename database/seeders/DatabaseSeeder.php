@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             RolePermissionSeeder::class,
             CoreAdminMenuSeeder::class,
-            MailTemplateSeeder::class,
+            NotificationDefinitionSeeder::class,
         ]);
 
         // 샘플 시더 (--sample 옵션 시에만 실행)
@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
 
             $this->call([
                 Sample\DummyUserSeeder::class,
-                Sample\MailSendLogSeeder::class,
+                Sample\NotificationLogSeeder::class,
                 Sample\TemplateSeeder::class,
                 Sample\TemplateLayoutVersionSeeder::class,
                 Sample\ActivityLogSampleSeeder::class,

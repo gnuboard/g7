@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Enums\ExtensionOwnerType;
 use App\Extension\HookManager;
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\Menu;
@@ -13,7 +14,6 @@ use App\Services\MenuService;
 use App\Services\RoleService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
-use App\Services\CacheService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
@@ -53,7 +53,8 @@ class BoardService
         private AttachmentRepositoryInterface $attachmentRepository,
         private BoardPermissionService $permissionService,
         private MenuService $menuService,
-        private RoleService $roleService
+        private RoleService $roleService,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -95,19 +96,8 @@ class BoardService
 
         // 페이지네이션
         $perPage = $filters['per_page'] ?? 20;
-        $boards = $query->paginate($perPage);
 
-        // 게시판 ID 목록으로 게시글 개수를 단일 쿼리로 조회
-        $boardIds = $boards->getCollection()->pluck('id')->toArray();
-        $postsCounts = $this->boardRepository->getPostsCountByBoardIds($boardIds);
-
-        $boards->getCollection()->transform(function ($board) use ($postsCounts) {
-            $board->posts_count = $postsCounts[$board->id] ?? 0;
-
-            return $board;
-        });
-
-        return $boards;
+        return $query->paginate($perPage);
     }
 
     /**
@@ -159,19 +149,19 @@ class BoardService
         string $orderBy = 'created_at',
         string $orderDirection = 'desc'
     ): \Illuminate\Database\Eloquent\Collection {
-        $boards = $this->boardRepository->getActiveBoardsOrdered($orderBy, $orderDirection);
+        return $this->boardRepository->getActiveBoardsOrdered($orderBy, $orderDirection);
+    }
 
-        // 게시판 ID 목록으로 게시글 개수를 단일 쿼리로 조회
-        $boardIds = $boards->pluck('id')->toArray();
-        $postsCounts = $this->boardRepository->getPostsCountByBoardIds($boardIds);
-
-        $boards->transform(function ($board) use ($postsCounts) {
-            $board->posts_count = $postsCounts[$board->id] ?? 0;
-
-            return $board;
-        });
-
-        return $boards;
+    /**
+     * 메뉴용 경량 게시판 목록을 조회합니다.
+     *
+     * id, name, slug만 조회하며 posts COUNT 쿼리를 실행하지 않습니다.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection 활성 게시판 컬렉션
+     */
+    public function getActiveBoardsForMenu(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->boardRepository->getActiveBoardsForMenu();
     }
 
     /**
@@ -197,6 +187,101 @@ class BoardService
             ->take($limit)
             ->values()
             ->toArray();
+    }
+
+    /**
+     * 게시판 통계를 캐시와 함께 조회합니다.
+     *
+     * @return array{users: int, boards: int, posts: int, comments: int}
+     */
+    public function getCachedStats(): array
+    {
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember('stats', function () {
+            $boardStats = $this->getActiveBoardStats();
+
+            return [
+                'users' => User::count(),
+                'boards' => $boardStats['boards'],
+                'posts' => $boardStats['posts'],
+                'comments' => $boardStats['comments'],
+            ];
+        }, $ttl, tags: ['board-stats']);
+    }
+
+    /**
+     * 최근 게시글을 캐시와 함께 조회합니다.
+     *
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCachedRecentPosts(int $limit): array
+    {
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember(
+            "recent_posts_{$limit}",
+            fn () => $this->getRecentPosts($limit),
+            $ttl,
+            tags: ['board-posts']
+        );
+    }
+
+    /**
+     * 인기 게시글을 캐시와 함께 조회합니다.
+     *
+     * 캐시 키에 locale을 포함하지 않습니다 (쿼리 결과는 locale에 무관).
+     *
+     * @param  string  $period  기간 (today, week, month, year)
+     * @param  int  $limit  조회 개수
+     * @return array
+     */
+    public function getCachedPopularPosts(string $period = 'week', int $limit = 20): array
+    {
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember(
+            "popular_posts_{$period}_{$limit}",
+            fn () => $this->getPopularPosts($period, $limit),
+            $ttl,
+            tags: ['board-posts']
+        );
+    }
+
+    /**
+     * 인기 게시판을 캐시와 함께 조회합니다.
+     *
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>>
+     */
+    public function getCachedPopularBoards(int $limit): array
+    {
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember(
+            "popular_boards_{$limit}",
+            fn () => $this->getPopularBoards($limit),
+            $ttl,
+            tags: ['board-list']
+        );
+    }
+
+    /**
+     * 메뉴용 게시판 목록을 캐시와 함께 조회합니다.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCachedActiveBoardsForMenu(): \Illuminate\Database\Eloquent\Collection
+    {
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember(
+            'board_menu',
+            fn () => $this->getActiveBoardsForMenu(),
+            $ttl,
+            tags: ['board-menu']
+        );
     }
 
     /**
@@ -657,41 +742,50 @@ class BoardService
 
     /**
      * 게시판 관련 캐시를 클리어합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int|null  $id  게시판 ID
+     * @return void
      */
     private function clearBoardCaches(string $slug, ?int $id = null): void
     {
-        // 게시판 목록 캐시 삭제
-        CacheService::forget('sirsoft-board', 'boards:list');
+        // 모듈 캐시 (ModuleCacheDriver — `g7:module.sirsoft-board:` 접두사 자동 적용)
+        $this->cache->forget('boards:list');
 
-        // ID 기반 캐시 삭제
         if ($id) {
-            CacheService::forget('sirsoft-board', "boards:id:{$id}");
+            $this->cache->forget("boards:id:{$id}");
         }
 
-        // Slug 기반 캐시 삭제
-        CacheService::forget('sirsoft-board', "boards:slug:{$slug}");
+        $this->cache->forget("boards:slug:{$slug}");
+
+        // 파생 캐시 태그 무효화 (통계, 게시글, 메뉴, 게시판 목록)
+        $this->cache->flushTags(['board-stats']);
+        $this->cache->flushTags(['board-posts']);
+        $this->cache->flushTags(['board-menu']);
+        $this->cache->flushTags(['board-list']);
 
         // 템플릿 라우트 캐시 클리어
         $this->clearAllTemplateRoutesCaches();
     }
 
     /**
-     * 게시판 통계를 계산합니다. (홈페이지용)
+     * 전체 게시판 캐시를 무효화합니다 (외부 호출용).
      *
-     * @return array{users: int, boards: int, posts: int, comments: int}
+     * @return void
      */
-    public function calculateStats(): array
+    public function clearAllBoardCaches(): void
     {
-        return [
-            'users' => User::count(),
-            'boards' => Board::where('is_active', true)->count(),
-            'posts' => $this->getTotalPostsCount(),
-            'comments' => $this->getTotalCommentsCount(),
-        ];
+        $this->cache->forget('boards:list');
+        $this->cache->flushTags(['board-stats']);
+        $this->cache->flushTags(['board-posts']);
+        $this->cache->flushTags(['board-menu']);
+        $this->cache->flushTags(['board-list']);
     }
 
     /**
      * 전체 게시글 수를 집계합니다.
+     *
+     * @return int 전체 게시글 개수
      */
     public function getTotalPostsCount(): int
     {
@@ -700,10 +794,28 @@ class BoardService
 
     /**
      * 전체 댓글 수를 집계합니다.
+     *
+     * @return int 전체 댓글 개수
      */
     public function getTotalCommentsCount(): int
     {
         return $this->boardRepository->getTotalCommentsCount();
+    }
+
+    /**
+     * 활성 게시판의 통계를 조회합니다 (게시판 수, 게시글 수, 댓글 수).
+     *
+     * @return array{boards: int, posts: int, comments: int}
+     */
+    public function getActiveBoardStats(): array
+    {
+        $stats = $this->boardRepository->getActiveBoardStats();
+
+        return [
+            'boards' => (int) $stats->boards_count,
+            'posts' => (int) $stats->posts_total,
+            'comments' => (int) $stats->comments_total,
+        ];
     }
 
     /**
@@ -741,6 +853,18 @@ class BoardService
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
         return $this->boardRepository->getBoardRecentPosts($slug, $limit);
+    }
+
+    /**
+     * 게시판 ID로 최근 게시물을 조회합니다 (slug 재조회 없음).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    {
+        return $this->boardRepository->getBoardRecentPostsById($boardId, $limit);
     }
 
     /**
@@ -909,8 +1033,8 @@ class BoardService
             }
         }
 
-        // 캐시 초기화
-        CacheService::forget('sirsoft-board', 'boards:list');
+        // 캐시 초기화 (boards:list 및 파생 태그 일괄 무효화)
+        $this->clearAllBoardCaches();
 
         // After 훅
         HookManager::doAction('sirsoft-board.settings.after_bulk_apply', $fields, $updatedCount);

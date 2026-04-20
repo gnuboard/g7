@@ -269,8 +269,6 @@ class BoardController extends AdminBaseController
                 $data['description'] = [$fallbackLocale => ''];
 
                 $data['categories'] = [];
-                $data['notify_author_channels'] = $basicDefaults['notify_author_channels'] ?? [];
-                $data['notify_admin_on_post_channels'] = $basicDefaults['notify_admin_on_post_channels'] ?? [];
                 $spamSecurity = g7_module_settings('sirsoft-board', 'spam_security', []);
                 $data['blocked_keywords'] = collect($spamSecurity['blocked_keywords'] ?? [])->join(',');
                 $data['allowed_extensions'] = collect($basicDefaults['allowed_extensions'] ?? [])->join(',');

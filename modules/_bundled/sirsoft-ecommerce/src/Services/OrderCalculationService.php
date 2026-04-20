@@ -843,7 +843,8 @@ class OrderCalculationService
                     totalShippingAmount: $baseAmount + $extraAmount,
                     policySnapshot: [
                         'country_code' => $countrySetting->country_code,
-                        'shipping_method' => $countrySetting->shipping_method?->value,
+                        'shipping_method' => $countrySetting->shipping_method,
+                        'custom_shipping_name' => $countrySetting->custom_shipping_name,
                         'currency_code' => $countrySetting->currency_code,
                         'charge_policy' => $countrySetting->charge_policy->value,
                         'base_fee' => (int) $countrySetting->base_fee,

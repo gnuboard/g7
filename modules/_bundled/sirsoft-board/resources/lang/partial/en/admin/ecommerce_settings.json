@@ -1,0 +1,15 @@
+{
+  "inquiry": {
+    "description": "You can designate the board to use as the product inquiry board.",
+    "board_label": "Inquiry Board",
+    "board_placeholder": "Select a board",
+    "hint_secret": "ℹ A board with the secret post feature enabled is recommended.",
+    "go_to_board_edit": "Go to Board Settings",
+    "go_to_board_edit_desc": "Change detailed board settings such as secret post options, read/write permissions, and categories.",
+    "hint_category": "ℹ If you set up categories on the board, users can select a category when submitting an inquiry.",
+    "go_to_posts": "Manage Inquiries",
+    "go_to_posts_desc": "View and respond to product inquiries submitted by customers. Add this board to the admin sidebar menu for quicker access.",
+    "add_to_admin_menu": "Add to Admin Menu",
+    "add_to_admin_menu_desc": "Adds a posts management item for this board to the sidebar admin menu."
+  }
+}

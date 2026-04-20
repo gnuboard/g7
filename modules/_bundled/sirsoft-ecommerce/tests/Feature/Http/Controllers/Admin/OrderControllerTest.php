@@ -11,7 +11,6 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
@@ -164,15 +163,23 @@ class OrderControllerTest extends ModuleTestCase
 
     public function test_index_filters_by_shipping_type(): void
     {
+        // Given: 배송유형 DB 데이터 생성 (검증 통과용)
+        \Modules\Sirsoft\Ecommerce\Models\ShippingType::firstOrCreate(['code' => 'parcel'], [
+            'name' => ['ko' => '택배', 'en' => 'Parcel'], 'category' => 'domestic', 'is_active' => true, 'sort_order' => 1,
+        ]);
+        \Modules\Sirsoft\Ecommerce\Models\ShippingType::firstOrCreate(['code' => 'pickup'], [
+            'name' => ['ko' => '매장수령', 'en' => 'Store Pickup'], 'category' => 'domestic', 'is_active' => true, 'sort_order' => 5,
+        ]);
+
         // Given: 다양한 배송 방법의 주문
         $order1 = OrderFactory::new()->create();
         $order2 = OrderFactory::new()->create();
-        OrderShippingFactory::new()->forOrder($order1)->create(['shipping_type' => ShippingTypeEnum::DOMESTIC_PARCEL->value]);
-        OrderShippingFactory::new()->forOrder($order2)->create(['shipping_type' => ShippingTypeEnum::PICKUP->value]);
+        OrderShippingFactory::new()->forOrder($order1)->create(['shipping_type' => 'parcel']);
+        OrderShippingFactory::new()->forOrder($order2)->create(['shipping_type' => 'pickup']);
 
         // When: 택배만 필터
         $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?shipping_type[]=domestic_parcel');
+            ->getJson('/api/modules/sirsoft-ecommerce/admin/orders?shipping_type[]=parcel');
 
         // Then: 택배 주문만 반환
         $response->assertOk();
@@ -505,7 +512,7 @@ class OrderControllerTest extends ModuleTestCase
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'shipping_status' => 'shipped',
-            'shipping_type' => 'domestic_parcel',
+            'shipping_type' => 'parcel',
             'carrier_id' => $oldCarrier->id,
             'tracking_number' => 'OLD123',
         ]);

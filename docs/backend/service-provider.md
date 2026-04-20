@@ -12,6 +12,7 @@
 3. 인스톨러 안정성: 마이그레이션 전에도 부팅 가능해야 함
 4. 조건 미충족 시 예외 대신 안전하게 스킵
 5. runningInConsole() + 'migrate' 명령 감지로 스킵
+6. 성능 최적화: config('app.installer_completed') 가드로 설치 완료 환경에서 hasTable 호출 제거
 ```
 
 ---
@@ -260,12 +261,129 @@ class ConfigServiceProvider extends ServiceProvider
 
 ---
 
+## 성능 최적화: installer_completed 가드
+
+```text
+필수: 인스톨러 안전 체크(hasTable 폴백) 는 유지하되,
+      프로덕션(설치 완료) 환경에서는 `config('app.installer_completed')` 가드로
+      매 요청 Schema::hasTable() 호출을 건너뛴다.
+```
+
+### 배경
+
+`Schema::hasTable()` 은 `information_schema.tables` 에 대한 DB 쿼리를 실행합니다. 매 HTTP 요청마다 여러 ServiceProvider 와 확장 Trait 에서 이 체크가 반복되면 수십 ms 의 누적 오버헤드가 발생합니다. 설치가 완료된 프로덕션 환경에서는 테이블 존재가 **앱 수명주기 동안 불변** 이므로 이 체크 자체가 불필요합니다.
+
+### 구현 패턴
+
+`.env` 의 `INSTALLER_COMPLETED=true` 플래그를 `config/app.php` 에 노출하여 사용합니다:
+
+```php
+// config/app.php
+'installer_completed' => env('INSTALLER_COMPLETED', false),
+```
+
+```php
+// ❌ 매 요청 DB 쿼리 (개선 전)
+protected function loadModuleRoutes(): void
+{
+    if (! File::exists(base_path('.env'))) {
+        return;
+    }
+
+    try {
+        if (! Schema::hasTable('modules')) {
+            return;
+        }
+        if (! Schema::hasColumn('modules', 'identifier')) {
+            return;
+        }
+    } catch (\Exception) {
+        return;
+    }
+
+    // 라우트 로드...
+}
+```
+
+```php
+// ✅ installer_completed 가드 적용 (개선 후)
+protected function loadModuleRoutes(): void
+{
+    if (! File::exists(base_path('.env'))) {
+        return;
+    }
+
+    // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
+    // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
+    if (! config('app.installer_completed')) {
+        try {
+            if (! Schema::hasTable('modules')) {
+                return;
+            }
+            if (! Schema::hasColumn('modules', 'identifier')) {
+                return;
+            }
+        } catch (\Exception) {
+            return;
+        }
+    }
+
+    // 라우트 로드...
+}
+```
+
+### 동작 표
+
+| 환경 | `installer_completed` | 동작 |
+|------|----------------------|------|
+| 프로덕션 (설치 완료) | `true` | 가드 통과 → `hasTable` 스킵 (쿼리 0건) |
+| 인스톨러 실행 중 / 마이그레이션 전 | `false` (기본값) | 기존 `hasTable` 폴백 경로 (원본 동작 보존) |
+| 테스트 (`.env.testing` 에 플래그 없음) | `false` | 기존 `hasTable` 경로 |
+
+### 적용 가이드
+
+- **`.env` 파일 체크는 반드시 유지** — 인스톨러가 아직 `.env` 를 생성하지 않은 시점을 커버
+- **`hasTable` 폴백 경로는 반드시 유지** — `installer_completed=false` 환경에서도 안전하게 부팅되어야 함
+- **try/catch 도 그대로 유지** — DB 연결 실패 시 안전한 스킵 계약 준수
+- 가드는 hasTable 체크 **전체 블록을 `if (! config('app.installer_completed'))` 로 래핑** 하는 형태
+- `config:cache` 를 사용하는 환경에서는 `.env` 값 변경 후 반드시 `php artisan config:clear && php artisan config:cache` 를 실행해야 함
+
+### 확장 Trait 패턴
+
+`CachesModuleStatus::isExtensionTableReady()`, `CachesPluginStatus::isPluginTableReady()`, `CachesTemplateStatus::isTemplateTableReady()` 등 확장 Trait 에도 동일 가드를 적용합니다:
+
+```php
+private static function isExtensionTableReady(string $table): bool
+{
+    if (config('app.installer_completed')) {
+        return true;
+    }
+
+    try {
+        DB::connection()->getPdo();
+
+        return Schema::hasTable($table);
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+```
+
+### 주의사항
+
+- **인스톨러 설치 완료 시점에 `INSTALLER_COMPLETED=true` 가 `.env` 에 기록되어야 함** — G7 인스톨러(`public/install/includes/task-runner.php`)는 이를 이미 수행
+- 가드는 **성능 최적화이며 안전 체크 대체가 아님** — 하드웨어 장애 등으로 테이블이 소실된 경우를 커버하지 못함. 그런 상황은 별도 헬스체크로 처리
+- 같은 HTTP 요청 내에서 테이블을 생성/삭제하는 플로우(예: 설치 직후 검증)가 있다면 가드가 stale 결과를 줄 수 있으므로 그 경로에서는 직접 `Schema::hasTable()` 호출 권장
+
+---
+
 ## 서비스 프로바이더 개발 체크리스트
 
 - [ ] DB 접근이 필요한 경우 `.env` 파일 존재 확인
 - [ ] 특정 테이블 접근 시 `Schema::hasTable()` 확인
 - [ ] 조건 미충족 시 예외 발생 대신 `return`으로 안전하게 스킵
-- [ ] 인스톨러 환경에서 테스트 수행
+- [ ] `config('app.installer_completed')` 가드로 hasTable 블록 래핑 (성능 최적화)
+- [ ] 인스톨러 환경에서 테스트 수행 (`INSTALLER_COMPLETED` 미설정 상태)
 - [ ] `composer install` 단독 실행 테스트
 
 ---

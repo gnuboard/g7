@@ -94,14 +94,6 @@
     "min": "대댓글 최대 깊이는 최소 :min 이상이어야 합니다.",
     "max": "대댓글 최대 깊이는 최대 :max까지 설정 가능합니다."
   },
-  "notify_author_channels": {
-    "array": "작성자 알림 채널은 배열이어야 합니다.",
-    "item_max": "알림 채널명은 최대 :max자까지 입력 가능합니다."
-  },
-  "notify_admin_on_post_channels": {
-    "array": "관리자 알림 채널은 배열이어야 합니다.",
-    "item_max": "알림 채널명은 최대 :max자까지 입력 가능합니다."
-  },
   "settings": {
     "category": {
       "required": "카테고리는 필수입니다.",

@@ -243,14 +243,26 @@
                 },
                 {
                   "comment": "일반 글 내용",
-                  "type": "composite",
-                  "name": "HtmlContent",
+                  "id": "reply_html_content",
+                  "type": "extension_point",
+                  "name": "html_content",
                   "if": "{{reply?.status !== 'blinded' && !reply?.is_secret}}",
                   "props": {
                     "content": "{{reply?.content ?? ''}}",
                     "isHtml": "{{(reply?.content_mode ?? 'text') === 'html'}}",
                     "className": "prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&_img]:hidden [&_table]:hidden'}}"
-                  }
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{reply?.content ?? ''}}",
+                        "isHtml": "{{(reply?.content_mode ?? 'text') === 'html'}}",
+                        "className": "prose-sm dark:prose-invert max-w-none {{_local?.expandedReplyId === reply?.id ? '' : '[&_img]:hidden [&_table]:hidden'}}"
+                      }
+                    }
+                  ]
                 }
               ]
             },

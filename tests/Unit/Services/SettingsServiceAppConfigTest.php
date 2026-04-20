@@ -24,7 +24,9 @@ class SettingsServiceAppConfigTest extends TestCase
     }
 
     /**
-     * getAppConfigForFrontend()가 supportedTimezones를 올바르게 반환하는지 테스트합니다.
+     * getAppConfigForFrontend()가 supportedTimezones를 올바른 Select 옵션 형식으로 반환하는지 테스트합니다.
+     *
+     * 전 IANA 타임존 지원 + 오프셋 라벨 형식
      */
     public function test_get_app_config_returns_supported_timezones(): void
     {
@@ -34,8 +36,58 @@ class SettingsServiceAppConfigTest extends TestCase
 
         $this->assertArrayHasKey('supportedTimezones', $result);
         $this->assertIsArray($result['supportedTimezones']);
-        $this->assertContains('Asia/Seoul', $result['supportedTimezones']);
-        $this->assertContains('UTC', $result['supportedTimezones']);
+        $this->assertNotEmpty($result['supportedTimezones']);
+
+        // 각 항목이 {value, label} 형식인지 확인
+        foreach ($result['supportedTimezones'] as $item) {
+            $this->assertIsArray($item);
+            $this->assertArrayHasKey('value', $item);
+            $this->assertArrayHasKey('label', $item);
+            $this->assertMatchesRegularExpression(
+                '/^\(UTC[+-]\d{2}:\d{2}\) .+/',
+                $item['label']
+            );
+        }
+
+        // Asia/Seoul, UTC가 포함되는지 확인 (value 기준)
+        $values = array_column($result['supportedTimezones'], 'value');
+        $this->assertContains('Asia/Seoul', $values);
+        $this->assertContains('UTC', $values);
+    }
+
+    /**
+     * supportedTimezones가 IANA 전체 목록 크기와 일치하는지 테스트합니다.
+     */
+    public function test_supported_timezones_contains_full_iana_list(): void
+    {
+        $service = app(SettingsService::class);
+
+        $result = $service->getAppConfigForFrontend();
+
+        $this->assertCount(
+            count(\DateTimeZone::listIdentifiers()),
+            $result['supportedTimezones']
+        );
+    }
+
+    /**
+     * supportedTimezones가 오프셋 오름차순으로 정렬되는지 테스트합니다.
+     */
+    public function test_supported_timezones_sorted_by_offset_ascending(): void
+    {
+        $service = app(SettingsService::class);
+
+        $result = $service->getAppConfigForFrontend();
+
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+        $prevOffset = null;
+        foreach ($result['supportedTimezones'] as $item) {
+            $offset = (new \DateTimeZone($item['value']))->getOffset($now);
+            if ($prevOffset !== null) {
+                $this->assertGreaterThanOrEqual($prevOffset, $offset);
+            }
+            $prevOffset = $offset;
+        }
     }
 
     /**

@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce;
 use App\Extension\AbstractModule;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
-use Modules\Sirsoft\Ecommerce\Database\Seeders\EcommerceMailTemplateSeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\EcommerceNotificationDefinitionSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
 use Modules\Sirsoft\Ecommerce\Listeners\ActivityLogDescriptionResolver;
@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\CategoryActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
+use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MergeCartOnLoginListener;
 use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
@@ -886,7 +887,7 @@ class Module extends AbstractModule
         return [
             SequenceSeeder::class,
             ShippingCarrierSeeder::class,
-            EcommerceMailTemplateSeeder::class,
+            EcommerceNotificationDefinitionSeeder::class,
             ClaimReasonSeeder::class,
         ];
     }
@@ -916,6 +917,7 @@ class Module extends AbstractModule
             SeoCategoryCacheListener::class,
             SeoSettingsCacheListener::class,
             OrderConfirmPointListener::class,
+            EcommerceNotificationDataListener::class,
         ];
     }
 
@@ -944,6 +946,56 @@ class Module extends AbstractModule
                 'description' => '입금 기한 만료 주문 자동 취소',
                 'enabled_config' => 'sirsoft-ecommerce.order_settings.auto_cancel_expired',
             ],
+        ];
+    }
+
+    /**
+     * SEO 변수 메타데이터 정의
+     *
+     * 이커머스 모듈이 SEO 렌더링에 제공하는 변수를 page_type별로 선언합니다.
+     *
+     * @return array page_type별 변수 정의 배열
+     */
+    public function seoVariables(): array
+    {
+        return [
+            '_common' => [
+                'commerce_name' => [
+                    'description' => '쇼핑몰명',
+                    'source' => 'setting',
+                    'key' => 'basic_info.shop_name',
+                ],
+            ],
+            'product' => [
+                'product_name' => [
+                    'description' => '상품명',
+                    'source' => 'data',
+                    'required' => true,
+                ],
+                'product_description' => [
+                    'description' => '상품 설명',
+                    'source' => 'data',
+                ],
+            ],
+            'category' => [
+                'category_name' => [
+                    'description' => '카테고리명',
+                    'source' => 'data',
+                    'required' => true,
+                ],
+                'category_description' => [
+                    'description' => '카테고리 설명',
+                    'source' => 'data',
+                ],
+            ],
+            'search' => [
+                'keyword_name' => [
+                    'description' => '검색 키워드',
+                    'source' => 'query',
+                    'key' => 'q',
+                ],
+            ],
+            'shop_index' => [],
         ];
     }
 

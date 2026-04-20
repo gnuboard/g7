@@ -1200,5 +1200,33 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
+
+    // @since engine-v1.38.1
+    // 회귀 방지: reloadExtensions 병렬 실행 중 setCacheVersion 이 활성 translations 맵을
+    // 비워서 같은 parallel 블록 내의 toast($t:...) 가 raw key 를 반환하던 경합 조건
+    it('setCacheVersion 호출 후에도 이전 번역이 즉시 조회 가능해야 한다 (loadTranslations 완료 전)', async () => {
+      const mockTranslations = {
+        admin: { modules: { activate_success: '모듈 활성화 성공' } },
+      };
+
+      // 1. 초기 번역 로드
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockTranslations,
+      });
+      await engine.loadTranslations('template-1', 'ko');
+
+      const context: TranslationContext = { templateId: 'template-1', locale: 'ko' };
+
+      // 2. 로드 직후 번역 조회 성공
+      expect(engine.translate('admin.modules.activate_success', context)).toBe('모듈 활성화 성공');
+
+      // 3. 캐시 버전 변경 (reloadExtensions 내부에서 일어나는 동작)
+      engine.setCacheVersion(1735000000);
+
+      // 4. loadTranslations 재호출 전에도 기존 번역은 유지되어야 함
+      //    → 병렬 toast 가 raw key 가 아닌 실제 번역을 받음
+      expect(engine.translate('admin.modules.activate_success', context)).toBe('모듈 활성화 성공');
+    });
   });
 });

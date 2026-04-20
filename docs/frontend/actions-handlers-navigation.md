@@ -9,8 +9,9 @@
 1. [navigate](#navigate)
 2. [navigateBack](#navigateback)
 3. [openWindow](#openwindow)
-4. [reloadRoutes](#reloadroutes)
-5. [refresh](#refresh)
+4. [reloadExtensions](#reloadextensions) ⭐ NEW (engine-v1.38.0+)
+5. [reloadRoutes](#reloadroutes) (deprecated)
+6. [refresh](#refresh)
 
 ---
 
@@ -36,6 +37,120 @@
 | `query` | object | - | 쿼리 파라미터 객체 |
 | `mergeQuery` | boolean | false | 기존 쿼리 파라미터와 병합 |
 | `replace` | boolean | false | URL만 변경 (페이지 리로드 없음) |
+| `transition_overlay_target` | string | - | `replace: true` 호출 시 `transition_overlay.target` 을 동적으로 override (engine-v1.36.0+) |
+| `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
+| `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
+| `fallback` | `false \| string \| object` | `"openWindow"` | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow`(새 창). `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정, 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용 |
+
+### transition_overlay_target 옵션 (engine-v1.36.0+)
+
+`replace: true` 로 탭 전환/페이지네이션 시 `updateQueryParams` 경로에 진입할 때, 레이아웃의 `transition_overlay.target` 대신 **이 호출에 한해** 다른 영역에만 spinner 를 표시하도록 한다.
+
+**주 용도**: 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등) 클릭 시 서브 탭 콘텐츠 영역에만 spinner 가 표시되어야 할 때.
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/settings",
+    "replace": true,
+    "mergeQuery": true,
+    "query": { "channel": "{{ch.id}}" },
+    "transition_overlay_target": "notif_channel_content"
+  }
+}
+```
+
+**동작**:
+
+- 미지정 시: 레이아웃의 `transition_overlay.target` 사용 (탭 콘텐츠 wrapper 등)
+- 지정 시: 해당 ID 의 DOM 요소에만 spinner mount. 요소 미발견 시 `transition_overlay.fallback_target` → `#app` 순으로 3단계 폴백
+- `replace: true` 아닌 일반 navigate(다른 path)는 `handleRouteChange` 경로로 가며 이 옵션은 효과 없음
+
+**DataGrid body 영역 한정 spinner 컨벤션**:
+
+목록 페이지 페이지네이션 시 **pagination 영역은 제외하고 그리드 본문만** spinner 를 표시하려면 `transition_overlay_target` 에 DataGrid 의 `${id}__body` suffix 를 사용한다. DataGrid composite 컴포넌트는 root Div 에 `id` 를, 테이블/카드 목록을 감싸는 내부 wrapper Div 에 `${id}__body` 를 자동으로 부여한다 (pagination 은 body wrapper 밖의 형제).
+
+```json
+// DataGrid 컴포넌트 정의
+{ "type": "composite", "name": "DataGrid", "id": "users_data_grid", "props": {...} }
+
+// 페이지네이션 navigate
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/users",
+    "replace": true,
+    "mergeQuery": true,
+    "query": { "page": "{{$args[0]}}" },
+    "transition_overlay_target": "users_data_grid__body"
+  }
+}
+```
+
+이 컨벤션으로 pagination 버튼은 spinner 위에 표시되어 사용자가 연속 클릭 가능하다.
+
+> 상세: [layout-json-components-loading.md#wait_for — 데이터소스 가드](../frontend/layout-json-components-loading.md#wait_for--데이터소스-가드-engine-v1340)
+
+### fallback 옵션 (engine-v1.40.0+)
+
+대상 경로가 현재 템플릿의 `routes.json`에 등록되어 있지 않을 때(예: 관리자 화면에서 사용자 페이지 URL로 navigate 시도), 404 라우트가 아닌 다른 핸들러로 분기시킨다. **기본값은 `openWindow`** — 미지정 시 자동으로 새 창에서 열림.
+
+**주 용도**: 알림센터에서 알림 클릭 시 관리자 ↔ 사용자 템플릿 교차 경로 처리.
+
+**판정 흐름**:
+
+1. `params.fallback === false` → fallback 비활성화 (SPA navigate 강행, 기존 동작)
+2. `params.replace === true` → 쿼리 갱신 전용이므로 fallback 미적용
+3. Router 미초기화 또는 routes 미로드 → fallback 미적용 (정상 navigate)
+4. `Router.match(pathname)` 성공 → fallback 미적용 (정상 navigate)
+5. 매칭 실패 → fallback 핸들러로 dispatch
+
+**파라미터 형태**:
+
+```jsonc
+// 1. 미지정 (기본값: openWindow)
+{ "handler": "navigate", "params": { "path": "/shop/products" } }
+
+// 2. 비활성화 (기존 동작 — 미등록 경로 그대로 SPA navigate)
+{ "handler": "navigate", "params": { "path": "/admin/x", "fallback": false } }
+
+// 3. 핸들러명만 지정 (string)
+{ "handler": "navigate", "params": { "path": "/shop/products", "fallback": "openWindow" } }
+
+// 4. 상세 지정 (object) — params는 finalPath 위에 merge
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/shop/products",
+    "fallback": { "handler": "openWindow", "params": { "target": "_blank" } }
+  }
+}
+```
+
+**알림센터 클릭 패턴 (parallel + fallback)**:
+
+알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 새 창을 열고 mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 새 창이 열려 사용자 체감이 나빠진다.
+
+```json
+{
+  "event": "onNotificationClick",
+  "handler": "parallel",
+  "params": {
+    "actions": [
+      {
+        "handler": "navigate",
+        "params": { "path": "{{$args[0].url ?? '/admin/notification-logs'}}" }
+      },
+      {
+        "handler": "apiCall",
+        "target": "/api/admin/notifications/{{$args[0].id}}/read",
+        "params": { "method": "PATCH" }
+      }
+    ]
+  }
+}
+```
 
 ### mergeQuery 옵션
 
@@ -231,6 +346,124 @@ replace: true는 같은 페이지 내에서만 사용
 }
 ```
 
+### scroll 옵션
+
+> **버전**: engine-v1.37.0+
+
+페이지 이동 후 스크롤 위치를 제어합니다. **기본값은 `"top"`** 으로, 일반적인 하이퍼링크 이동 UX와 동일하게 새 페이지가 최상단에서 시작됩니다.
+
+#### 단축 문법
+
+| 값 | 동작 |
+|----|------|
+| `"top"` (기본) | `#app` 내부의 모든 스크롤 컨테이너 + `window`를 상단으로 리셋 |
+| `"preserve"` | 이전 스크롤 위치 유지 (엔진이 건드리지 않음) |
+| `number` | `window`를 해당 Y 좌표로 이동 |
+| `{ x, y }` | `window`를 특정 좌표로 이동 |
+| `"#selector"` / `".class"` | 해당 엘리먼트로 `scrollIntoView({ block: 'start' })` |
+
+#### 확장 객체 문법
+
+특정 스크롤 컨테이너를 지정하거나, sticky 헤더 오프셋, `scrollIntoView`의 `block` 위치 등을 세밀하게 제어할 때 사용합니다.
+
+```ts
+{
+  container?: string;                       // 스크롤 컨테이너 선택자 (생략 시 window)
+  to?: string | number | { x?, y? } | "top"; // 이동 대상 (생략 시 "top")
+  block?: "start" | "center" | "end" | "nearest"; // scrollIntoView block (기본 "start")
+  offset?: number;                          // sticky 헤더 보정 (px, 양수 = 위쪽 여유)
+}
+```
+
+| 필드 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `container` | string | `window` | 스크롤 컨테이너 CSS 선택자. 관리자 템플릿처럼 내부 div가 실제 스크롤 영역인 경우 지정 (예: `"#right_content_area"`) |
+| `to` | string / number / object / `"top"` | `"top"` | 이동 대상. 엘리먼트 선택자 / Y 좌표 / `{x, y}` 좌표 / `"top"` |
+| `block` | string | `"start"` | `to`가 엘리먼트 선택자일 때 스크롤 위치 지정. 네이티브 `scrollIntoView`와 동일한 의미 |
+| `offset` | number | `0` | 최종 스크롤 위치에서 차감할 픽셀 수. sticky 헤더가 있는 경우 헤더 높이만큼 지정하면 대상이 헤더 아래로 가려지지 않음 |
+
+**동작 방식**:
+
+- 스크롤은 `requestAnimationFrame`을 통해 다음 tick에 적용되어 새 레이아웃이 DOM에 반영된 뒤 정확한 위치로 이동합니다
+- `replace: true` 분기 (`updateQueryParams`)에도 동일하게 기본 `"top"`이 적용됩니다. 검색/필터/페이지네이션에서 스크롤 유지를 원하면 `"preserve"` 명시
+- `scrollBehavior: "smooth"`와 조합하면 부드러운 스크롤 애니메이션이 적용됩니다
+- 관리자 템플릿(`sirsoft-admin_basic`)처럼 `html/body`가 `overflow: hidden`이고 내부 div(`#right_content_area`)가 실제 스크롤 컨테이너인 구조에서는 `"top"` 단축 문법이 자동으로 모든 스크롤 컨테이너를 리셋합니다. 숫자/좌표/선택자 단축 문법은 `window`만 스크롤하므로, 내부 컨테이너 제어가 필요하면 **확장 객체 문법에서 `container` 지정**
+
+#### 예시
+
+**검색 필터에서 스크롤 유지**:
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/products",
+    "replace": true,
+    "mergeQuery": true,
+    "query": { "search_keyword": "{{_local.keyword}}" },
+    "scroll": "preserve"
+  }
+}
+```
+
+**특정 엘리먼트로 이동 (단축)**:
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/docs",
+    "scroll": "#section-api"
+  }
+}
+```
+
+**관리자 템플릿 내부 컨테이너의 Y 좌표로 이동 (확장)**:
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/users",
+    "scroll": {
+      "container": "#right_content_area",
+      "to": 500
+    }
+  }
+}
+```
+
+**sticky 헤더가 있는 페이지에서 섹션으로 이동 (확장)**:
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/docs",
+    "scroll": {
+      "to": "#section-api",
+      "offset": 80
+    }
+  }
+}
+```
+
+**특정 엘리먼트를 화면 중앙에 위치 (확장)**:
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/report",
+    "scroll": {
+      "container": "#right_content_area",
+      "to": "#chart-revenue",
+      "block": "center"
+    }
+  }
+}
+```
+
 ---
 
 ## openWindow
@@ -338,7 +571,78 @@ replace: true는 같은 페이지 내에서만 사용
 
 ---
 
+## reloadExtensions
+
+> **버전**: engine-v1.38.0+
+
+확장(모듈/플러그인/템플릿) install/activate/deactivate/uninstall 직후 onSuccess 체인에서 호출하여 **페이지 전체 새로고침 없이** 확장 상태를 원자적으로 재동기화합니다.
+
+내부적으로 다음을 순차 수행합니다:
+
+1. `/api/templates/{id}/config.json` 에서 최신 `cache_version` 획득
+2. localStorage 의 확장 캐시 버전 갱신
+3. `Router.loadRoutes(newVersion)` — 신 버전 쿼리로 routes.json 재fetch
+4. LayoutLoader 캐시 버전 갱신 및 클리어
+5. TranslationEngine 재로드 — 활성 사전은 원자 교체되어 `$t:` 해석 경합 없음
+
+```json
+{
+  "handler": "reloadExtensions"
+}
+```
+
+### 선택 파라미터 (모듈/플러그인 에셋 동적 로드/제거)
+
+모듈 또는 플러그인의 JS/CSS 에셋을 동시에 로드/제거하려면 `moduleInfo` 또는 `pluginInfo` 와 `action` 을 전달합니다.
+
+```json
+{
+  "handler": "reloadExtensions",
+  "params": {
+    "moduleInfo": "{{result}}",
+    "action": "add"
+  }
+}
+```
+
+| 파라미터 | 타입 | 설명 |
+|---------|------|------|
+| `moduleInfo` | object | 모듈 activate/deactivate API 응답 (`{{result}}`) — `identifier` 및 `assets` 포함 |
+| `pluginInfo` | object | 플러그인 activate/deactivate API 응답 |
+| `action` | 문자열 | `"add"` 또는 `"remove"` — 에셋 로드 또는 제거 |
+
+### 사용 사례
+
+- 모듈/플러그인/템플릿 install/activate/deactivate/uninstall onSuccess
+- 관리자가 같은 세션 안에서 확장을 활성화한 뒤 새 라우트로 즉시 이동하는 UX
+- 전체 페이지 새로고침(`refresh`) 을 SPA 친화적으로 대체
+
+### 올바른 사용
+
+```json
+"onSuccess": [
+  { "handler": "toast", "params": { "type": "success", "message": "$t:admin.modules.activate_success" } },
+  { "handler": "refetchDataSource", "params": { "dataSourceId": "modules" } },
+  {
+    "handler": "reloadExtensions",
+    "params": {
+      "moduleInfo": "{{result}}",
+      "action": "add"
+    }
+  }
+]
+```
+
+### 주의
+
+- 기존에 3~4건을 병렬 호출하던 `reloadRoutes` + `reloadTranslations` + `reloadModuleHandlers` / `reloadPluginHandlers` 패턴을 이 단일 핸들러로 대체하세요.
+- 템플릿 activate/force_activate 에서 `refresh`(전체 새로고침)로 해결하던 케이스도 `reloadExtensions` 로 교체 가능.
+
+---
+
 ## reloadRoutes
+
+> **Deprecated** (engine-v1.38.0+): `reloadExtensions` 사용을 권장합니다. 하위 호환을 위해 유지되며 내부적으로 `reloadExtensions` 와 동일한 `TemplateApp.reloadExtensionState()` 로 위임됩니다.
 
 라우트(routes.json)를 다시 로드합니다.
 
@@ -350,8 +654,8 @@ replace: true는 같은 페이지 내에서만 사용
 
 ### 사용 사례
 
-- 모듈/플러그인 설치 후 새 라우트 적용
-- 동적으로 라우트 설정이 변경된 경우
+- (deprecated) 모듈/플러그인 설치 후 새 라우트 적용 → `reloadExtensions` 사용
+- (deprecated) 동적으로 라우트 설정이 변경된 경우
 
 ---
 

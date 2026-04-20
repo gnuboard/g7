@@ -27,6 +27,11 @@
             "imageAlt": ""
         }
     },
+    "transition_overlay": {
+        "wait_for": [
+            "categories"
+        ]
+    },
     "data_sources": [
         {
             "id": "categories",

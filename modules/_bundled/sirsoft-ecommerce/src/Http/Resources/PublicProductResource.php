@@ -107,6 +107,7 @@ class PublicProductResource extends BaseApiResource
             'short_description_localized' => $this->resolveLocalizedField($this->short_description),
             'description' => $this->description,
             'description_localized' => $this->getLocalizedDescription(),
+            'description_mode' => $this->description_mode,
 
             // 이미지
             'images' => ProductImageResource::collection($this->whenLoaded('images')),

@@ -2,24 +2,25 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
-use App\Services\CacheService;
+use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 게시글 관리 서비스 클래스
@@ -45,7 +46,8 @@ class PostService
         private AttachmentRepositoryInterface $attachmentRepository,
         private AttachmentService $attachmentService,
         private CommentRepositoryInterface $commentRepository,
-        private CommentService $commentService
+        private CommentService $commentService,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -55,14 +57,18 @@ class PostService
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  string  $context  컨텍스트 (admin 또는 user)
+     * @param  Board|null  $board  게시판 모델 (이미 조회된 경우 전달하여 중복 쿼리 방지)
      * @return LengthAwarePaginator 게시글 목록
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
-    public function getPosts(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, string $context = 'admin'): LengthAwarePaginator
+    public function getPosts(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, string $context = 'admin', ?Board $board = null): Paginator
     {
-        // 게시판 존재성 검증
-        $this->validateBoardExists($slug);
+        // 게시판 존재성 검증 (board가 전달되지 않은 경우에만)
+        if (! $board) {
+            $this->validateBoardExists($slug);
+        }
 
         // 컨텍스트 기반 스코프 권한 식별자 설정
         $scopePermission = $context === 'admin'
@@ -70,7 +76,7 @@ class PostService
             : "sirsoft-board.{$slug}.posts.read";
         $filters['scope_permission'] = $scopePermission;
 
-        return $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed);
+        return $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed, $board);
     }
 
     /**
@@ -95,6 +101,43 @@ class PostService
         $filters['scope_permission'] = $scopePermission;
 
         return $this->postRepository->countNormalPosts($slug, $filters, $withTrashed);
+    }
+
+    /**
+     * 일반 게시글(원글) 수를 캐시에서 조회합니다.
+     *
+     * 필터가 없는 기본 목록은 캐시를 사용하고 (TTL: cache.default_ttl 설정값),
+     * 필터(검색/카테고리 등)가 적용된 경우 실제 COUNT를 실행합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $boardId  게시판 ID
+     * @param  array  $filters  필터 조건
+     * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  string  $context  컨텍스트 (admin 또는 user)
+     * @return int 일반 게시글 수
+     */
+    public function getCachedNormalPostCount(string $slug, int $boardId, array $filters = [], bool $withTrashed = false, string $context = 'admin'): int
+    {
+        // 필터가 적용된 경우 캐시 미사용 — 실제 COUNT 실행
+        $hasActiveFilters = ! empty($filters['search'])
+            || (isset($filters['category']) && $filters['category'] !== '' && $filters['category'] !== null)
+            || ! empty($filters['status'])
+            || ! empty($filters['user_id'])
+            || ! empty($filters['created_at_from'])
+            || ! empty($filters['created_at_to']);
+
+        if ($hasActiveFilters || $withTrashed) {
+            return $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context);
+        }
+
+        $cacheKey = "board_normal_count_{$boardId}";
+
+        return $this->cache->remember(
+            $cacheKey,
+            fn () => $this->getTotalNormalPosts($slug, $filters, $withTrashed, $context),
+            (int) g7_core_settings('cache.default_ttl', 86400),
+            tags: ['board-stats']
+        );
     }
 
     /**
@@ -272,6 +315,17 @@ class PostService
             ]);
         }
 
+        // 캐시 무효화
+        try {
+            $this->invalidatePostCaches($slug);
+        } catch (\Exception $e) {
+            Log::error('PostService: 캐시 무효화 실패 (게시글 수정은 성공)', [
+                'post_id' => $updatedPost->id,
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return $updatedPost;
     }
 
@@ -325,7 +379,7 @@ class PostService
      * @param  string  $reason  블라인드 사유
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function blindPost(string $slug, int $id, string $reason, ?string $triggerType = null): Post
     {
@@ -362,7 +416,7 @@ class PostService
      * @param  string|null  $reason  복원 사유
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function restorePost(string $slug, int $id, ?string $reason = null, ?string $triggerType = null): Post
     {
@@ -418,13 +472,13 @@ class PostService
         $identifier = Auth::id() ?? request()->ip();
         $key = "post_view_{$slug}_{$id}_{$identifier}";
 
-        if (Cache::has($key)) {
+        if ($this->cache->has($key)) {
             return false;
         }
 
         $this->incrementViewCount($slug, $id);
         $ttl = (int) g7_module_settings('sirsoft-board', 'spam_security.view_count_cache_ttl', 86400);
-        Cache::put($key, true, now()->addSeconds($ttl));
+        $this->cache->put($key, true, $ttl);
 
         return true;
     }
@@ -438,12 +492,14 @@ class PostService
      *
      * @throws ModelNotFoundException 게시판 또는 게시글을 찾을 수 없는 경우
      */
-    public function getPostWithCounts(string $slug, int $id): Post
+    public function getPostWithCounts(string $slug, int $id, ?int $boardId = null): Post
     {
-        // 게시판 존재성 검증
-        $this->validateBoardExists($slug);
+        // boardId가 전달되면 이미 검증된 것이므로 중복 조회 방지
+        if (! $boardId) {
+            $this->validateBoardExists($slug);
+        }
 
-        $post = $this->postRepository->findWithCounts($slug, $id);
+        $post = $this->postRepository->findWithCounts($slug, $id, $boardId);
 
         if (! $post) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.post_not_found'));
@@ -459,14 +515,17 @@ class PostService
      * @param  int  $id  현재 게시글 ID
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  Board|null  $board  게시판 모델 (전달 시 재조회 방지)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
-    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false): array
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?Board $board = null): array
     {
         // 게시판 존재성 검증 및 조회 (이전/다음 조회는 스코프 체크 불필요)
-        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+        if (! $board) {
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+        }
 
         if (! $board) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
@@ -474,13 +533,29 @@ class PostService
 
         // 게시판 정렬 설정이 filters에 없으면 게시판 기본값 사용
         if (empty($filters['order_by'])) {
-            $filters['order_by'] = $board->order_by ?? 'id';
+            $orderByDefault = $board->order_by;
+            $filters['order_by'] = $orderByDefault instanceof \BackedEnum ? $orderByDefault->value : ($orderByDefault ?? 'id');
         }
         if (empty($filters['order_direction'])) {
-            $filters['order_direction'] = $board->order_direction ?? 'desc';
+            $orderDirDefault = $board->order_direction;
+            $filters['order_direction'] = $orderDirDefault instanceof \BackedEnum ? $orderDirDefault->value : ($orderDirDefault ?? 'desc');
         }
 
-        return $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed);
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+        $category = $filters['category'] ?? null;
+        $orderBy = $filters['order_by'] ?? 'id';
+        $orderDirection = $filters['order_direction'] ?? 'desc';
+        $cacheKey = "adjacent_{$slug}_{$id}"
+            .($category ? "_{$category}" : '')
+            ."_{$orderBy}_{$orderDirection}"
+            .($withTrashed ? '_trashed' : '');
+
+        return $this->cache->remember(
+            $cacheKey,
+            fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id),
+            $ttl,
+            tags: ['board-posts']
+        );
     }
 
     /**
@@ -508,8 +583,8 @@ class PostService
         // 조회수 증가 (캐시 기반 중복 방지)
         $this->incrementViewCountOnce($slug, $id);
 
-        // 댓글/첨부파일 카운트 포함하여 게시글 조회
-        $post = $this->getPostWithCounts($slug, $id);
+        // 댓글/첨부파일 카운트 포함하여 게시글 조회 (boardId 전달로 Board 중복 조회 방지)
+        $post = $this->getPostWithCounts($slug, $id, $board->id);
 
         // 컨텍스트 기반 스코프 접근 검사
         $scopePermission = $context === 'admin'
@@ -523,8 +598,8 @@ class PostService
         // board 관계 수동 설정
         $post->setRelation('board', $board);
 
-        // 댓글 로드 (게시판 comment_order 설정 적용)
-        $comments = $this->commentService->getCommentsByPostId($slug, $id);
+        // 댓글 로드 (게시판 comment_order 설정 적용, Board 객체 전달로 중복 조회 방지)
+        $comments = $this->commentService->getCommentsByPostId($slug, $id, boardId: $board->id, board: $board);
 
         // 댓글의 post에 board 관계 수동 설정 (CommentResource의 권한 체크에 필요)
         foreach ($comments as $comment) {
@@ -534,8 +609,11 @@ class PostService
         // 정렬된 댓글을 post에 설정
         $post->setRelation('comments', $comments);
 
-        // 이전/다음 게시글 조회
-        $post->navigation = $this->getAdjacentPosts($slug, $id, filters: [], withTrashed: $canViewDeleted);
+        // 이전/다음 게시글 조회 (게시판 정렬 설정 반영)
+        $post->navigation = $this->getAdjacentPosts($slug, $id, filters: [
+            'order_by' => $board->order_by instanceof \BackedEnum ? $board->order_by->value : $board->order_by,
+            'order_direction' => $board->order_direction instanceof \BackedEnum ? $board->order_direction->value : $board->order_direction,
+        ], withTrashed: $canViewDeleted, board: $board);
 
         return $post;
     }
@@ -857,7 +935,30 @@ class PostService
      */
     public function getUserActivities(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        return $this->postRepository->getUserActivities($userId, $filters, $perPage);
+        $activityType = $filters['activity_type'] ?? 'authored';
+        $boardSlug = $filters['board_slug'] ?? '';
+        $search = $filters['search'] ?? '';
+
+        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용
+        if (empty($boardSlug) && empty($search)) {
+            $cacheKey = "user_activities_total_{$userId}_{$activityType}";
+            $cachedTotal = $this->cache->get($cacheKey);
+
+            if ($cachedTotal !== null) {
+                $filters['cached_total'] = (int) $cachedTotal;
+            }
+        }
+
+        $result = $this->postRepository->getUserActivities($userId, $filters, $perPage);
+
+        // 캐시 미적중 시 paginate 결과의 total을 캐시에 저장
+        if (empty($boardSlug) && empty($search) && $cachedTotal === null) {
+            $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+            $total = $result->total();
+            $this->cache->remember($cacheKey, fn () => $total, $ttl, tags: ['board-stats']);
+        }
+
+        return $result;
     }
 
     /**
@@ -870,7 +971,14 @@ class PostService
      */
     public function getUserActivityStats(int $userId): array
     {
-        return $this->postRepository->getUserActivityStats($userId);
+        $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+
+        return $this->cache->remember(
+            "user_activity_stats_{$userId}",
+            fn () => $this->postRepository->getUserActivityStats($userId),
+            $ttl,
+            tags: ['board-stats']
+        );
     }
 
     /**
@@ -904,7 +1012,14 @@ class PostService
      */
     public function getUserPublicStats(int $userId): array
     {
-        return $this->postRepository->getUserPublicStats($userId);
+        $cacheKey = "user_public_stats_{$userId}";
+
+        return $this->cache->remember(
+            $cacheKey,
+            fn () => $this->postRepository->getUserPublicStats($userId),
+            g7_core_settings('cache.default_ttl', 86400),
+            tags: ['board-stats']
+        );
     }
 
     // =========================================================================
@@ -934,7 +1049,7 @@ class PostService
      * @param  string  $keyword  검색 키워드
      * @param  string  $sort  정렬 옵션
      * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchByKeyword(string $slug, string $keyword, string $sort = 'latest', int $limit = 10): array
     {
@@ -963,7 +1078,7 @@ class PostService
      * @param  string  $sort  정렬 옵션
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): array
     {
@@ -977,7 +1092,6 @@ class PostService
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
-     * @return int
      */
     public function countAcrossBoards(array $boardIds, string $keyword): int
     {
@@ -997,39 +1111,66 @@ class PostService
      */
     private function invalidatePostCaches(string $slug): void
     {
-        // 통계 캐시 무효화
-        CacheService::forget('sirsoft-board', 'stats');
+        // 게시판별 게시글 수는 개별 키로 관리 (slug별 독립)
+        $this->cache->forget("posts_count_{$slug}");
 
-        // 게시판별 게시글 수 캐시 무효화
-        CacheService::forget('sirsoft-board', "posts_count_{$slug}");
+        // tags 기반 일괄 무효화
+        $this->cache->flushTags(['board-stats']);   // 통계 캐시 (getCachedStats)
+        $this->cache->flushTags(['board-posts']);   // 최근/인기/이전·다음 게시글 캐시
+        $this->cache->flushTags(['board-list']);    // 인기 게시판 캐시
+    }
 
-        // 최근 게시글 캐시 무효화 (다양한 limit 값에 대응)
-        CacheService::forgetMany('sirsoft-board', [
-            'recent_posts_5',
-            'recent_posts_10',
-            'recent_posts_15',
-            'recent_posts_20',
-        ]);
+    /**
+     * 게시글 작성 쿨다운을 캐시에 기록합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string|int  $identifier  사용자 ID 또는 IP
+     * @param  int  $seconds  쿨다운 시간 (초)
+     */
+    public function recordPostCooldown(string $slug, string|int $identifier, int $seconds): void
+    {
+        $this->cache->put("post_cooldown_{$slug}_{$identifier}", true, $seconds);
+    }
 
-        // 인기 게시판 캐시 무효화 (다양한 limit 값에 대응)
-        CacheService::forgetMany('sirsoft-board', [
-            'popular_boards_4',
-            'popular_boards_5',
-            'popular_boards_10',
-            'popular_boards_20',
-        ]);
+    /**
+     * 게시글 비밀번호 검증 토큰을 캐시에 저장하고 만료 시각을 반환합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string  $token  검증 토큰
+     * @return array{token: string, expires_at: string} 토큰 및 만료 시각
+     */
+    public function storeDeleteVerifyToken(string $slug, int $postId, string $token): array
+    {
+        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
+        $expiresAt = now()->addSeconds($ttl);
+        $this->cache->put("board_post_verify_{$slug}_{$postId}_{$token}", true, $ttl);
 
-        // 인기 게시글 캐시 무효화 (모든 기간/limit 조합)
-        // popular_posts_{period}_{limit} 형식의 모든 가능한 조합
-        $periods = ['day', 'week', 'month', 'all'];
-        $limits = [5, 10, 20, 50];
-        $popularPostsKeys = [];
-        foreach ($periods as $period) {
-            foreach ($limits as $limit) {
-                $popularPostsKeys[] = "popular_posts_{$period}_{$limit}";
-            }
+        return [
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ];
+    }
+
+    /**
+     * 게시글 비밀번호 검증 토큰의 유효성을 확인하고 소비합니다.
+     *
+     * 토큰이 유효하면 즉시 삭제하여 재사용을 방지합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $postId  게시글 ID
+     * @param  string  $token  검증 토큰
+     * @return bool 토큰 유효 여부
+     */
+    public function consumeDeleteVerifyToken(string $slug, int $postId, string $token): bool
+    {
+        $key = "board_post_verify_{$slug}_{$postId}_{$token}";
+        if (! $this->cache->has($key)) {
+            return false;
         }
-        CacheService::forgetMany('sirsoft-board', $popularPostsKeys);
+        $this->cache->forget($key);
+
+        return true;
     }
 
     /**

@@ -7,8 +7,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserConsent;
-use App\Notifications\Auth\ResetPasswordNotification;
-use App\Notifications\Auth\WelcomeNotification;
+use App\Notifications\GenericNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -128,7 +127,7 @@ class UserAuthControllerTest extends TestCase
                 'data' => [
                     'token',
                     'user' => [
-                        'id',
+                        'uuid',
                         'name',
                         'email',
                     ],
@@ -612,7 +611,7 @@ class UserAuthControllerTest extends TestCase
         $this->assertNotNull($user);
 
         // 환영 알림 발송 확인
-        Notification::assertSentTo($user, WelcomeNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     /**
@@ -877,7 +876,7 @@ class UserAuthControllerTest extends TestCase
         ]);
 
         // 알림 발송 확인
-        Notification::assertSentTo($user, ResetPasswordNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     /**
@@ -939,7 +938,7 @@ class UserAuthControllerTest extends TestCase
         $this->assertNotEquals($firstCreatedAt->timestamp, $secondToken->created_at->timestamp);
 
         // 알림이 2번 발송됨 확인
-        Notification::assertSentToTimes($user, ResetPasswordNotification::class, 2);
+        Notification::assertSentToTimes($user, GenericNotification::class, 2);
     }
 
     /**
@@ -961,7 +960,7 @@ class UserAuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
 
-        Notification::assertSentTo($user, ResetPasswordNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     /**
@@ -1000,7 +999,7 @@ class UserAuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
 
-        Notification::assertSentTo($user, ResetPasswordNotification::class);
+        Notification::assertSentTo($user, GenericNotification::class);
     }
 
     // ========================================================================

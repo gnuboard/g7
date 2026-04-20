@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -109,7 +109,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
 
             // SEO 관련 변경이 있었으면 sitemap 캐시 삭제
             if (! empty($invalidatedLayouts) || $sitemapAffected) {
-                Cache::forget('seo:sitemap');
+                app(CacheInterface::class)->forget('seo.sitemap');
             }
 
             if (! empty($invalidatedLayouts)) {

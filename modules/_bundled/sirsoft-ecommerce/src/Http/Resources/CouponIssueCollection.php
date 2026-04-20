@@ -3,13 +3,13 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * 쿠폰 발급 내역 컬렉션 리소스
  */
-class CouponIssueCollection extends ResourceCollection
+class CouponIssueCollection extends BaseApiCollection
 {
     /**
      * The resource that this resource collects.

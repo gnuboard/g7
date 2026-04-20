@@ -70,6 +70,8 @@ export interface TabNavigationScrollProps {
  * - 내부 상태로 활성 탭 관리 (React useState)
  * - scrollToSectionHandler를 사용하여 자동 스크롤
  * - 탭 클릭 시 즉시 UI 업데이트 + 스크롤 이동
+ * - 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여 768px 미만 시
+ *   Select 드롭다운으로 자동 전환 (Tailwind hidden md:flex 분기 미사용 — 위지윅 미리보기 호환)
  *
  * @example
  * ```json
@@ -103,6 +105,14 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   const [activeTab, setActiveTab] = useState<string | number>(
     activeTabId ?? (tabs.length > 0 ? tabs[0].id : '')
   );
+
+  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
+  const G7Core = (window as any).G7Core;
+  const useResponsive = G7Core?.useResponsive;
+  const responsiveValue = useResponsive?.();
+  const isMobile = responsiveValue
+    ? responsiveValue.width < 768
+    : typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Scroll Spy 일시 중지를 위한 ref
   const isScrollingRef = useRef(false);
@@ -321,39 +331,40 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
     }
   };
 
-  return (
-    <>
-      {/* 데스크톱: 탭 버튼 (md 이상) */}
-      <Div className={`hidden md:flex ${className}`} style={style}>
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            className={activeTab === tab.id ? activeClassName : inactiveClassName}
-            disabled={tab.disabled}
-            onClick={() => handleTabClick(tab)}
-          >
-            {tab.iconName && (
-              <Icon name={tab.iconName} size="sm" />
-            )}
-            <Span>{tab.label}</Span>
-          </Button>
-        ))}
-      </Div>
-
-      {/* 모바일: Select 박스 (md 미만) */}
-      <Div className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+  // 모바일: Select 드롭다운 단일 렌더
+  if (isMobile) {
+    return (
+      <Div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <Select
           value={String(activeTab)}
           onChange={handleSelectChange}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-        >
-          {tabs.map((tab) => (
-            <option key={tab.id} value={String(tab.id)} disabled={tab.disabled}>
-              {tab.label}
-            </option>
-          ))}
-        </Select>
+          options={tabs.map((tab) => ({
+            value: String(tab.id),
+            label: tab.label,
+            disabled: tab.disabled,
+          }))}
+          className="w-full"
+        />
       </Div>
-    </>
+    );
+  }
+
+  // 데스크톱: 탭 버튼 단일 렌더
+  return (
+    <Div className={className} style={style}>
+      {tabs.map((tab) => (
+        <Button
+          key={tab.id}
+          className={activeTab === tab.id ? activeClassName : inactiveClassName}
+          disabled={tab.disabled}
+          onClick={() => handleTabClick(tab)}
+        >
+          {tab.iconName && (
+            <Icon name={tab.iconName} size="sm" />
+          )}
+          <Span>{tab.label}</Span>
+        </Button>
+      ))}
+    </Div>
   );
 };

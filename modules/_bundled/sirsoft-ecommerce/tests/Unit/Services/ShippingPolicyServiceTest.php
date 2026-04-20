@@ -6,7 +6,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
@@ -119,7 +118,7 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $shippingPolicy = new ShippingPolicy([
             'id' => 1,
             'name' => ['ko' => '기본택배', 'en' => 'Basic Parcel'],
-            'shipping_method' => ShippingMethodEnum::PARCEL->value,
+            'shipping_method' => 'parcel',
             'charge_policy' => ChargePolicyEnum::FIXED->value,
         ]);
 
@@ -164,7 +163,7 @@ class ShippingPolicyServiceTest extends ModuleTestCase
 
         $data = [
             'name' => ['ko' => '새택배정책', 'en' => 'New Parcel Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL->value,
+            'shipping_method' => 'parcel',
             'charge_policy' => ChargePolicyEnum::FIXED->value,
             'base_fee' => 3000,
             'countries' => ['KR'],
@@ -358,8 +357,9 @@ class ShippingPolicyServiceTest extends ModuleTestCase
 
     public function test_delete_removes_shipping_policy(): void
     {
-        // Given: 배송정책 존재
-        $shippingPolicy = new ShippingPolicy(['id' => 1]);
+        // Given: 배송정책 존재 (id는 fillable이 아니므로 직접 설정)
+        $shippingPolicy = new ShippingPolicy();
+        $shippingPolicy->id = 1;
 
         $this->mockRepository
             ->shouldReceive('delete')

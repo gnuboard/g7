@@ -201,6 +201,8 @@
     "country_active": "Country Active",
     "extra_fee_kr_only": "Remote Area Fee (Korea only)",
     "shipping_method": "Shipping Method",
+    "custom_shipping_name": "Shipping Method Name (Custom)",
+    "custom_shipping_name_placeholder": "Enter shipping method name",
     "carrier": "Carrier",
     "carrier_placeholder": "Select carrier",
     "currency_code": "Base Currency",

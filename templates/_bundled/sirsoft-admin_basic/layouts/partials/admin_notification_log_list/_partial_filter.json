@@ -1,0 +1,544 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Notification Log List Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "Select",
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500",
+                                "value": "{{_local.filter.searchType || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.notification_log.filter.search_type_all"
+                                    },
+                                    {
+                                        "value": "recipient",
+                                        "label": "$t:admin.notification_log.filter.search_type_recipient"
+                                    },
+                                    {
+                                        "value": "subject",
+                                        "label": "$t:admin.notification_log.filter.search_type_subject"
+                                    }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.notification_log.search_placeholder",
+                                        "className": "input w-full pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchNotificationLogs"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col"
+            },
+            "children": [
+                {
+                    "id": "status_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.notification_log.filter.status_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{[]}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.filter.status_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('sent')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'sent'), 'sent'] : (_local.filter.statuses || []).filter(s => s !== 'sent')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.status_sent"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('failed')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'failed'), 'failed'] : (_local.filter.statuses || []).filter(s => s !== 'failed')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.status_failed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes('skipped')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== 'skipped'), 'skipped'] : (_local.filter.statuses || []).filter(s => s !== 'skipped')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.status_skipped"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "extension_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.notification_log.filter.extension_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.extensionTypes || _local.filter.extensionTypes.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{[]}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.filter.extension_type_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('core')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'core'), 'core'] : (_local.filter.extensionTypes || []).filter(m => m !== 'core')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_core"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('module')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'module'), 'module'] : (_local.filter.extensionTypes || []).filter(m => m !== 'module')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_module"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.extensionTypes || []).includes('plugin')}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.extensionTypes": "{{$event.target.checked ? [...(_local.filter.extensionTypes || []).filter(m => m !== 'plugin'), 'plugin'] : (_local.filter.extensionTypes || []).filter(m => m !== 'plugin')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.notification_log.extension_plugin"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.notification_log.filter.search_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchNotificationLogs"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.notification_log.filter.reset_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "filter": {
+                                                "searchType": "all",
+                                                "search": "",
+                                                "extensionTypes": [],
+                                                "statuses": []
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

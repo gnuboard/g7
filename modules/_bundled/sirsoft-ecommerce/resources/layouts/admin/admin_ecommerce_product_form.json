@@ -12,6 +12,17 @@
     "computed": {
         "currencyColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "categories",
+            "brands",
+            "notice_templates",
+            "common_infos",
+            "product_labels",
+            "roles",
+            "activity_logs"
+        ]
+    },
     "data_sources": [
         {
             "id": "product",
@@ -25,8 +36,18 @@
             "auth_required": true,
             "loading_strategy": "blocking",
             "errorHandling": {
-                "403": { "handler": "showErrorPage", "params": { "target": "content" } },
-                "404": { "handler": "showErrorPage", "params": { "target": "content" } }
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
             },
             "errorCondition": {
                 "if": "{{response?.data?.abilities?.can_update !== true}}",
@@ -72,7 +93,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -94,7 +117,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -112,7 +137,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -134,7 +161,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -152,7 +181,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -170,7 +201,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
@@ -188,7 +221,9 @@
             "errorHandling": {
                 "default": {
                     "handler": "showErrorPage",
-                    "params": { "target": "content" }
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },

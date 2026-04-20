@@ -4,6 +4,7 @@ return [
     'title' => '템플릿 관리',
 
     'errors' => [
+        'force_update_no_source' => ':template 을(를) 강제 업데이트할 소스를 찾을 수 없습니다. 번들 및 GitHub URL이 모두 없습니다.',
         'not_found' => '템플릿을 찾을 수 없습니다. (:template)',
         'not_installed' => '템플릿이 설치되지 않았습니다. (:template)',
         'already_active' => '이미 활성화된 템플릿입니다.',
@@ -221,6 +222,7 @@ return [
         'install' => [
             'success' => '템플릿 ":template" 설치 완료',
             'already_installed' => '템플릿 ":template"이(가) 이미 설치되어 있습니다.',
+            'force_reinstall' => '템플릿 ":template" 을(를) 강제 재설치합니다 (활성 디렉토리 덮어쓰기)...',
             'layouts_created' => '레이아웃 :count개 생성됨',
             'type' => '타입: :type',
             'version' => '버전: :version',

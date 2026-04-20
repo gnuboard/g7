@@ -396,6 +396,58 @@ public function checkCanDelete(Product $product): array
 - 메서드 분리 (delete*, create*)
 - `truncate()` 대신 `delete()` 사용
 - PHPDoc 주석 한국어
+- **재실행 안전성 필수**: `delete + insert` 패턴 금지 → upsert 패턴 사용
+
+```text
+⚠️ CRITICAL: install --force, module:seed, 업그레이드 재실행 시 시더가 반복 실행됨.
+사용자 수정 데이터나 counter 값이 리셋되면 안 된다.
+```
+
+**재실행 안전 패턴 선택 기준**:
+
+| 엔티티 유형 | 권장 패턴 | 비고 |
+|------------|----------|------|
+| 사용자 수정 가능한 마스터 데이터 (예: 배송사, 클레임 사유, 게시판 유형) | `GenericEntitySyncHelper::sync()` + `cleanupStale()` | 모델에 `HasUserOverrides` trait + `$trackableFields` 필요 |
+| Counter/상태 유지 데이터 (예: 시퀀스 current_value) | `firstOrCreate` | 재실행 시 기존 레코드 완전 보존 |
+| 단순 정적 참조 데이터 | `updateOrCreate` | 사용자 수정 개념이 없는 경우 |
+
+**❌ 금지 패턴**:
+
+```php
+// 전체 삭제 후 재삽입 — 사용자 수정 / counter 손실
+Model::query()->delete();
+foreach ($items as $item) {
+    Model::create($item);
+}
+
+// 특정 type 범위 삭제 후 재삽입 — 동일 문제
+Model::where('type', $type)->delete();
+foreach ($items as $item) {
+    Model::create($item);
+}
+```
+
+**✅ 안전 패턴 (GenericEntitySyncHelper)**:
+
+```php
+$helper = app(GenericEntitySyncHelper::class);
+$codes = [];
+foreach ($items as $item) {
+    $helper->sync(Model::class, ['code' => $item['code']], $item);
+    $codes[] = $item['code'];
+}
+// 시더 정의에서 제거된 row 만 정리
+$helper->cleanupStale(Model::class, ['type' => 'foo'], 'code', $codes);
+```
+
+**✅ 안전 패턴 (firstOrCreate — counter 엔티티)**:
+
+```php
+Model::firstOrCreate(
+    ['type' => $type->value],  // unique 조건
+    [ /* 최초 생성 시에만 사용될 초기값 */ ],
+);
+```
 
 #### 시더 디렉토리 구조
 

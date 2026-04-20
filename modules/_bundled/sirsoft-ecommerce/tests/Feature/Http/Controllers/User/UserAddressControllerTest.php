@@ -255,6 +255,7 @@ class UserAddressControllerTest extends ModuleTestCase
 
         $existingDefault = UserAddress::factory()->create([
             'user_id' => $user->id,
+            'name' => '집',
             'is_default' => true,
         ]);
 

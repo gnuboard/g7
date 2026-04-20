@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -18,6 +17,13 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class CartControllerTest extends ModuleTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        app()->setLocale('ko');
+        $this->withHeaders(['Accept-Language' => 'ko']);
+    }
+
     /**
      * 테스트용 배송정책을 생성합니다.
      *
@@ -25,16 +31,27 @@ class CartControllerTest extends ModuleTestCase
      */
     protected function createShippingPolicy(): ShippingPolicy
     {
-        return ShippingPolicy::create([
+        $policy = ShippingPolicy::create([
             'name' => ['ko' => '테스트 배송정책', 'en' => 'Test Shipping Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL,
-            'charge_policy' => ChargePolicyEnum::FREE,
-            'base_fee' => 0,
-            'countries' => ['KR'],
-            'currency_code' => 'KRW',
             'is_default' => false,
             'is_active' => true,
         ]);
+
+        $policy->countrySettings()->create([
+            'country_code' => 'KR',
+            'shipping_method' => 'parcel',
+            'currency_code' => 'KRW',
+            'charge_policy' => ChargePolicyEnum::FREE,
+            'base_fee' => 0,
+            'free_threshold' => null,
+            'ranges' => null,
+            'extra_fee_enabled' => false,
+            'extra_fee_settings' => null,
+            'extra_fee_multiply' => false,
+            'is_active' => true,
+        ]);
+
+        return $policy->load('countrySettings');
     }
 
     /**
@@ -102,7 +119,7 @@ class CartControllerTest extends ModuleTestCase
         $addResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
             'product_id' => $data['product']->id,
             'items' => [
-                ['option_values' => $data['option']->option_values, 'quantity' => 2],
+                ['option_values' => $data['option']->getLocalizedOptionValues(), 'quantity' => 2],
             ],
         ], [
             'X-Cart-Key' => $cartKey,
@@ -155,7 +172,7 @@ class CartControllerTest extends ModuleTestCase
         $addResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
             'product_id' => $data['product']->id,
             'items' => [
-                ['option_values' => $data['option']->option_values, 'quantity' => 2],
+                ['option_values' => $data['option']->getLocalizedOptionValues(), 'quantity' => 2],
             ],
         ], [
             'X-Cart-Key' => $cartKey,
@@ -188,7 +205,7 @@ class CartControllerTest extends ModuleTestCase
         $addResponse = $this->postJson('/api/modules/sirsoft-ecommerce/cart', [
             'product_id' => $data['product']->id,
             'items' => [
-                ['option_values' => $data['option']->option_values, 'quantity' => 2],
+                ['option_values' => $data['option']->getLocalizedOptionValues(), 'quantity' => 2],
             ],
         ], [
             'X-Cart-Key' => $cartKey,

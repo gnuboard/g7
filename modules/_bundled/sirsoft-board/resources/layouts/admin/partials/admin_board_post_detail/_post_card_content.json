@@ -696,13 +696,24 @@
             {
               "comment": "일반 글인 경우 - 내용",
               "if": "{{!(post?.data?.parent?.is_secret && post?.data?.parent?.content === null)}}",
-              "type": "composite",
-              "name": "HtmlContent",
+              "type": "extension_point",
+              "name": "html_content",
               "props": {
                 "content": "{{post?.data?.parent?.content ?? ''}}",
                 "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
-                "className": "{{_local?.parentPostExpanded ? '' : '[&_img]:hidden [&_table]:hidden'}}"
-              }
+                "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+              },
+              "default": [
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{post?.data?.parent?.content ?? ''}}",
+                    "isHtml": "{{(post?.data?.parent?.content_mode ?? 'text') === 'html'}}",
+                    "className": "{{_local?.parentPostExpanded ? 'prose dark:prose-invert max-w-none' : '[&_img]:hidden [&_table]:hidden'}}"
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1063,13 +1074,24 @@
                   ]
                 },
                 {
-                  "type": "composite",
-                  "name": "HtmlContent",
+                  "type": "extension_point",
+                  "name": "html_content",
                   "props": {
                     "content": "{{post?.data?.content}}",
                     "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
-                    "className": "text-gray-600 dark:text-gray-400"
-                  }
+                    "className": "prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlContent",
+                      "props": {
+                        "content": "{{post?.data?.content}}",
+                        "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                        "className": "prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -1077,14 +1099,25 @@
         },
         {
           "id": "normal_content",
-          "type": "composite",
-          "name": "HtmlContent",
+          "type": "extension_point",
+          "name": "html_content",
           "if": "{{post?.data?.status !== 'blinded'}}",
           "props": {
             "content": "{{post?.data?.content}}",
             "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
-            "className": "text-gray-900 dark:text-gray-100"
-          }
+            "className": "prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{post?.data?.content}}",
+                "isHtml": "{{(post?.data?.content_mode ?? 'text') === 'html'}}",
+                "className": "prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
+              }
+            }
+          ]
         }
       ]
     },

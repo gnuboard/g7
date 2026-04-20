@@ -40,7 +40,8 @@
         "files": [
             "app/Helpers/settings_helpers.php",
             "app/Helpers/module_helpers.php",
-            "app/Helpers/plugin_helpers.php"
+            "app/Helpers/plugin_helpers.php",
+            "app/Support/SampleData/bootstrap.php"
         ]
     },
     "autoload-dev": {

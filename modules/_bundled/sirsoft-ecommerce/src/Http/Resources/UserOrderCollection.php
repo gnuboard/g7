@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Helpers\PermissionHelper;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -12,7 +12,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * 마이페이지 주문내역 목록을 페이지네이션 및 통계와 함께 반환합니다.
  */
-class UserOrderCollection extends ResourceCollection
+class UserOrderCollection extends BaseApiCollection
 {
     /**
      * 주문 컬렉션을 배열로 변환합니다.

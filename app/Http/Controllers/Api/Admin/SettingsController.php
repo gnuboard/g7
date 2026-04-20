@@ -10,6 +10,7 @@ use App\Http\Requests\Settings\TestMailRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
 use App\Services\DriverConnectionTester;
+use App\Services\DriverRegistryService;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ class SettingsController extends AdminBaseController
 {
     public function __construct(
         private SettingsService $settingsService,
-        private DriverConnectionTester $driverConnectionTester
+        private DriverConnectionTester $driverConnectionTester,
+        private DriverRegistryService $driverRegistryService
     ) {
         parent::__construct();
     }
@@ -38,6 +40,7 @@ class SettingsController extends AdminBaseController
     {
         try {
             $settings = $this->settingsService->getAllSettings();
+            $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -64,6 +67,7 @@ class SettingsController extends AdminBaseController
             if ($result) {
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $allSettings = $this->settingsService->getAllSettings();
+                $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,

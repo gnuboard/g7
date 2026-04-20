@@ -9,7 +9,7 @@
     "claim": "Claims",
     "shipping": "Shipping",
     "review_settings": "Review Settings",
-    "mail_templates": "Mail Templates"
+    "notification_definitions": "Notifications"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
@@ -280,6 +280,38 @@
       "duplicate_error": "This country code is already registered.",
       "default_badge": "Default"
     },
+    "types": {
+      "section_title": "Shipping Types",
+      "add_button": "Add Type",
+      "empty": "No shipping types registered.",
+      "columns": {
+        "code": "Code",
+        "name": "Type Name",
+        "category": "Category",
+        "is_active": "Active",
+        "actions": "Actions"
+      },
+      "form": {
+        "code": "Type Code",
+        "code_placeholder": "lowercase, underscore (e.g. express_delivery)",
+        "name": "Type Name",
+        "name_ko_placeholder": "Korean",
+        "name_en_placeholder": "English",
+        "category": "Category",
+        "cancel": "Cancel",
+        "save": "Add"
+      },
+      "categories": {
+        "domestic": "Domestic",
+        "international": "International",
+        "other": "Other"
+      },
+      "confirm_delete": "Are you sure you want to delete this shipping type?",
+      "validation": {
+        "code_required": "Please enter a code",
+        "name_required": "Please enter a type name"
+      }
+    },
     "carriers": {
       "section_title": "Shipping Carriers",
       "add_button": "Add Carrier",
@@ -339,13 +371,15 @@
       "category_page": "Category",
       "search_page": "Search Results",
       "product_page": "Product Detail",
+      "shop_index_page": "Shop Main",
       "meta_title": "Title",
       "meta_description": "Description",
       "available_variables": "Available Variables",
       "main_description_placeholder": "Main page description",
       "category_description_placeholder": "Category page description",
       "search_description_placeholder": "Search results page description",
-      "product_description_placeholder": "Product detail page description"
+      "product_description_placeholder": "Product detail page description",
+      "shop_index_description_placeholder": "Shop main page description"
     },
     "seo_friendly": {
       "title": "SEO-Friendly Page Settings",
@@ -355,12 +389,18 @@
       "category": "Category",
       "search_result": "Search Results",
       "product_detail": "Product Detail",
+      "shop_index": "Shop Main",
+      "clearing_cache": "Clearing...",
+      "clear_cache_confirm_title": "Clear SEO Cache",
+      "clear_cache_confirm": "Are you sure you want to clear all SEO cache? Cache will be regenerated on next bot visit.",
+      "clear_cache_success": "SEO cache has been cleared successfully.",
+      "clear_cache_failed": "Failed to clear SEO cache.",
       "user_agent_management": "Search Engine User-Agent Management",
       "user_agent_description": "Manage User-Agents to provide SEO-friendly pages.",
       "user_agent_placeholder": "Enter User-Agent (e.g., Googlebot)",
       "cache_management": "SEO-Friendly Page Cache Management",
       "cache_description": "Manage cache for SEO-friendly pages.",
-      "current_cache_size": "Current Cache Size",
+      "current_cache_size": "Current Cache Size:",
       "clear_cache": "Clear Cache"
     }
   },
@@ -376,9 +416,10 @@
     "max_image_size_mb_label": "Max Image Size",
     "max_image_size_mb_hint": "Maximum file size for uploaded images"
   },
-  "mail_templates": {
-    "title": "Mail Template Management",
-    "description": "Manage email notification templates for orders. You can customize the subject and body for each notification type.",
+  "notification_definitions": {
+    "title": "Notification Settings",
+    "description": "Manage ecommerce notification templates by channel.",
+    "channel_management": "Notification Channels",
     "active": "Active",
     "inactive": "Inactive",
     "default_badge": "Default",
@@ -386,10 +427,21 @@
     "btn_reset": "Reset to Default",
     "btn_activate": "Activate",
     "btn_deactivate": "Deactivate",
-    "toggle_success": "Mail template status has been changed.",
-    "reset_success": "Mail template has been reset to default.",
-    "save_success": "Mail template has been saved.",
-    "save_error": "Failed to save mail template.",
+    "toggle_success": "Notification active status has been changed.",
+    "reset_success": "Notification has been reset to default.",
+    "reset_failed": "Failed to reset notification.",
+    "reset_modal": {
+        "title": "Reset to Default",
+        "confirm_message": "All channel templates of this notification will be restored to defaults.",
+        "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+        "target_label": "Target:",
+        "btn_confirm": "Reset",
+        "btn_confirming": "Resetting..."
+    },
+    "no_template_for_channel": "No template for this channel.",
+    "body_preview": "Body Preview",
+    "save_success": "Notification settings saved successfully.",
+    "save_error": "Failed to save notification settings.",
     "types": {
       "order_confirmed": "Order Confirmed",
       "order_shipped": "Order Shipped",
@@ -407,11 +459,12 @@
     "search_type_body": "Body",
     "total_count": "Total {{count}} items",
     "per_page_label": "Per page",
-    "empty_message": "No mail templates registered.",
+    "empty_message": "No notification settings found.",
     "empty_no_results": "No search results found.",
     "edit_modal": {
-      "title": "Edit Mail Template",
+      "title": "Edit Notification Template",
       "type_label": "Type:",
+      "channel_label": "Channel:",
       "subject": "Subject",
       "body": "Body",
       "variables_title": "Available Variables",
@@ -420,7 +473,7 @@
       "is_active_label": "Active"
     },
     "preview_modal": {
-      "title": "Mail Template Preview",
+      "title": "Notification Preview",
       "rendered_subject": "Rendered Subject",
       "rendered_body": "Rendered Body",
       "btn_close": "Close"

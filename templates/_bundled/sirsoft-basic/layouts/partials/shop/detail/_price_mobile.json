@@ -5,18 +5,48 @@
   },
   "type": "basic",
   "name": "Div",
-  "props": { "className": "flex items-baseline gap-2" },
   "children": [
     {
+      "comment": "할인 전 금액 (취소선, 할인 있을 때)",
       "type": "basic",
-      "name": "Span",
+      "name": "Div",
       "if": "{{product.data?.discount_rate > 0}}",
-      "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
-      "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}"
+      "props": { "className": "mb-1" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
+          "text": "{{product.data?.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.list_price_formatted}}"
+        }
+      ]
     },
     {
+      "comment": "할인율 + 판매가 (할인 있을 때)",
       "type": "basic",
-      "name": "Span",
+      "name": "Div",
+      "if": "{{product.data?.discount_rate > 0}}",
+      "props": { "className": "flex items-center gap-2" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-lg font-bold text-red-500" },
+          "text": "{{product.data?.discount_rate}}%"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+          "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
+        }
+      ]
+    },
+    {
+      "comment": "판매가 (할인 없을 때)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!product.data?.discount_rate || product.data?.discount_rate <= 0}}",
       "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
       "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data?.selling_price_formatted}}"
     }

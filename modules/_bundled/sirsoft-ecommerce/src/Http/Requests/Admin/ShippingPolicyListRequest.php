@@ -6,7 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 배송정책 목록 조회 요청
@@ -36,7 +36,7 @@ class ShippingPolicyListRequest extends FormRequest
 
             // 배송방법 (다중선택)
             'shipping_methods' => ['nullable', 'array'],
-            'shipping_methods.*' => ['string', Rule::in(ShippingMethodEnum::values())],
+            'shipping_methods.*' => ['string', Rule::in(ShippingType::pluck('code')->toArray())],
 
             // 부과정책 (다중선택)
             'charge_policies' => ['nullable', 'array'],

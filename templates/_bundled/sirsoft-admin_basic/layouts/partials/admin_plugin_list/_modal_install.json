@@ -40,6 +40,54 @@
       "type": "basic",
       "name": "Div",
       "props": {
+        "className": "mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Label",
+          "props": {
+            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          },
+          "text": "$t:admin.plugins.modals.vendor_mode_label"
+        },
+        {
+          "type": "basic",
+          "name": "Select",
+          "props": {
+            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+            "value": "{{_global.pluginInstallVendorMode ?? 'auto'}}",
+            "options": [
+              { "value": "auto", "label": "$t:admin.plugins.modals.vendor_mode_auto" },
+              { "value": "composer", "label": "$t:admin.plugins.modals.vendor_mode_composer" },
+              { "value": "bundled", "label": "$t:admin.plugins.modals.vendor_mode_bundled" }
+            ]
+          },
+          "actions": [
+            {
+              "type": "change",
+              "handler": "setState",
+              "params": {
+                "target": "global",
+                "pluginInstallVendorMode": "{{$event.target.value}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+          },
+          "text": "$t:admin.plugins.modals.vendor_mode_hint"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
         "className": "flex justify-end gap-3 mt-6"
       },
       "children": [
@@ -90,7 +138,8 @@
                   "params": {
                     "method": "POST",
                     "body": {
-                      "plugin_name": "{{_global.selectedPlugin.identifier}}"
+                      "plugin_name": "{{_global.selectedPlugin.identifier}}",
+                      "vendor_mode": "{{_global.pluginInstallVendorMode ?? 'auto'}}"
                     }
                   },
                   "onSuccess": [
@@ -126,6 +175,9 @@
                       "params": {
                         "dataSourceId": "admin_menu"
                       }
+                    },
+                    {
+                      "handler": "reloadExtensions"
                     },
                     {
                       "handler": "closeModal"

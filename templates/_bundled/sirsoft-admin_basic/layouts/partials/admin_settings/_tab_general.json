@@ -449,7 +449,9 @@
                     "className": "w-full",
                     "disabled": "{{_computed.isReadOnly}}",
                     "placeholder": "$t:admin.settings.general.select_timezone",
-                    "options": "{{_global.appConfig?.supportedTimezones?.map(tz => ({ value: tz, label: tz })) ?? []}}",
+                    "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
+                    "searchable": true,
+                    "searchPlaceholder": "{{$t('common.search')}}",
                     "error": "{{_local.errors?.['general.timezone']?.[0] ?? ''}}"
                   }
                 },

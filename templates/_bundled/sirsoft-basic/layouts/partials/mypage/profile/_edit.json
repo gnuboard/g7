@@ -811,7 +811,9 @@
                             "name": "timezone",
                             "value": "{{user.data?.timezone ?? ''}}",
                             "className": "w-full",
-                            "options": "{{[{ label: $t('mypage.profile.timezone_placeholder'), value: '' }].concat(_global.appConfig?.supportedTimezones?.map(tz => ({ value: tz, label: $t('timezones.' + tz) })) ?? [])}}"
+                            "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
+                            "searchable": true,
+                            "searchPlaceholder": "{{$t('common.search')}}"
                           }
                         },
                         {

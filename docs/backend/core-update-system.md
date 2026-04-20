@@ -14,6 +14,37 @@
 
 ---
 
+## 실행 환경 전제 (CRITICAL)
+
+```text
+⚠️ core:update 는 SSH/CLI 환경에서 코어 파일 소유자(보통 FTP/SSH 사용자)가
+   직접 실행한다고 가정합니다.
+```
+
+### 권한 모델
+
+| 실행 환경 | 권한 가정 | 권장 사용 |
+|----------|----------|----------|
+| **SSH/CLI 직접 실행** | 사용자 = 파일 소유자 → 모든 코어 파일 쓰기 가능 | ✅ 정상 사용 (권장) |
+| **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능. 코어 업데이트는 미지원 |
+| **www-data 로 CLI 실행** | 코어 파일 소유자와 다를 수 있음 | ⚠️ 비권장 — 권한 거부 가능 |
+
+### 권한 거부 발생 시 대처
+
+`core:update` 시작 시 현재 실행 사용자 UID와 코어 파일(`composer.json`) 소유자 UID를 비교하여 불일치 시 경고 로그를 남깁니다. 다음과 같은 경우 발생할 수 있습니다:
+
+1. **vendor/ 가 다른 사용자 소유**: 과거에 웹 인스톨러로 설치되어 vendor/ 가 www-data 소유인 상태에서 SSH 사용자로 `core:update` 실행
+   - **해결**: `chown -R $(whoami) vendor/` 후 재시도
+
+2. **코어 파일이 다른 사용자 소유**: FTP 사용자와 SSH 사용자가 다른 환경
+   - **해결**: 호스팅 제공자에게 권한 정리 요청 또는 수동 업데이트 수행
+
+### 웹 인스톨러는 별개
+
+웹 인스톨러(`public/install/`)는 PHP-FPM 사용자로 실행되므로 권한 제약이 큽니다. vendor 번들 시스템(244 이슈)으로 신규 설치 시점의 vendor/ 권한 이슈는 해소되었으나, **코어 업데이트는 웹에서 지원하지 않으며 SSH/CLI 로만 수행해야 합니다**.
+
+---
+
 ## 목차
 
 1. [업데이트 감지](#1-업데이트-감지)
@@ -52,6 +83,8 @@
 - config('app.update.github_url') 에서 리포지토리 URL 읽기
 - config('app.update.github_token') 으로 인증 (선택)
 - GitHub Releases API 호출 → 최신 릴리스 태그에서 버전 추출
+- 모든 원격 HTTP 호출은 GithubHelper (Laravel Http 파사드 기반) 사용
+  → file_get_contents + stream_context_create 금지 (allow_url_fopen=Off 환경 대응)
 ```
 
 ### 감지 결과
@@ -91,8 +124,12 @@
 |------|------|
 | 일반 | `checkForUpdates()` → GitHub API 호출 → 사용자 확인 프롬프트 |
 | `--source={path}` | 지정된 디렉토리를 소스로 사용 (GitHub 스킵) |
+| `--zip={path}` | 지정된 ZIP 파일을 추출하여 소스로 사용 (GitHub 스킵). 추출 후 `config/app.php` 에서 버전 자동 판별. ZIP 구조가 GitHub zipball 의 `owner-repo-hash/` 래퍼이든 평탄 루트이든 모두 지원 |
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 실행 |
+| `--vendor-mode=auto\|composer\|bundled` | vendor 설치 모드 지정 (기본 `auto` — composer 가능 시 composer, 불가 시 vendor-bundle.zip 추출). `bundled` 강제 시 공유 호스팅에서도 설치 가능 |
+
+> `--source` / `--zip` / `--local` 은 **상호 배타적**입니다. 동시 지정 시 커맨드는 시작 전에 FAILURE(1) 로 종료됩니다.
 
 ### Step 4: 다운로드 및 추출
 
@@ -117,14 +154,29 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 - 백업 위치: storage 경로에 타임스탬프 디렉토리
 ```
 
-### Step 6: Composer 최적화
+### Step 6: Vendor 설치 (Composer 또는 Bundled)
+
+`CoreUpdateService::runVendorInstallInPending()` 가 `VendorResolver` 경유로 모드에 따라 분기합니다.
 
 ```text
-1. composer.json + composer.lock의 MD5 비교 (_pending vs base_path)
-2. 동일 → "composer 의존성 변경 없음 — 스킵" (Step 6 + Step 8 모두 스킵)
-3. 변경됨 → composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+1. --vendor-mode 결정:
+   - composer 명시 / bundled 명시 → 그대로 사용
+   - auto (기본) → EnvironmentDetector 로 composer 실행 가능 여부 자동 감지
+
+2. Composer 모드 (기존 흐름):
+   - composer.json + composer.lock 의 MD5 비교 (_pending vs base_path)
+   - 동일 → "composer 의존성 변경 없음 — 스킵" (Step 6 + Step 8 모두 스킵)
+   - 변경됨 → composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+3. Bundled 모드 (신규, 공유 호스팅 대응):
+   - _pending/vendor-bundle.zip 무결성 검증 (SHA256)
+   - VendorBundleInstaller::install() 로 zip 추출 → _pending/vendor/ 생성
+   - 기존 vendor/ 를 vendor.old.{timestamp} 로 rename 후 추출 → 실패 시 복구
+
 4. --no-scripts: post-autoload-dump 방지 (Step 11에서 package:discover로 처리)
 ```
+
+> Vendor 번들 시스템 상세: [docs/extension/vendor-bundle.md](../extension/vendor-bundle.md)
 
 ### Step 7: 파일 적용
 
@@ -140,8 +192,9 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 1. php artisan migrate --force
 2. syncCoreRolesAndPermissions() — config/core.php의 roles/permissions 동기화
 3. syncCoreMenus() — config/core.php의 menus 동기화
-4. syncCoreMailTemplates() — config/core.php의 mail_templates 동기화
 ```
+
+> **변경 이력 (7.0.0-beta.2)**: `syncCoreMailTemplates()` 단계는 알림 시스템 통합(#146)으로 제거되었습니다. 메일 템플릿은 `notification_definitions` + `notification_templates` 로 통합되었으며, `Upgrade_7_0_0_beta_2` 가 운영 환경 데이터 이관과 알림 정의 시드를 처리합니다.
 
 > 역할/권한/메뉴 동기화는 `user_overrides` 패턴을 사용하여 사용자 커스터마이징 보존.
 > 상세: [extension-update-system.md § 13](../extension/extension-update-system.md#13-역할권한메뉴-동기화)
@@ -167,6 +220,26 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 6. _pending 디렉토리 삭제
 7. 성공 시 백업 삭제
 8. 유지보수 모드 해제
+```
+
+### Step 12: _bundled 확장 일괄 업데이트 프롬프트 (인터랙티브)
+
+> Trait: `App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt`
+
+코어 업데이트 완료 후, 번들(`_bundled/`) 에 설치된 확장보다 새 버전이 포함된 경우 일괄 업데이트를 제안합니다.
+
+```text
+1. checkAllModulesForUpdates() / checkAllPluginsForUpdates() / checkAllTemplatesForUpdates() 호출
+2. update_source === 'bundled' 항목만 수집
+3. 감지 결과 없으면 "활성 확장이 최신 번들과 일치합니다" 출력 후 종료
+4. 감지 결과 있으면 목록 표시 + 일괄 업데이트 여부 확인 (기본값 yes)
+5. 동의 시:
+   - 전역 레이아웃 전략 선택 (overwrite | keep)  ※ 섹션 10 참조
+   - 예외 확장 지정 여부 확인, yes 이면 다중 선택으로 전략 오버라이드
+   - 각 확장을 순차 업데이트 (실패 시 해당 확장만 warn, 나머지 계속 진행)
+6. 결과 요약 출력 (성공/실패 건수)
+
+--force 플래그가 코어 업데이트에 지정된 경우: 프롬프트 스킵 + 전역 overwrite 자동 적용 (CI 대응)
 ```
 
 ---
@@ -331,14 +404,26 @@ class Upgrade_7_0_0_beta_15 implements UpgradeStepInterface
 
 ```text
 □ UpgradeStepInterface 구현
-□ 네임스페이스: App\Upgrades
+□ 네임스페이스: App\Upgrades (코어) / Modules\Vendor\Module\Upgrades (모듈)
 □ 파일명: Upgrade_X_Y_Z.php (버전에 맞는 언더스코어 표기)
 □ 사전 조건 확인 (테이블/컬럼 존재 여부)
 □ 로거를 통한 진행 상황 기록
-□ 멱등성 보장 (여러 번 실행해도 안전)
+□ 멱등성 보장 — 모든 DB 조작에 방어 로직 필수 (아래 참조)
 □ 대량 데이터는 chunk() 사용
 □ raw SQL 사용 시 $context->table()로 테이블 프리픽스 적용
 ```
+
+### 멱등성 방어 로직 (필수)
+
+업그레이드 스텝은 재실행될 수 있다 (롤백 후 재시도, `--force` 등). 모든 DB 조작은 이미 완료된 상태에서 재실행해도 안전해야 한다.
+
+| 조작 유형 | 방어 패턴 | 비고 |
+|----------|----------|------|
+| 레코드 삽입 | `firstOrCreate` 또는 `updateOrCreate` | `insert` 단독 사용 금지 |
+| 대량 데이터 이관 | 이관 완료 마커 확인 후 스킵 | 예: `source` 컬럼에 마커 기록 → `exists()` 체크 |
+| 식별자 rename (unique 컬럼) | 신규 존재 여부 확인 후 분기 | 양쪽 다 존재하면 역할 이관 후 구 레코드 삭제 |
+| 코드/상태값 변환 (update WHERE) | WHERE 조건이 이미 변환된 건을 제외 | 대부분 자동 방어됨 |
+| 캐시 무효화 | 항상 안전 | — |
 
 ---
 
@@ -537,7 +622,6 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 | `runMigrations()` | `(): void` | `php artisan migrate --force` |
 | `syncCoreRolesAndPermissions()` | `(): void` | config/core.php roles/permissions 동기화 |
 | `syncCoreMenus()` | `(): void` | config/core.php menus 동기화 |
-| `syncCoreMailTemplates()` | `(): void` | config/core.php mail_templates 동기화 (user_overrides 보존) |
 
 ### 업그레이드 및 마무리
 

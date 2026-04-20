@@ -25,9 +25,11 @@ return [
     'storage_not_exists_message' => 'The storage folder does not exist. Please create a storage folder in the project root.',
     'storage_not_writable' => 'Storage Folder Not Writable',
     'storage_not_writable_message' => 'The storage folder is not writable. Please check the folder owner or group permissions.',
-    'storage_permission_guide' => 'Please grant <strong>:permissions</strong> permission to the Storage folder.',
+    'storage_ownership_mismatch' => 'Storage Folder Ownership Mismatch',
+    'storage_ownership_mismatch_message' => 'The storage folder owner (:owner) does not match the web server user (:web_user). Current permissions (:permissions) allow only the owner to write, so the web server cannot write. Please apply one of the options below.',
+    'storage_permission_guide' => 'Please grant <strong>755</strong> permission to the Storage folder.',
     'storage_permission_guide_detail' => 'Run the command below or change permissions via FTP:',
-    'storage_permission_command_linux' => 'chmod -R :permissions :path',
+    'storage_permission_command_linux' => 'chmod -R 755 :path',
     'current_owner' => 'Owner',
     'current_group' => 'Group',
     'current_permissions' => 'Permissions',
@@ -71,6 +73,10 @@ return [
     'error_disk_space' => 'Disk Space',
     'error_directory_permissions' => 'Insufficient directory write permissions',
     'error_required_files' => 'Required files missing',
+    'error_required_files_missing_label' => 'Required files missing',
+    'error_required_files_not_writable_label' => 'Required files not writable',
+    'error_required_files_ownership_mismatch_label' => 'Required files ownership mismatch',
+    'ownership_mismatch_option_666' => '[Alternative 2] Last resort — grant write permission to the file for everyone (reduced security, not recommended):',
     'required_files' => 'Required Files',
     'file_exists' => 'Exists',
     'file_missing' => 'Missing',
@@ -129,7 +135,7 @@ return [
     'show_progress' => 'Show Installation List',
     'installation_completed' => 'Installation Complete!',
     'recommendations' => 'Post-Installation Recommendations',
-    'recommendation_env_permission' => 'Set .env file permissions to 600 or 644',
+    'recommendation_env_permission' => 'Set .env file permissions to 644 (chmod 644 .env)',
     'recommendation_https' => 'Use HTTPS in production environment',
 
     // Step 5: Complete
@@ -191,7 +197,7 @@ return [
     // Error Messages - System (Requirements) (detailed)
     'error_php_version_insufficient_detail' => 'PHP version does not meet requirements (current: :current, required: :min+)',
     'error_disk_space_insufficient_detail' => 'Insufficient disk space (current: :current MB, required: :min MB)',
-    'error_directory_not_writable_detail' => 'Some directories are not writable. Please set permissions to :permissions.',
+    'error_directory_not_writable_detail' => 'Some directories are not writable. Run the command below to grant the permissions.',
     'error_required_files_missing' => 'Required files are missing.',
 
     'error_step_file_not_found' => 'Step file not found. Installation files may be corrupted.',
@@ -240,6 +246,8 @@ return [
     'task_env_create' => 'Creating Configuration File',
     'task_env_update' => 'Updating Configuration File',
     'task_key_generate' => 'Generating Security Key',
+    'task_dependency_precheck' => 'Extension Dependency Precheck',
+    'task_db_cleanup' => 'Cleaning Up Existing Database Tables',
     'task_db_migrate' => 'Creating Database Tables',
     'task_db_seed' => 'Initializing Default Data',
     'task_template_install' => 'Installing Admin Template',
@@ -277,6 +285,8 @@ return [
 
     // Log Messages - Worker (Composer)
     'log_composer_check_success' => 'Composer check completed',
+    'log_composer_check_skipped_bundled' => 'Composer check skipped — bundled vendor mode',
+    'log_composer_check_auto_fallback' => 'Composer not installed — will auto-fallback to bundled vendor mode',
     'log_composer_already_installed' => 'Composer dependencies are already installed',
     'log_composer_install_success' => 'Composer dependency installation completed',
     'log_composer_vendor_without_lock' => 'vendor directory exists but composer.lock is missing (incomplete state)',
@@ -544,7 +554,7 @@ location /install/api/ {
 </Location>
 
 [PHP Configuration]
-// Add to the top of install-worker-sse.php
+// Add to the top of install-worker.php
 ini_set(\'output_buffering\', \'off\');
 ini_set(\'zlib.output_compression\', \'off\');
 @apache_setenv(\'no-gzip\', 1);
@@ -552,6 +562,47 @@ ini_set(\'zlib.output_compression\', \'off\');
 [Shared Hosting]
 Contact your hosting provider about SSE (Server-Sent Events) support.
 Firewalls or proxies may be blocking long-lived HTTP connections.',
+
+    // Installation mode (SSE / polling)
+    'installation_mode_label' => 'Installation Mode',
+    'installation_mode_sse_title' => 'Real-time Streaming (SSE) — Recommended',
+    'installation_mode_sse_desc' => 'The server streams progress in real time. Fastest and most reliable in standard environments.',
+    'installation_mode_polling_title' => 'Compatibility Mode (Polling)',
+    'installation_mode_polling_desc' => 'Use this when SSE connection errors occur behind an Nginx proxy, shared hosting, etc. Status is polled every second.',
+    'sse_fallback_confirm' => 'SSE connection failed.\n\nWould you like to retry in compatibility mode (polling)?',
+    'start_installation_button' => 'Start Installation',
+
+    // Step 4 dependency warnings
+    'dependency_warning_title' => 'Missing Dependencies Detected',
+    'dependency_warning_description' => 'The following extensions are required. Click "Auto-select required items" to resolve them in one click.',
+    'dependency_auto_select' => 'Auto-select required items',
+    'dependency_missing_tooltip' => 'Please resolve dependencies first',
+    'dependency_precheck_failed' => 'Dependency precheck failed — return to Step 4 and select the missing modules/plugins',
+
+    // Step 3 existing database detection (issue #244)
+    'db_existing_g7_badge' => 'Existing G7 installation detected',
+    'db_existing_foreign_badge' => 'Foreign data detected',
+    'db_existing_mixed_badge' => 'Mixed G7 + foreign tables',
+    'db_existing_g7_title' => 'Existing G7 Installation Detected',
+    'db_existing_foreign_title' => 'Foreign Data Detected',
+    'db_existing_mixed_title' => 'Mixed Data Detected',
+    'db_existing_generic_title' => 'Existing Tables Detected',
+    'db_existing_g7_desc' => 'The selected database already contains a G7 installation. Forcing the install will delete all existing data. Back up first.',
+    'db_existing_foreign_desc' => 'The selected database contains unknown tables. Forcing the install will drop all of them. Consider using another database or back up first.',
+    'db_existing_mixed_desc' => 'The selected database contains a mix of G7 and other tables. Forcing the install will drop all of them.',
+    'db_existing_generic_desc' => 'The selected database contains existing tables. Forcing the install will drop all of them.',
+    'db_existing_tables_list' => 'Detected tables (up to 20):',
+    'db_backup_guide' => 'Backup command example (verify host/user/database before running):',
+    'db_backup_confirmed' => 'I have backed up and agree that all existing tables will be dropped',
+    'error_db_cleanup_consent_required' => 'You must consent to dropping existing tables before proceeding to the next step.',
+    'db_force_proceed_drop' => 'Drop all existing tables and install',
+    'db_force_proceed_confirmed' => 'Force install mode (existing tables will be dropped)',
+    'cancel' => 'Cancel',
+    'log_db_cleanup_skipped' => 'Skipping existing table cleanup (no action)',
+    'log_db_cleanup_empty' => 'No existing tables. Skipping cleanup.',
+    'log_db_cleanup_dropping' => 'Dropping {count} existing tables...',
+    'log_db_cleanup_done' => 'Dropped {count} existing tables.',
+    'error_db_cleanup_failed' => 'Failed to clean up existing database tables',
 
     // Dark Mode
     'toggle_theme' => 'Toggle Theme',
@@ -589,6 +640,10 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'dependency_type_admin_template' => 'Admin Template',
     'dependency_type_user_template' => 'User Template',
     'dependency_type_other' => 'Other',
+    'dep_auto_badge_label' => 'Required dependency',
+    'dep_lock_message' => ':names requires this item. Please deselect that extension first.',
+    'dep_version_required' => 'Required',
+    'dep_version_available' => 'Available',
     'author' => 'Author',
     'retry' => 'Retry',
     'select_all' => 'Select All',
@@ -682,10 +737,13 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'copied' => 'Copied!',
 
     // Step 2 permission guidance
-    'permission_fix_guide' => 'Run the following command in your terminal to fix permissions:',
-    'ownership_fix_guide' => 'Change the ownership to the web server user:',
-    'ownership_fix_hint' => '※ www-data is the web server user/group. Change it to nginx, apache, etc. depending on your environment.',
-    'ownership_detected_hint' => '※ Current web server user: :user (auto-detected)',
+    'permission_fix_guide' => 'Run the following command in your terminal or SSH to grant permissions:',
+    'ownership_mismatch_option_group' => '[Recommended] Group sharing — change group to the web server user and grant write permission:',
+    'ownership_mismatch_option_chown' => '[Alternative 1] Change owner — transfer ownership to the web server user:',
+    'ownership_mismatch_option_777' => '[Alternative 2] Last resort — grant write permission to everyone (reduced security, not recommended):',
+    'ownership_mismatch_hint' => '※ Current owner: :owner / Web server user: :web_user. Choose the option that matches your environment.',
+    'permission_fallback_title' => 'If the command above does not resolve the issue',
+    'permission_fallback_detail' => 'Some environments (e.g. dedicated servers) may require: chmod -R 775 :path',
     'permission_windows_hint' => '※ On Windows, open Command Prompt (cmd) as Administrator and run the command. Alternatively, you can set permissions via folder Properties → Security tab.',
     'directory_create_guide' => 'Run the following command to create the missing directories:',
 
@@ -761,6 +819,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'cli_status_checking' => 'Checking...',
     'cli_status_verified' => '✓ Verified',
     'cli_status_not_verified' => '✗ Not verified',
+    'cli_status_optional_bundled' => '— Optional (bundled mode)',
 
     // Environment Check Enhancements
     'required_functions' => 'Required Functions',

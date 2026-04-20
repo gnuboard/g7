@@ -2,13 +2,13 @@
 
 namespace App\Jobs;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Seo\SitemapGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -36,7 +36,7 @@ class GenerateSitemapJob implements ShouldQueue
      *
      * @param  SitemapGenerator  $generator  Sitemap 생성기
      */
-    public function handle(SitemapGenerator $generator): void
+    public function handle(SitemapGenerator $generator, CacheInterface $cache): void
     {
         $enabled = (bool) g7_core_settings('seo.sitemap_enabled', true);
         if (! $enabled) {
@@ -46,8 +46,8 @@ class GenerateSitemapJob implements ShouldQueue
         }
 
         $xml = $generator->generate();
-        $ttl = (int) g7_core_settings('seo.sitemap_cache_ttl', 86400);
-        Cache::put('seo:sitemap', $xml, $ttl);
+        $ttl = (int) g7_core_settings('cache.seo_sitemap_ttl', g7_core_settings('seo.sitemap_cache_ttl', 86400));
+        $cache->put('seo.sitemap', $xml, $ttl);
 
         Log::info('[SEO] Sitemap generated and cached', [
             'size' => strlen($xml),

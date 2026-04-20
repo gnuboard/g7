@@ -4,9 +4,8 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class MenuCollection extends ResourceCollection
+class MenuCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
 

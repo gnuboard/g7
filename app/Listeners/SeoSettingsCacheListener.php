@@ -2,9 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -64,7 +64,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             $cache->clearAll();
 
             // Sitemap 캐시 삭제
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             Log::info('[SEO] Core SEO settings changed — all cache cleared', [
                 'tab' => $tab,

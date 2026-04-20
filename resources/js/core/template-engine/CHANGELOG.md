@@ -5,6 +5,186 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.42.0] - 2026-04-16
+
+### Added
+
+- `render: false` 선택적 리렌더 제어 — 상태 값은 저장하되 React 리렌더를 건너뛰는 옵션. CKEditor 등 자체 DOM을 관리하는 플러그인에서 타이핑 중 전체 폼 리렌더(37,000+ 바인딩 재평가) 방지. `flushPendingDebounceTimers` 실행 시 항상 render: true 강제로 저장 직전 데이터 정합성 보장 (TemplateApp, G7CoreGlobals, ActionDispatcher)
+  - `G7Core.state.setLocal(updates, { render: false })` — 로컬 상태 사일런트 업데이트
+  - `G7Core.state.set(updates, { render: false })` — 전역 상태 사일런트 업데이트
+  - `setState` 핸들러 `render: false` — 레이아웃 JSON 액션 레벨 옵션: `{ "handler": "setState", "render": false }`
+
+## [engine-v1.41.0] - 2026-04-16
+
+### Added
+
+- `G7Core.state.setLocal()` `debounce`/`debounceKey` 옵션 — 프로그래매틱 호출에서 G7 표준 디바운스 사용 가능. ActionDispatcher의 기존 타이머 인프라(자동 정리, flushPendingDebounceTimers 연동)를 활용 (G7CoreGlobals)
+- `G7Core.dispatch()` `debounce`/`debounceKey` 옵션 — 액션 시스템 진입점에서도 표준 디바운스 지원 (G7CoreGlobals)
+- `ActionDispatcher.debouncedCall()` 공개 메서드 — 프로그래매틱 debounce용 타이머 관리 (ActionDispatcher)
+
+### Fixed
+
+- `setLocal()` 내부 `baseLocal` 계산 시 stale `actionContext.state`의 빈 배열이 `globalLocal`의 정상 API 데이터를 `deepMerge`로 교체하는 오염 경로 차단 — `deepMerge` → `addMissingLeafKeys` 전략으로 변경하여 `globalLocal`(committed 상태)의 기존 값을 보존하면서 `dynamicLocal`(setState 전용 키)만 안전하게 추가. CKEditor 등 플러그인 onMount에서 `setLocal` 호출 시 init_actions 기본값(빈 배열)이 API 데이터를 덮어쓰는 문제 해소 (G7CoreGlobals)
+- SPA 네비게이션 시 `_localInit` 미적용 상태에서 stale `dynamicState` 병합 방지 — `lastProcessedInitRef` ref 기반 감지로 `extendedDataContext` 병합에서 stale `dynamicState` 건너뛰기 (DynamicRenderer)
+
+## [engine-v1.40.0] - 2026-04-15
+
+### Added
+
+- `navigate` 핸들러 `params.fallback` 옵션 — 대상 경로가 현재 템플릿의 `routes.json`에 매칭되지 않을 때 대체 핸들러로 분기. **기본값은 `openWindow`**(새 창 열기)로, 관리자 ↔ 사용자 템플릿 간 경로 교차 이동 시 404 페이지 대신 새 창으로 열림. `fallback: false` 로 비활성화 가능, `fallback: "핸들러명"` 또는 `fallback: { handler, params }` 로 커스텀 지정 가능. `replace: true` 분기(쿼리 갱신 전용)에는 미적용. 알림센터에서 알림 클릭 시 교차 템플릿 경로 접근 문제 해결 (ActionDispatcher)
+
+## [engine-v1.39.0] - 2026-04-15
+
+### Changed
+
+- 확장 에셋 로딩 병렬화 — `ModuleAssetLoader.loadActiveExtensionAssets()` 가 JS 번들을 `for...await` 로 직렬 fetch 하던 것을 `Promise.all(map(loadJS))` 병렬 fetch 로 전환. 실행 순서는 `script.async = false` + priority 정렬 순서로 DOM append 되어 HTML 사양에 따라 그대로 보장됨. 사용자 화면 진입 시 5개 IIFE 확장 기준 staircase 로딩이 ~1.3초 → ~350ms 로 단축. 코드베이스 감사 결과 cross-extension 참조·priority 차등·등록 순서 의존성 모두 없음을 확인한 후 적용 (ModuleAssetLoader)
+
+## [engine-v1.38.2] - 2026-04-15
+
+### Fixed
+
+- (engine-v1.38.2) `{{$event.target.checked ? '$t:admin.modules.activate_success' : '$t:admin.modules.deactivate_success'}}` 같은 **조건부 표현식 안의 따옴표 `$t:` 패턴이 raw key 를 토스트로 노출하던 버그** — `DataBindingEngine.preprocessTranslationTokens()` 가 따옴표 안의 `'$t:KEY'` 를 `$t('KEY')` 함수 호출로 변환하고, `$t()` 헬퍼가 `context.$templateId` 를 templateId 로 사용하는데, ActionDispatcher 의 `createHandler()` 가 빌드한 action data context 가 항상 `$templateId` 를 포함하지는 않아 빈 templateId 로 lookup 이 실패하던 문제. `$t()` 가 이제 `context.$templateId` 가 없으면 `window.__templateApp.getConfig()` 로부터 templateId/locale 을 회수한다 (DataBindingEngine). admin_module_list / admin_plugin_list / admin_role_list 등 onSuccess 토스트 메시지가 다시 정상 번역됨
+
+## [engine-v1.38.1] - 2026-04-15
+
+### Fixed
+
+- (engine-v1.38.1) `reloadExtensions` 병렬 블록에서 동시에 실행되는 `toast($t:...)` 가 raw 다국어 키(예: `admin.modules.activate_success`)를 그대로 노출하던 경합 — `TranslationEngine.setCacheVersion()` 내부의 `clearCache()` 호출이 활성 `this.translations` 맵을 비워서, 새 `loadTranslations()` 가 fetch를 완료하기 전에 실행되는 `translate()` 호출이 빈 사전을 만나 폴백 규칙(3번째 단계)에 따라 원본 키를 반환하던 문제. `setCacheVersion()` 이 이제 TTL 캐시(`this.cache`)만 비우고 활성 사전(`this.translations`)은 그대로 유지 — `loadTranslations()` 완료 시점에 `translations.set(cacheKey, dictionary)` 로 원자 교체되므로 레이스 윈도우가 제거됨. `TemplateApp.reloadExtensionState()` 도 명시적 `clearCache()` 호출을 제거. 유사 사례 전수 적용(레이아웃 수정 불요) — 모든 `$t:` 해석 경로가 동일 보호를 받음 (TranslationEngine, TemplateApp)
+
+## [engine-v1.38.0] - 2026-04-15
+
+### Added
+
+- `reloadExtensions` 통합 핸들러 — 확장(모듈/플러그인/템플릿)의 install/activate/deactivate/uninstall 직후 onSuccess 체인에서 호출하여 페이지 전체 새로고침 없이 확장 상태를 원자적으로 재동기화. 내부적으로 `TemplateApp.reloadExtensionState()` 를 호출하여 최신 `cache_version` 획득 → localStorage 반영 → Router routes 재fetch → LayoutLoader 캐시 클리어 → TranslationEngine 재로드까지 일괄 수행. 선택 파라미터 `{ moduleInfo, pluginInfo, action: "add"|"remove" }` 전달 시 `reloadModuleHandlers` / `reloadPluginHandlers` 로직도 통합 실행하여 JS/CSS 에셋을 동적으로 로드/제거 (ActionDispatcher)
+- `TemplateApp.reloadExtensionState()` public 메서드 — config.json 에서 새 cache_version 획득 후 Router/LayoutLoader/TranslationEngine 을 순차 갱신. 각 단계는 try/catch 로 격리되어 한 단계 실패가 다른 단계를 막지 않음 (TemplateApp)
+- `Router.loadRoutes(cacheVersion?: number)` 파라미터 — 전달 시 `?v=${version}` 쿼리로 부착되어 백엔드 `PublicTemplateController::getRoutes` 의 응답 캐시 버전 키를 일치시킴. 미전달 시 구 버전 동작 유지 (Router)
+
+### Fixed
+
+- 확장 활성화/비활성화 후 전체 새로고침 없이는 새 라우트가 반영되지 않던 버그 — `Router.loadRoutes()` 가 캐시 버전 쿼리 없이 `/api/templates/{id}/routes.json` 을 요청하여 백엔드의 `template.routes.{id}.v0` 캐시 키에 과거 응답이 고정되거나 TTL(1시간) 동안 오염된 상태가 재사용되던 문제. `reloadExtensions` 핸들러가 최신 `cache_version` 으로 fetch 하도록 수정하여 activate API 완료 시점에 즉시 routes 가 반영됨 (Router, TemplateApp, ActionDispatcher)
+
+### Deprecated
+
+- `reloadRoutes` 핸들러 — `reloadExtensions` 로 대체 예정. 현재는 `TemplateApp.reloadExtensionState()` 로 위임하여 하위 호환 유지 (ActionDispatcher)
+- `reloadTranslations` 핸들러 — `reloadExtensions` 로 대체 예정. 현재는 `TemplateApp.reloadExtensionState()` 로 위임 (ActionDispatcher)
+
+## [engine-v1.37.0] - 2026-04-14
+
+### Added
+
+- `navigate` 핸들러 `params.scroll` / `params.scrollBehavior` 옵션 — 페이지 이동 후 스크롤 위치를 선언적으로 제어. 지원 값: `"top"` (기본) / `"preserve"` / 숫자 / `{x, y}` / `"#selector"`. `requestAnimationFrame`으로 다음 tick에 적용하여 새 레이아웃 DOM 반영 후 정확한 위치로 이동. `replace: true` 분기(`updateQueryParams`)에도 동일하게 적용. `scrollBehavior` 기본값은 `"instant"` — 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동하도록 강제. `"smooth"` 명시 시에만 부드러운 스크롤 (ActionDispatcher)
+- `replaceUrl` 핸들러 `params.scroll` / `params.scrollBehavior` 옵션 — 기본값은 `"preserve"` (URL만 교체하는 용도이므로 스크롤 유지). 명시적으로 `"top"` 등 지정 가능 (ActionDispatcher)
+- `scroll: "top"` 동작 시 `window` 뿐 아니라 `#app` 내부의 모든 스크롤 컨테이너(`overflow-y: auto|scroll` 또는 `overflow-x: auto|scroll`)를 함께 상단으로 리셋 — 관리자 템플릿처럼 `html/body`가 `overflow: hidden`이고 내부 div가 실제 스크롤 컨테이너인 구조에서도 `window.scrollTo`만으로는 효과가 없어 스크롤이 이동하지 않던 문제 해결 (ActionDispatcher)
+- `scroll` 확장 객체 문법 — `{ container?, to?, block?, offset? }` 형태로 특정 스크롤 컨테이너 지정, sticky 헤더 오프셋, `scrollIntoView`의 `block` 위치(`start`/`center`/`end`/`nearest`) 선택을 지원. 관리자 템플릿의 `#right_content_area` 같은 내부 스크롤 컨테이너에 대해 Y 좌표 이동, 엘리먼트로 이동(중앙/상단/하단 정렬), 오프셋 보정이 가능 (ActionDispatcher)
+
+### Changed
+
+- **Breaking**: `navigate` 핸들러 기본 스크롤 동작 변경 — 기존에는 페이지 이동 후 이전 스크롤 위치가 그대로 유지되어 일반적인 하이퍼링크 이동 UX와 어긋났음. 이제 기본값 `"top"`으로 이동 시 최상단에서 새 페이지가 시작됨. 스크롤 유지가 필요한 케이스(검색 필터, 페이지네이션 등)는 `scroll: "preserve"` 명시 필요 (ActionDispatcher)
+
+## [engine-v1.36.0] - 2026-04-13
+
+### Added
+
+- `navigate` 핸들러 `params.transition_overlay_target` 옵션 — `replace: true` 로 `updateQueryParams` 경로 진입 시 `transition_overlay.target` 을 호출별로 동적 override. 환경설정 알림 탭 안의 채널 탭 등 **탭 속 서브 탭** 클릭 시 서브 탭 콘텐츠 영역에만 spinner 가 표시되도록 한다. 미지정 시 `transition_overlay.target` (베이스 또는 자식 merge 결과) 사용 (ActionDispatcher, G7CoreGlobals, TemplateApp)
+- `G7Core.updateQueryParams(newPath, options?)` — 두 번째 인자 `options.transitionOverlayTarget` 로 호출별 target override 지원 (G7CoreGlobals, TemplateApp)
+
+## [engine-v1.35.0] - 2026-04-13
+
+### Added
+
+- `updateQueryParams` 경로에서 `transition_overlay` spinner/skeleton 자동 트리거 — `navigate replace:true` 로 탭 전환/검색/페이지네이션 시 handleRouteChange 대신 updateQueryParams 경로에 진입할 때도 `blocking` 또는 `wait_for` 에 명시된 progressive 데이터소스가 1개 이상 refetch 대상이면 오버레이 표시. fetch 완료/에러 시 자동 hide. handleRouteChange step 2.5 와 동일 정책 (TemplateApp)
+
+## [engine-v1.34.0] - 2026-04-13
+
+### Added
+
+- `transition_overlay.wait_for` 옵션 — blocking 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가 fetch 완료될 때까지 spinner/skeleton 오버레이가 표시되도록 하는 명시적 가드. background/websocket 데이터소스는 의도상 사용자 차단 불가하므로 자동 무시되며 백엔드 검증(UpdateLayoutContentRequest)에서 사전 차단됨 (TemplateApp, LayoutLoader 타입)
+
+### Changed
+
+- `LayoutService::mergeLayouts` 의 `transition_overlay` 병합을 shallow merge 로 변경 — 자식 레이아웃이 `wait_for` 만 명시해도 부모(베이스)의 `enabled/style/target/spinner` 설정이 보존되어 자식이 부분 override 가능. boolean/비배열 케이스는 기존 자식 우선/부모 폴백 유지 (LayoutService)
+
+## [engine-v1.33.1] - 2026-04-10
+
+### Fixed
+
+- WebSocket 리스너 중복 누적 버그 수정 — `WebSocketManager.unsubscribe()`가 `subscriptions` Map에서만 엔트리를 제거할 뿐 Echo 채널의 `listen()` 리스너를 해제하지 않아, route 변경 시 재구독 시 Echo가 동일 채널 인스턴스를 재사용하며 listener가 누적됨. 결과: 단일 route에서 알림 폼 저장 등으로 route가 여러 번 전환되면 N번 중복 수신 (예: 수정 창에서 비밀번호 변경 알림 토스트 8번 실행). `channelInstance.stopListening('.${event}')` 명시 호출로 수정 (WebSocketManager.ts)
+
+## [engine-v1.33.0] - 2026-04-10
+
+### Added
+
+- WebSocket 데이터소스에 `onReceive` 액션 배열 지원 — 메시지 수신 시 정의된 액션들을 순차 실행. `$args[0]` 또는 `$event`로 페이로드 접근 가능. refetchDataSource/toast 등 모든 핸들러 사용 가능. 사용 예시: 알림 수신 시 `notification_unread_count` 자동 refetch + 토스트 표시 (DataSourceManager.ts, TemplateApp.ts)
+
+## [engine-v1.32.5] - 2026-04-09
+
+### Fixed
+
+- `updateQueryParams` 데이터소스 refetch 인덱스 매핑 어긋남 — WebSocket 소스가 `currentDataSources`에 포함된 레이아웃(예: `_admin_base.json`의 `notification_ws`)에서 `navigate replace:true`(탭 전환 등) 호출 시 `fetchDataSourcesWithResults`가 WebSocket을 내부 필터링하여 results 배열이 짧아지는데 호출자는 `autoFetchDataSources[i]`로 매핑해 데이터가 잘못된 키에 기록됨. 증상: 환경설정/알림설정 탭 클릭 시 `_local.form`이 다른 데이터소스 응답으로 초기화되어 탭 내용이 빈 화면 (TemplateApp)
+- 원인 1: `updateQueryParams` 가 인덱스 기반 `for (let i = 0; i < results.length; i++) { autoFetchDataSources[i] }` 매핑 사용 → `handleRouteChange` blocking 경로(`results.forEach((r) => blockingData[r.id] = r.data)`)와 일관성 없음
+- 수정 1: `updateQueryParams` 를 `result.id` 기반 Map 조회로 변경하여 handleRouteChange 패턴과 통일 (TemplateApp)
+- 원인 2: `updateQueryParams` 가 WebSocket 소스를 사전 제외하지 않아 `fetchDataSourcesWithResults` 내부 silent filter와 계약 불일치
+- 수정 2: `updateQueryParams` 에서 WebSocket 사전 제외 추가 — handleRouteChange progressive 경로(engine-v1.32.2)와 동일 정책 (TemplateApp)
+- 원인 3: `fetchDataSourcesWithResults` 의 내부 WebSocket 필터가 silent — 호출자가 WebSocket을 넘겨도 경고 없이 조용히 제거되어 인덱스 매핑 어긋남 버그가 숨겨짐
+- 수정 3: `fetchDataSourcesWithResults` 에서 WebSocket 소스 수신 시 경고 로그 추가 — 내부 필터는 safety net으로 유지하되 호출자 필터 누락을 조기 발견 가능 (DataSourceManager)
+
+## [engine-v1.32.4] - 2026-04-09
+
+### Fixed
+
+- WebSocket 채널 빈 세그먼트 검증 강화 — 표현식이 undefined로 평가되어 빈 문자열로 치환되면 trailing dot/연속 dot이 발생해도 미평가 마커(`{{`)가 없어 방어 로직을 우회. `isInvalidChannel` 헬퍼 추가하여 trailing/leading/연속 빈 세그먼트(`.`, `:`)도 감지 후 구독 건너뜀. 진단을 위해 컨텍스트 키 목록을 경고 로그에 포함 (DataSourceManager)
+- WebSocket 구독 직전 컨텍스트 키 디버그 로그 추가 — 표현식 평가 실패 진단용 (TemplateApp)
+
+## [engine-v1.32.3] - 2026-04-09
+
+### Fixed
+
+- WebSocket 채널/이벤트 표현식 평가 누락 — `core.user.notifications.{{current_user.data.id}}` 같은 표현식이 평가 없이 그대로 구독되어 백엔드 채널 패턴 매칭 실패 → broadcasting/auth가 AccessDeniedHttpException 발생. `subscribeWebSockets`에 `bindingContext` 파라미터 추가, channel/event 모두 `resolveExpressionString`으로 평가 (DataSourceManager)
+- WebSocket 구독 시점이 progressive fetch 이전이라 fetched 데이터 참조 표현식 평가 불가 — Step 6 WebSocket 구독을 progressive fetch 완료 후(Step 7)로 이동하여 모든 데이터소스가 평가 컨텍스트에 포함되도록 함 (TemplateApp)
+- WebSocket 미평가 표현식 방어 로직 — 평가 후에도 `{{` 마커가 남아있으면 구독 건너뛰고 경고 로그 (DataSourceManager)
+
+## [engine-v1.32.2] - 2026-04-09
+
+### Fixed
+
+- WebSocket 데이터소스가 progressive 목록에 포함되어 blur_until_loaded 영구 블러 — WebSocket은 이벤트 리스너이지 데이터 제공자가 아니므로 progressive 초기화에서 제외 (TemplateApp)
+
+## [engine-v1.32.1] - 2026-04-09
+
+### Fixed
+
+- auth_mode: 'required' 데이터소스에서 토큰 없을 때 API 요청 스킵 — 비로그인 상태에서 인증 필수 API 호출 → 401 → onUnauthorized 로그인 리다이렉트 무한 루프 방지 (DataSourceManager)
+
+## [engine-v1.32.0] - 2026-04-08
+
+### Added
+
+- extensionPointCallbacks — extension_point에서 콜백 액션 객체를 props와 분리하여 전달하는 기능 추가 (DynamicRenderer, LayoutExtensionService)
+  - `props`: 데이터 전달용 — `resolveObject()`로 표현식 재귀 평가 (일반 props와 동일 수준)
+  - `callbacks`: 액션 객체 전달용 — 평가 없이 그대로 전달 (ActionDispatcher 실행 시점 평가)
+
+### Fixed
+
+- extensionPointProps 표현식 미평가 버그 수정 — 호스트가 `"{{route.id}}"` 같은 표현식을 넘기면 평가 없이 raw 문자열로 전달되던 문제 해결 (DynamicRenderer)
+
+## [engine-v1.31.0] - 2026-04-02
+
+### Added
+
+- resolvedProps 참조 안정화 — 바인딩 해석 결과의 값이 이전과 동일하면 이전 객체 참조를 반환하여 하위 컴포넌트의 React.memo가 실제로 작동하도록 개선 (DynamicRenderer)
+- ComponentRegistry에서 컴포넌트 등록 시 React.memo 자동 래핑 — props 변경이 없는 컴포넌트의 불필요한 리렌더링 방지 (ComponentRegistry)
+
+### Fixed
+
+- DevTools 캐시 탭 Hit Rate 카드와 프로그레스 바에서 hitRate(0~1)를 백분율 변환하지 않아 0.9%로 표시되던 버그 수정 (CacheTab)
+
+## [engine-v1.30.0] - 2026-04-02
+
+### Added
+
+- SortableItemWrapper에 `as` prop 추가 — wrapper 요소를 지정 가능 (기본: `div`, Table 내부: `tr`)
+- DynamicRenderer에서 sortable 설정의 `wrapperElement` 옵션을 SortableItemWrapper에 전달
+
 ## [engine-v1.29.2]
 
 ### Fixed

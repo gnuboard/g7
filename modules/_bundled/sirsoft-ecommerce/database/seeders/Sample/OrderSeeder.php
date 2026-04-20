@@ -1433,7 +1433,7 @@ class OrderSeeder extends Seeder
             'policy_name' => $policy->getLocalizedName(),
             'country_code' => $countrySetting?->country_code ?? 'KR',
             'charge_policy' => $countrySetting?->charge_policy?->value ?? '',
-            'shipping_method' => $countrySetting?->shipping_method?->value ?? '',
+            'shipping_method' => $countrySetting?->shipping_method ?? '',
             'base_fee' => (float) ($countrySetting?->base_fee ?? 0),
             'free_threshold' => $countrySetting?->free_threshold ? (float) $countrySetting->free_threshold : null,
             'currency_code' => $countrySetting?->currency_code ?? 'KRW',

@@ -27,7 +27,11 @@ class OrderShippingResource extends BaseApiResource
             'shipping_status_label' => $this->shipping_status ? $this->shipping_status->label() : null,
             'shipping_status_variant' => $this->shipping_status ? $this->shipping_status->variant() : null,
             'shipping_type' => $this->shipping_type,
-            'shipping_type_label' => $this->shipping_type ? $this->shipping_type->label() : null,
+            'shipping_type_label' => $this->shipping_type
+                ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($this->shipping_type)?->getLocalizedName()
+                : null,
+            'shipping_method' => $this->delivery_policy_snapshot['shipping_method'] ?? null,
+            'shipping_method_label' => $this->resolveSnapshotShippingMethodLabel(),
             'shipping_policy_id' => $this->shipping_policy_id,
             'base_shipping_amount' => $this->base_shipping_amount,
             'base_shipping_amount_formatted' => number_format($this->base_shipping_amount).'원',
@@ -59,5 +63,33 @@ class OrderShippingResource extends BaseApiResource
             'visit_pickup_name' => $this->visit_pickup_name,
             'visit_pickup_phone' => $this->visit_pickup_phone,
         ];
+    }
+
+    /**
+     * 스냅샷 기반 배송방법 라벨을 해석합니다.
+     *
+     * @return string|null
+     */
+    private function resolveSnapshotShippingMethodLabel(): ?string
+    {
+        $snapshot = $this->delivery_policy_snapshot;
+        $method = $snapshot['shipping_method'] ?? null;
+
+        if (! $method) {
+            return null;
+        }
+
+        if ($method === 'custom') {
+            $name = $snapshot['custom_shipping_name'] ?? null;
+            if (is_array($name)) {
+                $locale = app()->getLocale();
+
+                return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+            }
+
+            return null;
+        }
+
+        return \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName();
     }
 }

@@ -654,7 +654,7 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
             'order_id' => $order->id,
             'order_option_id' => $option->id,
             'shipping_status' => 'pending',
-            'shipping_type' => 'domestic_parcel',
+            'shipping_type' => 'parcel',
         ]);
 
         // 2개 분할

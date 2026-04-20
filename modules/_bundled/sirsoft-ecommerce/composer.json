@@ -2,7 +2,7 @@
     "name": "modules/sirsoft-ecommerce",
     "description": "Ecommerce module for Gnuboard7",
     "type": "library",
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0-beta.2",
     "license": "MIT",
     "autoload": {
         "psr-4": {

@@ -244,12 +244,13 @@
                       "comment": "모바일: 상태 뱃지 + 배송정보 (인라인)",
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "hidden" },
+                      "if": "{{true}}",
                       "responsive": {
-                        "portable": {
-                          "props": { "className": "flex flex-wrap items-center gap-2 mt-2" }
+                        "desktop": {
+                          "if": "{{false}}"
                         }
                       },
+                      "props": { "className": "flex flex-wrap items-center gap-2 mt-2" },
                       "children": [
                         {
                           "comment": "상태 뱃지 (모바일)",
@@ -274,12 +275,13 @@
                       "comment": "모바일: 구매확정/리뷰 버튼",
                       "type": "basic",
                       "name": "Div",
-                      "props": { "className": "hidden" },
+                      "if": "{{true}}",
                       "responsive": {
-                        "portable": {
-                          "props": { "className": "flex gap-2 mt-2" }
+                        "desktop": {
+                          "if": "{{false}}"
                         }
                       },
+                      "props": { "className": "flex gap-2 mt-2" },
                       "children": [
                         {
                           "comment": "구매확정 버튼 (모바일)",
@@ -574,27 +576,28 @@
                       "comment": "상태 뱃지 (PC만 표시)",
                       "type": "basic",
                       "name": "Span",
+                      "if": "{{false}}",
+                      "responsive": {
+                        "desktop": {
+                          "if": "{{true}}"
+                        }
+                      },
                       "props": {
                         "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
                       },
-                      "text": "{{item.option_status_label ?? ''}}",
-                      "responsive": {
-                        "portable": {
-                          "props": { "className": "hidden" }
-                        }
-                      }
+                      "text": "{{item.option_status_label ?? ''}}"
                     },
                     {
                       "comment": "배송사 + 운송장번호 (PC만 표시)",
                       "type": "basic",
                       "name": "Div",
-                      "if": "{{!!item.carrier_name}}",
-                      "props": { "className": "flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" },
+                      "if": "{{false}}",
                       "responsive": {
-                        "portable": {
-                          "props": { "className": "hidden" }
+                        "desktop": {
+                          "if": "{{!!item.carrier_name}}"
                         }
                       },
+                      "props": { "className": "flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400" },
                       "children": [
                         {
                           "type": "basic",
@@ -619,15 +622,15 @@
                       "comment": "구매확정 버튼 (PC)",
                       "type": "basic",
                       "name": "Button",
-                      "if": "{{item.can_confirm === true}}",
+                      "if": "{{false}}",
+                      "responsive": {
+                        "desktop": {
+                          "if": "{{item.can_confirm === true}}"
+                        }
+                      },
                       "props": {
                         "type": "button",
                         "className": "px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "props": { "className": "hidden" }
-                        }
                       },
                       "text": "$t:mypage.order_detail.confirm_purchase",
                       "actions": [
@@ -664,15 +667,15 @@
                       "comment": "리뷰작성 버튼 (PC)",
                       "type": "basic",
                       "name": "Button",
-                      "if": "{{item.can_write_review === true}}",
+                      "if": "{{false}}",
+                      "responsive": {
+                        "desktop": {
+                          "if": "{{item.can_write_review === true}}"
+                        }
+                      },
                       "props": {
                         "type": "button",
                         "className": "px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "props": { "className": "hidden" }
-                        }
                       },
                       "text": "$t:mypage.order_detail.write_review",
                       "actions": [
@@ -708,13 +711,13 @@
                       "comment": "리뷰 작성 완료 뱃지 (PC)",
                       "type": "basic",
                       "name": "Span",
-                      "if": "{{item.has_review === true}}",
-                      "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg" },
+                      "if": "{{false}}",
                       "responsive": {
-                        "portable": {
-                          "props": { "className": "hidden" }
+                        "desktop": {
+                          "if": "{{item.has_review === true}}"
                         }
                       },
+                      "props": { "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg" },
                       "children": [
                         {
                           "type": "basic",

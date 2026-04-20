@@ -6,6 +6,7 @@
   "results": "검색 결과",
   "results_count": "{{count}}개의 결과",
   "result_summary": "검색 결과 {{count}}건",
+  "result_count_suffix": "건",
   "no_results": "검색 결과가 없습니다.",
   "try_different": "다른 검색어로 시도해보세요.",
   "tabs": {

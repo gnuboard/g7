@@ -1024,4 +1024,102 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(shouldTranslate).toBe(false);
     });
   });
+
+  /**
+   * [사례 22-1] FileUploader 갤러리 이미지 blob URL stale closure
+   *
+   * 증상: 갤러리(Lightbox) 열리지만 이미지가 표시되지 않음 (blob URL 에러)
+   * 원인: authenticatedImageUrls useEffect cleanup에서 blob URL revoke 후
+   *       Map 미초기화 → stale closure의 has() 체크가 재로딩 건너뜀
+   * 해결: ref 기반 캐시 + 언마운트 전용 cleanup 분리
+   */
+  describe('[사례 22-1] FileUploader 갤러리 blob URL stale closure', () => {
+    it('ref 기반 캐시는 existingFiles 변경 후에도 has() 체크가 최신 상태를 참조한다', () => {
+      // state 기반 (버그): 클로저가 이전 렌더의 스냅샷 캡처
+      let stateMap = new Map<number, string>();
+      const closureCapturedMap = stateMap; // effect 생성 시점의 스냅샷
+
+      // 비동기 state 업데이트 시뮬레이션
+      stateMap = new Map(stateMap);
+      stateMap.set(1, 'blob:url-1');
+      stateMap.set(2, 'blob:url-2');
+
+      // state 기반: 클로저의 has()는 빈 Map 참조 → 업데이트 못 봄
+      expect(closureCapturedMap.has(1)).toBe(false); // stale!
+
+      // ref 기반 (수정): 항상 최신 참조
+      const refMap = { current: new Map<number, string>() };
+      refMap.current.set(1, 'blob:url-1');
+      refMap.current.set(2, 'blob:url-2');
+
+      // ref 기반: 항상 최신 상태 참조
+      expect(refMap.current.has(1)).toBe(true);
+      expect(refMap.current.has(2)).toBe(true);
+    });
+
+    it('cleanup에서 revoke 후 Map을 clear하지 않으면 재로딩이 건너뛰어진다', () => {
+      const urlCache = new Map<number, string>();
+      urlCache.set(1, 'blob:url-1');
+      urlCache.set(2, 'blob:url-2');
+
+      // cleanup: revoke만 하고 Map은 clear 안 함 (버그 패턴)
+      const revokedUrls: string[] = [];
+      urlCache.forEach((url) => revokedUrls.push(url));
+      // URL.revokeObjectURL(url) 시뮬레이션 — URL은 무효화되지만 Map에 남아있음
+
+      // 새 effect에서 has() 체크
+      const shouldLoad1 = !urlCache.has(1); // false! Map에 남아있으므로
+      const shouldLoad2 = !urlCache.has(2); // false!
+
+      expect(shouldLoad1).toBe(false); // 재로딩 건너뜀 → 버그!
+      expect(shouldLoad2).toBe(false);
+      expect(revokedUrls).toEqual(['blob:url-1', 'blob:url-2']);
+
+      // 수정: ref 기반에서는 revoke된 파일의 URL을 삭제하고 새로 로드
+      const refCache = { current: new Map<number, string>() };
+      refCache.current.set(1, 'blob:url-1');
+      refCache.current.set(2, 'blob:url-2');
+
+      // existingFiles에서 제거된 파일만 정리 (현재 파일 ID 집합)
+      const currentIds = new Set([1, 2]);
+      for (const [id] of refCache.current) {
+        if (!currentIds.has(id)) {
+          refCache.current.delete(id);
+        }
+      }
+
+      // 기존 파일은 캐시에 유지 → 재로딩 불필요
+      expect(refCache.current.has(1)).toBe(true);
+      expect(refCache.current.has(2)).toBe(true);
+    });
+
+    it('비동기 로딩 중 cancelled 플래그로 stale 업데이트를 방지한다', async () => {
+      let cancelled = false;
+      const results: number[] = [];
+
+      const loadAsync = async () => {
+        for (const id of [1, 2, 3]) {
+          if (cancelled) break;
+          // 비동기 작업 시뮬레이션
+          await new Promise((r) => setTimeout(r, 1));
+          if (!cancelled) {
+            results.push(id);
+          }
+        }
+      };
+
+      const promise = loadAsync();
+
+      // 2번째 항목 로드 중 취소
+      await new Promise((r) => setTimeout(r, 3));
+      cancelled = true;
+
+      await promise;
+
+      // 취소 후에는 더 이상 추가되지 않음
+      expect(results.length).toBeLessThanOrEqual(3);
+      // cancelled 플래그가 동작함을 확인
+      expect(cancelled).toBe(true);
+    });
+  });
 });

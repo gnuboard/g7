@@ -73,8 +73,6 @@
   "scope_type_self_desc": "본인이 생성한 리소스만",
   "scope_type_role_desc": "같은 역할의 사용자 리소스만",
   "multilingual": {
-    "add_language": "언어 추가",
-    "language_ko": "한국어",
-    "language_en": "English"
+    "add_language": "언어 추가"
   }
 }

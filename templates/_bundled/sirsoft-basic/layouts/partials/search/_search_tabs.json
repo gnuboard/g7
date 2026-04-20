@@ -12,7 +12,7 @@
       "children": [
         { "type": "basic", "name": "Icon", "props": { "name": "grid", "size": "sm", "className": "mr-1.5 inline" } },
         { "type": "basic", "name": "Span", "text": "$t:search.tabs.all" },
-        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{(_global.searchActiveTab ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{searchResults.data.all_count ?? searchResults.data.total ?? 0}}" }
+        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{(_global.searchActiveTab ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}" }
       ],
       "actions": [
         {
@@ -32,7 +32,7 @@
       "children": [
         { "type": "basic", "name": "Icon", "props": { "name": "file-text", "size": "sm", "className": "mr-1.5 inline" } },
         { "type": "basic", "name": "Span", "text": "$t:search.tabs.posts" },
-        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{searchResults.data.posts_count ?? 0}}" }
+        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{(searchResults.data.posts_count ?? 0) | number}}" }
       ],
       "actions": [
         {
@@ -52,7 +52,7 @@
       "children": [
         { "type": "basic", "name": "Icon", "props": { "name": "shopping-bag", "size": "sm", "className": "mr-1.5 inline" } },
         { "type": "basic", "name": "Span", "text": "$t:search.tabs.products" },
-        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{searchResults.data.products_count ?? 0}}" }
+        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{(searchResults.data.products_count ?? 0) | number}}" }
       ],
       "actions": [
         {
@@ -72,7 +72,7 @@
       "children": [
         { "type": "basic", "name": "Icon", "props": { "name": "file-alt", "size": "sm", "className": "mr-1.5 inline" } },
         { "type": "basic", "name": "Span", "text": "$t:search.tabs.pages" },
-        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{searchResults.data.pages_count ?? 0}}" }
+        { "type": "basic", "name": "Span", "props": { "className": "ml-1.5 {{_global.searchActiveTab === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}" }, "text": "{{(searchResults.data.pages_count ?? 0) | number}}" }
       ],
       "actions": [
         {

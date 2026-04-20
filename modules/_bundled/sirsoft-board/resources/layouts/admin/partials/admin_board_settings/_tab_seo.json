@@ -1,0 +1,728 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 설정 SEO 탭 콘텐츠"
+  },
+  "id": "tab_content_seo",
+  "type": "basic",
+  "name": "Div",
+  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'seo'}}",
+  "props": {
+    "className": "space-y-6"
+  },
+  "children": [
+    {
+      "id": "meta_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "meta_settings_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "meta_settings_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.title"
+            },
+            {
+              "id": "meta_settings_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.description"
+            }
+          ]
+        },
+        {
+          "id": "meta_accordions",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "accordion_boards_page",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "card-accordion"
+              },
+              "children": [
+                {
+                  "id": "accordion_boards_page_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-header"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "card-accordion-title"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.boards_page.title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-down",
+                        "className": "card-accordion-icon open"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "accordion_boards_page_body",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-body space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_boards_title",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "seo.meta_boards_title",
+                            "placeholder": "$t:sirsoft-board.admin.settings.seo.boards_page.title_placeholder",
+                            "className": "{{_local.errors?.['seo.meta_boards_title'] ? 'input input-error w-full' : 'input w-full'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_boards_title']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_boards_title']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_boards_description",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Textarea",
+                          "props": {
+                            "name": "seo.meta_boards_description",
+                            "rows": 3,
+                            "className": "{{_local.errors?.['seo.meta_boards_description'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_boards_description']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_boards_description']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "accordion_board_page",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "card-accordion"
+              },
+              "children": [
+                {
+                  "id": "accordion_board_page_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-header"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "card-accordion-title"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.board_page.title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-down",
+                        "className": "card-accordion-icon open"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "accordion_board_page_body",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-body space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_board_title",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "seo.meta_board_title",
+                            "placeholder": "$t:sirsoft-board.admin.settings.seo.board_page.title_placeholder",
+                            "className": "{{_local.errors?.['seo.meta_board_title'] ? 'input input-error w-full' : 'input w-full'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_board_title']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_board_title']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_board_description",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Textarea",
+                          "props": {
+                            "name": "seo.meta_board_description",
+                            "rows": 3,
+                            "className": "{{_local.errors?.['seo.meta_board_description'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_board_description']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_board_description']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {board_description}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "accordion_post_page",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "card-accordion"
+              },
+              "children": [
+                {
+                  "id": "accordion_post_page_header",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-header"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "card-accordion-title"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.post_page.title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "chevron-down",
+                        "className": "card-accordion-icon open"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "accordion_post_page_body",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "card-accordion-body space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_post_title",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_title"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "seo.meta_post_title",
+                            "placeholder": "$t:sirsoft-board.admin.settings.seo.post_page.title_placeholder",
+                            "className": "{{_local.errors?.['seo.meta_post_title'] ? 'input input-error w-full' : 'input w-full'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_post_title']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_post_title']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_post_description",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.meta_description"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Textarea",
+                          "props": {
+                            "name": "seo.meta_post_description",
+                            "rows": 3,
+                            "className": "{{_local.errors?.['seo.meta_post_description'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['seo.meta_post_description']}}",
+                          "props": {
+                            "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['seo.meta_post_description']?.[0] ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "form-hint"
+                          },
+                          "text": "$t:sirsoft-board.admin.settings.seo.meta_settings.available_variables: {site_name}, {board_name}, {post_title}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seo_friendly_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "seo_friendly_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "seo_friendly_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.title"
+            },
+            {
+              "id": "seo_friendly_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.description"
+            }
+          ]
+        },
+        {
+          "id": "seo_friendly_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "form-label"
+              },
+              "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.provide_pages"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "name": "seo.seo_boards",
+                        "className": "checkbox"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-secondary"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.boards"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "name": "seo.seo_board",
+                        "className": "checkbox"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-secondary"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.board"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-2 cursor-pointer"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "name": "seo.seo_post_detail",
+                        "className": "checkbox"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm text-secondary"
+                      },
+                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.post_detail"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "divider_cache",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "divider"
+              }
+            },
+            {
+              "id": "cache_section",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "form-label"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_management"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-label-subtle mb-3"
+                  },
+                  "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.cache_description"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-danger",
+                    "disabled": "{{_local.clearingCache ?? false}}"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "if": "{{_local.clearingCache ?? false}}",
+                      "props": {
+                        "name": "circle-notch",
+                        "className": "fa-spin mr-2"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache"
+                    }
+                  ],
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "clearingCache": true
+                          }
+                        },
+                        {
+                          "handler": "apiCall",
+                          "auth_required": true,
+                          "target": "/api/admin/seo/clear-cache",
+                          "params": {
+                            "method": "POST",
+                            "body": { "layout": "board/boards" }
+                          },
+                          "onSuccess": {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/admin/seo/clear-cache",
+                            "params": {
+                              "method": "POST",
+                              "body": { "layout": "board/index" }
+                            },
+                            "onSuccess": {
+                              "handler": "apiCall",
+                              "auth_required": true,
+                              "target": "/api/admin/seo/clear-cache",
+                              "params": {
+                                "method": "POST",
+                                "body": { "layout": "board/show" }
+                              },
+                              "onSuccess": [
+                                { "handler": "setState", "params": { "target": "local", "clearingCache": false } },
+                                { "handler": "toast", "params": { "type": "success", "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_success" } }
+                              ],
+                              "onError": [
+                                { "handler": "setState", "params": { "target": "local", "clearingCache": false } },
+                                { "handler": "toast", "params": { "type": "error", "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error" } }
+                              ]
+                            },
+                            "onError": [
+                              { "handler": "setState", "params": { "target": "local", "clearingCache": false } },
+                              { "handler": "toast", "params": { "type": "error", "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error" } }
+                            ]
+                          },
+                          "onError": [
+                            { "handler": "setState", "params": { "target": "local", "clearingCache": false } },
+                            { "handler": "toast", "params": { "type": "error", "message": "$t:sirsoft-board.admin.settings.seo.seo_friendly.clear_cache_error" } }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

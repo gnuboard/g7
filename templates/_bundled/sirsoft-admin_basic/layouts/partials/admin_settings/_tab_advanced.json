@@ -949,6 +949,284 @@
           ]
         }
       ]
+    },
+    {
+      "id": "card_geoip_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.advanced.geoip_section"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.advanced.geoip_section_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "toggle_geoip_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.advanced.geoip_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.advanced.geoip_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "advanced.geoip_enabled",
+                    "size": "md",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "geoip_settings_detail",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.advanced?.geoip_enabled}}",
+              "props": {
+                "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
+              },
+              "children": [
+                {
+                  "id": "input_geoip_license_key",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.advanced.geoip_license_key"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.advanced.geoip_license_key_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "password",
+                        "name": "advanced.geoip_license_key",
+                        "placeholder": "xxxxxxxxxxxxxxxx",
+                        "autoComplete": "off",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "{{_local.errors?.['advanced.geoip_license_key'] ? 'w-full px-3 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['advanced.geoip_license_key']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['advanced.geoip_license_key']?.[0] ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "id": "toggle_geoip_auto_update",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between py-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.settings.advanced.geoip_auto_update_enabled"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.settings.advanced.geoip_auto_update_enabled_desc"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "Toggle",
+                      "props": {
+                        "name": "advanced.geoip_auto_update_enabled",
+                        "size": "md",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "geoip_last_updated_block",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white block"
+                      },
+                      "text": "$t:admin.settings.advanced.geoip_last_updated_at"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex flex-col md:flex-row md:items-center md:gap-3 space-y-2 md:space-y-0"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "disabled": true,
+                            "value": "{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}",
+                            "className": "w-full md:flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-sm"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Button",
+                          "props": {
+                            "type": "button",
+                            "disabled": "{{_computed.isReadOnly || _local.geoipUpdating === true}}",
+                            "className": "w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                          },
+                          "text": "{{_local.geoipUpdating === true ? $t('admin.settings.advanced.geoip_updating') : $t('admin.settings.advanced.geoip_manual_update')}}",
+                          "actions": [
+                            {
+                              "type": "click",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "geoipUpdating": true,
+                                "errors": {}
+                              },
+                              "onSuccess": [
+                                {
+                                  "handler": "apiCall",
+                                  "auth_required": true,
+                                  "target": "/api/admin/settings/geoip/update",
+                                  "params": {
+                                    "method": "POST"
+                                  },
+                                  "onSuccess": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "geoipUpdating": false,
+                                        "form": {
+                                          "advanced": {
+                                            "geoip_last_updated_at": "{{response.data?.last_updated_at ?? ''}}"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "onError": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "geoipUpdating": false,
+                                        "errors": {
+                                          "advanced.geoip_license_key": ["{{error.message ?? $t('admin.settings.advanced.geoip_update_failed')}}"]
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

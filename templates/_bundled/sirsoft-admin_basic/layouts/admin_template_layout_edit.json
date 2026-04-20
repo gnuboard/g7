@@ -9,6 +9,13 @@
         "title": "$t:admin.templates.layout_edit.title",
         "description": "$t:admin.templates.layout_edit.description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "template_info",
+            "current_layout",
+            "layout_versions"
+        ]
+    },
     "data_sources": [
         {
             "id": "template_info",
@@ -281,7 +288,6 @@
                         "id": "mobile_file_selector",
                         "type": "basic",
                         "name": "Div",
-                        "blur_until_loaded": "{{_global.isSaving}}",
                         "props": {
                             "className": "hidden"
                         },
@@ -436,7 +442,6 @@
                         "id": "main_grid",
                         "type": "basic",
                         "name": "Div",
-                        "blur_until_loaded": "{{_global.isSaving}}",
                         "props": {
                             "className": "mt-6 flex flex-row gap-6"
                         },

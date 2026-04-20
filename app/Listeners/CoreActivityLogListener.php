@@ -82,10 +82,6 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.attachment.after_delete' => ['method' => 'handleAttachmentAfterDelete', 'priority' => 20],
             'core.attachment.after_bulk_delete' => ['method' => 'handleAttachmentAfterBulkDelete', 'priority' => 20],
 
-            // ─── Mail Template ───
-            'core.mail_template.after_update' => ['method' => 'handleMailTemplateAfterUpdate', 'priority' => 20],
-            'core.mail_template.after_toggle_active' => ['method' => 'handleMailTemplateAfterToggleActive', 'priority' => 20],
-
             // ─── Module ───
             'core.modules.after_install' => ['method' => 'handleModuleAfterInstall', 'priority' => 20],
             'core.modules.after_activate' => ['method' => 'handleModuleAfterActivate', 'priority' => 20],
@@ -759,42 +755,6 @@ class CoreActivityLogListener implements HookListenerInterface
                 ],
             ]);
         }
-    }
-
-    // ═══════════════════════════════════════════
-    // Mail Template 핸들러
-    // ═══════════════════════════════════════════
-
-    /**
-     * 메일 템플릿 수정 후 로그 기록
-     *
-     * @param Model $template 수정된 메일 템플릿
-     * @param array|null $snapshot 수정 전 스냅샷
-     */
-    public function handleMailTemplateAfterUpdate(Model $template, ?array $snapshot = null): void
-    {
-        $changes = ChangeDetector::detect($template, $snapshot);
-
-        $this->logActivity('mail_template.update', [
-            'loggable' => $template,
-            'description_key' => 'activity_log.description.mail_template_update',
-            'description_params' => ['template_name' => $template->name ?? ''],
-            'changes' => $changes,
-        ]);
-    }
-
-    /**
-     * 메일 템플릿 활성 상태 변경 후 로그 기록
-     *
-     * @param Model $template 메일 템플릿
-     */
-    public function handleMailTemplateAfterToggleActive(Model $template): void
-    {
-        $this->logActivity('mail_template.toggle_active', [
-            'loggable' => $template,
-            'description_key' => 'activity_log.description.mail_template_toggle_active',
-            'description_params' => ['template_name' => $template->name ?? ''],
-        ]);
     }
 
     // ═══════════════════════════════════════════

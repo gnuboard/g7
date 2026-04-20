@@ -2,7 +2,7 @@
     "name": "plugins/sirsoft-daum_postcode",
     "description": "Daum Postcode Service Plugin for Gnuboard7 platform",
     "type": "library",
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0-beta.2",
     "authors": [
         {
             "name": "sirsoft",

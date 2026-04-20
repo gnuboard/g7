@@ -12,7 +12,7 @@ use Illuminate\Database\Seeder;
  * 설치 필수 시더는 항상 실행되며, 샘플 시더는 --sample 옵션 시에만 실행됩니다.
  *
  * 설치 시더:
- * - InstallSeeder (BoardMailTemplateSeeder 포함)
+ * - InstallSeeder (BoardNotificationDefinitionSeeder 포함)
  * - BoardTypeSeeder
  *
  * 샘플 시더 (--sample 옵션 시):
@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             InstallSeeder::class,
             BoardTypeSeeder::class,
+            BoardNotificationDefinitionSeeder::class,
         ]);
         $this->command->info('');
 
@@ -69,13 +70,8 @@ class DatabaseSeeder extends Seeder
             $this->call(Sample\ReportSampleSeeder::class);
             $this->command->info('');
 
-            // 4. 메일 발송 이력 샘플
-            $this->command->info('[4/5] 메일 발송 이력 샘플 생성');
-            $this->call(Sample\BoardMailSendLogSeeder::class);
-            $this->command->info('');
-
-            // 5. 활동 로그 샘플 (모든 샘플 데이터 생성 후 마지막에 실행)
-            $this->command->info('[5/5] 활동 로그 샘플 생성');
+            // 4. 활동 로그 샘플 (모든 샘플 데이터 생성 후 마지막에 실행)
+            $this->command->info('[4/4] 활동 로그 샘플 생성');
             $this->call(ActivityLogSampleSeeder::class);
             $this->command->info('');
         }

@@ -743,6 +743,417 @@ describe('ActionDispatcher', () => {
     });
   });
 
+  describe('navigate scroll 옵션 (engine-v1.37.0)', () => {
+    let scrollToSpy: ReturnType<typeof vi.fn>;
+    let rafSpy: any;
+    let originalScrollTo: typeof window.scrollTo;
+    let originalReplaceState: typeof window.history.replaceState;
+
+    beforeEach(() => {
+      originalScrollTo = window.scrollTo;
+      originalReplaceState = window.history.replaceState;
+
+      scrollToSpy = vi.fn();
+      Object.defineProperty(window, 'scrollTo', {
+        value: scrollToSpy,
+        writable: true,
+        configurable: true,
+      });
+      // requestAnimationFrame을 동기 실행으로 변환
+      rafSpy = vi
+        .spyOn(window, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        });
+    });
+
+    afterEach(() => {
+      rafSpy.mockRestore();
+      Object.defineProperty(window, 'scrollTo', {
+        value: originalScrollTo,
+        writable: true,
+        configurable: true,
+      });
+      Object.defineProperty(window.history, 'replaceState', {
+        value: originalReplaceState,
+        writable: true,
+        configurable: true,
+      });
+      delete (window as any).G7Core;
+    });
+
+    const triggerNavigate = async (params: Record<string, any>) => {
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'navigate',
+        params,
+      };
+      const handler = dispatcher.createHandler(action);
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event;
+      await handler(mockEvent);
+    };
+
+    it('기본 동작: navigate 후 상단으로 스크롤해야 함 (scroll 미지정)', async () => {
+      await triggerNavigate({ path: '/admin/users' });
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: 'instant',
+      });
+    });
+
+    it('scroll: "top" 명시 시 상단으로 스크롤해야 함', async () => {
+      await triggerNavigate({ path: '/admin/users', scroll: 'top' });
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: 'instant',
+      });
+    });
+
+    it('scroll: "preserve" 시 스크롤을 건드리지 않아야 함', async () => {
+      await triggerNavigate({ path: '/admin/users', scroll: 'preserve' });
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+
+    it('scroll: number 시 해당 Y 좌표로 스크롤해야 함', async () => {
+      await triggerNavigate({ path: '/admin/users', scroll: 200 });
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 200,
+        left: 0,
+        behavior: 'instant',
+      });
+    });
+
+    it('scroll: { x, y } 객체 시 해당 좌표로 스크롤해야 함', async () => {
+      await triggerNavigate({
+        path: '/admin/users',
+        scroll: { x: 10, y: 300 },
+      });
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 300,
+        left: 10,
+        behavior: 'instant',
+      });
+    });
+
+    it('scrollBehavior: "smooth" 지정 시 smooth 전달', async () => {
+      await triggerNavigate({ path: '/admin/users', scrollBehavior: 'smooth' });
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: 'smooth',
+      });
+    });
+
+    it('scroll: "#selector" 시 해당 엘리먼트로 scrollIntoView 호출', async () => {
+      const mockEl = document.createElement('div');
+      mockEl.id = 'target-section';
+      const scrollIntoViewSpy = vi.fn();
+      (mockEl as any).scrollIntoView = scrollIntoViewSpy;
+
+      const querySelectorSpy = vi
+        .spyOn(document, 'querySelector')
+        .mockReturnValue(mockEl);
+
+      await triggerNavigate({
+        path: '/admin/users',
+        scroll: '#target-section',
+      });
+
+      expect(querySelectorSpy).toHaveBeenCalledWith('#target-section');
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({
+        behavior: 'instant',
+        block: 'start',
+      });
+
+      querySelectorSpy.mockRestore();
+    });
+
+    it('replace: true (updateQueryParams) 경로에서도 기본 상단 스크롤 적용', async () => {
+      const updateQueryParamsSpy = vi.fn().mockResolvedValue(undefined);
+      (window as any).G7Core = { updateQueryParams: updateQueryParamsSpy };
+
+      await triggerNavigate({ path: '/admin/users', replace: true });
+
+      expect(updateQueryParamsSpy).toHaveBeenCalled();
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: 'instant',
+      });
+
+      delete (window as any).G7Core;
+    });
+
+    it('replaceUrl 핸들러 기본값은 preserve여야 함', async () => {
+      const replaceStateSpy = vi.fn();
+      Object.defineProperty(window.history, 'replaceState', {
+        value: replaceStateSpy,
+        writable: true,
+        configurable: true,
+      });
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'replaceUrl',
+        params: { path: '/admin/users?selected=42' },
+      };
+      const handler = dispatcher.createHandler(action);
+      await handler({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(replaceStateSpy).toHaveBeenCalled();
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+
+    it('replaceUrl 핸들러에 scroll: "top" 명시 시 상단 이동', async () => {
+      Object.defineProperty(window.history, 'replaceState', {
+        value: vi.fn(),
+        writable: true,
+        configurable: true,
+      });
+
+      const action: ActionDefinition = {
+        type: 'click',
+        handler: 'replaceUrl',
+        params: { path: '/admin/users', scroll: 'top' },
+      };
+      const handler = dispatcher.createHandler(action);
+      await handler({
+        preventDefault: vi.fn(),
+        type: 'click',
+        target: null,
+      } as unknown as Event);
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: 'instant',
+      });
+    });
+
+    describe('확장 객체 문법 (container/to/block/offset)', () => {
+      it('container + to: number → 지정 컨테이너에 Y 좌표로 스크롤', async () => {
+        const containerEl = document.createElement('div');
+        containerEl.id = 'right_content_area';
+        const containerScrollTo = vi.fn();
+        (containerEl as any).scrollTo = containerScrollTo;
+
+        const querySelectorSpy = vi
+          .spyOn(document, 'querySelector')
+          .mockImplementation((sel: string) =>
+            sel === '#right_content_area' ? containerEl : null
+          );
+
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: {
+            container: '#right_content_area',
+            to: 250,
+          },
+        });
+
+        expect(containerScrollTo).toHaveBeenCalledWith({
+          top: 250,
+          left: 0,
+          behavior: 'instant',
+        });
+        // window 는 스크롤되지 않아야 함 (컨테이너 지정 시)
+        expect(scrollToSpy).not.toHaveBeenCalled();
+
+        querySelectorSpy.mockRestore();
+      });
+
+      it('container + to: "top" → 지정 컨테이너를 상단으로', async () => {
+        const containerEl = document.createElement('div');
+        const containerScrollTo = vi.fn();
+        (containerEl as any).scrollTo = containerScrollTo;
+
+        const querySelectorSpy = vi
+          .spyOn(document, 'querySelector')
+          .mockReturnValue(containerEl);
+
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: { container: '#right_content_area', to: 'top' },
+        });
+
+        expect(containerScrollTo).toHaveBeenCalledWith({
+          top: 0,
+          left: 0,
+          behavior: 'instant',
+        });
+
+        querySelectorSpy.mockRestore();
+      });
+
+      it('container + to: "#element" + offset → 엘리먼트를 컨테이너 안에서 offset 만큼 위로 보정', async () => {
+        const containerEl = document.createElement('div');
+        containerEl.id = 'scroll_area';
+        const containerScrollTo = vi.fn();
+        (containerEl as any).scrollTo = containerScrollTo;
+        // 컨테이너 위치/크기 모킹
+        (containerEl as any).getBoundingClientRect = () => ({
+          top: 0,
+          left: 0,
+          right: 800,
+          bottom: 600,
+          width: 800,
+          height: 600,
+        });
+        Object.defineProperty(containerEl, 'scrollTop', { value: 0, configurable: true });
+        Object.defineProperty(containerEl, 'clientHeight', { value: 600, configurable: true });
+
+        const targetEl = document.createElement('div');
+        targetEl.id = 'section';
+        (targetEl as any).getBoundingClientRect = () => ({
+          top: 400,
+          left: 0,
+          right: 800,
+          bottom: 450,
+          width: 800,
+          height: 50,
+        });
+        Object.defineProperty(targetEl, 'clientHeight', { value: 50, configurable: true });
+
+        const querySelectorSpy = vi
+          .spyOn(document, 'querySelector')
+          .mockImplementation((sel: string) => {
+            if (sel === '#scroll_area') return containerEl;
+            if (sel === '#section') return targetEl;
+            return null;
+          });
+
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: {
+            container: '#scroll_area',
+            to: '#section',
+            offset: 80,
+          },
+        });
+
+        // relativeTop = 0 + (400 - 0) = 400, block=start, offset=80
+        // top = 400 - 80 = 320
+        expect(containerScrollTo).toHaveBeenCalledWith({
+          top: 320,
+          left: 0,
+          behavior: 'instant',
+        });
+
+        querySelectorSpy.mockRestore();
+      });
+
+      it('container + to: "#element" + block: "center" → 엘리먼트를 컨테이너 중앙에 위치', async () => {
+        const containerEl = document.createElement('div');
+        const containerScrollTo = vi.fn();
+        (containerEl as any).scrollTo = containerScrollTo;
+        (containerEl as any).getBoundingClientRect = () => ({
+          top: 0,
+          left: 0,
+          right: 800,
+          bottom: 600,
+          width: 800,
+          height: 600,
+        });
+        Object.defineProperty(containerEl, 'scrollTop', { value: 0, configurable: true });
+        Object.defineProperty(containerEl, 'clientHeight', { value: 600, configurable: true });
+
+        const targetEl = document.createElement('div');
+        (targetEl as any).getBoundingClientRect = () => ({
+          top: 400,
+          left: 0,
+          right: 800,
+          bottom: 500,
+          width: 800,
+          height: 100,
+        });
+        Object.defineProperty(targetEl, 'clientHeight', { value: 100, configurable: true });
+
+        const querySelectorSpy = vi
+          .spyOn(document, 'querySelector')
+          .mockImplementation((sel: string) => {
+            if (sel === '#scroll_area') return containerEl;
+            if (sel === '#section') return targetEl;
+            return null;
+          });
+
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: {
+            container: '#scroll_area',
+            to: '#section',
+            block: 'center',
+          },
+        });
+
+        // relativeTop = 400, block=center → top = 400 - (600 - 100)/2 = 400 - 250 = 150
+        expect(containerScrollTo).toHaveBeenCalledWith({
+          top: 150,
+          left: 0,
+          behavior: 'instant',
+        });
+
+        querySelectorSpy.mockRestore();
+      });
+
+      it('확장 객체 (container 생략) + to: number → window 스크롤', async () => {
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: { to: 500 },
+        });
+
+        expect(scrollToSpy).toHaveBeenCalledWith({
+          top: 500,
+          left: 0,
+          behavior: 'instant',
+        });
+      });
+
+      it('container 미발견 시 경고 로그 후 no-op', async () => {
+        const querySelectorSpy = vi
+          .spyOn(document, 'querySelector')
+          .mockReturnValue(null);
+
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: { container: '#nonexistent', to: 'top' },
+        });
+
+        expect(scrollToSpy).not.toHaveBeenCalled();
+        querySelectorSpy.mockRestore();
+      });
+
+      it('offset 지정 시 Y 좌표에서 차감', async () => {
+        await triggerNavigate({
+          path: '/admin/users',
+          scroll: { to: 500, offset: 80 },
+        });
+
+        expect(scrollToSpy).toHaveBeenCalledWith({
+          top: 420,
+          left: 0,
+          behavior: 'instant',
+        });
+      });
+    });
+  });
+
   describe('커스텀 콜백 이벤트 (onSortChange, onSelectionChange 등)', () => {
     it('커스텀 콜백 이벤트의 여러 인자를 $args 배열로 전달해야 함', () => {
       const mockSetState = vi.fn();

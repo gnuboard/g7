@@ -9,9 +9,9 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 20개 | 정상 |
+| [백엔드](backend/) | 23개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
-| [확장 시스템](extension/) | 23개 | 정상 |
+| [확장 시스템](extension/) | 26개 | 정상 |
 | 공통 | 19개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -113,7 +113,7 @@
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (20개)
+### 백엔드 (23개)
 
 | 문서 | 제목 |
 |------|------|
@@ -125,8 +125,10 @@
 | [controllers.md](backend/controllers.md) | 컨트롤러 계층 구조 |
 | [core-config.md](backend/core-config.md) | 코어 설정 (config/core.php) |
 | [core-update-system.md](backend/core-update-system.md) | 코어 업데이트 시스템 (Core Update System) |
+| [data-sync-helpers.md](backend/data-sync-helpers.md) | 데이터 동기화 Helper (Data Sync Helpers) |
 | [enum.md](backend/enum.md) | Enum 사용 규칙 |
 | [exceptions.md](backend/exceptions.md) | Custom Exception 다국어 처리 |
+| [geoip.md](backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
@@ -136,6 +138,7 @@
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |
 | [service-provider.md](backend/service-provider.md) | 서비스 프로바이더 안전성 |
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
+| [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
 ### 프론트엔드 (49개)
@@ -192,10 +195,11 @@
 | [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
 | [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
 
-### 확장 시스템 (23개)
+### 확장 시스템 (26개)
 
 | 문서 | 제목 |
 |------|------|
+| [cache-driver.md](extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) |
 | [changelog-rules.md](extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) |
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
@@ -219,6 +223,8 @@
 | [template-routing.md](extension/template-routing.md) | 템플릿 라우트/언어 파일 규칙 |
 | [template-security.md](extension/template-security.md) | 템플릿 보안 정책 |
 | [template-workflow.md](extension/template-workflow.md) | 템플릿 개발 워크플로우 |
+| [upgrade-step-guide.md](extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) |
+| [vendor-bundle.md](extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) |
 
 ### 공통 (19개)
 

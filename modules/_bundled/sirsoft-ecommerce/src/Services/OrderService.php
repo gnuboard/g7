@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use App\Services\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +21,7 @@ class OrderService
 {
     public function __construct(
         protected OrderRepositoryInterface $repository,
-        protected UserAddressRepositoryInterface $userAddressRepository,
-        protected ActivityLogService $activityLogService
+        protected UserAddressRepositoryInterface $userAddressRepository
     ) {}
 
     /**
@@ -165,28 +163,20 @@ class OrderService
             }
         }
 
-        // 활동 로그 기록
-        $newStatus = $order->order_status?->value;
-        $changes = array_intersect_key($data, array_flip(['order_status', 'admin_memo']));
+        // 수정 후 훅 (스냅샷 전달 — OrderActivityLogListener가 활동 로그 기록)
+        HookManager::doAction('sirsoft-ecommerce.order.after_update', $order, $snapshot);
 
-        if (! empty($changes)) {
-            $description = $oldStatus !== $newStatus
-                ? __('sirsoft-ecommerce::messages.orders.log_status_changed', [
-                    'old' => $oldStatus,
-                    'new' => $newStatus,
-                ])
-                : __('sirsoft-ecommerce::messages.orders.log_updated');
+        // 주문 상태 변경 시 알림 훅 발화
+        $previousStatus = $snapshot['order_status'] ?? null;
+        $currentStatus = $order->order_status;
 
-            $this->activityLogService->logAdmin(
-                'order.update',
-                $description,
-                $order,
-                ['old_status' => $oldStatus, 'new_status' => $newStatus, 'changes' => $changes]
-            );
+        if ($currentStatus === OrderStatusEnum::SHIPPING && $previousStatus !== OrderStatusEnum::SHIPPING->value) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_ship', $order);
         }
 
-        // 수정 후 훅 (스냅샷 전달)
-        HookManager::doAction('sirsoft-ecommerce.order.after_update', $order, $snapshot);
+        if ($currentStatus === OrderStatusEnum::CONFIRMED && $previousStatus !== OrderStatusEnum::CONFIRMED->value) {
+            HookManager::doAction('sirsoft-ecommerce.order.after_complete', $order);
+        }
 
         return $order;
     }

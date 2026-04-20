@@ -16,8 +16,8 @@
       "name": "Div",
       "iteration": {
         "source": "(_local.form?.shipping?.carriers ?? []).map((c, i) => ({...c, _idx: i}))",
-        "item_var": "carrier",
-        "index_var": "cIdx"
+        "item_var": "$carrier",
+        "index_var": "$cIdx"
       },
       "props": {
         "className": "excel-card"
@@ -50,7 +50,7 @@
                       "props": {
                         "className": "excel-card-title font-mono"
                       },
-                      "text": "{{carrier.code}}"
+                      "text": "{{$carrier.code}}"
                     },
                     {
                       "type": "basic",
@@ -58,7 +58,7 @@
                       "props": {
                         "className": "text-tertiary truncate"
                       },
-                      "text": "{{typeof carrier.name === 'object' ? $localized(carrier.name) : (carrier.name ?? '')}}"
+                      "text": "{{typeof $carrier.name === 'object' ? $localized($carrier.name) : ($carrier.name ?? '')}}"
                     }
                   ]
                 }
@@ -75,7 +75,7 @@
                   "type": "basic",
                   "name": "Toggle",
                   "props": {
-                    "checked": "{{carrier.is_active ?? false}}",
+                    "checked": "{{$carrier.is_active ?? false}}",
                     "size": "sm",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
@@ -85,7 +85,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, is_active: !(c.is_active)} : c)}}",
                         "hasChanges": true
                       }
                     }
@@ -106,7 +106,7 @@
                       "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== carrier._idx)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== $carrier._idx)}}",
                         "hasChanges": true
                       }
                     }
@@ -153,9 +153,9 @@
                   "name": "Input",
                   "props": {
                     "type": "text",
-                    "value": "{{carrier.code ?? ''}}",
+                    "value": "{{$carrier.code ?? ''}}",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code'] ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error w-full font-mono' : 'input w-full font-mono'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -164,7 +164,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, code: $event.target.value} : c)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, code: $event.target.value} : c)}}",
                         "hasChanges": true
                       }
                     }
@@ -173,11 +173,11 @@
                 {
                   "type": "basic",
                   "name": "Span",
-                  "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']}}",
+                  "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}",
                   "props": {
                     "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
                   },
-                  "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.code']?.[0] ?? ''}}"
+                  "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}"
                 }
               ]
             },
@@ -200,10 +200,10 @@
                   "type": "composite",
                   "name": "MultilingualInput",
                   "props": {
-                    "value": "{{carrier.name ?? {}}}",
+                    "value": "{{$carrier.name ?? {}}}",
                     "layout": "compact",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
-                    "error": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + carrier._idx + '.name']?.[0] ?? ''}}",
+                    "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -212,7 +212,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, name: $event.target.value} : c)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, name: $event.target.value} : c)}}",
                         "hasChanges": true
                       }
                     }
@@ -239,8 +239,8 @@
                   "type": "basic",
                   "name": "Select",
                   "props": {
-                    "value": "{{carrier.type ?? 'domestic'}}",
-                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
+                    "value": "{{$carrier.type ?? 'domestic'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'select-error w-full' : 'w-full'}}",
                     "options": [
                       {
                         "value": "domestic",
@@ -259,7 +259,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, type: $event.target.value} : c)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, type: $event.target.value} : c)}}",
                         "hasChanges": true
                       }
                     }
@@ -287,9 +287,9 @@
                   "name": "Input",
                   "props": {
                     "type": "text",
-                    "value": "{{carrier.tracking_url ?? ''}}",
+                    "value": "{{$carrier.tracking_url ?? ''}}",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
-                    "className": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url'] ? 'input input-error w-full' : 'input w-full'}}",
+                    "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error w-full' : 'input w-full'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   },
                   "actions": [
@@ -298,7 +298,7 @@
                       "handler": "setState",
                       "params": {
                         "target": "local",
-                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
+                        "form.shipping.carriers": "{{(_local.form?.shipping?.carriers ?? []).map((c, i) => i === $carrier._idx ? {...c, tracking_url: $event.target.value} : c)}}",
                         "hasChanges": true
                       }
                     }
@@ -307,11 +307,11 @@
                 {
                   "type": "basic",
                   "name": "Span",
-                  "if": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']}}",
+                  "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}",
                   "props": {
                     "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
                   },
-                  "text": "{{_local.errors?.['shipping.carriers.' + carrier._idx + '.tracking_url']?.[0] ?? ''}}"
+                  "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}"
                 }
               ]
             }

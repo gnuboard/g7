@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Seo\Contracts\SeoCacheManagerInterface;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
@@ -14,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
 use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
+use Modules\Sirsoft\Ecommerce\Services\ShippingTypeService;
 
 /**
  * 이커머스 모듈 환경설정 컨트롤러
@@ -25,6 +27,7 @@ class EcommerceSettingsController extends AdminBaseController
     public function __construct(
         private EcommerceSettingsService $settingsService,
         private ShippingCarrierService $carrierService,
+        private ShippingTypeService $shippingTypeService,
         private ClaimReasonService $claimReasonService
     ) {}
 
@@ -38,6 +41,7 @@ class EcommerceSettingsController extends AdminBaseController
         try {
             $settings = $this->settingsService->getAllSettings();
             $settings = $this->appendCarriersToSettings($settings);
+            $settings = $this->appendShippingTypesToSettings($settings);
             $settings = $this->appendClaimReasonsToSettings($settings);
             $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
             $settings['abilities'] = [
@@ -107,6 +111,13 @@ class EcommerceSettingsController extends AdminBaseController
                 unset($settings['shipping']['carriers']);
             }
 
+            // shipping.types는 DB 관리 대상 — JSON 저장에서 제외
+            $shippingTypes = null;
+            if (isset($settings['shipping']['types'])) {
+                $shippingTypes = $settings['shipping']['types'];
+                unset($settings['shipping']['types']);
+            }
+
             // claim.refund_reasons는 DB 관리 대상 — JSON 저장에서 제외
             $refundReasons = null;
             if (isset($settings['claim']['refund_reasons'])) {
@@ -121,6 +132,11 @@ class EcommerceSettingsController extends AdminBaseController
                 $this->carrierService->syncCarriers($carriers);
             }
 
+            // shipping types DB 동기화
+            if ($result && $shippingTypes !== null) {
+                $this->shippingTypeService->syncShippingTypes($shippingTypes);
+            }
+
             // claim reasons DB 동기화
             if ($result && $refundReasons !== null) {
                 $this->claimReasonService->syncReasons('refund', $refundReasons);
@@ -130,6 +146,7 @@ class EcommerceSettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $updatedSettings = $this->settingsService->getAllSettings();
                 $updatedSettings = $this->appendCarriersToSettings($updatedSettings);
+                $updatedSettings = $this->appendShippingTypesToSettings($updatedSettings);
                 $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
                 $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
 
@@ -266,6 +283,7 @@ class EcommerceSettingsController extends AdminBaseController
     {
         try {
             $this->settingsService->clearCache();
+            app(SeoCacheManagerInterface::class)->clearAll();
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -279,6 +297,66 @@ class EcommerceSettingsController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * SEO 캐시 정보를 조회합니다.
+     *
+     * @return JsonResponse 캐시 페이지 수 및 용량을 포함한 JSON 응답
+     */
+    public function seoCacheInfo(): JsonResponse
+    {
+        try {
+            $cacheManager = app(SeoCacheManagerInterface::class);
+            $urls = $cacheManager->getCachedUrls();
+            $count = count($urls);
+
+            // 각 캐시 엔트리의 HTML 크기를 합산하여 총 용량 계산
+            $totalBytes = 0;
+            foreach ($urls as $url) {
+                foreach (config('app.supported_locales', ['ko']) as $locale) {
+                    $html = $cacheManager->get($url, $locale);
+                    if ($html !== null) {
+                        $totalBytes += strlen($html);
+                    }
+                }
+            }
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.settings.fetch_success',
+                [
+                    'count' => $count,
+                    'size_bytes' => $totalBytes,
+                    'size_formatted' => $this->formatBytes($totalBytes),
+                ]
+            );
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.settings.fetch_failed',
+                500
+            );
+        }
+    }
+
+    /**
+     * 바이트를 사람이 읽기 쉬운 형태로 변환합니다.
+     *
+     * @param  int  $bytes  바이트 수
+     * @return string 포맷된 문자열 (예: "1.5 MB")
+     */
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = (int) floor(log($bytes, 1024));
+        $i = min($i, count($units) - 1);
+
+        return round($bytes / (1024 ** $i), 1).' '.$units[$i];
     }
 
     /**
@@ -302,6 +380,21 @@ class EcommerceSettingsController extends AdminBaseController
             'is_active' => $c->is_active,
             'sort_order' => $c->sort_order,
         ])->values()->toArray();
+
+        return $settings;
+    }
+
+    /**
+     * 설정 응답에 배송유형 목록을 추가합니다.
+     *
+     * DB 관리 대상인 shipping types를 shipping 섹션에 포함시킵니다.
+     *
+     * @param array $settings 설정 배열
+     * @return array shipping types가 추가된 설정 배열
+     */
+    private function appendShippingTypesToSettings(array $settings): array
+    {
+        $settings['shipping']['types'] = $this->shippingTypeService->getTypesForSettings();
 
         return $settings;
     }

@@ -26,6 +26,7 @@ class SettingsServiceProvider extends ServiceProvider
         'cache',
         'upload',
         'core_update',
+        'geoip',
         'seo',
     ];
 
@@ -47,6 +48,7 @@ class SettingsServiceProvider extends ServiceProvider
         $this->applyCacheConfig($configRepository);
         $this->applyUploadConfig($configRepository);
         $this->applyCoreUpdateConfig($configRepository);
+        $this->applyGeoIpConfig($configRepository);
 
         // 코어 설정을 g7_settings.core prefix로 저장
         $this->loadCoreSettingsToConfig($configRepository);
@@ -226,6 +228,13 @@ class SettingsServiceProvider extends ServiceProvider
      * 드라이버 설정을 Laravel config에 적용합니다.
      *
      * 캐시, 세션, 큐, 스토리지, Redis 드라이버 설정을 오버라이드합니다.
+     *
+     * **테스트 환경 격리**: `storage/app/settings/drivers.json`은 모든 환경이 공유하는
+     * 파일이므로, testing 환경에서 cache/session/queue 드라이버를 덮어쓰면 phpunit.xml이
+     * 지정한 테스트 전용 드라이버(array/array/sync)가 무시되고 dev의 Redis 등을 공유하게 됩니다.
+     * 그 결과 테스트가 dev 캐시를 오염시켜 알림 훅 등록 같은 부팅 데이터가 silent하게
+     * 망가지는 치명적 상태가 발생합니다. testing 환경에서는 드라이버 오버라이드를 건너뜁니다.
+     * (이슈 #258)
      */
     private function applyDriverConfig(JsonConfigRepository $configRepository): void
     {
@@ -235,23 +244,28 @@ class SettingsServiceProvider extends ServiceProvider
             return;
         }
 
+        // testing 환경에서는 drivers.json의 cache/session/queue 오버라이드 차단 — 테스트 격리 보호
+        // (storage/app/settings/drivers.json은 shared 파일이므로 dev의 Redis/DB 드라이버가
+        //  testing으로 흘러들어가면 dev 캐시를 오염시킴)
+        $isTestingEnv = env('APP_ENV') === 'testing';
+
         // 캐시 드라이버 설정
-        if (! empty($driverSettings['cache_driver'])) {
+        if (! $isTestingEnv && ! empty($driverSettings['cache_driver'])) {
             Config::set('cache.default', $driverSettings['cache_driver']);
         }
 
         // 세션 드라이버 설정
-        if (! empty($driverSettings['session_driver'])) {
+        if (! $isTestingEnv && ! empty($driverSettings['session_driver'])) {
             Config::set('session.driver', $driverSettings['session_driver']);
         }
 
         // 세션 수명 설정
-        if (! empty($driverSettings['session_lifetime'])) {
+        if (! $isTestingEnv && ! empty($driverSettings['session_lifetime'])) {
             Config::set('session.lifetime', (int) $driverSettings['session_lifetime']);
         }
 
         // 큐 드라이버 설정
-        if (! empty($driverSettings['queue_driver'])) {
+        if (! $isTestingEnv && ! empty($driverSettings['queue_driver'])) {
             Config::set('queue.default', $driverSettings['queue_driver']);
         }
 
@@ -371,27 +385,90 @@ class SettingsServiceProvider extends ServiceProvider
 
     /**
      * 웹소켓(Reverb) 설정을 적용합니다.
+     *
+     * 클라이언트(브라우저)와 서버(백엔드 broadcast HTTP API) endpoint를 분리합니다:
+     * - 클라이언트: 외부에서 WebSocket으로 접속할 host/port (예: g7.dev:443)
+     *   → g7.websocket.client.* 에 저장 → admin.blade.php가 브라우저로 전달
+     * - 서버: 백엔드 Pusher SDK가 broadcast HTTP API를 호출할 내부 endpoint (예: 127.0.0.1:8080)
+     *   → broadcasting.connections.reverb.options.* 에 저장 → Pusher SDK가 사용
+     *   → reverb.apps.apps.0.options.* 에 저장 → Reverb 서버 자체 설정
      */
     private function applyWebsocketConfig(array $driverSettings): void
     {
         if (empty($driverSettings['websocket_enabled'])) {
+            Config::set('broadcasting.default', 'null');
+
             return;
         }
 
-        if (! empty($driverSettings['websocket_app_key'])) {
-            Config::set('broadcasting.connections.reverb.key', $driverSettings['websocket_app_key']);
+        $appId = $driverSettings['websocket_app_id'] ?? '';
+        $appKey = $driverSettings['websocket_app_key'] ?? '';
+        $appSecret = $driverSettings['websocket_app_secret'] ?? '';
+
+        // 클라이언트 endpoint (외부 — 브라우저 접속용)
+        $clientHost = $driverSettings['websocket_host'] ?? '';
+        $clientPort = (int) ($driverSettings['websocket_port'] ?? 0);
+        $clientScheme = $driverSettings['websocket_scheme'] ?? '';
+        $verifySsl = isset($driverSettings['websocket_verify_ssl']) ? (bool) $driverSettings['websocket_verify_ssl'] : null;
+
+        // 서버 endpoint (내부 — 백엔드 broadcast HTTP API용)
+        // server 키가 비어있으면 클라이언트 값으로 fallback (단일 호스트 환경 호환)
+        $serverHost = $driverSettings['websocket_server_host'] ?? '';
+        $serverPort = (int) ($driverSettings['websocket_server_port'] ?? 0);
+        $serverScheme = $driverSettings['websocket_server_scheme'] ?? '';
+        if (empty($serverHost)) {
+            $serverHost = $clientHost;
+        }
+        if ($serverPort <= 0) {
+            $serverPort = $clientPort;
+        }
+        if (empty($serverScheme)) {
+            $serverScheme = $clientScheme;
+        }
+        $serverUseTLS = $serverScheme === 'https';
+
+        // 공통: 앱 자격증명
+        if (! empty($appKey)) {
+            Config::set('broadcasting.connections.reverb.key', $appKey);
+            Config::set('reverb.apps.apps.0.key', $appKey);
+        }
+        if (! empty($appSecret)) {
+            Config::set('broadcasting.connections.reverb.secret', $appSecret);
+            Config::set('reverb.apps.apps.0.secret', $appSecret);
+        }
+        if (! empty($appId)) {
+            Config::set('broadcasting.connections.reverb.app_id', $appId);
+            Config::set('reverb.apps.apps.0.app_id', $appId);
         }
 
-        if (! empty($driverSettings['websocket_host'])) {
-            Config::set('broadcasting.connections.reverb.options.host', $driverSettings['websocket_host']);
+        // 백엔드 broadcast HTTP API용 endpoint (Pusher SDK가 사용)
+        if (! empty($serverHost)) {
+            Config::set('broadcasting.connections.reverb.options.host', $serverHost);
+            Config::set('reverb.apps.apps.0.options.host', $serverHost);
+        }
+        if ($serverPort > 0) {
+            Config::set('broadcasting.connections.reverb.options.port', $serverPort);
+            Config::set('reverb.apps.apps.0.options.port', $serverPort);
+        }
+        if (! empty($serverScheme)) {
+            Config::set('broadcasting.connections.reverb.options.scheme', $serverScheme);
+            Config::set('broadcasting.connections.reverb.options.useTLS', $serverUseTLS);
+            Config::set('reverb.apps.apps.0.options.scheme', $serverScheme);
+            Config::set('reverb.apps.apps.0.options.useTLS', $serverUseTLS);
+        }
+        if ($verifySsl !== null) {
+            Config::set('broadcasting.connections.reverb.client_options.verify', $verifySsl);
         }
 
-        if (! empty($driverSettings['websocket_port'])) {
-            Config::set('broadcasting.connections.reverb.options.port', (int) $driverSettings['websocket_port']);
+        // 클라이언트(브라우저) 접속용 endpoint — Blade에서 읽어 G7Core에 전달
+        if (! empty($clientHost)) {
+            Config::set('g7.websocket.client.host', $clientHost);
         }
-
-        if (! empty($driverSettings['websocket_scheme'])) {
-            Config::set('broadcasting.connections.reverb.options.scheme', $driverSettings['websocket_scheme']);
+        if ($clientPort > 0) {
+            Config::set('g7.websocket.client.port', $clientPort);
+        }
+        if (! empty($clientScheme)) {
+            Config::set('g7.websocket.client.scheme', $clientScheme);
         }
     }
 
@@ -415,6 +492,40 @@ class SettingsServiceProvider extends ServiceProvider
 
         if (! empty($settings['github_token'])) {
             Config::set('app.update.github_token', $settings['github_token']);
+        }
+    }
+
+    /**
+     * GeoIP 설정을 Laravel config에 적용합니다.
+     *
+     * cache.json의 geoip_* 값으로 config('geoip.*')을 오버라이드합니다.
+     * 마스터 스위치(geoip.feature_enabled)가 곧 config('geoip.enabled')의
+     * 런타임 값이 됩니다. env('GEOIP_ENABLED')는 fallback 역할.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     */
+    private function applyGeoIpConfig(JsonConfigRepository $configRepository): void
+    {
+        $settings = $configRepository->getCategory('geoip');
+
+        if (empty($settings)) {
+            return;
+        }
+
+        if (isset($settings['feature_enabled'])) {
+            Config::set('geoip.enabled', (bool) $settings['feature_enabled']);
+        }
+
+        if (! empty($settings['license_key'])) {
+            Config::set('geoip.license_key', $settings['license_key']);
+        }
+
+        if (isset($settings['auto_update_enabled'])) {
+            Config::set('geoip.auto_update_enabled', (bool) $settings['auto_update_enabled']);
+        }
+
+        if (! empty($settings['last_updated_at'])) {
+            Config::set('geoip.last_updated_at', $settings['last_updated_at']);
         }
     }
 

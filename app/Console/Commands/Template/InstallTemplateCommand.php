@@ -17,7 +17,9 @@ class InstallTemplateCommand extends Command
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'template:install {identifier : 템플릿 식별자 (디렉토리명)}';
+    protected $signature = 'template:install
+        {identifier : 템플릿 식별자 (디렉토리명)}
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
 
     /**
      * The console command description.
@@ -53,14 +55,22 @@ class InstallTemplateCommand extends Command
             return Command::FAILURE;
         }
 
+        $force = (bool) $this->option('force');
+
         try {
             // 템플릿 디렉토리 스캔 및 로드
             $this->templateManager->loadTemplates();
 
+            // 이미 설치된 템플릿인지 확인 (force 시 경고 후 재설치/복구 허용)
+            $existingTemplate = $this->templateRepository->findByIdentifier($identifier);
+            if ($existingTemplate && $force) {
+                $this->warn('⚠️  '.__('templates.commands.install.force_reinstall', ['template' => $identifier]));
+            }
+
             // 템플릿 설치
             $onProgress = $this->createProgressCallback(TemplateManager::INSTALL_STEPS);
             try {
-                $result = $this->templateManager->installTemplate($identifier, $onProgress);
+                $result = $this->templateManager->installTemplate($identifier, $onProgress, $force);
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();

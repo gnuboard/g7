@@ -3,7 +3,7 @@
 namespace App\Listeners\Dashboard;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Events\Dashboard\DashboardUpdated;
+use App\Extension\HookManager;
 use App\Services\DashboardService;
 
 /**
@@ -52,6 +52,9 @@ class DashboardModuleListener implements HookListenerInterface
      */
     public function handleModuleUpdate(...$args): void
     {
-        broadcast(new DashboardUpdated('stats', $this->dashboardService->getStats()));
+        HookManager::broadcast('core.admin.dashboard', 'dashboard.stats.updated', [
+            'type' => 'stats',
+            'data' => $this->dashboardService->getStats(),
+        ]);
     }
 }

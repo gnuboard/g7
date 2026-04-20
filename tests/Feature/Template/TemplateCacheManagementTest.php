@@ -124,7 +124,7 @@ class TemplateCacheManagementTest extends TestCase
         );
 
         // 캐시 버전을 과거 값으로 설정하여 비활성화 후 증가를 검증
-        Cache::put('extension_cache_version', 1000);
+        Cache::put('g7:core:ext.cache_version', 1000);
 
         // Act
         $this->templateManager->deactivateTemplate('sirsoft-admin_basic');
@@ -189,7 +189,7 @@ class TemplateCacheManagementTest extends TestCase
         );
 
         // 캐시 버전을 과거 값으로 설정하여 제거 후 증가를 검증
-        Cache::put('extension_cache_version', 1000);
+        Cache::put('g7:core:ext.cache_version', 1000);
 
         // Act (spy가 활성 디렉토리 삭제/이동 차단)
         $this->templateManager->uninstallTemplate('sirsoft-admin_basic');
@@ -251,7 +251,7 @@ class TemplateCacheManagementTest extends TestCase
 
         // 수동으로 내부 레이아웃 캐시 생성 (버전 없는 LayoutService 캐시 키)
         foreach ($layouts as $layout) {
-            $cacheKey = "template.{$template->id}.layout.{$layout->name}";
+            $cacheKey = "g7:core:template.{$template->id}.layout.{$layout->name}";
             Cache::put($cacheKey, ['test' => 'data'], 3600);
         }
 
@@ -260,7 +260,7 @@ class TemplateCacheManagementTest extends TestCase
 
         // Assert - 내부 레이아웃 캐시가 삭제되었는지 확인
         foreach ($layouts as $layout) {
-            $cacheKey = "template.{$template->id}.layout.{$layout->name}";
+            $cacheKey = "g7:core:template.{$template->id}.layout.{$layout->name}";
             $this->assertFalse(
                 Cache::has($cacheKey),
                 "비활성화 후 {$layout->name} 내부 레이아웃 캐시가 삭제되어야 합니다."

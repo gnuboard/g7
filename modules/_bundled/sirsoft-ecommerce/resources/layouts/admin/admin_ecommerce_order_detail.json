@@ -9,7 +9,22 @@
         "title": "$t:sirsoft-ecommerce.admin.order.detail.title",
         "description": "$t:sirsoft-ecommerce.admin.order.detail.description"
     },
-    "computed": {},
+    "computed": [],
+    "state": {
+        "selectedProducts": [],
+        "selectAll": false,
+        "batchOrderStatus": "",
+        "batchCarrierId": "",
+        "batchTrackingNumber": "",
+        "activeOrderTab": "order_info"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "active_carriers",
+            "order_logs",
+            "refundReasons"
+        ]
+    },
     "data_sources": [
         {
             "id": "order",
@@ -92,7 +107,7 @@
                 "logsPage": 1,
                 "logsPerPage": 10,
                 "logsSort": "date_desc",
-                "changeQuantities": {},
+                "changeQuantities": [],
                 "smsPhone": "",
                 "smsMessage": "",
                 "emailAddress": "",
@@ -123,14 +138,6 @@
             }
         }
     ],
-    "state": {
-        "selectedProducts": [],
-        "selectAll": false,
-        "batchOrderStatus": "",
-        "batchCarrierId": "",
-        "batchTrackingNumber": "",
-        "activeOrderTab": "order_info"
-    },
     "modals": [
         {
             "partial": "partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json"
@@ -193,43 +200,57 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "props": {
+                                                            "className": "text-gray-600 dark:text-gray-400"
+                                                        },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_number:"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "font-medium text-gray-900 dark:text-gray-100" },
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
                                                         "text": "{{order.data.order_number}}"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "text-gray-300 dark:text-gray-600" },
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
                                                         "text": "|"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "props": {
+                                                            "className": "text-gray-600 dark:text-gray-400"
+                                                        },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_date:"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "font-medium text-gray-900 dark:text-gray-100" },
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        },
                                                         "text": "{{order.data.ordered_at_formatted}}"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "text-gray-300 dark:text-gray-600" },
+                                                        "props": {
+                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                        },
                                                         "text": "|"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "text-gray-600 dark:text-gray-400" },
+                                                        "props": {
+                                                            "className": "text-gray-600 dark:text-gray-400"
+                                                        },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.status:"
                                                     },
                                                     {

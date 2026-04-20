@@ -393,7 +393,6 @@
           "id": "dependencies_section",
           "type": "basic",
           "name": "Div",
-          "if": "{{_global.selectedTemplate.dependencies && ((_global.selectedTemplate.dependencies.modules && _global.selectedTemplate.dependencies.modules.length > 0) || (_global.selectedTemplate.dependencies.plugins && _global.selectedTemplate.dependencies.plugins.length > 0))}}",
           "children": [
             {
               "type": "basic",
@@ -419,6 +418,50 @@
                   "text": "$t:admin.templates.modals.dependencies"
                 }
               ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 mb-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                  },
+                  "text": "$t:admin.templates.modals.required_core_version"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_global.selectedTemplate.requires_core}}",
+                  "props": {
+                    "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-mono"
+                  },
+                  "text": "{{_global.selectedTemplate.requires_core}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!_global.selectedTemplate.requires_core}}",
+                  "props": {
+                    "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded"
+                  },
+                  "text": "$t:admin.templates.modals.no_required_core_version"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "if": "{{(!_global.selectedTemplate.dependencies?.modules || _global.selectedTemplate.dependencies.modules.length === 0) && (!_global.selectedTemplate.dependencies?.plugins || _global.selectedTemplate.dependencies.plugins.length === 0)}}",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:admin.templates.modals.no_dependencies_required"
             },
             {
               "type": "basic",
@@ -451,32 +494,77 @@
                         "item_var": "mod"
                       },
                       "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Icon",
                           "props": {
-                            "name": "{{mod.is_met ? 'check-circle' : 'exclamation-circle'}}",
-                            "className": "{{mod.is_met ? 'w-4 h-4 text-green-500' : 'w-4 h-4 text-amber-500'}}"
+                            "name": "cube",
+                            "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
                           }
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
                           },
-                          "text": "{{mod.name || mod.identifier}}"
+                          "text": "{{mod.name || mod.identifier}} ({{mod.identifier}})"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
                           },
-                          "text": "({{mod.required_version}})"
+                          "text": "$t:admin.templates.modals.dependency_required_version|version={{mod.required_version}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{mod.installed_version}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded font-mono"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_installed_version|version={{mod.installed_version}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{mod.is_met}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_met"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!mod.is_met && !mod.installed_version}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_not_installed"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!mod.is_met && mod.installed_version && !mod.is_active}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_inactive"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!mod.is_met && mod.installed_version && mod.is_active}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_unmet_version"
                         }
                       ]
                     }
@@ -512,32 +600,77 @@
                         "item_var": "plug"
                       },
                       "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex flex-wrap items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
                       },
                       "children": [
                         {
                           "type": "basic",
                           "name": "Icon",
                           "props": {
-                            "name": "{{plug.is_met ? 'check-circle' : 'exclamation-circle'}}",
-                            "className": "{{plug.is_met ? 'w-4 h-4 text-green-500' : 'w-4 h-4 text-amber-500'}}"
+                            "name": "puzzle-piece",
+                            "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
                           }
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                            "className": "text-sm font-medium text-gray-900 dark:text-white"
                           },
-                          "text": "{{plug.name || plug.identifier}}"
+                          "text": "{{plug.name || plug.identifier}} ({{plug.identifier}})"
                         },
                         {
                           "type": "basic",
                           "name": "Span",
                           "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
                           },
-                          "text": "({{plug.required_version}})"
+                          "text": "$t:admin.templates.modals.dependency_required_version|version={{plug.required_version}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{plug.installed_version}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded font-mono"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_installed_version|version={{plug.installed_version}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{plug.is_met}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_met"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!plug.is_met && !plug.installed_version}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_not_installed"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!plug.is_met && plug.installed_version && !plug.is_active}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_inactive"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{!plug.is_met && plug.installed_version && plug.is_active}}",
+                          "props": {
+                            "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded"
+                          },
+                          "text": "$t:admin.templates.modals.dependency_unmet_version"
                         }
                       ]
                     }

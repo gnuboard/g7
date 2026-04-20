@@ -123,13 +123,24 @@
       },
       "children": [
         {
-          "type": "composite",
-          "name": "HtmlContent",
+          "type": "extension_point",
+          "name": "html_content",
           "props": {
-            "content": "{{form_meta?.data?.parent_post?.content}}",
+            "content": "{{form_meta?.data?.parent_post?.content ?? ''}}",
             "isHtml": "{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}",
             "className": "{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"
-          }
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{form_meta?.data?.parent_post?.content ?? ''}}",
+                "isHtml": "{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}",
+                "className": "{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"
+              }
+            }
+          ]
         },
         {
           "type": "basic",

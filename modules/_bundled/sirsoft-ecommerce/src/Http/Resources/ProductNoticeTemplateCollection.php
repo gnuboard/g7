@@ -4,14 +4,14 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 
 /**
  * 상품정보제공고시 템플릿 컬렉션 리소스
  *
  * 템플릿 목록을 abilities와 함께 반환합니다.
  */
-class ProductNoticeTemplateCollection extends ResourceCollection
+class ProductNoticeTemplateCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
 

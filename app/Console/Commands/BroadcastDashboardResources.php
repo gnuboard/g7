@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Events\Dashboard\DashboardUpdated;
+use App\Extension\HookManager;
 use App\Services\DashboardService;
 use Illuminate\Console\Command;
 
@@ -31,11 +31,13 @@ class BroadcastDashboardResources extends Command
      * 커맨드를 실행합니다.
      *
      * @param  DashboardService  $dashboardService  대시보드 서비스
-     * @return int
      */
     public function handle(DashboardService $dashboardService): int
     {
-        broadcast(new DashboardUpdated('resources', $dashboardService->getSystemResources()));
+        HookManager::broadcast('core.admin.dashboard', 'dashboard.resources.updated', [
+            'type' => 'resources',
+            'data' => $dashboardService->getSystemResources(),
+        ]);
 
         $this->info('시스템 리소스 정보가 브로드캐스트되었습니다.');
 

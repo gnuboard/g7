@@ -278,6 +278,67 @@ describe('트러블슈팅 회귀 테스트 - 캐시 관련', () => {
       expect(uniqueIds.size).toBe(modalIds.length);
     });
   });
+
+  describe('[사례 16] 확장 라이프사이클 직후 라우트/다국어 미반영 + 토스트 raw key 노출', () => {
+    /**
+     * 증상:
+     *   1. 모듈 활성화 직후 새 라우트가 페이지 전체 새로고침 전까지 반영되지 않음
+     *   2. 성공 토스트가 `admin.modules.activate_success` 원본 번역 키를 표시
+     *
+     * 근본 원인 3건:
+     *   (a) Router.loadRoutes 가 ?v=cacheVersion 을 부착하지 않음 — PublicTemplateController::getRoutes 가 v 기반 캐싱
+     *   (b) TranslationEngine.setCacheVersion 이 this.translations 를 clear — parallel toast 와 경합
+     *   (c) $t() 헬퍼가 context.$templateId 누락 시 빈 templateId 로 lookup 실패
+     *
+     * 전체 회귀 테스트는 다음 파일들에 분산:
+     *   - resources/js/core/routing/__tests__/Router.test.ts (cacheVersion 쿼리 부착)
+     *   - resources/js/core/template-engine/__tests__/TranslationEngine.test.ts (setCacheVersion 원자성)
+     *   - resources/js/core/template-engine/__tests__/DataBindingEngine.test.ts ($t fallback)
+     *   - resources/js/core/template-engine/__tests__/ActionDispatcher.reloadExtensions.test.ts
+     *
+     * @since engine-v1.38.0 / 1.38.1 / 1.38.2
+     */
+    it('Router.loadRoutes 는 cacheVersion 전달 시 ?v= 쿼리를 부착해야 함 (사례 16-a)', () => {
+      const buildUrl = (templateId: string, cacheVersion?: number) => {
+        const versionQuery = cacheVersion !== undefined && cacheVersion > 0
+          ? `?v=${cacheVersion}`
+          : '';
+        return `/api/templates/${templateId}/routes.json${versionQuery}`;
+      };
+      expect(buildUrl('x', 1776225501)).toBe('/api/templates/x/routes.json?v=1776225501');
+      expect(buildUrl('x', 0)).toBe('/api/templates/x/routes.json');
+      expect(buildUrl('x', undefined)).toBe('/api/templates/x/routes.json');
+    });
+
+    it('setCacheVersion 직후에도 활성 translations 가 유지되어야 함 (사례 16-b)', () => {
+      const translations = new Map<string, any>();
+      const ttlCache = new Map<string, any>();
+      translations.set('x:ko', { admin: { modules: { activate_success: '성공' } } });
+      ttlCache.set('x:ko', { admin: { modules: { activate_success: '성공' } } });
+
+      // setCacheVersion 새 동작: TTL 캐시만 clear, 활성 translations 유지
+      ttlCache.clear();
+
+      expect(translations.get('x:ko')?.admin?.modules?.activate_success).toBe('성공');
+      expect(ttlCache.has('x:ko')).toBe(false);
+    });
+
+    it('$t() fallback — context.$templateId 누락 시 window.__templateApp.getConfig() 사용 (사례 16-c)', () => {
+      const mockTemplateApp = {
+        getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'ko' }),
+      };
+      const resolveTemplateId = (context: Record<string, any>, windowRef: any): string => {
+        let templateId = context.$templateId;
+        if (!templateId) {
+          templateId = windowRef?.__templateApp?.getConfig?.()?.templateId;
+        }
+        return templateId || '';
+      };
+      expect(resolveTemplateId({}, { __templateApp: mockTemplateApp })).toBe('sirsoft-admin_basic');
+      expect(resolveTemplateId({ $templateId: 'explicit' }, { __templateApp: mockTemplateApp })).toBe('explicit');
+      expect(resolveTemplateId({}, {})).toBe('');
+    });
+  });
 });
 
 describe('트러블슈팅 회귀 테스트 - 바인딩 엔진 캐시', () => {

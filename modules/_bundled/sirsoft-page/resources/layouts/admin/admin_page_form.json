@@ -9,6 +9,14 @@
         "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
     },
+    "computed": {
+        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "pageData"
+        ]
+    },
     "data_sources": [
         {
             "id": "pageData",
@@ -33,9 +41,6 @@
             }
         }
     ],
-    "computed": {
-        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
-    },
     "init_actions": [
         {
             "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화)",
@@ -126,7 +131,9 @@
                                                         "params": {
                                                             "target": "local",
                                                             "errors": {
-                                                                "slug": ["$t:sirsoft-page.admin.page.form.fields.slug_check_required"]
+                                                                "slug": [
+                                                                    "$t:sirsoft-page.admin.page.form.fields.slug_check_required"
+                                                                ]
                                                             }
                                                         }
                                                     },
@@ -398,53 +405,253 @@
                                             }
                                         },
                                         "children": [
-                                    {
-                                        "id": "slug_field",
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "props": {
-                                            "className": "space-y-2"
-                                        },
-                                        "children": [
                                             {
+                                                "id": "slug_field",
                                                 "type": "basic",
-                                                "name": "Label",
+                                                "name": "Div",
                                                 "props": {
-                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    "className": "space-y-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug"
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                },
+                                                                "text": "*"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "slug_input",
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
+                                                                    "value": "{{_local.form?.slug ?? ''}}",
+                                                                    "disabled": "{{!!route?.id || _computed.isReadOnly}}",
+                                                                    "className": "{{route?.id ? 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed' : _local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.slug": "{{$event.target.value}}",
+                                                                            "slugChecked": false,
+                                                                            "slugAvailable": false,
+                                                                            "slugChecking": false,
+                                                                            "slugError": ""
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "slug_check_button",
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "if": "{{!route?.id && !_computed.isReadOnly}}",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
+                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "slugChecking": true,
+                                                                                    "slugChecked": false,
+                                                                                    "slugError": ""
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "apiCall",
+                                                                                "auth_required": true,
+                                                                                "target": "/api/modules/sirsoft-page/admin/pages/check-slug",
+                                                                                "params": {
+                                                                                    "method": "POST",
+                                                                                    "body": {
+                                                                                        "slug": "{{_local.form?.slug}}",
+                                                                                        "exclude_id": "{{route?.id}}"
+                                                                                    }
+                                                                                },
+                                                                                "onSuccess": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "slugChecking": false,
+                                                                                            "slugChecked": true,
+                                                                                            "slugAvailable": "{{!response.data?.exists}}",
+                                                                                            "slugError": ""
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "onError": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "slugChecking": false,
+                                                                                            "slugChecked": true,
+                                                                                            "slugAvailable": false,
+                                                                                            "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{!_local.slugChecking}}",
+                                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_check"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{_local.slugChecking}}",
+                                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_checking"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "space-y-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!route?.id}}",
+                                                                "props": {
+                                                                    "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                                },
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_format_hint"
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "if": "{{_local.slugChecked && _local.slugAvailable}}",
                                                         "props": {
-                                                            "className": "text-red-500 dark:text-red-400 ml-1"
+                                                            "className": "block text-xs text-green-600 dark:text-green-400"
                                                         },
-                                                        "text": "*"
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_available"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.slugChecked && !_local.slugAvailable && _local.slugError}}",
+                                                        "props": {
+                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                        },
+                                                        "text": "{{_local.slugError}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.slugChecked && !_local.slugAvailable && !_local.slugError}}",
+                                                        "props": {
+                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                        },
+                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_unavailable"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.slug && !_local.slugChecked}}",
+                                                        "props": {
+                                                            "className": "block text-xs text-red-500 dark:text-red-400"
+                                                        },
+                                                        "text": "{{_local.errors?.slug?.[0]}}"
                                                     }
                                                 ]
                                             },
                                             {
+                                                "id": "published_field",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex gap-2"
+                                                    "className": "space-y-2"
                                                 },
                                                 "children": [
                                                     {
-                                                        "id": "slug_input",
                                                         "type": "basic",
-                                                        "name": "Input",
+                                                        "name": "Label",
                                                         "props": {
-                                                            "type": "text",
-                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
-                                                            "value": "{{_local.form?.slug ?? ''}}",
-                                                            "disabled": "{{!!route?.id || _computed.isReadOnly}}",
-                                                            "className": "{{route?.id ? 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed' : _local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-page.admin.page.form.fields.published"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "published_select",
+                                                        "type": "composite",
+                                                        "name": "Select",
+                                                        "props": {
+                                                            "value": "{{String(_local.form?.published ?? false)}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.published",
+                                                                    "value": "true"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.unpublished",
+                                                                    "value": "false"
+                                                                }
+                                                            ]
                                                         },
                                                         "actions": [
                                                             {
@@ -452,213 +659,13 @@
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
-                                                                    "form.slug": "{{$event.target.value}}",
-                                                                    "slugChecked": false,
-                                                                    "slugAvailable": false,
-                                                                    "slugChecking": false,
-                                                                    "slugError": ""
+                                                                    "form.published": "{{$event.target.value === 'true'}}"
                                                                 }
                                                             }
                                                         ]
-                                                    },
-                                                    {
-                                                        "id": "slug_check_button",
-                                                        "type": "basic",
-                                                        "name": "Button",
-                                                        "if": "{{!route?.id && !_computed.isReadOnly}}",
-                                                        "props": {
-                                                            "type": "button",
-                                                            "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
-                                                            "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "type": "click",
-                                                                "handler": "sequence",
-                                                                "actions": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "slugChecking": true,
-                                                                            "slugChecked": false,
-                                                                            "slugError": ""
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "apiCall",
-                                                                        "auth_required": true,
-                                                                        "target": "/api/modules/sirsoft-page/admin/pages/check-slug",
-                                                                        "params": {
-                                                                            "method": "POST",
-                                                                            "body": {
-                                                                                "slug": "{{_local.form?.slug}}",
-                                                                                "exclude_id": "{{route?.id}}"
-                                                                            }
-                                                                        },
-                                                                        "onSuccess": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "slugChecking": false,
-                                                                                    "slugChecked": true,
-                                                                                    "slugAvailable": "{{!response.data?.exists}}",
-                                                                                    "slugError": ""
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "onError": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "slugChecking": false,
-                                                                                    "slugChecked": true,
-                                                                                    "slugAvailable": false,
-                                                                                    "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
-                                                                                }
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                ]
-                                                            }
-                                                        ],
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{!_local.slugChecking}}",
-                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_check"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Span",
-                                                                "if": "{{_local.slugChecking}}",
-                                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_checking"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Div",
-                                                "props": {
-                                                    "className": "space-y-1"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                                        },
-                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_hint|slug={{_local.form?.slug ?? 'example'}}"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{!route?.id}}",
-                                                        "props": {
-                                                            "className": "block text-xs text-gray-400 dark:text-gray-500"
-                                                        },
-                                                        "text": "$t:sirsoft-page.admin.page.form.fields.slug_format_hint"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{_local.slugChecked && _local.slugAvailable}}",
-                                                "props": {
-                                                    "className": "block text-xs text-green-600 dark:text-green-400"
-                                                },
-                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_available"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{_local.slugChecked && !_local.slugAvailable && _local.slugError}}",
-                                                "props": {
-                                                    "className": "block text-xs text-red-500 dark:text-red-400"
-                                                },
-                                                "text": "{{_local.slugError}}"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{_local.slugChecked && !_local.slugAvailable && !_local.slugError}}",
-                                                "props": {
-                                                    "className": "block text-xs text-red-500 dark:text-red-400"
-                                                },
-                                                "text": "$t:sirsoft-page.admin.page.form.fields.slug_unavailable"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{_local.errors?.slug && !_local.slugChecked}}",
-                                                "props": {
-                                                    "className": "block text-xs text-red-500 dark:text-red-400"
-                                                },
-                                                "text": "{{_local.errors?.slug?.[0]}}"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "published_field",
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "props": {
-                                            "className": "space-y-2"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Label",
-                                                "props": {
-                                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "$t:sirsoft-page.admin.page.form.fields.published"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "id": "published_select",
-                                                "type": "composite",
-                                                "name": "Select",
-                                                "props": {
-                                                    "value": "{{String(_local.form?.published ?? false)}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
-                                                    "options": [
-                                                        {
-                                                            "label": "$t:sirsoft-page.admin.page.published_status.published",
-                                                            "value": "true"
-                                                        },
-                                                        {
-                                                            "label": "$t:sirsoft-page.admin.page.published_status.unpublished",
-                                                            "value": "false"
-                                                        }
-                                                    ]
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "form.published": "{{$event.target.value === 'true'}}"
-                                                        }
                                                     }
                                                 ]
                                             }
-                                        ]
-                                    }
                                         ]
                                     },
                                     {
@@ -749,8 +756,9 @@
                                             },
                                             {
                                                 "id": "content_editor",
-                                                "type": "composite",
-                                                "name": "HtmlEditor",
+                                                "type": "extension_point",
+                                                "name": "html_editor",
+                                                "if": "{{!route?.id || _local.form?.content !== undefined}}",
                                                 "props": {
                                                     "name": "content",
                                                     "multilingual": true,
@@ -760,22 +768,37 @@
                                                     "rows": 15,
                                                     "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
                                                 },
-                                                "actions": [
+                                                "default": [
                                                     {
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "form.content": "{{$event.target.value}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "type": "isHtmlChange",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}"
-                                                        }
+                                                        "type": "composite",
+                                                        "name": "HtmlEditor",
+                                                        "props": {
+                                                            "name": "content",
+                                                            "multilingual": true,
+                                                            "value": "{{_local.form?.content}}",
+                                                            "isHtml": "{{_local.form?.content_mode === 'html'}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "rows": 15,
+                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.content": "{{$event.target.value}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "isHtmlChange",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}"
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             },

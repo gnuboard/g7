@@ -91,26 +91,56 @@
               "children": [
                 {
                   "id": "description_editor",
-                  "type": "composite",
-                  "name": "HtmlEditor",
+                  "type": "extension_point",
+                  "name": "html_editor",
                   "props": {
                     "name": "description",
                     "multilingual": true,
-                    "value": "{{_local.form.description}}",
+                    "value": "{{_local.form?.description ?? ''}}",
                     "rows": 15,
                     "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
                     "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                    "showHtmlModeToggle": true,
+                    "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
                   },
-                  "actions": [
+                  "default": [
                     {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.description": "{{$event.target.value}}",
-                        "hasChanges": true
-                      }
+                      "type": "composite",
+                      "name": "HtmlEditor",
+                      "props": {
+                        "name": "description",
+                        "multilingual": true,
+                        "value": "{{_local.form?.description ?? ''}}",
+                        "rows": 15,
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                        "showHtmlModeToggle": true,
+                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                      },
+                      "actions": [
+                        {
+                          "event": "onChange",
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.description": "{{$event.target.value}}",
+                            "hasChanges": true
+                          }
+                        },
+                        {
+                          "event": "onIsHtmlChange",
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.description_mode": "{{$args[0].target.checked ? 'html' : 'text'}}",
+                            "hasChanges": true
+                          }
+                        }
+                      ]
                     }
                   ]
                 }

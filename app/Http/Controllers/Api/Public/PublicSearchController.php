@@ -57,7 +57,7 @@ class PublicSearchController extends PublicBaseController
         $response = $this->buildResponse($q, $results, $context);
 
         return $this->success(
-            __('search.results_found', ['count' => $response['total']]),
+            __('search.results_found', ['count' => number_format($response['total'])]),
             $response
         );
     }

@@ -8,7 +8,7 @@
   "name": "Div",
   "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}",
   "props": {
-    "className": "mt-6 space-y-6"
+    "className": "space-y-6"
   },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",

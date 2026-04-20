@@ -2,6 +2,9 @@
   "auth": {
     "$partial": "partial/ko/auth.json"
   },
+  "nav": {
+    "$partial": "partial/ko/nav.json"
+  },
   "admin": {
     "$partial": "partial/ko/admin.json"
   },

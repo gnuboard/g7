@@ -216,7 +216,8 @@ class PostViewCountTest extends ModuleTestCase
 
         // 캐시 삭제 (TTL 만료 시뮬레이션)
         $identifier = $this->adminUser->id;
-        Cache::forget("post_view_{$this->board->slug}_{$this->postId}_{$identifier}");
+        // PostService 는 ModuleCacheDriver 사용 → key 에 `g7:module.sirsoft-board:` prefix 포함
+        Cache::forget("g7:module.sirsoft-board:post_view_{$this->board->slug}_{$this->postId}_{$identifier}");
 
         $result = $this->postService->incrementViewCountOnce($this->board->slug, $this->postId);
 

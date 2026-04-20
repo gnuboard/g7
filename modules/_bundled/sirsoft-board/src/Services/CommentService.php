@@ -2,12 +2,15 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Contracts\Extension\CacheInterface;
+use App\Enums\PermissionType;
 use App\Extension\HookManager;
-use App\Services\CacheService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
@@ -34,7 +37,8 @@ class CommentService
     public function __construct(
         private BoardRepositoryInterface $boardRepository,
         private CommentRepositoryInterface $commentRepository,
-        private PostRepositoryInterface $postRepository
+        private PostRepositoryInterface $postRepository,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -44,19 +48,27 @@ class CommentService
      * @param  int  $postId  게시글 ID
      * @param  string  $context  컨텍스트 (admin 또는 user)
      * @param  bool|null  $withTrashed  삭제된 댓글 포함 여부 (null이면 내부 권한 체크로 결정)
+     * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
+     * @param  Board|null  $board  게시판 모델 (전달 시 comment_order 조회를 위한 Board 재조회 방지)
      * @return Collection 정렬된 댓글 컬렉션
      */
-    public function getCommentsByPostId(string $slug, int $postId, string $context = 'admin', ?bool $withTrashed = null): Collection
+    public function getCommentsByPostId(string $slug, int $postId, string $context = 'admin', ?bool $withTrashed = null, ?int $boardId = null, ?Board $board = null): Collection
     {
         // withTrashed가 외부에서 지정되지 않은 경우 권한으로 결정
         if ($withTrashed === null) {
             $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
                 || $this->checkBoardPermission($slug, 'admin.manage')
-                || $this->checkBoardPermission($slug, 'manager', \App\Enums\PermissionType::User);
+                || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
         }
 
         // 게시판 설정에서 댓글 정렬 순서 가져오기 (기본값: DESC - 최신순)
-        $board = $this->boardRepository->findBySlug($slug);
+        // Board 모델이 전달되면 재조회 없이 사용
+        if (! $board) {
+            $board = $boardId
+                ? $this->boardRepository->find($boardId)
+                : $this->boardRepository->findBySlug($slug);
+        }
+        $boardId = $boardId ?? $board?->id;
         $commentOrder = $board?->comment_order;
 
         // Enum인 경우 value 추출, 아니면 기본값 DESC
@@ -69,7 +81,7 @@ class CommentService
             ? "sirsoft-board.{$slug}.admin.comments.read"
             : "sirsoft-board.{$slug}.comments.read";
 
-        return $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission);
+        return $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission, $boardId);
     }
 
     /**
@@ -78,7 +90,7 @@ class CommentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getComment(string $slug, int $id): Comment
     {
@@ -187,7 +199,7 @@ class CommentService
      * @param  int  $postId  게시글 ID
      * @return bool 댓글 작성 가능 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException 게시글을 찾을 수 없는 경우
+     * @throws ModelNotFoundException 게시글을 찾을 수 없는 경우
      * @throws \Exception 블라인드/삭제된 게시글인 경우
      */
     public function validatePostForComment(string $slug, int $postId): bool
@@ -265,7 +277,7 @@ class CommentService
      * @param  int  $id  댓글 ID
      * @param  array  $data  수정할 데이터
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateComment(string $slug, int $id, array $data): Comment
     {
@@ -295,7 +307,7 @@ class CommentService
      * @param  int  $id  댓글 ID
      * @param  string|null  $triggerType  트리거 유형 (admin, user, report 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function deleteComment(string $slug, int $id, ?string $triggerType = null): bool
     {
@@ -328,7 +340,7 @@ class CommentService
      * @param  string  $reason  블라인드 사유
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function blindComment(string $slug, int $id, string $reason, ?string $triggerType = null): Comment
     {
@@ -362,7 +374,7 @@ class CommentService
      * @param  string|null  $reason  복원 사유
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function restoreComment(string $slug, int $id, ?string $reason = null, ?string $triggerType = null): Comment
     {
@@ -394,11 +406,33 @@ class CommentService
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 조건 (board_slug, search, sort)
      * @param  int  $perPage  페이지당 항목 수
-     * @return \Illuminate\Pagination\LengthAwarePaginator 댓글 목록
+     * @return LengthAwarePaginator 댓글 목록
      */
-    public function getUserComments(int $userId, array $filters = [], int $perPage = 20): \Illuminate\Pagination\LengthAwarePaginator
+    public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        return $this->commentRepository->getUserComments($userId, $filters, $perPage);
+        $boardSlug = $filters['board_slug'] ?? '';
+        $search = $filters['search'] ?? '';
+
+        // 필터/검색 없는 기본 조회 시에만 COUNT 캐시 적용
+        if (empty($boardSlug) && empty($search)) {
+            $cacheKey = "user_comments_total_{$userId}";
+            $cachedTotal = $this->cache->get($cacheKey);
+
+            if ($cachedTotal !== null) {
+                $filters['cached_total'] = (int) $cachedTotal;
+            }
+        }
+
+        $result = $this->commentRepository->getUserComments($userId, $filters, $perPage);
+
+        // 캐시 미적중 시 paginate 결과의 total을 캐시에 저장
+        if (empty($boardSlug) && empty($search) && ($cachedTotal ?? null) === null) {
+            $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+            $total = $result->total();
+            $this->cache->remember($cacheKey, fn () => $total, $ttl, tags: ['board-stats']);
+        }
+
+        return $result;
     }
 
     /**
@@ -408,7 +442,19 @@ class CommentService
      */
     private function invalidateStatsCache(): void
     {
-        CacheService::forget('sirsoft-board', 'stats');
+        $this->cache->flushTags(['board-stats']);
+    }
+
+    /**
+     * 댓글 작성 쿨다운을 캐시에 기록합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string|int  $identifier  사용자 ID 또는 IP
+     * @param  int  $seconds  쿨다운 시간 (초)
+     */
+    public function recordCommentCooldown(string $slug, string|int $identifier, int $seconds): void
+    {
+        $this->cache->put("comment_cooldown_{$slug}_{$identifier}", true, $seconds);
     }
 
     /**

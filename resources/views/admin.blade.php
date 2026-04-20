@@ -67,9 +67,9 @@
                     debug: {{ config('app.debug') ? 'true' : 'false' }}@if(config('broadcasting.connections.reverb.key')),
                     websocket: {
                         appKey: '{{ config('broadcasting.connections.reverb.key') }}',
-                        host: '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}',
-                        port: {{ config('broadcasting.connections.reverb.options.port', 80) }},
-                        scheme: '{{ config('broadcasting.connections.reverb.options.scheme', 'https') }}'
+                        host: '{{ config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')) }}',
+                        port: {{ config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)) }},
+                        scheme: '{{ config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')) }}'
                     }@endif
                 });
             } else {

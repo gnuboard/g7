@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -12,7 +13,6 @@ use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class LayoutService
@@ -25,7 +25,8 @@ class LayoutService
         private LayoutVersionRepositoryInterface $versionRepository,
         private TemplateRepositoryInterface $templateRepository,
         private LayoutResolverService $layoutResolverService,
-        private LayoutExtensionService $layoutExtensionService
+        private LayoutExtensionService $layoutExtensionService,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -38,10 +39,12 @@ class LayoutService
 
     /**
      * 병합된 레이아웃 캐시 TTL을 반환합니다.
+     *
+     * g7_core_settings('cache.layout_ttl') 우선, 없으면 config('template.layout.cache_ttl').
      */
     private function getCacheTtl(): int
     {
-        return config('template.layout.cache_ttl', 3600);
+        return (int) g7_core_settings('cache.layout_ttl', config('template.layout.cache_ttl', 3600));
     }
 
     /**
@@ -229,11 +232,20 @@ class LayoutService
             $result['errorHandling'] = $mergedErrorHandling;
         }
 
-        // transition_overlay 병합 (자식 우선, 부모 폴백)
+        // transition_overlay 병합 (shallow merge — 자식 키가 부모 키를 override)
         // @since engine-v1.23.0
-        $transitionOverlay = $childLayout['transition_overlay'] ?? $parentLayout['transition_overlay'] ?? null;
-        if ($transitionOverlay !== null) {
-            $result['transition_overlay'] = $transitionOverlay;
+        // @since engine-v1.30.0 — shallow merge 도입. 자식이 wait_for 만 명시해도 부모의
+        //                        enabled/style/target/spinner 가 보존되어 자식이 부분 override 가능.
+        //                        부모 또는 자식 어느 한쪽이라도 transition_overlay 를 정의하면 결과에 포함.
+        $parentOverlay = $parentLayout['transition_overlay'] ?? null;
+        $childOverlay = $childLayout['transition_overlay'] ?? null;
+        if ($parentOverlay !== null || $childOverlay !== null) {
+            // boolean 또는 그 외 비배열 케이스는 shallow merge 가 의미 없으므로 자식 우선/부모 폴백
+            if (! is_array($parentOverlay) || ! is_array($childOverlay)) {
+                $result['transition_overlay'] = $childOverlay ?? $parentOverlay;
+            } else {
+                $result['transition_overlay'] = array_merge($parentOverlay, $childOverlay);
+            }
         }
 
         // 5. 불필요한 필드 제거 (extends, slots, slot)
@@ -607,10 +619,20 @@ class LayoutService
         // Before 훅 - 로드 전
         HookManager::doAction('core.layout.before_load', $templateId, $layoutName);
 
+        $cacheEnabled = (bool) g7_core_settings('cache.layout_enabled', true);
+
+        // 캐시 비활성 시 매번 병합 실행
+        if (! $cacheEnabled) {
+            $merged = $this->loadAndMergeLayoutInternal($templateId, $layoutName);
+            HookManager::doAction('core.layout.after_load', $merged, $templateId, $layoutName, false);
+
+            return $merged;
+        }
+
         $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName);
 
         // 캐시에서 시도
-        $cached = Cache::get($cacheKey);
+        $cached = $this->cache->get($cacheKey);
 
         if ($cached !== null) {
             $this->cacheStats['hits']++;
@@ -641,7 +663,7 @@ class LayoutService
 
         // 캐시에 저장
         $cacheTtl = $this->getCacheTtl();
-        Cache::put($cacheKey, $mergedLayout, $cacheTtl);
+        $this->cache->put($cacheKey, $mergedLayout, $cacheTtl);
 
         Log::info('레이아웃 병합 및 캐싱 완료', [
             'template_id' => $templateId,
@@ -821,7 +843,7 @@ class LayoutService
         HookManager::doAction('core.layout.before_cache_clear', $templateId, $layoutName);
 
         $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName);
-        Cache::forget($cacheKey);
+        $this->cache->forget($cacheKey);
 
         // PublicLayoutController 서빙 캐시도 무효화
         // PublicLayoutController::serve()에서 "layout.{identifier}.{name}.v{version}" 키로 별도 캐싱
@@ -860,8 +882,8 @@ class LayoutService
         }
 
         $identifier = $template->identifier;
-        $cacheVersion = (int) Cache::get('extension_cache_version', 0);
-        Cache::forget("layout.{$identifier}.{$layoutName}.v{$cacheVersion}");
+        $cacheVersion = (int) $this->cache->get('ext.cache_version', 0);
+        $this->cache->forget("layout.{$identifier}.{$layoutName}.v{$cacheVersion}");
     }
 
     /**
@@ -1041,10 +1063,10 @@ class LayoutService
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
 
-        // 프론트엔드 브라우저 캐시 무효화를 위해 extension_cache_version 증가
+        // 프론트엔드 브라우저 캐시 무효화를 위해 ext.cache_version 증가
         // PublicLayoutController가 ?v={version} 기반 HTTP 캐시를 사용하므로
         // 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
-        Cache::put('extension_cache_version', time());
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 레이아웃 업데이트 후
         HookManager::doAction('core.layout.after_update', $layout, $templateId, $name, $data);
@@ -1136,7 +1158,7 @@ class LayoutService
         $this->clearDependentLayoutsCache($templateId, $name);
 
         // 프론트엔드 브라우저 캐시 무효화
-        Cache::put('extension_cache_version', time());
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 버전 복원 후
         HookManager::doAction('core.layout.after_version_restore', $newVersion, $templateId, $name, $versionId);

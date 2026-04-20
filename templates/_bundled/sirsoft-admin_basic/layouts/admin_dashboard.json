@@ -10,6 +10,16 @@
         "description": "$t:admin.dashboard.description",
         "auth_required": true
     },
+    "transition_overlay": {
+        "wait_for": [
+            "dashboard_stats",
+            "dashboard_resources",
+            "dashboard_activities",
+            "dashboard_modules",
+            "dashboard_plugins",
+            "dashboard_templates"
+        ]
+    },
     "data_sources": [
         {
             "id": "dashboard_stats",
@@ -151,7 +161,7 @@
         {
             "id": "dashboard_stats_ws",
             "type": "websocket",
-            "channel": "admin.dashboard",
+            "channel": "core.admin.dashboard",
             "event": "dashboard.stats.updated",
             "channel_type": "private",
             "target_source": "dashboard_stats"
@@ -159,7 +169,7 @@
         {
             "id": "dashboard_resources_ws",
             "type": "websocket",
-            "channel": "admin.dashboard",
+            "channel": "core.admin.dashboard",
             "event": "dashboard.resources.updated",
             "channel_type": "private",
             "target_source": "dashboard_resources"
@@ -281,7 +291,9 @@
                         "children": [
                             {
                                 "id": "total_users_card",
-                                "permissions": ["core.users.read"],
+                                "permissions": [
+                                    "core.users.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -364,7 +376,9 @@
                             },
                             {
                                 "id": "installed_modules_card",
-                                "permissions": ["core.modules.read"],
+                                "permissions": [
+                                    "core.modules.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -431,7 +445,9 @@
                             },
                             {
                                 "id": "active_plugins_card",
-                                "permissions": ["core.plugins.read"],
+                                "permissions": [
+                                    "core.plugins.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -514,7 +530,9 @@
                             },
                             {
                                 "id": "system_status_card",
-                                "permissions": ["core.dashboard.system-status"],
+                                "permissions": [
+                                    "core.dashboard.system-status"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -610,7 +628,9 @@
                         "children": [
                             {
                                 "id": "system_resources_card",
-                                "permissions": ["core.dashboard.resources"],
+                                "permissions": [
+                                    "core.dashboard.resources"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -827,7 +847,9 @@
                             },
                             {
                                 "id": "recent_activity_card",
-                                "permissions": ["core.dashboard.activities"],
+                                "permissions": [
+                                    "core.dashboard.activities"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -974,7 +996,9 @@
                         "children": [
                             {
                                 "id": "module_status_card",
-                                "permissions": ["core.modules.read"],
+                                "permissions": [
+                                    "core.modules.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1120,7 +1144,9 @@
                             },
                             {
                                 "id": "plugin_status_card",
-                                "permissions": ["core.plugins.read"],
+                                "permissions": [
+                                    "core.plugins.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1266,7 +1292,9 @@
                             },
                             {
                                 "id": "template_status_card",
-                                "permissions": ["core.templates.read"],
+                                "permissions": [
+                                    "core.templates.read"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {
@@ -1423,7 +1451,9 @@
                             {
                                 "id": "system_alerts_card",
                                 "if": "false",
-                                "permissions": ["core.dashboard.alerts"],
+                                "permissions": [
+                                    "core.dashboard.alerts"
+                                ],
                                 "type": "basic",
                                 "name": "Div",
                                 "blur_until_loaded": {

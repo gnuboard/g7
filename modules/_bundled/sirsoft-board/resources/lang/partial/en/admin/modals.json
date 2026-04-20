@@ -1,0 +1,26 @@
+{
+  "copy": {
+    "title": "Copy Board",
+    "message": "Would you like to copy '{{name}}' board?",
+    "info": "※ Only board settings will be copied, posts will not be copied.",
+    "new_slug_label": "New Slug",
+    "new_slug_placeholder": "e.g., notice-copy",
+    "confirm": "Copy"
+  },
+  "delete": {
+    "title": "Delete Board",
+    "confirm": "Are you sure you want to delete '{{name}}' board?",
+    "with_posts_info": "This board has {{posts_count}} post(s) and comments.",
+    "no_posts_info": "This board has no posts.",
+    "force_delete_label_with_posts": "Permanent Delete (Delete all posts, comments, and attachments)",
+    "force_delete_label_no_posts": "Permanent Delete (Delete database tables)",
+    "force_delete_warning_with_posts": "Permanent deletion will remove all data irreversibly. Please backup your data before deletion.",
+    "force_delete_warning_no_posts": "This action cannot be undone. The board and all related data will be completely removed.",
+    "backup_notice": "It is recommended to backup your database before deletion to prevent data loss."
+  },
+  "cancel_confirm": {
+    "title": "Unsaved Changes",
+    "message": "You have unsaved changes. Are you sure you want to leave this page?",
+    "confirm": "Leave Page"
+  }
+}

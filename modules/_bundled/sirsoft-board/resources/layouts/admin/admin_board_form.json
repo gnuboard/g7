@@ -9,6 +9,9 @@
         "title": "{{route?.id ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}",
         "description": "$t:sirsoft-board.admin.form.description"
     },
+    "computed": {
+        "isReadOnly": "{{!!route?.id && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
+    },
     "state": {
         "activeTab": "basic",
         "showCategoryRemoveModal": false,
@@ -20,6 +23,12 @@
         "isDataLoaded": false,
         "managerSearchResults": [],
         "stepSearchResults": []
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "roles",
+            "notification_channels"
+        ]
     },
     "data_sources": [
         {
@@ -61,17 +70,17 @@
             "auth_required": true
         },
         {
-            "id": "notification_channels",
+            "id": "availableChannels",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/admin/notification-channels",
+            "endpoint": "/api/admin/notification-channels",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "fallback": {
+                "data": { "channels": [] }
+            }
         }
     ],
-    "computed": {
-        "isReadOnly": "{{!!route?.id && !!boards?.data && boards?.data?.abilities?.can_update !== true}}"
-    },
     "slots": {
         "content": [
             {

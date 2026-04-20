@@ -2,10 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
-use App\Http\Resources\Traits\HasRowNumber;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -13,10 +12,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * 상품 목록을 페이지네이션 및 통계와 함께 반환합니다.
  */
-class ProductCollection extends ResourceCollection
+class ProductCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
-    use HasRowNumber;
 
     /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.

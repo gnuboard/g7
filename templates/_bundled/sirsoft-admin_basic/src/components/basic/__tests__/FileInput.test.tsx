@@ -53,7 +53,7 @@ describe('FileInput 컴포넌트', () => {
 
       fireEvent.change(fileInput);
 
-      expect(handleChange).toHaveBeenCalledWith(file);
+      expect(handleChange).toHaveBeenCalledWith({ target: { value: file, name: 'test.zip' } });
     });
 
     it('파일 선택 시 파일명이 표시된다', () => {
@@ -114,7 +114,7 @@ describe('FileInput 컴포넌트', () => {
       fireEvent.change(fileInput);
 
       expect(handleError).not.toHaveBeenCalled();
-      expect(handleChange).toHaveBeenCalledWith(file);
+      expect(handleChange).toHaveBeenCalledWith({ target: { value: file, name: 'small.zip' } });
     });
   });
 
@@ -147,12 +147,12 @@ describe('FileInput 컴포넌트', () => {
       });
 
       fireEvent.change(fileInput);
-      expect(handleChange).toHaveBeenCalledWith(file);
+      expect(handleChange).toHaveBeenCalledWith({ target: { value: file, name: 'test.zip' } });
 
       const clearButton = screen.getByLabelText('Clear file');
       fireEvent.click(clearButton);
 
-      expect(handleChange).toHaveBeenLastCalledWith(null);
+      expect(handleChange).toHaveBeenLastCalledWith({ target: { value: null, name: '' } });
       expect(screen.getByText('No file selected')).toBeTruthy();
     });
   });
@@ -216,7 +216,7 @@ describe('FileInput 컴포넌트', () => {
 
       fireEvent.change(fileInput);
 
-      expect(handleChange).toHaveBeenCalledWith(null);
+      expect(handleChange).toHaveBeenCalledWith({ target: { value: null, name: '' } });
     });
   });
 });

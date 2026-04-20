@@ -1055,4 +1055,87 @@ class SettingsControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
     }
+
+    // ========================================================================
+    // 드라이버 탭 - 웹소켓 필수 필드 검증 테스트
+    // ========================================================================
+
+    /**
+     * 웹소켓 활성화 시 앱 ID, 앱 키, 앱 시크릿 필수 검증
+     */
+    public function test_store_validates_websocket_required_fields_when_enabled(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => [
+                'websocket_enabled' => true,
+                'websocket_app_id' => '',
+                'websocket_app_key' => '',
+                'websocket_app_secret' => '',
+                'websocket_host' => 'localhost',
+                'websocket_port' => 8080,
+                'websocket_scheme' => 'https',
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'drivers.websocket_app_id',
+                'drivers.websocket_app_key',
+                'drivers.websocket_app_secret',
+            ]);
+    }
+
+    /**
+     * 웹소켓 비활성화 시 앱 ID, 앱 키, 앱 시크릿 비필수
+     */
+    public function test_store_allows_empty_websocket_fields_when_disabled(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => [
+                'storage_driver' => 'local',
+                'cache_driver' => 'file',
+                'session_driver' => 'file',
+                'queue_driver' => 'database',
+                'log_driver' => 'daily',
+                'log_level' => 'error',
+                'websocket_enabled' => false,
+                'websocket_app_id' => '',
+                'websocket_app_key' => '',
+                'websocket_app_secret' => '',
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
+    /**
+     * 웹소켓 활성화 + 모든 필수 필드 입력 시 저장 성공
+     */
+    public function test_store_saves_websocket_settings_with_all_required_fields(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'drivers',
+            'drivers' => [
+                'storage_driver' => 'local',
+                'cache_driver' => 'file',
+                'session_driver' => 'file',
+                'queue_driver' => 'database',
+                'log_driver' => 'daily',
+                'log_level' => 'error',
+                'websocket_enabled' => true,
+                'websocket_app_id' => 'test-app-id',
+                'websocket_app_key' => 'test-app-key',
+                'websocket_app_secret' => 'test-app-secret',
+                'websocket_host' => 'localhost',
+                'websocket_port' => 8080,
+                'websocket_scheme' => 'https',
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
 }

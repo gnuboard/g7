@@ -18,7 +18,7 @@
           "children": [
             { "type": "basic", "name": "Icon", "props": { "name": "file-alt", "size": "sm", "className": "text-gray-500 dark:text-gray-400" } },
             { "type": "basic", "name": "Span", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "$t:search.tabs.pages" },
-            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{searchResults?.data?.pages_count ?? 0}}" }
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-blue-600 dark:text-blue-400" }, "text": "{{(searchResults?.data?.pages_count ?? 0) | number}}" }
           ]
         },
         {

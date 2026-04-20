@@ -1151,4 +1151,85 @@ class SeoMetaResolverTest extends TestCase
         $this->assertArrayHasKey('offers', $jsonLd);
         $this->assertSame('129000', $jsonLd['offers']['price']);
     }
+
+    // =========================================================================
+    // _seo context 참조 테스트
+    // =========================================================================
+
+    /**
+     * _seo.product.title이 context에 있으면 Tier 2로 사용됩니다.
+     */
+    public function test_seo_context_title_used_as_tier2(): void
+    {
+        $seoConfig = [
+            'enabled' => true,
+            'page_type' => 'product',
+        ];
+
+        $context = [
+            '_seo' => [
+                'product' => [
+                    'title' => '테스트쇼핑몰 - 에어맥스',
+                    'description' => '에어맥스 설명',
+                ],
+            ],
+            'product' => ['data' => ['name' => '에어맥스']],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, $context, null, null, []);
+
+        $this->assertEquals('테스트쇼핑몰 - 에어맥스', $result['title']);
+        $this->assertEquals('에어맥스 설명', $result['description']);
+    }
+
+    /**
+     * Tier 3 (resource meta_title)가 _seo context보다 우선합니다.
+     */
+    public function test_resource_meta_title_overrides_seo_context(): void
+    {
+        $seoConfig = [
+            'enabled' => true,
+            'page_type' => 'product',
+        ];
+
+        $context = [
+            '_seo' => [
+                'product' => [
+                    'title' => '테스트쇼핑몰 - 에어맥스',
+                    'description' => '쇼핑몰 설명',
+                ],
+            ],
+            'product' => ['data' => [
+                'name' => '에어맥스',
+                'meta_title' => '커스텀 SEO 타이틀',
+                'meta_description' => '커스텀 SEO 설명',
+            ]],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, $context, null, null, []);
+
+        // Tier 3가 Tier 2(_seo)보다 우선
+        $this->assertEquals('커스텀 SEO 타이틀', $result['title']);
+        $this->assertEquals('커스텀 SEO 설명', $result['description']);
+    }
+
+    /**
+     * _seo context 없고 moduleIdentifier도 null이면 빈 타이틀로 fallback합니다.
+     */
+    public function test_no_seo_context_and_no_module_falls_through(): void
+    {
+        $seoConfig = [
+            'enabled' => true,
+            'page_type' => 'product',
+        ];
+
+        $context = [
+            'product' => ['data' => ['name' => '에어맥스']],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, $context, null, null, []);
+
+        // _seo도 없고 moduleIdentifier도 null → Tier 2 스킵 → 빈 문자열
+        $this->assertEquals('', $result['title']);
+    }
 }

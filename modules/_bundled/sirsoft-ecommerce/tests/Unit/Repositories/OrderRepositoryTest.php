@@ -165,17 +165,17 @@ class OrderRepositoryTest extends ModuleTestCase
         $order3 = OrderFactory::new()->create();
 
         OrderShippingFactory::new()->forOrder($order1)->create([
-            'shipping_type' => \Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum::DOMESTIC_PARCEL->value,
+            'shipping_type' => 'parcel',
         ]);
         OrderShippingFactory::new()->forOrder($order2)->create([
-            'shipping_type' => \Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum::PICKUP->value,
+            'shipping_type' => 'pickup',
         ]);
         OrderShippingFactory::new()->forOrder($order3)->create([
-            'shipping_type' => \Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum::DOMESTIC_PARCEL->value,
+            'shipping_type' => 'parcel',
         ]);
 
         $result = $this->repository->getListWithFilters([
-            'shipping_type' => [\Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum::DOMESTIC_PARCEL->value],
+            'shipping_type' => ['parcel'],
         ]);
 
         $this->assertEquals(2, $result->total());

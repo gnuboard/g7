@@ -51,8 +51,6 @@ class StoreBoardRequest extends FormRequest
             'comment_order' => $settings['comment_order'] ?? 'ASC',
             'notify_admin_on_post' => $settings['notify_admin_on_post'] ?? true,
             'notify_author' => $settings['notify_author'] ?? true,
-            'notify_author_channels' => $settings['notify_author_channels'] ?? [],
-            'notify_admin_on_post_channels' => $settings['notify_admin_on_post_channels'] ?? [],
             'permissions' => [],  // 빈 배열 → Service에서 Manager/Step 주입
         ];
 
@@ -193,10 +191,6 @@ class StoreBoardRequest extends FormRequest
             // 알림 설정
             'notify_admin_on_post' => ['required', 'boolean'],
             'notify_author' => ['required', 'boolean'],
-            'notify_author_channels' => ['nullable', 'array'],
-            'notify_author_channels.*' => ['string', 'max:50'],
-            'notify_admin_on_post_channels' => ['nullable', 'array'],
-            'notify_admin_on_post_channels.*' => ['string', 'max:50'],
 
             // 보안 설정 (배열도 허용)
             'blocked_keywords' => ['nullable', 'array'],

@@ -306,6 +306,13 @@
                           "params": {
                             "dataSourceId": "admin_menu"
                           }
+                        },
+                        {
+                          "handler": "reloadExtensions",
+                          "params": {
+                            "pluginInfo": "{{result}}",
+                            "action": "add"
+                          }
                         }
                       ]
                     },

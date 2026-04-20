@@ -9,6 +9,11 @@
         "title": "$t:sirsoft-ecommerce.admin.common_info.title",
         "description": "$t:sirsoft-ecommerce.admin.common_info.description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "commonInfos"
+        ]
+    },
     "data_sources": [
         {
             "id": "commonInfos",
@@ -158,16 +163,29 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
-                                                            "form": {
-                                                                "name": {},
-                                                                "content": {},
-                                                                "content_mode": "text",
-                                                                "is_default": false,
-                                                                "is_active": true
-                                                            },
+                                                            "form": null,
                                                             "errors": null,
                                                             "isSaving": false,
                                                             "showPreview": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form": {
+                                                                "name": {
+                                                                    "ko": "",
+                                                                    "en": ""
+                                                                },
+                                                                "content": {
+                                                                    "ko": "",
+                                                                    "en": ""
+                                                                },
+                                                                "content_mode": "text",
+                                                                "is_default": false,
+                                                                "is_active": true
+                                                            }
                                                         }
                                                     }
                                                 ]
@@ -252,8 +270,14 @@
     },
     "initLocal": {
         "form": {
-            "name": {},
-            "content": {},
+            "name": {
+                "ko": "",
+                "en": ""
+            },
+            "content": {
+                "ko": "",
+                "en": ""
+            },
             "content_mode": "text",
             "is_default": false,
             "is_active": true

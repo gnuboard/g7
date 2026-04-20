@@ -8,9 +8,20 @@
     "meta": {
         "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
     },
+    "computed": {
+        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
+        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
+        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
+        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name[_global.locale || 'ko'] || t.name.ko || t.code}))}}",
+        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
+        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
+        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
+        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
+        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
+    },
     "state": {
         "form": {
-            "name": {},
+            "name": [],
             "is_active": true,
             "is_default": false,
             "country_settings": []
@@ -18,7 +29,7 @@
         "activeCountryTab": 0,
         "isSaving": false,
         "errors": null,
-        "rangeErrors": {},
+        "rangeErrors": [],
         "showBaseFee": true,
         "showFreeThreshold": false,
         "showRanges": false,
@@ -33,7 +44,12 @@
             "region": "",
             "description": ""
         },
-        "templateFormErrors": {}
+        "templateFormErrors": []
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "extra_fee_templates"
+        ]
     },
     "data_sources": [
         {
@@ -48,9 +64,24 @@
             "auth_required": true,
             "loading_strategy": "blocking",
             "errorHandling": {
-                "403": { "handler": "showErrorPage", "params": { "target": "content" } },
-                "404": { "handler": "showErrorPage", "params": { "target": "content" } },
-                "default": { "handler": "showErrorPage", "params": { "target": "content" } }
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
             },
             "errorCondition": {
                 "if": "{{response?.data?.abilities?.can_update !== true}}",
@@ -94,17 +125,6 @@
             }
         }
     ],
-    "computed": {
-        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
-        "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
-        "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
-        "shippingMethodOptions": "{{[{value: 'parcel', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.parcel')}, {value: 'freight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.freight')}, {value: 'express', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.express')}, {value: 'economy', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.economy')}, {value: 'ems', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.ems')}, {value: 'direct', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.direct')}, {value: 'pickup', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.shipping_method.pickup')}]}}",
-        "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
-        "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
-        "activeCountrySetting": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}",
-        "activeCountryCode": "{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}",
-        "isReadOnly": "{{!!route.id && policy?.data?.abilities?.can_update !== true}}"
-    },
     "init_actions": [
         {
             "handler": "setState",

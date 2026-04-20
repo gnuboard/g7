@@ -22,22 +22,25 @@
 |------|------|----------|
 | [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
 | [activity-log.md](activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel... |
-| [api-resources.md](api-resources.md) | API 리소스 | BaseApiResource 상속 필수 |
+| [api-resources.md](api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: B... |
 | [authentication.md](authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
 | [broadcasting.md](broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [controllers.md](controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / Publ... |
 | [core-config.md](core-config.md) | 코어 설정 (config/core.php) | config/core.php = 코어 권한/역할/메뉴/메일템플릿의 SSoT (Sing... |
 | [core-update-system.md](core-update-system.md) | 코어 업데이트 시스템 (Core Update System) | 코어 업그레이드 스텝: upgrades/ 디렉토리 (프로젝트 루트), 네임스페이스 A... |
+| [data-sync-helpers.md](data-sync-helpers.md) | 데이터 동기화 Helper (Data Sync Helpers) | 모든 데이터 동기화는 Service/Seeder 가 Helper 를 호출해 수행 (직... |
 | [enum.md](enum.md) | Enum 사용 규칙 | 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum) |
 | [exceptions.md](exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
+| [geoip.md](geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTim... |
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
-| [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | 모든 알림은 BaseNotification 상속 필수 (via() 보일러플레이트 제거) |
+| [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
+| [user-overrides.md](user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array ... |
 | [validation.md](validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
 <!-- AUTO-GENERATED-END: backend-readme-docs -->
@@ -121,6 +124,13 @@ auth()->user();
 - ❌ .env 없이 실패하는 코드 금지
 - ✅ 환경 검증 후 로직 실행
 - ✅ 인스톨러 안정성 확보
+
+### 6. 외부 HTTP 호출
+
+- ❌ `file_get_contents($url)` / `fopen($url, ...)` / `stream_context_create([...])` 로 원격 URL 직접 호출 금지
+- ✅ `Illuminate\Support\Facades\Http` (Laravel Http 파사드) 사용
+- ✅ GitHub 연동은 `App\Extension\Helpers\GithubHelper` 재사용
+- **이유**: 공유 호스팅은 `allow_url_fopen=Off` 설정인 경우가 많아 URL 스트림 래퍼 기반 호출이 전부 실패합니다. Http 파사드는 cURL 기반이라 해당 설정의 영향을 받지 않습니다.
 
 ---
 

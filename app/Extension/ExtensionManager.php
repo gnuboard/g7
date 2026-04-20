@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Extension\Helpers\GithubHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -53,6 +54,47 @@ class ExtensionManager
         }
 
         $this->generateAutoloadFile();
+
+        // 현재 프로세스의 Composer ClassLoader 에도 갱신된 PSR-4 를 즉시 반영.
+        // 파일 쓰기만으로는 다음 요청 부트스트랩 시점부터 적용되므로, 업데이트 실행
+        // 흐름(copyToActive → updateComposerAutoload → runUpgradeSteps) 내에서
+        // 신규 네임스페이스(beta 업그레이드로 추가된 Seeder/Model 등) 의 autoload 가
+        // 실패하지 않도록 런타임 재등록을 수행한다.
+        $this->reregisterRuntimeAutoload();
+    }
+
+    /**
+     * 현재 프로세스의 Composer ClassLoader 에 갱신된 PSR-4 매핑을 재등록합니다.
+     *
+     * `generateAutoloadFile()` 은 autoload-extensions.php 를 디스크에 다시 쓰지만,
+     * 이 파일은 CoreServiceProvider::register() / public/index.php 진입점에서만
+     * 로드되므로, 동일 프로세스 내부에서 PSR-4 네임스페이스가 추가·변경된 경우
+     * 다음 부트스트랩 이전까지 신규 매핑이 반영되지 않는다.
+     *
+     * 본 메서드는 `Composer\Autoload\ClassLoader::getRegisteredLoaders()` 로 현재
+     * 프로세스에 등록된 ClassLoader 를 조회하여 `addPsr4()` 를 다시 호출해 신규
+     * 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새 네임스페이스가
+     * 등록되며, 동일 매핑은 중복 없이 merge 된다.
+     */
+    protected function reregisterRuntimeAutoload(): void
+    {
+        if (! class_exists(\Composer\Autoload\ClassLoader::class, false)) {
+            return;
+        }
+
+        if (! file_exists($this->autoloadFilePath)) {
+            return;
+        }
+
+        $loaders = \Composer\Autoload\ClassLoader::getRegisteredLoaders();
+        if (empty($loaders)) {
+            return;
+        }
+
+        foreach ($loaders as $loader) {
+            self::registerExtensionAutoload($loader);
+            break;
+        }
     }
 
     /**
@@ -925,85 +967,11 @@ PHP;
     }
 
     // ──────────────────────────────────────────────────
-    //  GitHub 다운로드 유틸리티 (코어와 동일한 패턴)
+    //  GitHub 다운로드 유틸리티 (GithubHelper로 위임)
+    //
+    //  `allow_url_fopen=Off` 공유 호스팅 대응을 위해 실제 HTTP 호출은
+    //  `GithubHelper`의 Http 파사드 기반 구현을 사용합니다.
     // ──────────────────────────────────────────────────
-
-    /**
-     * GitHub API용 인증 헤더를 생성합니다.
-     *
-     * @param  string  $token  GitHub Personal Access Token (선택)
-     * @return array HTTP 헤더 배열
-     */
-    public function buildGithubHeaders(string $token = ''): array
-    {
-        $headers = [
-            'User-Agent: G7',
-            'Accept: application/vnd.github.v3+json',
-        ];
-
-        if (! empty($token)) {
-            $headers[] = 'Authorization: Bearer '.$token;
-        }
-
-        return $headers;
-    }
-
-    /**
-     * GitHub 아카이브 URL을 해석합니다.
-     *
-     * v접두사 유무 모두 시도하여 유효한 아카이브 URL을 반환합니다.
-     *
-     * @param  string  $owner  GitHub 저장소 소유자
-     * @param  string  $repo  GitHub 저장소 이름
-     * @param  string  $version  버전 태그
-     * @param  string  $archiveType  아카이브 타입 (zipball/tarball)
-     * @param  array  $authHeaders  인증 헤더
-     * @return string|null 유효한 URL 또는 null
-     */
-    public function resolveGithubArchiveUrl(string $owner, string $repo, string $version, string $archiveType, array $authHeaders): ?string
-    {
-        $tagVariants = ["v{$version}", $version];
-
-        foreach ($tagVariants as $tag) {
-            $testUrl = "https://api.github.com/repos/{$owner}/{$repo}/{$archiveType}/{$tag}";
-            $testContext = stream_context_create([
-                'http' => [
-                    'method' => 'HEAD',
-                    'header' => $authHeaders,
-                    'timeout' => 10,
-                    'ignore_errors' => true,
-                ],
-            ]);
-            @file_get_contents($testUrl, false, $testContext);
-            $statusCode = $this->extractHttpStatusCode($http_response_header ?? []);
-            if ($statusCode === 200 || $statusCode === 302) {
-                return $testUrl;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * HTTP 응답 헤더에서 상태 코드를 추출합니다.
-     *
-     * 리다이렉트 시 마지막 상태 코드를 반환합니다.
-     *
-     * @param  array  $responseHeaders  $http_response_header 배열
-     * @return int HTTP 상태 코드
-     */
-    public function extractHttpStatusCode(array $responseHeaders): int
-    {
-        $statusCode = 0;
-
-        foreach ($responseHeaders as $header) {
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $header, $matches)) {
-                $statusCode = (int) $matches[1];
-            }
-        }
-
-        return $statusCode;
-    }
 
     /**
      * 사용 가능한 아카이브 추출 전략을 구성합니다.
@@ -1092,38 +1060,13 @@ PHP;
     }
 
     /**
-     * GitHub 아카이브를 다운로드합니다.
-     *
-     * @param  string  $url  다운로드 URL
-     * @param  array  $authHeaders  인증 헤더
-     * @return string 다운로드된 콘텐츠
-     *
-     * @throws \RuntimeException 다운로드 실패 시
-     */
-    public function downloadArchive(string $url, array $authHeaders): string
-    {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => $authHeaders,
-                'follow_location' => true,
-                'timeout' => 120,
-            ],
-        ]);
-
-        $content = @file_get_contents($url, false, $context);
-        if ($content === false) {
-            throw new \RuntimeException(__('settings.core_update.download_failed', ['version' => basename($url)]));
-        }
-
-        return $content;
-    }
-
-    /**
      * GitHub에서 확장을 다운로드하고 추출합니다.
      *
      * 코어 업데이트의 downloadUpdate()와 동일한 폴백 체인을 사용합니다.
      * (zipball/ZipArchive → zipball/unzip)
+     *
+     * 모든 HTTP 호출은 `GithubHelper` (Http 파사드 기반)로 위임되어
+     * `allow_url_fopen=Off` 환경에서도 정상 동작합니다.
      *
      * @param  string  $owner  GitHub 저장소 소유자
      * @param  string  $repo  GitHub 저장소 이름
@@ -1136,7 +1079,6 @@ PHP;
      */
     public function downloadAndExtractFromGitHub(string $owner, string $repo, string $version, string $destDir, string $token = ''): string
     {
-        $authHeaders = $this->buildGithubHeaders($token);
         $extractDir = $destDir.DIRECTORY_SEPARATOR.'extracted';
 
         $strategies = $this->buildExtractionStrategies();
@@ -1151,7 +1093,7 @@ PHP;
             $extractMethod = $strategy['method'];
             $label = $strategy['label'];
 
-            $archiveUrl = $this->resolveGithubArchiveUrl($owner, $repo, $version, $archiveType, $authHeaders);
+            $archiveUrl = GithubHelper::resolveArchiveUrl($owner, $repo, $version, $archiveType, $token);
             if (! $archiveUrl) {
                 continue;
             }
@@ -1160,8 +1102,7 @@ PHP;
             $archivePath = $destDir.DIRECTORY_SEPARATOR.'download'.$extension;
 
             try {
-                $content = $this->downloadArchive($archiveUrl, $authHeaders);
-                File::put($archivePath, $content);
+                GithubHelper::downloadArchive($archiveUrl, $archivePath, $token);
 
                 if (File::isDirectory($extractDir)) {
                     File::deleteDirectory($extractDir);
@@ -1205,5 +1146,161 @@ PHP;
             0,
             $lastError
         );
+    }
+
+    /**
+     * 외부 ZIP 파일을 추출하여 소스 디렉토리 경로를 반환합니다.
+     *
+     * GitHub zipball 처럼 owner-repo-hash/ 래퍼 디렉토리로 감싼 경우와
+     * ZIP 루트가 곧바로 확장 소스인 경우를 모두 지원합니다.
+     * 추출 후 extractDir 내용이 단일 디렉토리뿐이면 그 디렉토리를 반환하고,
+     * 그 외에는 extractDir 자체를 반환합니다.
+     *
+     * downloadAndExtractFromGitHub 와 동일한 폴백 체인(ZipArchive → unzip)을
+     * 사용하며, GitHub 호출은 수행하지 않습니다.
+     *
+     * @param  string  $zipPath  외부 ZIP 파일 경로
+     * @param  string  $destDir  추출 작업 디렉토리 (함수가 'extracted' 하위에 추출)
+     * @return string 확장 소스 디렉토리 경로 (래퍼 감지 후)
+     *
+     * @throws \RuntimeException 추출 실패 또는 지원 추출 수단 부재 시
+     */
+    public function extractFromZip(string $zipPath, string $destDir): string
+    {
+        if (! File::exists($zipPath)) {
+            throw new \RuntimeException(__('settings.core_update.zip_file_not_found', ['path' => $zipPath]));
+        }
+
+        $strategies = $this->buildExtractionStrategies();
+        if (empty($strategies)) {
+            throw new \RuntimeException(__('settings.core_update.no_extract_method_available'));
+        }
+
+        $extractDir = $destDir.DIRECTORY_SEPARATOR.'extracted';
+        if (File::isDirectory($extractDir)) {
+            File::deleteDirectory($extractDir);
+        }
+        File::ensureDirectoryExists($extractDir);
+
+        $lastError = null;
+        foreach ($strategies as $strategy) {
+            $method = $strategy['method'];
+            $label = $strategy['label'];
+
+            try {
+                $this->$method($zipPath, $extractDir);
+
+                return $this->resolveExtractedRoot($extractDir);
+            } catch (\Throwable $e) {
+                $lastError = $e;
+
+                // 다음 전략 시도 전 extractDir 초기화
+                if (File::isDirectory($extractDir)) {
+                    File::deleteDirectory($extractDir);
+                }
+                File::ensureDirectoryExists($extractDir);
+
+                Log::warning("ZIP 추출 폴백: {$label} 실패", [
+                    'zip' => $zipPath,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        throw new \RuntimeException(
+            __('settings.core_update.all_extract_methods_failed'),
+            0,
+            $lastError
+        );
+    }
+
+    /**
+     * 추출 디렉토리에서 확장 소스 루트를 판별합니다.
+     *
+     * - 하위에 파일이 있고 디렉토리가 0개 또는 2개 이상 → extractDir 자체가 소스
+     * - 하위에 디렉토리 1개만 있고 파일 없음 → 그 디렉토리가 래퍼 → 하위 반환
+     * - 혼합(파일 + 단일 디렉토리)인 경우 → extractDir 자체 반환 (manifest 루트에 있다고 가정)
+     *
+     * @param  string  $extractDir  추출 대상 디렉토리
+     * @return string 확장 소스 디렉토리 경로
+     */
+    protected function resolveExtractedRoot(string $extractDir): string
+    {
+        $dirs = File::directories($extractDir);
+        $files = File::files($extractDir);
+
+        if (count($dirs) === 1 && count($files) === 0) {
+            return $dirs[0];
+        }
+
+        return $extractDir;
+    }
+
+    /**
+     * 외부 ZIP 소스를 스테이징 전단계까지 준비합니다.
+     *
+     * 각 확장 Manager(Module/Plugin/Template)의 --zip 업데이트 경로에서
+     * 공용으로 사용하는 헬퍼입니다. ZIP 을 임시 디렉토리에 추출하고 manifest 를
+     * 검증(파일 존재, identifier 일치, version 존재)한 뒤 결과를 반환합니다.
+     *
+     * 호출자는 반환된 temp_dir 을 반드시 정리해야 합니다 (try-finally 로 감싸는 것을 권장).
+     *
+     * @param  string  $zipPath  외부 ZIP 파일 경로
+     * @param  string  $identifier  기대하는 확장 식별자 (manifest 와 일치해야 함)
+     * @param  string  $manifestName  manifest 파일명 ('module.json' | 'plugin.json' | 'template.json')
+     * @return array{temp_dir: string, extracted_dir: string, to_version: string, manifest: array}
+     *
+     * @throws \RuntimeException ZIP 추출 실패 / manifest 누락 / identifier 불일치 / version 누락 시
+     */
+    public function prepareZipSource(string $zipPath, string $identifier, string $manifestName): array
+    {
+        $tempDir = storage_path('app/temp/ext_zip_'.uniqid());
+        File::ensureDirectoryExists($tempDir);
+
+        try {
+            $extractedDir = $this->extractFromZip($zipPath, $tempDir);
+
+            $manifestPath = $extractedDir.DIRECTORY_SEPARATOR.$manifestName;
+            if (! File::exists($manifestPath)) {
+                throw new \RuntimeException(__('extensions.errors.zip_missing_manifest', [
+                    'file' => $manifestName,
+                    'zip' => $zipPath,
+                ]));
+            }
+
+            $manifest = json_decode(File::get($manifestPath), true);
+            if (! is_array($manifest)) {
+                throw new \RuntimeException(__('extensions.errors.zip_invalid_manifest', [
+                    'file' => $manifestName,
+                ]));
+            }
+
+            $manifestId = $manifest['identifier'] ?? null;
+            if ($manifestId !== $identifier) {
+                throw new \RuntimeException(__('extensions.errors.zip_identifier_mismatch', [
+                    'expected' => $identifier,
+                    'actual' => $manifestId ?? '(missing)',
+                ]));
+            }
+
+            $version = $manifest['version'] ?? null;
+            if (! is_string($version) || $version === '') {
+                throw new \RuntimeException(__('extensions.errors.zip_missing_version', [
+                    'file' => $manifestName,
+                ]));
+            }
+
+            return [
+                'temp_dir' => $tempDir,
+                'extracted_dir' => $extractedDir,
+                'to_version' => $version,
+                'manifest' => $manifest,
+            ];
+        } catch (\Throwable $e) {
+            if (File::isDirectory($tempDir)) {
+                File::deleteDirectory($tempDir);
+            }
+            throw $e;
+        }
     }
 }

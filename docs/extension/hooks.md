@@ -135,6 +135,18 @@ core.menu.update_validation_rules
 core.layout_extension.before_apply
 core.layout_extension.after_apply
 
+# 드라이버 확장 훅 (Filter) — 플러그인이 새 드라이버를 등록
+core.settings.available_storage_drivers
+core.settings.available_cache_drivers
+core.settings.available_session_drivers
+core.settings.available_queue_drivers
+core.settings.available_log_drivers
+core.settings.available_websocket_drivers
+core.settings.available_mail_drivers
+
+# 드라이버 확장 훅 (Action) — 플러그인 드라이버 선택 시 Config 적용
+core.settings.apply_driver_config
+
 # SEO 렌더링 훅 (Filter)
 core.seo.filter_context
 core.seo.filter_meta
@@ -181,13 +193,16 @@ class ProductCacheInvalidationListener implements HookListenerInterface
      */
     public function handleProductChange(...$args): void
     {
+        // CacheInterface 를 컨테이너에서 lazy resolve (모듈 리스너면 ModuleCacheDriver)
+        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+
         // 모든 상품 목록 캐시 삭제
-        Cache::forget('products.all');
-        Cache::forget('products.active');
+        $cache->forget('products.all');
+        $cache->forget('products.active');
 
         // 특정 상품 캐시 삭제
         if (isset($args[0]->id)) {
-            Cache::forget("product.{$args[0]->id}");
+            $cache->forget("product.{$args[0]->id}");
         }
 
         Log::info('상품 캐시가 무효화되었습니다.', [
@@ -196,6 +211,99 @@ class ProductCacheInvalidationListener implements HookListenerInterface
     }
 }
 ```
+
+---
+
+## 큐 자동 실행
+
+Action 훅 리스너는 환경설정의 **큐 드라이버** 설정에 따라 자동으로 동기/비동기 실행됩니다. 리스너 개발자가 별도로 설정할 필요 없습니다.
+
+### 큐 드라이버별 동작
+
+| 큐 드라이버 | 리스너 실행 방식 | 큐 워커 필요 |
+|------------|-----------------|-------------|
+| `sync` | 즉시 실행 (동기) | 불필요 |
+| `database` | jobs 테이블 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
+| `redis` | Redis 큐 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
+| 커스텀 (플러그인 추가) | 해당 드라이버 큐 → 워커 처리 | 필요 |
+
+> **Filter 훅**은 반환값 체인이므로 **항상 동기 실행**됩니다 (큐 드라이버 무관).
+
+### 동기 실행 강제 (opt-out)
+
+리스너가 반드시 HTTP 요청 스레드에서 동기 실행되어야 하는 경우, `'sync' => true`를 선언합니다.
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.user.after_create' => [
+            'method' => 'handleUserCreated',
+            'priority' => 10,
+            'sync' => true,  // 큐 드라이버 무관하게 항상 즉시 실행
+        ],
+    ];
+}
+```
+
+### getSubscribedHooks() 옵션 요약
+
+| 옵션 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `method` | string | `'handle'` | 실행할 메서드명 |
+| `priority` | int | `10` | 실행 우선순위 (낮을수록 먼저) |
+| `type` | string | `'action'` | `'action'` 또는 `'filter'` |
+| `sync` | bool | `false` | `true`: 큐 드라이버 무관하게 동기 실행 |
+
+### 내부 구현
+
+`HookListenerRegistrar`가 리스너 등록 시 큐/동기 분기를 처리합니다:
+
+- Action + `sync: false` (기본) → `DispatchHookListenerJob`으로 래핑하여 `dispatch()`
+- Action + `sync: true` → 기존 방식 동기 실행
+- Filter → 항상 동기 실행
+
+`DispatchHookListenerJob`은 리스너 클래스명과 메서드명을 직렬화하고, 큐 워커에서 DI 컨테이너로 리스너를 재생성하여 호출합니다.
+
+### 사용자 컨텍스트 자동 복원
+
+큐 워커는 별도 프로세스이므로 `Auth::user()`, `request()->ip()`, `App::getLocale()` 등이 모두 리셋됩니다. 이를 보완하기 위해 `HookContextCapture`가 디스패치 시점에 다음 항목을 자동 캡처하고, 워커에서 복원합니다:
+
+| 항목 | 캡처 출처 | 복원 효과 |
+| ---- | --------- | --------- |
+| `user_id` | `Auth::id()` | 워커에서 `Auth::user()` 사용 가능 (활동로그 actor 정상 기록) |
+| `ip_address` | `request()->ip()` | 워커에서 `request()->ip()` 사용 가능 |
+| `user_agent` | `request()->userAgent()` | 워커에서 `request()->userAgent()` 사용 가능 |
+| `locale` | `App::getLocale()` | 워커에서 다국어 메시지가 원래 요청 로케일로 발송됨 |
+| `path` | `request()->path()` | `ResolvesActivityLogType`이 워커에서 정상 동작 |
+
+리스너 코드는 변경 불필요 — 평소처럼 `Auth::user()`, `request()->ip()` 호출하면 됩니다.
+
+#### 확장 컨텍스트 추가 (플러그인)
+
+플러그인이 `tenant_id`, `trace_id` 등 추가 컨텍스트를 캡처/복원하려면 코어 수정 없이 훅으로 확장 가능:
+
+```php
+// 캡처 시 키 추가
+HookManager::addFilter('hook.context.capture', function (array $context) {
+    $context['tenant_id'] = app('tenant')->id;
+    return $context;
+});
+
+// 복원 시 처리
+HookManager::addAction('hook.context.restore', function (array $context) {
+    if (! empty($context['tenant_id'])) {
+        app('tenant')->setId($context['tenant_id']);
+    }
+});
+```
+
+### 주의사항
+
+- 큐 디스패치 시 인자는 `HookArgumentSerializer`로 직렬화됩니다. Eloquent Model은 PK로 변환 후 워커에서 DB 재조회합니다.
+- Closure 등 직렬화 불가능한 인자는 null로 대체되므로, 훅 인자로 Closure를 전달하지 마세요.
+- 큐 드라이버가 `database`/`redis`일 때 큐 워커가 미실행이면 작업이 적체됩니다.
+- 사용자 컨텍스트는 자동 복원되지만, `request()->session()` 등 세션 의존 정보는 복원되지 않습니다 (큐 컨텍스트는 단발 실행).
 
 ---
 
@@ -286,6 +394,59 @@ private function registerCoreHookListeners(): void
 | 발견 방식 | 디렉토리 재귀 스캔 | `getHookListeners()` 메서드 |
 | 위치 | `app/Listeners/**/*.php` | `modules/**/Listeners/`, `plugins/**/Listeners/` |
 | 등록 주체 | `CoreServiceProvider` | `ModuleServiceProvider`, `PluginServiceProvider` |
+
+### 동적 훅 리스너 (DB 기반)
+
+DB 설정에 따라 훅 구독 대상이 동적으로 변하는 경우, 리스너에 `registerDynamicHooks()` 메서드를 구현합니다.
+자동 발견 시스템이 이 메서드를 감지하여 `boot()` 후반부(DB 접근 가능 시점)에서 자동 호출합니다.
+
+```php
+class NotificationHookListener implements HookListenerInterface
+{
+    // 정적 훅은 빈 배열 (DB 기반이므로)
+    public static function getSubscribedHooks(): array
+    {
+        return [];
+    }
+
+    public function handle(...$args): void {}
+
+    /**
+     * DB 기반 동적 훅을 등록합니다.
+     * CoreServiceProvider 자동 발견 시스템이 boot 후반부에서 자동 호출합니다.
+     */
+    public function registerDynamicHooks(): void
+    {
+        // notification_definitions 테이블에서 훅 목록 조회
+        // 각 훅에 대해 HookManager::addAction() 등록
+    }
+}
+```
+
+| 조건 | 설명 |
+|------|------|
+| 메서드명 | `registerDynamicHooks()` (덕 타이핑) |
+| 호출 시점 | `CoreServiceProvider::boot()` 후반부 (DB 유효성 검증 후) |
+| 별도 인터페이스 | 불필요 — `method_exists()` 체크 |
+| 안전성 | 테이블 미존재 시 `Schema::hasTable()` 체크 필수 |
+
+---
+
+### HookManager::broadcast() — WebSocket 브로드캐스트
+
+훅 리스너에서 WebSocket 브로드캐스트를 실행할 때 사용합니다.
+
+```php
+use App\Extension\HookManager;
+
+HookManager::broadcast(
+    'user.notifications.123',     // 채널
+    'notification.received',      // 이벤트명
+    ['subject' => '새 알림']      // 데이터
+);
+```
+
+개별 Event 클래스(`app/Events/`)를 직접 생성하지 않습니다. `HookManager::broadcast()`가 내부적으로 `GenericBroadcastEvent`를 사용합니다.
 
 ---
 
@@ -870,7 +1031,7 @@ public function download(int $id, ?User $user): ?Attachment
 | `[module].product.after_update` | `onProductUpdate` | 해당 URL + 목록 |
 | `[module].*.after_delete` | `onProductChange` | 전체 관련 캐시 |
 
-캐시 무효화 시 `Cache::forget('seo:sitemap')`도 함께 호출
+캐시 무효화 시 `app(CacheInterface::class)->forget('seo.sitemap')` 도 함께 호출 (드라이버가 `g7:core:` 접두사 자동 적용)
 
 > 구현 상세: [seo-system.md](../backend/seo-system.md)
 

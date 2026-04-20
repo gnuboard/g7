@@ -1,0 +1,51 @@
+{
+  "index": {
+    "title": "Board Management",
+    "description": "Manage board list",
+    "search_placeholder": "Search boards...",
+    "search": "Search",
+    "add_board": "Add Board",
+    "post_count": "Posts:",
+    "created_at": "Created:",
+    "categories_label": "Categories:",
+    "empty_title": "No boards found",
+    "empty_description": "No boards have been registered.",
+    "filter_all_types": "All Types",
+    "filter_type_basic": "Basic List",
+    "filter_type_gallery": "Gallery Grid",
+    "filter_type_card": "Card Grid",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "create": {
+    "title": "Create Board"
+  },
+  "edit": {
+    "title": "Edit Board"
+  },
+  "columns": {
+    "type": "Type",
+    "name": "Board Name",
+    "slug": "Slug",
+    "posts_count": "Posts",
+    "created_at": "Created At"
+  },
+  "actions": {
+    "edit": "Edit",
+    "manage_posts": "View Posts",
+    "copy": "Copy",
+    "delete": "Delete"
+  },
+  "messages": {
+    "create_success": "Board created successfully",
+    "update_success": "Board updated successfully",
+    "delete_success": "Board deleted successfully",
+    "deleted": "Board has been deleted",
+    "copy_success": "Board copied successfully",
+    "save_failed": "Failed to save",
+    "table_not_found": "Cannot delete board because the board table does not exist",
+    "activated": "Board has been activated",
+    "deactivated": "Board has been deactivated"
+  }
+}

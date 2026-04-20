@@ -65,9 +65,10 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
                 return 1;
             });
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
+        // 새 시스템: app(CacheInterface::class)->forget('seo.sitemap')
+        $cacheInterfaceMock = Mockery::mock(\App\Contracts\Extension\CacheInterface::class);
+        $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
+        $this->app->instance(\App\Contracts\Extension\CacheInterface::class, $cacheInterfaceMock);
 
         Log::shouldReceive('info')
             ->once()

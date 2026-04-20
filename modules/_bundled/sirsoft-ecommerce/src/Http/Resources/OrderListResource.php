@@ -88,12 +88,19 @@ class OrderListResource extends BaseApiResource
             ]),
 
             // 배송 (첫 번째)
-            'shipping' => $this->whenLoaded('shippings', fn () => [
-                'shipping_type' => $this->shippings->first()?->shipping_type,
-                'shipping_type_label' => $this->shippings->first()?->shipping_type?->label(),
-                'carrier_name' => $this->shippings->first()?->carrier?->getLocalizedName(),
-                'tracking_number' => $this->shippings->first()?->tracking_number,
-            ]),
+            'shipping' => $this->whenLoaded('shippings', function () {
+                $shipping = $this->shippings->first();
+
+                return [
+                    'shipping_type' => $shipping?->shipping_type,
+                    'shipping_type_label' => $shipping?->shipping_type
+                        ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($shipping->shipping_type)?->getLocalizedName()
+                        : null,
+                    'shipping_method_label' => $this->resolveSnapshotMethodLabel($shipping),
+                    'carrier_name' => $shipping?->carrier?->getLocalizedName(),
+                    'tracking_number' => $shipping?->tracking_number,
+                ];
+            }),
 
             // 권한 정보 (is_owner + abilities)
             ...$this->resourceMeta($request),
@@ -146,5 +153,38 @@ class OrderListResource extends BaseApiResource
         }
 
         return ! empty($result) ? $result : null;
+    }
+
+    /**
+     * 스냅샷 기반 배송방법 라벨을 해석합니다.
+     *
+     * @param \Modules\Sirsoft\Ecommerce\Models\OrderShipping|null $shipping 배송 레코드
+     * @return string|null
+     */
+    private function resolveSnapshotMethodLabel(?\Modules\Sirsoft\Ecommerce\Models\OrderShipping $shipping): ?string
+    {
+        if (! $shipping) {
+            return null;
+        }
+
+        $snapshot = $shipping->delivery_policy_snapshot;
+        $method = $snapshot['shipping_method'] ?? null;
+
+        if (! $method) {
+            return null;
+        }
+
+        if ($method === 'custom') {
+            $name = $snapshot['custom_shipping_name'] ?? null;
+            if (is_array($name)) {
+                $locale = app()->getLocale();
+
+                return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+            }
+
+            return null;
+        }
+
+        return \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName();
     }
 }

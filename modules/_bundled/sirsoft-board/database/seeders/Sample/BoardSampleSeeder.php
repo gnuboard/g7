@@ -71,10 +71,8 @@ class BoardSampleSeeder extends Seeder
             'show_view_count'               => true,
             'per_page'                      => 15,
             'new_display_hours'             => 72,
-            // 알림: mail 채널 — defaults.json 기본값과 동일하나 명시적으로 검증
             'notify_author'                 => false,
             'notify_admin_on_post'          => true,
-            'notify_admin_on_post_channels' => ['mail'],
             // 기본값: posts_write = ['admin', 'user'] → user 제거 (관리자만 글쓰기)
             'permissions' => [
                 'posts_write' => ['roles' => ['admin']],
@@ -112,9 +110,7 @@ class BoardSampleSeeder extends Seeder
             'max_content_length'            => 2000,
             'min_comment_length'            => 0,   // 짧은 반응 허용
             'max_comment_length'            => 500,
-            // 알림: database 채널 (defaults의 mail과 다른 케이스)
             'notify_author'                 => true,
-            'notify_author_channels'        => ['database'],
             'notify_admin_on_post'          => false,
             // 금지어: 커스텀 — 기본 45개 대신 광고/스팸 특화
             'blocked_keywords'              => ['광고', '홍보', 'spam', '도박', '대출'],
@@ -153,7 +149,6 @@ class BoardSampleSeeder extends Seeder
             'comment_order'                 => 'DESC',
             'max_comment_depth'             => 3,
             'notify_author'                 => true,
-            'notify_author_channels'        => ['database'],
             'notify_admin_on_post'          => false,
             // 기본값 그대로 — 회원만 글쓰기/댓글, 전체 읽기/다운로드
         ],
@@ -217,9 +212,7 @@ class BoardSampleSeeder extends Seeder
             'new_display_hours'             => 24,
             'categories'                    => ['일반문의', '기술문의', '결제문의', '기타'],
             'notify_author'                 => true,
-            'notify_author_channels'        => ['database'],
             'notify_admin_on_post'          => true,
-            'notify_admin_on_post_channels' => ['database'],
             'blocked_keywords'              => ['욕설테스트', 'badword'],
             // 기본값: posts.read-secret = ['admin'] → user 추가
             // 비밀글을 작성자 외 로그인 회원도 읽을 수 있는 케이스 (고객센터 담당자 등)
@@ -253,7 +246,6 @@ class BoardSampleSeeder extends Seeder
             'per_page'                      => 20,
             'new_display_hours'             => 24,
             'notify_author'                 => true,
-            'notify_author_channels'        => ['database'],
             'notify_admin_on_post'          => false,
             // 금지어: 기본 45개 대신 스팸 특화 커스텀
             'blocked_keywords'              => ['스팸', 'advertisement'],
@@ -288,11 +280,8 @@ class BoardSampleSeeder extends Seeder
             'show_view_count'               => false,
             'per_page'                      => 20,
             'new_display_hours'             => 24,
-            // 알림: mail 채널 — 문의 접수 즉시 이메일로 확인
             'notify_author'                 => true,
-            'notify_author_channels'        => ['mail'],
             'notify_admin_on_post'          => true,
-            'notify_admin_on_post_channels' => ['mail'],
             // 기본값: posts_write = ['admin', 'user'] → guest 추가 (비회원도 문의 가능)
             'permissions' => [
                 'posts_write'        => ['roles' => ['admin', 'user', 'guest']],

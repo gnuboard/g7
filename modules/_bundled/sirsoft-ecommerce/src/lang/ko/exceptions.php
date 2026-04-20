@@ -62,4 +62,8 @@ return [
     // 클래임 사유 관련
     'claim_reason_not_found' => '클래임 사유를 찾을 수 없습니다.',
     'claim_reason_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. (사용 횟수: :count건)',
+
+    // 배송유형 관련
+    'shipping_type_not_found' => '배송유형을 찾을 수 없습니다.',
+    'shipping_type_in_use' => '주문에서 사용 중인 배송유형(:name)은 삭제할 수 없습니다. (사용 횟수: :count건)',
 ];

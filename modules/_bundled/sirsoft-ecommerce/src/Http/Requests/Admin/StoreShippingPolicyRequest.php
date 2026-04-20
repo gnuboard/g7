@@ -7,7 +7,7 @@ use App\Rules\LocaleRequiredTranslatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 배송정책 생성 요청
@@ -37,7 +37,9 @@ class StoreShippingPolicyRequest extends FormRequest
             // 국가별 설정 (최소 1개 필수)
             'country_settings' => ['required', 'array', 'min:1'],
             'country_settings.*.country_code' => ['required', 'string', 'max:10', 'distinct'],
-            'country_settings.*.shipping_method' => ['required', Rule::enum(ShippingMethodEnum::class)],
+            'country_settings.*.shipping_method' => ['required', 'string', Rule::in(ShippingType::pluck('code')->toArray())],
+            'country_settings.*.custom_shipping_name' => ['nullable', 'array'],
+            'country_settings.*.custom_shipping_name.*' => ['nullable', 'string', 'max:100'],
             'country_settings.*.currency_code' => ['required', 'string', 'max:10'],
             'country_settings.*.charge_policy' => ['required', Rule::enum(ChargePolicyEnum::class)],
 
@@ -111,6 +113,7 @@ class StoreShippingPolicyRequest extends FormRequest
         $validator->after(function (\Illuminate\Validation\Validator $validator) {
             $this->validateRangeTiersContinuity($validator);
             $this->validateNonFreeBaseFee($validator);
+            $this->validateCustomShippingName($validator);
         });
     }
 
@@ -219,6 +222,38 @@ class StoreShippingPolicyRequest extends FormRequest
                 $validator->errors()->add(
                     "country_settings.{$i}.base_fee",
                     __('sirsoft-ecommerce::validation.shipping_policy.base_fee_zero_not_allowed')
+                );
+            }
+        }
+    }
+
+    /**
+     * custom 배송방법 선택 시 custom_shipping_name 필수 검증
+     *
+     * @param \Illuminate\Validation\Validator $validator Validator 인스턴스
+     */
+    private function validateCustomShippingName(\Illuminate\Validation\Validator $validator): void
+    {
+        $countrySettings = $this->input('country_settings', []);
+
+        if (! is_array($countrySettings)) {
+            return;
+        }
+
+        $locale = app()->getLocale();
+
+        foreach ($countrySettings as $i => $cs) {
+            if (($cs['shipping_method'] ?? '') !== 'custom') {
+                continue;
+            }
+
+            $customName = $cs['custom_shipping_name'] ?? [];
+            $localeName = is_array($customName) ? trim($customName[$locale] ?? $customName['ko'] ?? '') : '';
+
+            if ($localeName === '') {
+                $validator->errors()->add(
+                    "country_settings.{$i}.custom_shipping_name.{$locale}",
+                    __('sirsoft-ecommerce::validation.shipping_policy.custom_shipping_name_required')
                 );
             }
         }

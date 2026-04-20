@@ -747,7 +747,7 @@
     },
     "search_fields": {
       "all": "All",
-      "title": "Title",
+      "title_content": "Title+Content",
       "author": "Author (Name, Email)"
     },
     "filters": {
@@ -839,7 +839,7 @@
       "basic_defaults": "Board Settings",
       "report_policy": "Report Policy",
       "spam_security": "Security",
-      "mail_templates": "Mail Templates"
+      "notification_definitions": "Notifications"
     },
     "board_settings_tabs": {
       "basic": "Basic",
@@ -1104,17 +1104,15 @@
         "max_file_count": "Max File Count",
         "allowed_extensions": "Allowed Extensions",
         "notify_admin_on_post": "Admin Notification",
-        "notify_admin_on_post_channels": "Admin Notification Channels",
         "notify_author": "Author Notification",
-        "notify_author_channels": "Author Notification Channels",
         "new_display_hours": "New Post Display Hours",
         "default_board_permissions": "Default Permissions",
         "manager": "Manage Board"
       }
     },
-    "mail_templates": {
-      "title": "Mail Template Management",
-      "description": "Manage email templates for board notifications. You can customize the subject and body for each notification type.",
+    "notification_definitions": {
+      "title": "Notification Settings",
+      "description": "Manage notification templates for board. You can customize the subject and body for each notification type.",
       "active": "Active",
       "inactive": "Inactive",
       "default_badge": "Default",
@@ -1122,10 +1120,10 @@
       "btn_deactivate": "Deactivate",
       "btn_edit": "Edit",
       "btn_reset": "Reset to Default",
-      "toggle_success": "Mail template status has been changed.",
-      "reset_success": "Mail template has been restored to default.",
-      "save_success": "Mail template saved successfully.",
-      "save_error": "Failed to save mail template.",
+      "toggle_success": "Notification active status has been changed.",
+      "reset_success": "Notification has been reset to default.",
+      "save_success": "Notification settings saved successfully.",
+      "save_error": "Failed to save notification settings.",
       "types": {
         "new_comment": "New Comment",
         "reply_comment": "Reply Comment",
@@ -1143,20 +1141,21 @@
       "search_type_body": "Body",
       "total_count": "Total {{count}} items",
       "per_page_label": "Per page",
-      "empty_message": "No mail templates registered.",
+      "empty_message": "No notification settings found.",
       "empty_no_results": "No search results found.",
       "edit_modal": {
-        "title": "Edit Mail Template",
+        "title": "Edit Notification Template",
         "type_label": "Type:",
         "subject": "Subject",
         "body": "Body",
+        "channels_label": "Active Channels",
         "variables_title": "Available Variables",
         "btn_preview": "Preview",
         "validation_error": "Please check the input fields.",
         "is_active_label": "Active"
       },
       "preview_modal": {
-        "title": "Mail Template Preview",
+        "title": "Notification Preview",
         "subject_label": "Subject",
         "body_label": "Body"
       }

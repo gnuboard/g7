@@ -3,14 +3,13 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * 템플릿 컬렉션 리소스
  *
  * 템플릿 목록을 다양한 형태로 변환하여 반환합니다.
  */
-class TemplateCollection extends ResourceCollection
+class TemplateCollection extends BaseApiCollection
 {
     /**
      * 템플릿 컬렉션을 배열로 변환합니다.

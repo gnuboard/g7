@@ -18,7 +18,8 @@ use App\Services\LayoutService;
 use App\Services\TemplateService;
 use Composer\Semver\Semver;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,7 @@ class TemplateManager implements TemplateManagerInterface
 {
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
+    use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
     use Traits\ValidatesLayoutFiles;
@@ -81,6 +83,18 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 코어 캐시 드라이버를 lazy 조회합니다.
+     */
+    private function cache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
+    }
+
+    /**
      * 모든 템플릿을 로드하고 초기화합니다.
      */
     public function loadTemplates(): void
@@ -109,6 +123,15 @@ class TemplateManager implements TemplateManagerInterface
                 Log::warning("Invalid template directory name: {$templateName}. Expected format: vendor-name");
 
                 continue;
+            }
+
+            // 무결성 검사: 활성 디렉토리는 있으나 template.json 누락 감지
+            if (! File::exists($templateFile)) {
+                Log::warning('템플릿 활성 디렉토리가 불완전합니다 (template.json 누락)', [
+                    'template' => $templateName,
+                    'directory' => $directory,
+                    'hint' => "복구: php artisan template:install {$templateName} --force",
+                ]);
             }
 
             if (File::exists($templateFile)) {
@@ -355,7 +378,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 의존성 문제 시
      */
-    public function installTemplate(string $templateName, ?\Closure $onProgress = null): bool
+    public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($templateName);
@@ -370,9 +393,10 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         // 1. _pending/_bundled에서 활성 디렉토리로 복사 (활성 디렉토리에 없는 경우)
+        // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
         $onProgress?->__invoke('copy', '파일 복사 중...');
-        if (! isset($this->templates[$templateName])) {
-            $this->copyToActiveFromSource($templateName, $onProgress);
+        if ($force || ! isset($this->templates[$templateName])) {
+            $this->copyToActiveFromSource($templateName, $onProgress, $force);
         }
 
         // 2. 검증
@@ -900,6 +924,7 @@ class TemplateManager implements TemplateManagerInterface
             'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
             'github_url' => $template['github_url'] ?? null,
             'github_changelog_url' => $template['github_changelog_url'] ?? null,
+            'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
@@ -946,6 +971,7 @@ class TemplateManager implements TemplateManagerInterface
             'description' => $this->getLocalizedValue($description, $locale),
             'github_url' => $metadata['github_url'] ?? null,
             'github_changelog_url' => $metadata['github_changelog_url'] ?? null,
+            'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,
@@ -1579,11 +1605,11 @@ class TemplateManager implements TemplateManagerInterface
                 if (! in_array($override->name, $registeredLayoutNames)) {
                     // 캐시 삭제 (레코드 삭제 전에 수행)
                     $cacheKey = "template.{$templateId}.layout.{$override->name}";
-                    Cache::forget($cacheKey);
+                    $this->cache()->forget($cacheKey);
 
                     $sourceHash = md5($override->source_type?->value.$override->source_identifier);
                     $cacheKeyWithHash = "template.{$templateId}.layout.{$override->name}.{$sourceHash}";
-                    Cache::forget($cacheKeyWithHash);
+                    $this->cache()->forget($cacheKeyWithHash);
 
                     $override->forceDelete();
                     $deletedCount++;
@@ -1632,12 +1658,12 @@ class TemplateManager implements TemplateManagerInterface
             foreach ($overrideLayouts as $layout) {
                 // 기본 캐시 키 패턴으로 삭제
                 $cacheKey = "template.{$templateId}.layout.{$layout->name}";
-                Cache::forget($cacheKey);
+                $this->cache()->forget($cacheKey);
 
                 // sourceHash를 포함한 캐시 키도 삭제 (LayoutService의 캐시 키 패턴)
                 $sourceHash = md5($layout->source_type?->value.$layout->source_identifier);
                 $cacheKeyWithHash = "template.{$templateId}.layout.{$layout->name}.{$sourceHash}";
-                Cache::forget($cacheKeyWithHash);
+                $this->cache()->forget($cacheKeyWithHash);
             }
 
             Log::info(__('templates.info.override_layouts_cache_invalidated'), [
@@ -1754,9 +1780,9 @@ class TemplateManager implements TemplateManagerInterface
                 // PublicLayoutController::serve()와 동일한 캐시 키 패턴 사용
                 $cacheKey = "layout.{$templateIdentifier}.{$layoutName}.v{$cacheVersion}";
 
-                Cache::remember($cacheKey, $cacheTtl, function () use ($templateIdentifier, $layoutName, $layoutService) {
+                $this->cache()->remember($cacheKey, function () use ($templateIdentifier, $layoutName, $layoutService) {
                     return $layoutService->getLayout($templateIdentifier, $layoutName);
-                });
+                }, $cacheTtl);
 
                 Log::debug('레이아웃 캐시 워밍 완료', [
                     'template' => $templateIdentifier,
@@ -1780,7 +1806,7 @@ class TemplateManager implements TemplateManagerInterface
 
             if ($result['success']) {
                 $cacheKey = "template.routes.{$templateIdentifier}.v{$cacheVersion}";
-                Cache::put($cacheKey, ['success' => true, 'data' => $result['data']], $cacheTtl);
+                $this->cache()->put($cacheKey, ['success' => true, 'data' => $result['data']], $cacheTtl);
             }
         } catch (\Exception $e) {
             Log::debug('Routes 캐시 워밍 실패', [
@@ -1797,7 +1823,7 @@ class TemplateManager implements TemplateManagerInterface
                 $langFilePath = base_path("templates/{$templateIdentifier}/lang/{$locale}.json");
                 if (file_exists($langFilePath)) {
                     $cacheKey = "template.language.{$templateIdentifier}.{$locale}.v{$cacheVersion}";
-                    Cache::remember($cacheKey, $cacheTtl, function () use ($templateIdentifier, $locale, $templateService) {
+                    $this->cache()->remember($cacheKey, function () use ($templateIdentifier, $locale, $templateService) {
                         // TemplateService를 통해 $partial 해석 + 모듈/플러그인 다국어 병합
                         $result = $templateService->getLanguageDataWithModules($templateIdentifier, $locale);
 
@@ -1806,7 +1832,7 @@ class TemplateManager implements TemplateManagerInterface
                         }
 
                         return ['success' => true, 'data' => $result['data']];
-                    });
+                    }, $cacheTtl);
                 }
             } catch (\Exception $e) {
                 Log::debug('다국어 파일 캐시 워밍 실패', [
@@ -2346,39 +2372,16 @@ class TemplateManager implements TemplateManagerInterface
         }
 
         try {
-            if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
-                return null;
-            }
-
-            $owner = $matches[1];
-            $repo = $matches[2];
-
-            $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
-
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'GET',
-                    'header' => GithubHelper::buildHeaders(config('app.update.github_token') ?? ''),
-                    'timeout' => 5,
-                ],
-            ]);
-
-            $response = @file_get_contents($apiUrl, false, $context);
-
-            if ($response === false) {
-                Log::warning("GitHub API 호출 실패: {$apiUrl}");
-
-                return null;
-            }
-
-            $data = json_decode($response, true);
-
-            if (isset($data['tag_name'])) {
-                return ltrim($data['tag_name'], 'v');
-            }
-
+            [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
+        } catch (\RuntimeException $e) {
             return null;
+        }
 
+        try {
+            $token = (string) (config('app.update.github_token') ?? '');
+            $result = GithubHelper::fetchLatestRelease($owner, $repo, $token);
+
+            return $result['version'];
         } catch (\Exception $e) {
             Log::error('최신 버전 확인 중 오류 발생', [
                 'github_url' => $githubUrl,
@@ -2415,7 +2418,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @throws \RuntimeException 소스를 찾을 수 없을 때
      */
-    protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null): void
+    protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null, bool $force = false): void
     {
         $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
 
@@ -2423,6 +2426,7 @@ class TemplateManager implements TemplateManagerInterface
         if (isset($this->pendingTemplates[$templateName]) || ExtensionPendingHelper::isPending($this->templatesPath, $templateName)) {
             $sourcePath = ExtensionPendingHelper::getPendingPath($this->templatesPath, $templateName);
             ExtensionPendingHelper::copyToActive($sourcePath, $targetPath, $onProgress);
+            Log::info('템플릿을 _pending에서 활성 디렉토리로 복사', ['template' => $templateName, 'force' => $force]);
 
             // 메모리 재로드
             $this->reloadTemplate($templateName);
@@ -2434,6 +2438,7 @@ class TemplateManager implements TemplateManagerInterface
         if (isset($this->bundledTemplates[$templateName]) || ExtensionPendingHelper::isBundled($this->templatesPath, $templateName)) {
             $sourcePath = ExtensionPendingHelper::getBundledPath($this->templatesPath, $templateName);
             ExtensionPendingHelper::copyToActive($sourcePath, $targetPath, $onProgress);
+            Log::info('템플릿을 _bundled에서 활성 디렉토리로 복사', ['template' => $templateName, 'force' => $force]);
 
             // 메모리 재로드
             $this->reloadTemplate($templateName);
@@ -2503,7 +2508,15 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 단일 템플릿의 업데이트 가능 여부를 확인합니다.
      *
-     * 우선순위: GitHub → _pending → _bundled
+     * 일반 업데이트 우선순위 (GitHub 엄격 우선):
+     *   1. GitHub URL 존재 + API 조회 성공 → GitHub 결과만 신뢰
+     *      a. GitHub 버전 > 현재 → 'github' 소스 반환
+     *      b. GitHub 버전 ≤ 현재 → "업데이트 없음" 즉시 반환 (bundled 폴백 없음)
+     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망)
+     *
+     * --force 업데이트 우선순위는 resolveForceUpdateSource() 참조 (번들 우선).
+     *
+     * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
      * @param  string  $identifier  템플릿 식별자
      * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
@@ -2523,21 +2536,46 @@ class TemplateManager implements TemplateManagerInterface
         $currentVersion = $record->version;
         $template = $this->getTemplate($identifier);
 
-        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인
+        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
         if ($githubUrl) {
-            $latestVersion = $this->fetchLatestVersion($githubUrl);
-            if ($latestVersion && version_compare($latestVersion, $currentVersion, '>')) {
+            try {
+                $latestVersion = $this->fetchLatestVersion($githubUrl);
+            } catch (\Throwable $e) {
+                Log::warning('템플릿 GitHub 버전 조회 실패', [
+                    'template' => $identifier,
+                    'url' => $githubUrl,
+                    'error' => $e->getMessage(),
+                ]);
+                $latestVersion = null;
+            }
+
+            if ($latestVersion !== null) {
+                // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
+                if (version_compare($latestVersion, $currentVersion, '>')) {
+                    return [
+                        'update_available' => true,
+                        'update_source' => 'github',
+                        'latest_version' => $latestVersion,
+                        'current_version' => $currentVersion,
+                    ];
+                }
+
                 return [
-                    'update_available' => true,
-                    'update_source' => 'github',
-                    'latest_version' => $latestVersion,
+                    'update_available' => false,
+                    'update_source' => null,
+                    'latest_version' => $currentVersion,
                     'current_version' => $currentVersion,
                 ];
             }
+
+            // GitHub 조회 실패 → _bundled 폴백 안내
+            Log::info('템플릿 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
+                'template' => $identifier,
+            ]);
         }
 
-        // 2. _bundled에서 업데이트 확인
+        // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
         if (isset($this->bundledTemplates[$identifier])) {
             $bundledVersion = $this->bundledTemplates[$identifier]['version'] ?? null;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
@@ -2683,43 +2721,6 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 레이아웃 콘텐츠의 정규화된 SHA-256 해시를 계산합니다.
-     *
-     * 배열/JSON 문자열 모두 동일한 결과를 반환합니다.
-     *
-     * @param  array|string  $content  레이아웃 콘텐츠 (배열 또는 JSON 문자열)
-     * @return string SHA-256 해시
-     */
-    private function computeContentHash(array|string $content): string
-    {
-        return hash('sha256', $this->normalizeContent($content));
-    }
-
-    /**
-     * 레이아웃 콘텐츠의 정규화된 바이트 크기를 계산합니다.
-     *
-     * @param  array|string  $content  레이아웃 콘텐츠 (배열 또는 JSON 문자열)
-     * @return int 바이트 크기
-     */
-    private function computeContentSize(array|string $content): int
-    {
-        return strlen($this->normalizeContent($content));
-    }
-
-    /**
-     * 콘텐츠를 정규화된 JSON 문자열로 변환합니다.
-     *
-     * @param  array|string  $content  레이아웃 콘텐츠 (배열 또는 JSON 문자열)
-     * @return string 정규화된 JSON 문자열
-     */
-    private function normalizeContent(array|string $content): string
-    {
-        return is_string($content)
-            ? json_encode(json_decode($content, true), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            : json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
-    /**
      * 사용자가 수정한 레이아웃이 있는지 확인합니다.
      *
      * original_content_hash와 현재 DB content의 hash를 비교하여
@@ -2779,15 +2780,19 @@ class TemplateManager implements TemplateManagerInterface
      * 프로세스: 백업 → updating 상태 → 파일 교체 → DB 갱신 →
      * 레이아웃 갱신 → 상태 복원 → 백업 삭제
      *
+     * 파라미터 순서는 updateModule / updatePlugin 과 일치시켜 공통 prefix
+     * (id, force, onProgress, ...) 를 공유한다. 템플릿은 upgrade step 이 없어
+     * vendorMode / onUpgradeStep 은 없음.
+     *
      * @param  string  $identifier  템플릿 식별자
-     * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  bool  $force  버전 비교 없이 강제 업데이트
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
      */
-    public function updateTemplate(string $identifier, string $layoutStrategy = 'overwrite', bool $force = false, ?\Closure $onProgress = null): array
+    public function updateTemplate(string $identifier, bool $force = false, ?\Closure $onProgress = null, string $layoutStrategy = 'overwrite', ?string $sourceOverride = null, ?string $zipPath = null): array
     {
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
@@ -2804,19 +2809,62 @@ class TemplateManager implements TemplateManagerInterface
         $fromVersion = $record->version;
         $updateInfo = $this->checkTemplateUpdate($identifier);
 
-        if (! $updateInfo['update_available'] && ! $force) {
+        // ZIP 강제 경로: 외부 ZIP 파일을 직접 추출하여 사용. checkTemplateUpdate 결과는 무시.
+        // zipTempDir / zipExtractedDir 는 staging 단계에서 사용 후 finally 에서 정리.
+        $zipTempDir = null;
+        $zipExtractedDir = null;
+        if ($zipPath !== null) {
+            $prepared = $this->extensionManager->prepareZipSource($zipPath, $identifier, 'template.json');
+            $zipTempDir = $prepared['temp_dir'];
+            $zipExtractedDir = $prepared['extracted_dir'];
+            $updateSource = 'zip';
+            $toVersion = $prepared['to_version'];
+        }
+        // 번들 강제 경로: 코어 업그레이드 / 일괄 업데이트 컨텍스트에서 GitHub 상태와 무관하게
+        // _bundled manifest 버전을 강제 사용.
+        elseif ($sourceOverride === 'bundled') {
+            $bundled = $this->getBundledVersion($identifier);
+            if ($bundled === null) {
+                throw new \RuntimeException(
+                    __('templates.errors.force_update_no_source', ['template' => $identifier])
+                );
+            }
+            $updateSource = 'bundled';
+            $toVersion = $bundled;
+        } elseif ($sourceOverride === 'github') {
+            // GitHub 강제 경로: _bundled 폴백 없이 GitHub 만 시도.
+            $template = $this->getTemplate($identifier);
+            $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
+            if (empty($githubUrl)) {
+                throw new \RuntimeException(
+                    __('templates.errors.force_update_no_source', ['template' => $identifier])
+                );
+            }
+            $updateSource = 'github';
+            $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
+                ?? $updateInfo['current_version'];
+        } elseif (! $updateInfo['update_available'] && ! $force) {
             return [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('templates.no_update_available'),
             ];
-        }
-
-        // force 시 버전/소스 결정
-        if ($force && ! $updateInfo['update_available']) {
-            $toVersion = $updateInfo['current_version'];
+        } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
+
+            if ($updateSource === null) {
+                throw new \RuntimeException(
+                    __('templates.errors.force_update_no_source', ['template' => $identifier])
+                );
+            }
+
+            // 번들 재설치는 번들 manifest 버전 기준, github 재설치는 현재 버전 기준
+            if ($updateSource === 'bundled') {
+                $toVersion = $this->getBundledVersion($identifier) ?? $updateInfo['current_version'];
+            } else {
+                $toVersion = $updateInfo['current_version'];
+            }
         } else {
             $toVersion = $updateInfo['latest_version'];
             $updateSource = $updateInfo['update_source'];
@@ -2848,6 +2896,9 @@ class TemplateManager implements TemplateManagerInterface
                     $sourcePath = ExtensionPendingHelper::getBundledPath($this->templatesPath, $identifier);
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($sourcePath, $stagingPath, $onProgress);
+                } elseif ($updateSource === 'zip') {
+                    $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
+                    ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
                 }
 
                 // 4. 원자적 적용 (스테이징 → 활성 디렉토리)
@@ -2860,6 +2911,10 @@ class TemplateManager implements TemplateManagerInterface
                 // 스테이징 정리
                 if ($stagingPath) {
                     ExtensionPendingHelper::cleanupStaging($stagingPath);
+                }
+                // ZIP 임시 추출 디렉토리 정리
+                if ($zipTempDir && File::isDirectory($zipTempDir)) {
+                    File::deleteDirectory($zipTempDir);
                 }
             }
 
@@ -2987,8 +3042,17 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * --force 시 업데이트 소스를 결정합니다.
      *
+     * PO 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
+     * (일반 업데이트의 GitHub 우선과 반대 — 개발자가 로컬 번들로 되돌리려는 의도 존중)
+     *
+     * 우선순위:
+     *   1. _bundled (메모리 캐시) → 'bundled'
+     *   2. _bundled (디스크 재조회) → 'bundled'
+     *   3. GitHub URL 존재 → 'github'
+     *   4. 둘 다 없음 → null (업데이트 불가)
+     *
      * @param  string  $identifier  템플릿 식별자
-     * @return string|null 업데이트 소스 ('bundled' 또는 null)
+     * @return string|null 'bundled' | 'github' | null
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
@@ -3001,6 +3065,31 @@ class TemplateManager implements TemplateManagerInterface
             return 'bundled';
         }
 
+        // 번들 없음 → GitHub URL 확인
+        $template = $this->getTemplate($identifier);
+        $record = $this->templateRepository->findByIdentifier($identifier);
+        $githubUrl = ($template['github_url'] ?? null) ?: ($record->github_url ?? null);
+        if ($githubUrl) {
+            return 'github';
+        }
+
         return null;
+    }
+
+    /**
+     * _bundled 에 등록된 템플릿의 버전을 반환합니다 (force 업데이트용).
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return string|null 버전 문자열 또는 null
+     */
+    private function getBundledVersion(string $identifier): ?string
+    {
+        if (isset($this->bundledTemplates[$identifier]['version'])) {
+            return $this->bundledTemplates[$identifier]['version'];
+        }
+
+        $meta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
+
+        return $meta[$identifier]['version'] ?? null;
     }
 }

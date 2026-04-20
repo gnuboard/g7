@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Seo;
 
+use App\Extension\Cache\CoreCacheDriver;
 use App\Seo\SeoCacheManager;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -24,7 +25,7 @@ class SeoCacheManagerTest extends TestCase
         // 이전 테스트 캐시 잔여물 제거
         Cache::flush();
 
-        $this->cacheManager = new SeoCacheManager;
+        $this->cacheManager = new SeoCacheManager(new CoreCacheDriver('array'));
     }
 
     /**
@@ -58,6 +59,7 @@ class SeoCacheManagerTest extends TestCase
      */
     public function test_cache_disabled_ignores_put_and_returns_null(): void
     {
+        config()->set('g7_settings.core.cache.seo_enabled', false);
         config()->set('g7_settings.core.seo.cache_enabled', false);
 
         $url = '/products/123';
@@ -199,6 +201,7 @@ class SeoCacheManagerTest extends TestCase
      */
     public function test_put_with_layout_ignored_when_cache_disabled(): void
     {
+        config()->set('g7_settings.core.cache.seo_enabled', false);
         config()->set('g7_settings.core.seo.cache_enabled', false);
 
         $this->cacheManager->putWithLayout('/products/1', 'ko', '<html>상품1</html>', 'shop/show');

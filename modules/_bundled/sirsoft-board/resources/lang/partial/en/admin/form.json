@@ -1,0 +1,222 @@
+{
+  "title_create": "Create Board",
+  "title_edit": "Edit Board",
+  "description": "Manage board settings",
+  "read_only_message": "You have read-only access. Contact an administrator if you need to make changes.",
+  "validation_error": "Please check the input information.",
+  "add_category": "Add Category",
+  "tabs": {
+    "basic": "Basic Settings",
+    "permissions": "Permission Settings",
+    "list": "List Settings",
+    "post": "Post Settings",
+    "notification": "Notification Settings"
+  },
+  "fields": {
+    "name": "Board Name",
+    "slug": "Slug",
+    "description": "Board Description",
+    "is_active": "Active",
+    "type": "Board Type",
+    "categories": "Categories",
+    "show_view_count": "Show View Count",
+    "use_comment": "Enable Comments",
+    "use_reply": "Enable Reply Posts",
+    "use_report": "Enable Reports",
+    "secret_mode": "Secret Mode",
+    "order_by": {
+      "label": "Sort By",
+      "options": {
+        "created_at": "Latest",
+        "view_count": "Views",
+        "title": "Title",
+        "author": "Author"
+      }
+    },
+    "order_direction": {
+      "label": "Sort Direction",
+      "options": {
+        "desc": "Descending",
+        "asc": "Ascending"
+      }
+    },
+    "per_page": {
+      "label": "Posts Per Page (PC)",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "per_page_mobile": {
+      "label": "Posts Per Page (Mobile)",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "min_title_length": {
+      "label": "Minimum Title Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "max_title_length": {
+      "label": "Maximum Title Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "min_content_length": {
+      "label": "Minimum Content Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "max_content_length": {
+      "label": "Maximum Content Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "min_comment_length": {
+      "label": "Minimum Comment Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "max_comment_length": {
+      "label": "Maximum Comment Length",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "blocked_keywords": {
+      "label": "Blocked Keywords",
+      "placeholder": "Comma-separated (e.g., spam, abuse, ads)",
+      "description": "Inappropriate words or keywords to exclude"
+    },
+    "use_file_upload": {
+      "label": "File Upload Settings",
+      "description": "Allow file attachments to posts."
+    },
+    "max_file_count": {
+      "label": "Maximum File Count",
+      "hint": "Up to {{max}} files can be uploaded"
+    },
+    "max_file_size": {
+      "label": "Maximum File Size (MB)",
+      "placeholder": "Enter in MB",
+      "hint": "Up to {{maxMB}}MB can be uploaded"
+    },
+    "allowed_extensions": {
+      "label": "Allowed Extensions",
+      "placeholder": "Comma-separated (e.g., jpg, png, pdf)",
+      "description": "All extensions allowed if empty"
+    },
+    "comment_order": {
+      "label": "Comment Sort Order",
+      "options": {
+        "asc": "Ascending (Oldest First)",
+        "desc": "Descending (Newest First)"
+      }
+    },
+    "new_display_hours": {
+      "label": "New Post Display Period",
+      "hint": "Hours to display [New] badge after post creation"
+    },
+    "max_reply_depth": {
+      "label": "Max Reply Depth",
+      "hint": "Enter a value between {{min}} and {{max}}"
+    },
+    "max_comment_depth": {
+      "label": "Max Comment Depth",
+      "hint": "Enter a value between {{min}} and {{max}}. Setting to 0 disables the nested comment feature."
+    },
+    "notify_author": {
+      "label": "Author Email Notification",
+      "description": "Send email to author for comments, replies, and admin actions"
+    },
+    "notify_admin_on_post": {
+      "label": "Admin Email Notification",
+      "description": "Send email to admin when a post is created"
+    },
+    "notification_channels": {
+      "label": "Notification Channels",
+      "description": "Select channels to receive board notifications",
+      "channels_label": "Channels",
+      "channel_mail": "Email",
+      "channel_database": "Site Notification"
+    }
+  },
+  "placeholders": {
+    "name": "e.g., Notice Board",
+    "slug": "e.g., notice (letters, numbers, hyphens only)",
+    "description": "Briefly describe the purpose of this board",
+    "select_type": "Select board type"
+  },
+  "descriptions": {
+    "slug": "Used for URL and table name (letters, numbers, hyphens only)",
+    "description": "Description displayed to users in the board list",
+    "is_active": "Inactive boards will not be displayed on user pages",
+    "categories": "Manage post categories",
+    "categories_notice": "Deleting a category will not affect its posts. They can be found using the 'Unclassified' filter.",
+    "show_view_count": "Display view count in list and detail pages",
+    "use_comment": "When enabled, you can configure detailed comment settings (length, depth, order).",
+    "use_reply": "When enabled, you can set the maximum reply depth.",
+    "use_report": "Enable report feature for inappropriate posts/comments",
+    "type": "Board types can be managed in Settings > Basic Settings."
+  },
+  "options": {
+    "secret_mode": {
+      "disabled": "Disabled",
+      "enabled": "Optional",
+      "always": "Always Secret"
+    }
+  },
+  "permissions": {
+    "managers_title": "Board Managers",
+    "managers_description": "Managers have full permissions for this board.",
+    "managers_select_button": "Select Manager",
+    "manager_email_placeholder": "Enter manager email",
+    "search_manager": "Search",
+    "confirm_add": "Add",
+    "select": "Select",
+    "change": "Change",
+    "users_found": "Found {{count}} user(s)",
+    "no_users_found_search": "No users found",
+    "user_search_failed": "Failed to search users",
+    "users_found_with_limit": "Found {{count}} user(s) (max 20 displayed)",
+    "user_added": "{{name}} has been added",
+    "no_search_results": "No search results",
+    "selected_managers": "Selected Managers",
+    "select_managers": "Select Managers",
+    "admin_permissions_title": "Admin Permissions",
+    "admin_permissions_description": "Permissions for accessing admin pages. Assigned to board managers and system administrators.",
+    "user_permissions_title": "User Permissions",
+    "user_permissions_description": "User access permissions for the board. Detailed permissions are controlled through roles.",
+    "settings_title": "Role-based Access Control",
+    "settings_description": "Select roles to assign to each permission. If no roles are selected, all users are allowed.",
+    "search_users": "Search by name or email",
+    "no_users_found": "No users found",
+    "select_roles": "Select roles (required)",
+    "mode_all": "All",
+    "mode_roles": "Roles",
+    "header_feature": "Feature",
+    "header_access": "Access",
+    "header_all_access": "All Access",
+    "header_role_selection": "Role Selection",
+    "all_access": "All Access",
+    "all_access_enabled": "All users can access.",
+    "role_restricted": "Role Restricted",
+    "select_roles_hint": "Select roles to allow access. (required)",
+    "admin_count": "{{count}} permissions",
+    "user_count": "{{count}} permissions",
+    "error_title": "Permission Configuration Error",
+    "error_description": "Please select at least one role for each permission.",
+    "error_roles_required": "Please select roles.",
+    "select_manager": "Select Manager",
+    "search_placeholder": "Search by name or email (Shows up to 20 results, please be specific)",
+    "steps_title": "Board Steps",
+    "steps_description": "Steps have all permissions except board management permission.",
+    "auto_role_notice": "Board manager and step roles are included as default values for each permission upon creation and can be modified below.",
+    "create_mode_permissions_notice": "Role-based access control can be configured in the edit screen after creating the board. Default permissions are automatically applied during creation."
+  },
+  "modals": {
+    "category_remove": {
+      "title": "Remove Category",
+      "warning": "This action cannot be undone",
+      "message": "Are you sure you want to remove '{{category}}' category?"
+    }
+  },
+  "menu": {
+    "manual_guide": "Enter the path below in Menu Management to register.",
+    "manual_admin_label": "Admin Menu Path",
+    "manual_user_label": "User Menu Path",
+    "example": "e.g.",
+    "add_to_admin_menu": "Add to Admin Menu",
+    "menu_added_success": "Successfully added to admin menu.",
+    "menu_add_failed": "Failed to add menu."
+  }
+}

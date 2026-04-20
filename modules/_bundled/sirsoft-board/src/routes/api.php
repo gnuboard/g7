@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\AttachmentController as AdminAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController;
-use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardMailTemplateController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
@@ -101,11 +100,6 @@ Route::prefix('boards')->middleware(['optional.sanctum', 'throttle:600,1'])->nam
 |
 */
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    // 알림 채널 목록 조회 (데이터 소스용)
-    Route::get('notification-channels', [BoardSettingsController::class, 'notificationChannels'])
-        ->middleware('permission:admin,sirsoft-board.settings.read')
-        ->name('admin.notification-channels');
-
     // 환경설정 전체 조회
     Route::get('settings', [BoardSettingsController::class, 'index'])
         ->middleware('permission:admin,sirsoft-board.settings.read')
@@ -131,28 +125,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-board.settings.read')
         ->name('admin.settings.show');
 
-    // 메일 템플릿 관리
-    Route::prefix('mail-templates')->group(function () {
-        Route::get('/', [BoardMailTemplateController::class, 'index'])
-            ->middleware('permission:admin,sirsoft-board.settings.read')
-            ->name('admin.mail-templates.index');
-
-        Route::put('{boardMailTemplate}', [BoardMailTemplateController::class, 'update'])
-            ->middleware('permission:admin,sirsoft-board.settings.update')
-            ->name('admin.mail-templates.update');
-
-        Route::patch('{boardMailTemplate}/toggle-active', [BoardMailTemplateController::class, 'toggleActive'])
-            ->middleware('permission:admin,sirsoft-board.settings.update')
-            ->name('admin.mail-templates.toggle-active');
-
-        Route::post('preview', [BoardMailTemplateController::class, 'preview'])
-            ->middleware('permission:admin,sirsoft-board.settings.read')
-            ->name('admin.mail-templates.preview');
-
-        Route::post('{boardMailTemplate}/reset', [BoardMailTemplateController::class, 'reset'])
-            ->middleware('permission:admin,sirsoft-board.settings.update')
-            ->name('admin.mail-templates.reset');
-    });
 });
 
 /*
@@ -435,6 +407,11 @@ Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:
     Route::get('/{id}', [UserPostController::class, 'show'])
         ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
         ->name('show');
+
+    // 게시글 이전/다음 네비게이션 조회 (비동기 로딩용)
+    Route::get('/{id}/navigation', [UserPostController::class, 'navigation'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
+        ->name('navigation');
 
     // 게시글 생성
     Route::post('/', [UserPostController::class, 'store'])

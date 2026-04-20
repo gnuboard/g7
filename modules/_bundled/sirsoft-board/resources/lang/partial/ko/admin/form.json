@@ -1,0 +1,222 @@
+{
+  "title_create": "게시판 생성",
+  "title_edit": "게시판 수정",
+  "description": "게시판 설정을 관리합니다",
+  "read_only_message": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.",
+  "validation_error": "입력 정보를 확인해주세요.",
+  "add_category": "분류 추가",
+  "tabs": {
+    "basic": "기본 설정",
+    "permissions": "권한 설정",
+    "list": "목록 설정",
+    "post": "게시글 설정",
+    "notification": "알림 설정"
+  },
+  "fields": {
+    "name": "게시판명",
+    "slug": "슬러그",
+    "description": "게시판 설명",
+    "is_active": "활성화",
+    "type": "게시판 유형",
+    "categories": "분류",
+    "show_view_count": "조회수 표시",
+    "use_comment": "댓글 사용",
+    "use_reply": "답변글 사용",
+    "use_report": "신고 사용",
+    "secret_mode": "비밀글 모드",
+    "order_by": {
+      "label": "정렬 기준",
+      "options": {
+        "created_at": "최신글",
+        "view_count": "조회수",
+        "title": "제목",
+        "author": "글쓴이"
+      }
+    },
+    "order_direction": {
+      "label": "정렬 순서",
+      "options": {
+        "desc": "내림차순",
+        "asc": "오름차순"
+      }
+    },
+    "per_page": {
+      "label": "한 페이지당 목록 수 (PC)",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "per_page_mobile": {
+      "label": "한 페이지당 목록 수 (Mobile)",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "min_title_length": {
+      "label": "최소 제목 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "max_title_length": {
+      "label": "최대 제목 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "min_content_length": {
+      "label": "최소 게시글 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "max_content_length": {
+      "label": "최대 게시글 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "min_comment_length": {
+      "label": "최소 댓글 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "max_comment_length": {
+      "label": "최대 댓글 글자 수",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "blocked_keywords": {
+      "label": "제한 키워드",
+      "placeholder": "쉼표로 구분하여 입력 (예: 욕설, 비방, 광고)",
+      "description": "부적절한 단어 또는 해당 게시판에 제외될 키워드"
+    },
+    "use_file_upload": {
+      "label": "첨부 파일 설정",
+      "description": "게시글에 파일을 첨부할 수 있습니다."
+    },
+    "max_file_count": {
+      "label": "최대 파일 개수",
+      "hint": "최대 {{max}}개까지 업로드 가능합니다"
+    },
+    "max_file_size": {
+      "label": "최대 파일 용량 (MB)",
+      "placeholder": "MB 단위로 입력",
+      "hint": "최대 {{maxMB}}MB까지 업로드 가능합니다"
+    },
+    "allowed_extensions": {
+      "label": "허용 확장자",
+      "placeholder": "쉼표로 구분하여 입력 (예: jpg, png, pdf)",
+      "description": "빈 값일 경우 모든 확장자 허용"
+    },
+    "comment_order": {
+      "label": "댓글 정렬 순서",
+      "options": {
+        "asc": "오름차순 (오래된순)",
+        "desc": "내림차순 (최신순)"
+      }
+    },
+    "new_display_hours": {
+      "label": "신규 게시글 표시 기간",
+      "hint": "게시글 작성 후 [New] 배지를 표시할 기간 (시간 단위)"
+    },
+    "max_reply_depth": {
+      "label": "답변글 최대 깊이",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요"
+    },
+    "max_comment_depth": {
+      "label": "대댓글 최대 깊이",
+      "hint": "{{min}}~{{max}} 사이의 값을 입력하세요. 0으로 설정하면 대댓글 기능이 비활성화됩니다."
+    },
+    "notify_author": {
+      "label": "작성자 이메일 알림",
+      "description": "댓글, 대댓글, 답변글, 관리자 처리 시 작성자에게 이메일 발송"
+    },
+    "notify_admin_on_post": {
+      "label": "관리자 이메일 알림",
+      "description": "게시글이 등록되었을 경우 관리자에게 이메일 발송"
+    },
+    "notification_channels": {
+      "label": "알림 채널",
+      "description": "게시판 알림을 수신할 채널을 선택합니다",
+      "channels_label": "알림 채널",
+      "channel_mail": "이메일",
+      "channel_database": "사이트 알림"
+    }
+  },
+  "placeholders": {
+    "name": "예: 공지사항",
+    "slug": "예: notice (영문, 숫자, 하이픈만 가능)",
+    "description": "게시판의 용도를 간략하게 설명하세요",
+    "select_type": "게시판 유형을 선택하세요"
+  },
+  "descriptions": {
+    "slug": "URL 및 테이블명으로 사용됩니다 (영문, 숫자, 하이픈만 가능)",
+    "description": "게시판 목록에서 사용자에게 표시되는 설명입니다",
+    "is_active": "비활성화된 게시판은 사용자 페이지에 표시되지 않습니다",
+    "categories": "게시글 분류를 관리합니다",
+    "categories_notice": "분류를 삭제해도 해당 분류의 게시글은 유지되며, '미분류' 필터에서 조회할 수 있습니다.",
+    "show_view_count": "게시글 목록 및 상세에서 조회수를 표시합니다",
+    "use_comment": "활성화하면 댓글 관련 세부 설정(길이, 깊이, 정렬)을 지정할 수 있습니다.",
+    "use_reply": "활성화하면 답변글 최대 깊이를 설정할 수 있습니다.",
+    "use_report": "부적절한 게시글/댓글 신고 기능을 활성화합니다",
+    "type": "게시판 유형은 환경설정 > 기본설정에서 관리할 수 있습니다."
+  },
+  "options": {
+    "secret_mode": {
+      "disabled": "사용 안함",
+      "enabled": "선택 가능",
+      "always": "항상 비밀글"
+    }
+  },
+  "permissions": {
+    "managers_title": "게시판 관리자",
+    "managers_description": "게시판의 모든 권한을 가진 관리자를 지정합니다.",
+    "managers_select_button": "관리자 선택",
+    "manager_email_placeholder": "관리자 이메일 입력",
+    "search_manager": "조회",
+    "confirm_add": "추가",
+    "select": "선택",
+    "change": "변경",
+    "users_found": "{{count}}명의 사용자를 찾았습니다",
+    "no_users_found_search": "사용자를 찾을 수 없습니다",
+    "user_search_failed": "사용자 조회에 실패했습니다",
+    "users_found_with_limit": "{{count}}명의 사용자를 찾았습니다 (최대 20명까지 표시)",
+    "user_added": "{{name}}이(가) 추가되었습니다",
+    "no_search_results": "검색 결과가 없습니다",
+    "selected_managers": "선택된 관리자",
+    "select_managers": "관리자 선택",
+    "admin_permissions_title": "관리자 권한 (Admin)",
+    "admin_permissions_description": "관리자 페이지 접근 권한입니다. 게시판 관리자 및 시스템 관리자에게 부여됩니다.",
+    "user_permissions_title": "사용자 권한 (User)",
+    "user_permissions_description": "일반 사용자의 게시판 접근 권한입니다. 역할(Role)을 통해 세부 권한을 제어합니다.",
+    "settings_title": "역할별 접근 제어",
+    "settings_description": "각 권한에 할당할 역할을 선택하세요. 역할이 선택되지 않으면 모든 사용자에게 허용됩니다.",
+    "search_users": "이름 또는 이메일로 검색",
+    "no_users_found": "검색 결과가 없습니다",
+    "select_roles": "역할을 선택해주세요 (필수)",
+    "mode_all": "전체",
+    "mode_roles": "역할",
+    "header_feature": "기능",
+    "header_access": "접근 권한",
+    "header_all_access": "전체 허용",
+    "header_role_selection": "역할 선택",
+    "all_access": "전체 허용",
+    "all_access_enabled": "모든 사용자가 접근할 수 있습니다.",
+    "role_restricted": "역할 제한",
+    "select_roles_hint": "접근을 허용할 역할을 선택하세요. (필수)",
+    "admin_count": "{{count}}개 권한",
+    "user_count": "{{count}}개 권한",
+    "error_title": "권한 설정 오류",
+    "error_description": "각 권한에 최소 하나 이상의 역할을 선택해주세요.",
+    "error_roles_required": "역할을 선택해주세요.",
+    "select_manager": "관리자 선택",
+    "search_placeholder": "이름 또는 이메일 검색 (최대 20명까지 표시되니 구체적으로 입력해주세요)",
+    "steps_title": "게시판 스텝",
+    "steps_description": "스텝은 게시판 관리 권한을 제외한 모든 권한을 가집니다.",
+    "auto_role_notice": "게시판 관리자와 스텝 역할은 생성 시 각 권한에 기본값으로 포함되며, 아래에서 수정할 수 있습니다.",
+    "create_mode_permissions_notice": "역할별 접근 제어는 게시판 생성 후 수정 화면에서 설정할 수 있습니다. 생성 시에는 기본 권한이 자동으로 적용됩니다."
+  },
+  "modals": {
+    "category_remove": {
+      "title": "분류 삭제",
+      "warning": "이 작업은 되돌릴 수 없습니다",
+      "message": "'{{category}}' 분류를 삭제하시겠습니까?"
+    }
+  },
+  "menu": {
+    "manual_guide": "메뉴 관리에서 아래 경로를 입력하여 등록하세요.",
+    "manual_admin_label": "관리자 메뉴 경로",
+    "manual_user_label": "사용자 메뉴 경로",
+    "example": "예시",
+    "add_to_admin_menu": "관리자 메뉴에 추가",
+    "menu_added_success": "관리자 메뉴에 추가되었습니다.",
+    "menu_add_failed": "메뉴 추가에 실패했습니다."
+  }
+}

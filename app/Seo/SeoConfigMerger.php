@@ -2,10 +2,10 @@
 
 namespace App\Seo;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SeoConfigMerger
@@ -16,14 +16,15 @@ class SeoConfigMerger
     private const CACHE_TTL = 86400;
 
     /**
-     * 캐시 키 접두사
+     * 캐시 키 접두사 (드라이버 접두사 `g7:core:` 다음에 붙음)
      */
-    private const CACHE_PREFIX = 'seo:config:merged:';
+    private const CACHE_PREFIX = 'seo.config.';
 
     public function __construct(
         private readonly ModuleManager $moduleManager,
         private readonly PluginManager $pluginManager,
         private readonly TemplateRepositoryInterface $templateRepository,
+        private readonly CacheInterface $cache,
     ) {}
 
     /**
@@ -38,9 +39,9 @@ class SeoConfigMerger
     {
         $cacheKey = self::CACHE_PREFIX.$templateIdentifier;
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($templateIdentifier) {
+        return $this->cache->remember($cacheKey, function () use ($templateIdentifier) {
             return $this->buildMergedConfig($templateIdentifier);
-        });
+        }, self::CACHE_TTL, ['seo']);
     }
 
     /**
@@ -51,7 +52,7 @@ class SeoConfigMerger
     public function clearCache(?string $templateIdentifier = null): void
     {
         if ($templateIdentifier !== null) {
-            Cache::forget(self::CACHE_PREFIX.$templateIdentifier);
+            $this->cache->forget(self::CACHE_PREFIX.$templateIdentifier);
 
             return;
         }
@@ -62,7 +63,7 @@ class SeoConfigMerger
         try {
             $templates = $this->templateRepository->getActive();
             foreach ($templates as $template) {
-                Cache::forget(self::CACHE_PREFIX.$template->identifier);
+                $this->cache->forget(self::CACHE_PREFIX.$template->identifier);
             }
         } catch (\Throwable $e) {
             Log::warning('[SEO] Config cache clear failed, clearing by pattern', [

@@ -98,33 +98,6 @@
                       }
                     }
                   ]
-                },
-                {
-                  "id": "notify_author_channels_row",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex items-center gap-3 pb-4 ml-6"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0"
-                      },
-                      "text": "$t:sirsoft-board.admin.form.fields.notification_channels.channels_label"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "TagInput",
-                      "props": {
-                        "name": "notify_author_channels",
-                        "options": "{{notification_channels?.data ?? []}}",
-                        "className": "w-64 flex-shrink-0"
-                      }
-                    }
-                  ]
                 }
               ]
             },
@@ -173,33 +146,6 @@
                         "name": "notify_admin_on_post",
                         "disabled": "{{_computed.isReadOnly}}",
                         "className": "flex-shrink-0 ml-4"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "notify_admin_channels_row",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex items-center gap-3 pb-4 ml-6"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0"
-                      },
-                      "text": "$t:sirsoft-board.admin.form.fields.notification_channels.channels_label"
-                    },
-                    {
-                      "type": "composite",
-                      "name": "TagInput",
-                      "props": {
-                        "name": "notify_admin_on_post_channels",
-                        "options": "{{notification_channels?.data ?? []}}",
-                        "className": "w-64 flex-shrink-0"
                       }
                     }
                   ]

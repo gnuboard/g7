@@ -35,7 +35,6 @@ export interface HtmlContentProps {
  * @example
  * // HTML 렌더링 (기본값)
  * <HtmlContent content="<p>안녕하세요</p>" />
- * <HtmlContent content="<p>안녕하세요</p>" isHtml={true} />
  *
  * // 일반 텍스트 렌더링
  * <HtmlContent

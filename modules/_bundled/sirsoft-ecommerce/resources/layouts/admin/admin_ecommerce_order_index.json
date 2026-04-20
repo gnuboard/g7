@@ -68,6 +68,11 @@
         "trackingNumber": "",
         "selectedColumns": 9
     },
+    "transition_overlay": {
+        "wait_for": [
+            "active_carriers"
+        ]
+    },
     "data_sources": [
         {
             "id": "active_carriers",

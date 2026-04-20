@@ -22,7 +22,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -179,7 +178,7 @@ class OrderAdjustmentServiceTest extends ModuleTestCase
 
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => $chargePolicy,
             'base_fee' => $baseFee,

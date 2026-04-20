@@ -266,7 +266,7 @@ class ShippingPolicySeederTest extends ModuleTestCase
         // 비활성 정책의 국가별 설정에서 quick 배송방법 확인
         $countrySetting = $inactivePolicies->first()->countrySettings()->first();
         $this->assertNotNull($countrySetting);
-        $this->assertEquals('quick', $countrySetting->shipping_method->value);
+        $this->assertEquals('quick', $countrySetting->shipping_method);
     }
 
     // ========================================

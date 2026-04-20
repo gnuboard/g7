@@ -23,8 +23,9 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
             'country_code' => $this->country_code,
 
             // 배송방법
-            'shipping_method' => $this->shipping_method?->value,
-            'shipping_method_label' => $this->shipping_method?->label(),
+            'shipping_method' => $this->shipping_method,
+            'shipping_method_label' => $this->resolveShippingMethodLabel(),
+            'custom_shipping_name' => $this->custom_shipping_name,
 
             // 통화
             'currency_code' => $this->currency_code,
@@ -51,5 +52,32 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
             // 상태
             'is_active' => $this->is_active,
         ];
+    }
+
+    /**
+     * 배송방법 라벨을 해석합니다.
+     *
+     * custom인 경우 custom_shipping_name에서 현재 로케일 값을 반환합니다.
+     *
+     * @return string|null
+     */
+    private function resolveShippingMethodLabel(): ?string
+    {
+        if (! $this->shipping_method) {
+            return null;
+        }
+
+        if ($this->shipping_method === 'custom') {
+            $name = $this->custom_shipping_name;
+            if (is_array($name)) {
+                $locale = app()->getLocale();
+
+                return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+            }
+
+            return null;
+        }
+
+        return \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($this->shipping_method)?->getLocalizedName();
     }
 }

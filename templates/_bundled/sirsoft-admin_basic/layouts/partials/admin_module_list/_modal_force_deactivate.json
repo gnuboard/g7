@@ -352,10 +352,11 @@
                           }
                         },
                         {
-                          "handler": "reloadRoutes"
-                        },
-                        {
-                          "handler": "reloadTranslations"
+                          "handler": "reloadExtensions",
+                          "params": {
+                            "moduleInfo": "{{result}}",
+                            "action": "remove"
+                          }
                         }
                       ]
                     },

@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications"]
     },
     "defaults": {
         "general": {
@@ -67,12 +67,19 @@
         },
         "cache": {
             "enabled": true,
+            "default_ttl": 86400,
             "layout_enabled": true,
             "layout_ttl": 3600,
+            "seo_enabled": true,
+            "seo_ttl": 7200,
+            "seo_sitemap_ttl": 86400,
             "stats_enabled": true,
             "stats_ttl": 1800,
-            "seo_enabled": true,
-            "seo_ttl": 7200
+            "notification_ttl": 3600,
+            "extension_status_ttl": 86400,
+            "geoip_enabled": true,
+            "geoip_ttl": 86400,
+            "version_check_ttl": 3600
         },
         "debug": {
             "mode": false,
@@ -82,6 +89,12 @@
         "core_update": {
             "github_url": "",
             "github_token": ""
+        },
+        "geoip": {
+            "feature_enabled": false,
+            "license_key": "",
+            "auto_update_enabled": true,
+            "last_updated_at": ""
         },
         "drivers": {
             "storage_driver": "local",
@@ -97,18 +110,30 @@
             "redis_database": 0,
             "memcached_host": "127.0.0.1",
             "memcached_port": 11211,
-            "session_driver": "database",
+            "session_driver": "file",
             "session_lifetime": 120,
-            "queue_driver": "database",
+            "queue_driver": "sync",
             "log_driver": "daily",
             "log_level": "error",
             "log_days": 14,
             "websocket_enabled": false,
+            "websocket_app_id": "",
             "websocket_app_key": "",
+            "websocket_app_secret": "",
             "websocket_host": "localhost",
             "websocket_port": 8080,
             "websocket_scheme": "https",
+            "websocket_verify_ssl": true,
+            "websocket_server_host": "127.0.0.1",
+            "websocket_server_port": 8080,
+            "websocket_server_scheme": "http",
             "search_engine_driver": "mysql-fulltext"
+        },
+        "notifications": {
+            "channels": [
+                { "id": "mail", "is_active": true, "sort_order": 1 },
+                { "id": "database", "is_active": true, "sort_order": 2 }
+            ]
         }
     },
     "frontend_schema": {
@@ -172,12 +197,19 @@
             "_comment": "cache와 debug를 합쳐서 advanced로 노출",
             "fields": {
                 "enabled": { "type": "boolean", "sensitive": false, "frontend_key": "cache_enabled", "expose": false },
+                "default_ttl": { "type": "integer", "sensitive": false, "frontend_key": "cache_default_ttl", "expose": false },
                 "layout_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "layout_cache_enabled", "expose": false },
                 "layout_ttl": { "type": "integer", "sensitive": false, "frontend_key": "layout_cache_ttl", "expose": false },
+                "seo_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "seo_cache_enabled", "expose": false },
+                "seo_ttl": { "type": "integer", "sensitive": false, "frontend_key": "seo_cache_ttl", "expose": false },
+                "seo_sitemap_ttl": { "type": "integer", "sensitive": false, "frontend_key": "seo_sitemap_cache_ttl", "expose": false },
                 "stats_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "stats_cache_enabled", "expose": false },
                 "stats_ttl": { "type": "integer", "sensitive": false, "frontend_key": "stats_cache_ttl", "expose": false },
-                "seo_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "seo_cache_enabled", "expose": false },
-                "seo_ttl": { "type": "integer", "sensitive": false, "frontend_key": "seo_cache_ttl", "expose": false }
+                "notification_ttl": { "type": "integer", "sensitive": false, "frontend_key": "notification_cache_ttl", "expose": false },
+                "extension_status_ttl": { "type": "integer", "sensitive": false, "frontend_key": "extension_status_cache_ttl", "expose": false },
+                "geoip_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "geoip_cache_enabled", "expose": false },
+                "geoip_ttl": { "type": "integer", "sensitive": false, "frontend_key": "geoip_cache_ttl", "expose": false },
+                "version_check_ttl": { "type": "integer", "sensitive": false, "frontend_key": "version_check_cache_ttl", "expose": false }
             }
         },
         "debug": {
@@ -196,6 +228,17 @@
             "fields": {
                 "github_url": { "type": "string", "sensitive": false, "frontend_key": "core_update_github_url", "expose": false },
                 "github_token": { "type": "string", "sensitive": true, "frontend_key": "core_update_github_token" }
+            }
+        },
+        "geoip": {
+            "expose": true,
+            "merge_into": "advanced",
+            "_comment": "GeoIP 기능 설정은 advanced 카테고리에 병합",
+            "fields": {
+                "feature_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "geoip_enabled" },
+                "license_key": { "type": "string", "sensitive": true, "frontend_key": "geoip_license_key" },
+                "auto_update_enabled": { "type": "boolean", "sensitive": false, "frontend_key": "geoip_auto_update_enabled" },
+                "last_updated_at": { "type": "string", "sensitive": false, "frontend_key": "geoip_last_updated_at" }
             }
         },
         "drivers": {
@@ -222,10 +265,22 @@
                 "log_level": { "type": "string", "sensitive": false },
                 "log_days": { "type": "integer", "sensitive": false },
                 "websocket_enabled": { "type": "boolean", "sensitive": false },
+                "websocket_app_id": { "type": "string", "sensitive": false },
                 "websocket_app_key": { "type": "string", "sensitive": false },
+                "websocket_app_secret": { "type": "string", "sensitive": true },
                 "websocket_host": { "type": "string", "sensitive": false },
                 "websocket_port": { "type": "integer", "sensitive": false },
-                "websocket_scheme": { "type": "string", "sensitive": false }
+                "websocket_scheme": { "type": "string", "sensitive": false },
+                "websocket_verify_ssl": { "type": "boolean", "sensitive": false },
+                "websocket_server_host": { "type": "string", "sensitive": false },
+                "websocket_server_port": { "type": "integer", "sensitive": false },
+                "websocket_server_scheme": { "type": "string", "sensitive": false }
+            }
+        },
+        "notifications": {
+            "expose": true,
+            "fields": {
+                "channels": { "type": "array", "sensitive": false }
             }
         }
     }

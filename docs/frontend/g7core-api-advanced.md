@@ -618,6 +618,48 @@ const unsubscribe = G7Core.TransitionManager.subscribe((isPending) => {
 const { isPending } = G7Core.useTransitionState();
 ```
 
+### G7Core.updateQueryParams
+
+같은 페이지 내에서 URL 쿼리 파라미터만 변경하면서 컴포넌트 리마운트 없이 데이터소스를 refetch 한다. 일반적으로 `navigate` 핸들러의 `replace: true` 옵션 사용 시 엔진이 자동 호출하므로 직접 호출은 드물다.
+
+```typescript
+G7Core.updateQueryParams(
+  newPath: string,
+  options?: { transitionOverlayTarget?: string }
+): Promise<void>
+```
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `newPath` | `string` | 새 경로 (쿼리스트링 포함). 예: `/admin/products?status=active&page=2` |
+| `options.transitionOverlayTarget` | `string` | `transition_overlay.target` 동적 override (engine-v1.36.0+). 탭 속 서브 탭 등 부분 영역만 spinner 표시 |
+
+**동작**:
+
+1. `window.history.replaceState` 로 URL 갱신 (페이지 리로드 없음)
+2. `auto_fetch: true` 인 데이터소스 refetch (websocket 제외)
+3. `transition_overlay` 가 정의되어 있고 `blocking` 또는 `wait_for` 일치 progressive 데이터소스가 1개 이상이면 오버레이 자동 표시 (engine-v1.35.0+)
+4. fetch 완료 시 `updateTemplateData` 호출 + `hideTransitionOverlay`
+5. `computed` 재계산
+
+**사용 예시**:
+
+```typescript
+// 일반: 쿼리 파라미터 변경 + 데이터 refetch
+await G7Core.updateQueryParams('/admin/products?status=active&page=2');
+
+// 서브 탭 spinner target 동적 override
+await G7Core.updateQueryParams(
+  '/admin/settings?tab=notification&channel=email',
+  { transitionOverlayTarget: 'notif_channel_content' }
+);
+```
+
+**관련**:
+
+- `navigate` 핸들러 (`replace: true`) → [actions-handlers-navigation.md](actions-handlers-navigation.md)
+- `transition_overlay.wait_for` / `overlay_target` → [layout-json-components-loading.md](layout-json-components-loading.md)
+
 ---
 
 ## React Hooks

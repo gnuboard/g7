@@ -168,17 +168,28 @@ class ModuleService
      * 지정된 모듈을 업데이트합니다.
      *
      * @param  string  $moduleName  업데이트할 모듈 identifier
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
      */
-    public function updateModule(string $moduleName): array
-    {
+    public function updateModule(
+        string $moduleName,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        string $layoutStrategy = 'overwrite',
+    ): array {
         HookManager::doAction('core.modules.before_update', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = $this->moduleManager->updateModule($moduleName);
+            $result = $this->moduleManager->updateModule(
+                $moduleName,
+                false,
+                null,
+                $vendorMode,
+                $layoutStrategy,
+            );
 
             $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
@@ -199,20 +210,45 @@ class ModuleService
     }
 
     /**
+     * 지정된 모듈의 수정된 레이아웃을 확인합니다.
+     *
+     * @param  string  $moduleName  확인할 모듈 identifier
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
+     *
+     * @throws ValidationException 확인 실패 시
+     */
+    public function checkModifiedLayouts(string $moduleName): array
+    {
+        try {
+            $this->moduleManager->loadModules();
+
+            return $this->moduleManager->hasModifiedLayouts($moduleName);
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'module_name' => [__('modules.check_modified_layouts_failed', ['error' => $e->getMessage()])],
+            ]);
+        }
+    }
+
+    /**
      * 모듈을 시스템에 설치합니다.
      *
      * @param  string  $moduleName  설치할 모듈명
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
      * @return array|null 설치된 모듈 정보 또는 null
      *
      * @throws ValidationException 모듈 설치 실패 시
      */
-    public function installModule(string $moduleName): ?array
-    {
+    public function installModule(
+        string $moduleName,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
+        bool $force = false,
+    ): ?array {
         HookManager::doAction('core.modules.before_install', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = $this->moduleManager->installModule($moduleName);
+            $result = $this->moduleManager->installModule($moduleName, null, $vendorMode, $force);
 
             if ($result) {
                 // 설치 후 모듈 정보 반환

@@ -6,6 +6,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\ModuleManager;
+use App\Extension\Vendor\VendorMode;
 use App\Models\Menu;
 use App\Models\Permission;
 use App\Rules\ValidExtensionIdentifier;
@@ -20,7 +21,10 @@ class InstallModuleCommand extends Command
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'module:install {identifier : 설치할 모듈 식별자}';
+    protected $signature = 'module:install
+        {identifier : 설치할 모듈 식별자}
+        {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
 
     /**
      * The console command description.
@@ -56,22 +60,29 @@ class InstallModuleCommand extends Command
             return Command::FAILURE;
         }
 
+        $force = (bool) $this->option('force');
+
         try {
             // 모듈 디렉토리 스캔 및 로드
             $this->moduleManager->loadModules();
 
-            // 이미 설치된 모듈인지 확인
+            // 이미 설치된 모듈인지 확인 (force 시 스킵하여 재설치/복구 허용)
             $existingModule = $this->moduleRepository->findByIdentifier($identifier);
-            if ($existingModule) {
+            if ($existingModule && ! $force) {
                 $this->warn('⚠️  '.__('modules.commands.install.already_installed', ['module' => $identifier]));
 
                 return Command::FAILURE;
             }
 
+            if ($existingModule && $force) {
+                $this->warn('⚠️  '.__('modules.commands.install.force_reinstall', ['module' => $identifier]));
+            }
+
             // 모듈 설치
+            $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
             $onProgress = $this->createProgressCallback(ModuleManager::INSTALL_STEPS);
             try {
-                $result = $this->moduleManager->installModule($identifier, $onProgress);
+                $result = $this->moduleManager->installModule($identifier, $onProgress, $vendorMode, $force);
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();

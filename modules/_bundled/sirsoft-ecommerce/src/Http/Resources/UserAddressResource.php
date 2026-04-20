@@ -11,6 +11,24 @@ use Illuminate\Http\Request;
 class UserAddressResource extends BaseApiResource
 {
     /**
+     * 비즈니스 로직 기반 abilities를 반환합니다.
+     * user-addresses 권한 식별자가 모듈 매니페스트에 없으므로, abilityMap()은 빈 배열.
+     * 인증된 사용자는 자신의 주소를 수정 가능하며, 기본 배송지는 삭제/변경 불가.
+     *
+     * @param Request $request
+     * @return array
+     */
+    protected function resolveAbilities(Request $request): array
+    {
+        $abilities = parent::resolveAbilities($request);
+        $abilities['can_update'] = true;
+        $abilities['can_delete'] = ! $this->is_default;
+        $abilities['can_set_default'] = ! $this->is_default;
+
+        return $abilities;
+    }
+
+    /**
      * 리소스를 배열로 변환
      *
      * @param Request $request 요청
@@ -44,16 +62,8 @@ class UserAddressResource extends BaseApiResource
             'is_international' => $this->isInternational(),
             'full_address' => $this->getFullAddress(),
 
-            // 타임스탬프
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
-
-            // 권한 메타
-            'abilities' => [
-                'can_update' => true,
-                'can_delete' => ! $this->is_default,
-                'can_set_default' => ! $this->is_default,
-            ],
+            ...$this->formatTimestamps(),
+            ...$this->resourceMeta($request),
         ];
     }
 }

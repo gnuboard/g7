@@ -2,9 +2,12 @@
 
 namespace App\Extension\Traits;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Models\Plugin;
-use App\Services\CacheService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 플러그인 상태 캐시를 관리하는 Trait
@@ -15,25 +18,23 @@ use App\Services\CacheService;
 trait CachesPluginStatus
 {
     /**
-     * 캐시 그룹
-     */
-    private static string $pluginCacheGroup = 'plugins';
-
-    /**
      * 활성화된 플러그인 identifier 목록을 조회합니다.
      *
      * @return array<string> 활성화된 플러그인 identifier 배열
      */
     public static function getActivePluginIdentifiers(): array
     {
-        return CacheService::remember(
-            self::$pluginCacheGroup,
-            'active_identifiers',
+        if (! self::isPluginTableReady()) {
+            return [];
+        }
+
+        return self::resolvePluginStatusCache()->remember(
+            'ext.plugins.active_identifiers',
             fn () => Plugin::where('status', ExtensionStatus::Active->value)
                 ->pluck('identifier')
                 ->toArray(),
-            null,
-            'plugins'
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.plugins']
         );
     }
 
@@ -44,15 +45,18 @@ trait CachesPluginStatus
      */
     public static function getInstalledPluginIdentifiers(): array
     {
-        return CacheService::remember(
-            self::$pluginCacheGroup,
-            'installed_identifiers',
+        if (! self::isPluginTableReady()) {
+            return [];
+        }
+
+        return self::resolvePluginStatusCache()->remember(
+            'ext.plugins.installed_identifiers',
             fn () => Plugin::whereIn('status', [
                 ExtensionStatus::Active->value,
                 ExtensionStatus::Inactive->value,
             ])->pluck('identifier')->toArray(),
-            null,
-            'plugins'
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.plugins']
         );
     }
 
@@ -64,9 +68,36 @@ trait CachesPluginStatus
      */
     public static function invalidatePluginStatusCache(): void
     {
-        CacheService::forgetMany(self::$pluginCacheGroup, [
-            'active_identifiers',
-            'installed_identifiers',
-        ]);
+        $cache = self::resolvePluginStatusCache();
+        $cache->forget('ext.plugins.active_identifiers');
+        $cache->forget('ext.plugins.installed_identifiers');
+    }
+
+    /**
+     * 설치 완료 상태에서는 `Schema::hasTable()` 호출을 건너뜁니다.
+     * 인스톨러 이전 환경이나 테스트에서는 기존 체크 경로로 폴백합니다.
+     */
+    private static function isPluginTableReady(): bool
+    {
+        if (config('app.installer_completed')) {
+            return true;
+        }
+
+        try {
+            DB::connection()->getPdo();
+
+            return Schema::hasTable('plugins');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private static function resolvePluginStatusCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 }

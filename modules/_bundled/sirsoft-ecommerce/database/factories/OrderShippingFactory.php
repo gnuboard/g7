@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
@@ -30,7 +29,7 @@ class OrderShippingFactory extends Factory
             'order_option_id' => OrderOption::factory(),
             'shipping_policy_id' => null,
             'shipping_status' => ShippingStatusEnum::PENDING,
-            'shipping_type' => ShippingTypeEnum::DOMESTIC_PARCEL,
+            'shipping_type' => 'parcel',
             'base_shipping_amount' => $faker->numberBetween(0, 5000),
             'extra_shipping_amount' => 0,
             'total_shipping_amount' => $faker->numberBetween(0, 5000),
@@ -139,7 +138,7 @@ class OrderShippingFactory extends Factory
     public function pickup(): static
     {
         return $this->state(fn (array $attributes) => [
-            'shipping_type' => ShippingTypeEnum::PICKUP,
+            'shipping_type' => 'pickup',
             'carrier_id' => null,
             'tracking_number' => null,
             'visit_date' => now()->addDays(3),

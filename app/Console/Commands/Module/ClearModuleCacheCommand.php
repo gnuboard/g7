@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\ModuleManager;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ClearModuleCacheCommand extends Command
@@ -26,7 +26,8 @@ class ClearModuleCacheCommand extends Command
      */
     public function __construct(
         private ModuleManager $moduleManager,
-        private ModuleRepositoryInterface $moduleRepository
+        private ModuleRepositoryInterface $moduleRepository,
+        private CacheInterface $cache
     ) {
         parent::__construct();
     }
@@ -74,7 +75,7 @@ class ClearModuleCacheCommand extends Command
                 ];
 
                 foreach ($cacheKeys as $key) {
-                    if (Cache::forget($key)) {
+                    if ($this->cache->forget($key)) {
                         $clearedCount++;
                     }
                 }
@@ -122,7 +123,7 @@ class ClearModuleCacheCommand extends Command
         ];
 
         foreach ($cacheKeys as $key) {
-            if (Cache::forget($key)) {
+            if ($this->cache->forget($key)) {
                 $clearedCount++;
             }
         }

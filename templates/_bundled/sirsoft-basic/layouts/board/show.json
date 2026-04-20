@@ -6,17 +6,27 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-board" }
+            ],
             "data_sources": ["post"],
+            "page_type": "post",
+            "toggle_setting": "$module_settings:sirsoft-board:seo.seo_post_detail",
+            "vars": {
+                "site_name": "$core_settings:general.site_name",
+                "board_name": "{{post.data.board.name ?? ''}}",
+                "post_title": "{{post.data.title ?? ''}}"
+            },
             "priority": 0.5,
             "changefreq": "monthly",
             "og": {
                 "type": "article",
-                "title": "{{post.data.title ?? ''}}",
-                "description": "{{post.data.content ?? ''}}"
+                "title": "{{_seo.post.title ?? post.data.title ?? ''}}",
+                "description": "{{_seo.post.description ?? post.data.content ?? ''}}"
             },
             "structured_data": {
                 "@type": "Article",
-                "headline": "{{post.data.title ?? ''}}",
+                "headline": "{{_seo.post.title ?? post.data.title ?? ''}}",
                 "datePublished": "{{post.data.created_at ?? ''}}",
                 "dateModified": "{{post.data.updated_at ?? ''}}"
             }
@@ -55,6 +65,18 @@
                     }
                 }
             }
+        },
+        {
+            "id": "navigation",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/navigation",
+            "method": "GET",
+            "params": {
+                "del": "{{query.del ?? ''}}"
+            },
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "refetchOnMount": true
         }
     ],
     "computed": {

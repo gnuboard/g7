@@ -474,6 +474,22 @@ export interface DataSource {
   target_source?: string;
 
   /**
+   * WebSocket 이벤트 수신 시 실행할 액션 목록 (engine-v1.33.0+)
+   *
+   * WebSocket 이벤트 수신 시 각 액션이 순차적으로 실행됩니다.
+   * 액션의 `$args[0]`로 수신 페이로드에 접근할 수 있습니다.
+   *
+   * 사용 예시: 수신 시 관련 데이터소스 refetch + 토스트 알림 표시
+   *
+   * @example
+   * [
+   *   { "handler": "refetchDataSource", "params": { "dataSourceId": "notifications" } },
+   *   { "handler": "toast", "params": { "type": "info", "message": "{{$args[0].subject}}" } }
+   * ]
+   */
+  onReceive?: any[];
+
+  /**
    * API 호출 실패 시 사용할 기본 데이터
    *
    * API 요청이 실패하거나 endpoint가 존재하지 않을 때
@@ -1041,8 +1057,23 @@ export class DataSourceManager {
     localState?: Record<string, any>,
     options?: { ignoreAutoFetch?: boolean },
   ): Promise<DataSourceResult[]> {
+    // 계약: WebSocket 소스는 fetch 대상이 아님 — 호출자가 사전 필터링해야 함 (engine-v1.32.5)
+    // 내부 filter는 safety net으로 유지하되, 호출자가 필터를 누락하면 dev 모드에서 경고
+    // (이전에는 silent filter로 인해 호출자의 인덱스 기반 매핑이 조용히 어긋나는 버그 발생)
+    const hasWebSocket = sources.some((source) => source.type === 'websocket');
+    if (hasWebSocket) {
+      const wsIds = sources
+        .filter((source) => source.type === 'websocket')
+        .map((s) => s.id)
+        .join(', ');
+      logger.warn(
+        `fetchDataSourcesWithResults received WebSocket sources (caller should filter them out before calling): ${wsIds}. ` +
+        `WebSocket sources are event listeners, not data providers — they should not be passed to fetch.`
+      );
+    }
+
     // ignoreAutoFetch 옵션이 true면 auto_fetch 필터 무시 (refetchDataSource에서 사용)
-    // 그렇지 않으면 auto_fetch가 true인 데이터 소스만 처리 (websocket 타입 제외)
+    // 그렇지 않으면 auto_fetch가 true인 데이터 소스만 처리 (websocket 타입 제외 — safety net)
     const targetSources = options?.ignoreAutoFetch
       ? sources.filter((source) => source.type !== 'websocket')
       : sources.filter(
@@ -1492,11 +1523,28 @@ export class DataSourceManager {
       // auth_mode 결정 (auth_required: true는 'required'로 처리하여 하위 호환성 유지)
       const authMode = source.auth_mode ?? (source.auth_required === true ? 'required' : 'none');
 
-      // 토큰 유무 확인 (optional 모드에서 사용)
+      // 토큰 유무 확인
       const hasToken = AuthManager.getInstance().isAuthenticated();
 
+      // auth_mode: 'required'이고 토큰이 없으면 요청 스킵 (fallback 사용)
+      // 토큰 없이 ApiClient로 요청하면 401 → onUnauthorized → 로그인 리다이렉트 발생
+      if (authMode === 'required' && !hasToken) {
+        logger.log(`[DataSourceManager] Skipping ${source.id}: auth_mode is 'required' but no token available`);
+        if (devTools?.isEnabled()) {
+          devTools.trackDataSourceError(source.id, 'Skipped: auth_mode required but not authenticated');
+          if (requestId) {
+            devTools.failRequest(requestId, 'Skipped: not authenticated');
+          }
+        }
+        const skipError = new Error('Auth required but not authenticated') as any;
+        skipError.response = { status: 401, statusText: 'Unauthorized', data: null };
+        skipError.status = 401;
+        skipError._authSkipped = true;
+        throw skipError;
+      }
+
       // ApiClient 사용 여부 결정
-      // - required: 항상 ApiClient 사용
+      // - required: ApiClient 사용 (토큰 존재 확인됨)
       // - optional: 토큰이 있을 때만 ApiClient 사용
       // - none: 일반 fetch 사용
       const useApiClient = authMode === 'required' || (authMode === 'optional' && hasToken);
@@ -1755,7 +1803,8 @@ export class DataSourceManager {
    */
   subscribeWebSockets(
     sources: DataSource[],
-    onUpdate: (sourceId: string, data: unknown) => void
+    onUpdate: (sourceId: string, data: unknown) => void,
+    bindingContext: Record<string, any> = {}
   ): string[] {
     const subscriptionKeys: string[] = [];
     const webSocketSources = sources.filter((s) => s.type === 'websocket');
@@ -1770,9 +1819,42 @@ export class DataSourceManager {
         return;
       }
 
+      // 채널/이벤트명에 포함된 표현식 평가 (예: core.user.notifications.{{current_user.data.uuid}})
+      // 평가 실패 시 원본 문자열 유지 — 정적 채널은 영향 없음
+      let resolvedChannel: string;
+      let resolvedEvent: string;
+      try {
+        resolvedChannel = resolveExpressionString(source.channel, bindingContext, { skipCache: true });
+        resolvedEvent = resolveExpressionString(source.event, bindingContext, { skipCache: true });
+      } catch (error) {
+        logger.error(`Failed to resolve WebSocket channel/event for source ${source.id}:`, error);
+        return;
+      }
+
+      // 평가 결과 검증: 표현식 미평가, 빈 세그먼트(trailing/leading/연속 dot), 빈 문자열은 모두 잘못된 채널
+      // 표현식이 undefined로 평가되어 빈 문자열로 치환된 경우 trailing dot 등이 발생함
+      const isInvalidChannel = (channel: string): boolean => {
+        if (!channel || channel.trim() === '') return true;
+        if (channel.includes('{{')) return true;          // 미평가 표현식
+        if (channel.endsWith('.') || channel.endsWith(':')) return true;  // trailing 빈 세그먼트
+        if (channel.startsWith('.') || channel.startsWith(':')) return true; // leading 빈 세그먼트
+        if (channel.includes('..') || channel.includes('::')) return true; // 중간 빈 세그먼트
+        return false;
+      };
+
+      if (isInvalidChannel(resolvedChannel) || isInvalidChannel(resolvedEvent)) {
+        logger.warn(
+          `WebSocket source ${source.id} has invalid channel/event after expression resolution, skipping. ` +
+          `Original channel="${source.channel}", resolved="${resolvedChannel}". ` +
+          `Original event="${source.event}", resolved="${resolvedEvent}". ` +
+          `Available context keys: [${Object.keys(bindingContext).join(', ')}]`
+        );
+        return;
+      }
+
       const key = webSocketManager.subscribe(
-        source.channel,
-        source.event,
+        resolvedChannel,
+        resolvedEvent,
         (data: unknown) => {
           // target_source가 지정된 경우 해당 소스의 캐시 업데이트
           const targetId = source.target_source || source.id;

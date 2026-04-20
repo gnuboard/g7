@@ -85,11 +85,7 @@
                         "className": "w-full",
                         "disabled": "{{_computed.isReadOnly}}",
                         "placeholder": "$t:admin.settings.mail.select_mailer",
-                        "options": [
-                          { "label": "SMTP", "value": "smtp" },
-                          { "label": "Mailgun", "value": "mailgun" },
-                          { "label": "SES (Amazon)", "value": "ses" }
-                        ],
+                        "options": "{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}",
                         "error": "{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"
                       }
                     }

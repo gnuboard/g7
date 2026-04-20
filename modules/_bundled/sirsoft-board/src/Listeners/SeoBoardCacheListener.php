@@ -2,10 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -120,7 +120,7 @@ class SeoBoardCacheListener implements HookListenerInterface
             $cache->invalidateByLayout('search/index');
 
             // Sitemap 캐시 무효화
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             Log::debug('[SEO] Board post cache invalidated', [
                 'post_id' => $post->id ?? null,

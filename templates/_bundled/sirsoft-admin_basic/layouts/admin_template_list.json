@@ -12,6 +12,13 @@
     "state": {
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "templates"
+        ],
+        "target": "templates_tab_content",
+        "fallback_target": "right_content_area"
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -358,10 +365,17 @@
                         ]
                     },
                     {
-                        "partial": "partials/admin_template_list/_tab_admin.json"
-                    },
-                    {
-                        "partial": "partials/admin_template_list/_tab_user.json"
+                        "id": "templates_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "partial": "partials/admin_template_list/_tab_admin.json"
+                            },
+                            {
+                                "partial": "partials/admin_template_list/_tab_user.json"
+                            }
+                        ]
                     }
                 ]
             }

@@ -78,6 +78,8 @@ export { ColumnSelector } from './ColumnSelector';
 export type { ColumnSelectorProps, ColumnItem } from './ColumnSelector';
 export { PageTransitionIndicator } from './PageTransitionIndicator';
 export type { PageTransitionIndicatorProps } from './PageTransitionIndicator';
+export { default as PageLoading } from './PageLoading';
+export type { PageLoadingProps } from './PageLoading';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
 export { TagInput } from './TagInput';

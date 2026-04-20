@@ -242,6 +242,7 @@ break-inside-auto break-inside-avoid break-inside-avoid-page break-inside-avoid-
 
 /* Auto */
 auto-cols-auto auto-cols-min auto-cols-max auto-cols-fr
+auto-cols-[calc(50%_-_8px)] auto-cols-[calc(33.333%_-_11px)] auto-cols-[calc(25%_-_12px)]
 auto-rows-auto auto-rows-min auto-rows-max auto-rows-fr
 grid-flow-row grid-flow-col grid-flow-dense grid-flow-row-dense grid-flow-col-dense
 

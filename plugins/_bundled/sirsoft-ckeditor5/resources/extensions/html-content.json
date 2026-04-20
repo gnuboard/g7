@@ -1,0 +1,32 @@
+{
+  "extension_point": "html_content",
+  "mode": "replace",
+  "components": [
+    {
+      "type": "composite",
+      "name": "HtmlContent",
+      "props": {
+        "content": "{{extensionPointProps.content ?? ''}}",
+        "isHtml": "{{extensionPointProps.isHtml ?? true}}",
+        "className": "{{(extensionPointProps.className ?? '') + ' ck-content'}}",
+        "purifyConfig": "{{extensionPointProps.purifyConfig ?? undefined}}"
+      }
+    },
+    {
+      "id": "ckeditor5_content_css_injector",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "hidden"
+      },
+      "lifecycle": {
+        "onMount": [
+          {
+            "handler": "sirsoft-ckeditor5.injectContentCss"
+          }
+        ]
+      }
+    }
+  ],
+  "priority": 100
+}

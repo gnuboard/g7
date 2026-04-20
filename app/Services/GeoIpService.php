@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use GeoIp2\Database\Reader;
 use GeoIp2\Exception\AddressNotFoundException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class GeoIpService
 {
     private ?Reader $reader = null;
+
+    public function __construct(private CacheInterface $cache) {}
 
     /**
      * IP 주소로부터 타임존을 조회합니다.
@@ -25,10 +27,12 @@ class GeoIpService
             return null;
         }
 
-        // 캐시 확인
-        if (config('geoip.cache.enabled', true)) {
-            $cacheKey = config('geoip.cache.prefix', 'geoip.timezone.').$ip;
-            $cached = Cache::get($cacheKey);
+        // 캐시 확인 (g7_core_settings 우선, fallback config)
+        $cacheEnabled = (bool) g7_core_settings('cache.geoip_enabled', config('geoip.cache.enabled', true));
+        $cacheKey = 'geoip.timezone.'.$ip;
+
+        if ($cacheEnabled) {
+            $cached = $this->cache->get($cacheKey);
 
             if ($cached !== null) {
                 // 빈 문자열은 이전 조회 실패를 의미
@@ -45,9 +49,9 @@ class GeoIpService
         $timezone = $this->lookupTimezone($ip);
 
         // 캐시 저장 (조회 실패 시에도 빈 문자열 저장하여 반복 조회 방지)
-        if (config('geoip.cache.enabled', true)) {
-            $ttl = config('geoip.cache.ttl', 86400);
-            Cache::put($cacheKey, $timezone ?? '', $ttl);
+        if ($cacheEnabled) {
+            $ttl = (int) g7_core_settings('cache.geoip_ttl', config('geoip.cache.ttl', 86400));
+            $this->cache->put($cacheKey, $timezone ?? '', $ttl);
         }
 
         // 지원 타임존 확인

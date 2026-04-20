@@ -313,6 +313,10 @@ return [
                     'max' => 'The skeleton iteration count must not exceed :max.',
                 ],
             ],
+            'wait_for' => [
+                'background' => 'wait_for cannot reference background data sources (cannot block the user): :id',
+                'websocket' => 'wait_for cannot reference websocket data sources (no fetch completion event): :id',
+            ],
         ],
     ],
 
@@ -810,8 +814,12 @@ return [
 
         // Driver settings - WebSocket
         'websocket_enabled_boolean' => 'WebSocket enabled must be true or false.',
-        'websocket_app_key_required' => 'WebSocket app key is required.',
+        'websocket_app_id_required' => 'WebSocket app ID is required when WebSocket is enabled.',
+        'websocket_app_id_max' => 'WebSocket app ID may not be greater than 255 characters.',
+        'websocket_app_key_required' => 'WebSocket app key is required when WebSocket is enabled.',
         'websocket_app_key_max' => 'WebSocket app key may not be greater than 255 characters.',
+        'websocket_app_secret_required' => 'WebSocket app secret is required when WebSocket is enabled.',
+        'websocket_app_secret_max' => 'WebSocket app secret may not be greater than 255 characters.',
         'websocket_host_required' => 'WebSocket host is required.',
         'websocket_host_max' => 'WebSocket host may not be greater than 255 characters.',
         'websocket_port_required' => 'WebSocket port is required.',
@@ -820,6 +828,12 @@ return [
         'websocket_port_max' => 'WebSocket port may not be greater than 65535.',
         'websocket_scheme_required' => 'Please select a WebSocket scheme.',
         'websocket_scheme_invalid' => 'Please select a valid WebSocket scheme.',
+        'websocket_verify_ssl_boolean' => 'WebSocket SSL verification must be true or false.',
+        'websocket_server_host_max' => 'WebSocket server host may not be greater than 255 characters.',
+        'websocket_server_port_integer' => 'WebSocket server port must be an integer.',
+        'websocket_server_port_min' => 'WebSocket server port must be at least 1.',
+        'websocket_server_port_max' => 'WebSocket server port may not be greater than 65535.',
+        'websocket_server_scheme_invalid' => 'Please select a valid WebSocket server scheme.',
         'search_engine_driver_invalid' => 'Please select a valid search engine driver.',
     ],
 

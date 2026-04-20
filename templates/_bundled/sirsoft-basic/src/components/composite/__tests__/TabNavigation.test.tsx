@@ -2,47 +2,30 @@
  * TabNavigation 컴포넌트 테스트
  *
  * @description 탭 네비게이션 컴포넌트의 동작을 테스트합니다.
- * 주요 검증: 탭 렌더링, 탭 전환, 뱃지 표시, hiddenTabIds, disabled 상태
+ * 주요 검증: 탭 렌더링, 탭 전환, 뱃지 표시, hiddenTabIds, disabled, 반응형 분기 (G7Core.useResponsive)
  */
 
 import React, { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import type { Tab } from '../TabNavigation';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TabNavigation, type Tab } from '../TabNavigation';
 
-// basic 컴포넌트 의존성을 제거한 Mock TabNavigation
-const MockTabNavigation: React.FC<{
-  tabs: Tab[];
-  activeTabId?: string | number;
-  onTabChange?: (tabId: string | number) => void;
-  mobileGrid?: boolean;
-  hiddenTabIds?: (string | number)[];
-}> = ({ tabs, activeTabId, onTabChange, mobileGrid = true, hiddenTabIds = [] }) => {
-  const visibleTabs = hiddenTabIds.length > 0
-    ? tabs.filter((tab) => !hiddenTabIds.includes(tab.id))
-    : tabs;
+const mockUseResponsive = vi.fn(() => ({
+  width: 1024,
+  isMobile: false,
+  isTablet: false,
+  isDesktop: true,
+  matchedPreset: 'desktop' as const,
+}));
 
-  return (
-    <nav data-testid="tab-navigation">
-      {visibleTabs.map((tab) => (
-        <button
-          key={tab.id}
-          data-testid={`tab-${tab.id}`}
-          onClick={() => !tab.disabled && onTabChange?.(tab.id)}
-          disabled={tab.disabled}
-          aria-selected={tab.id === activeTabId}
-        >
-          <span data-testid={`tab-label-${tab.id}`}>{tab.label}</span>
-          {mobileGrid && tab.badge !== undefined && (
-            <span data-testid={`tab-badge-${tab.id}`}>{tab.badge}</span>
-          )}
-          {!mobileGrid && tab.badge !== undefined && (
-            <span data-testid={`tab-badge-${tab.id}`}>{tab.badge}</span>
-          )}
-        </button>
-      ))}
-    </nav>
-  );
+const setMobile = () => {
+  mockUseResponsive.mockReturnValue({
+    width: 375,
+    isMobile: true,
+    isTablet: false,
+    isDesktop: false,
+    matchedPreset: 'mobile' as const,
+  });
 };
 
 const defaultTabs: Tab[] = [
@@ -52,50 +35,72 @@ const defaultTabs: Tab[] = [
 ];
 
 describe('TabNavigation 컴포넌트', () => {
-  describe('렌더링', () => {
-    it('모든 탭이 렌더링되어야 함', () => {
-      render(<MockTabNavigation tabs={defaultTabs} activeTabId="detail" />);
+  let originalG7Core: any;
 
-      expect(screen.getByTestId('tab-detail')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-reviews')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-qna')).toBeInTheDocument();
+  beforeEach(() => {
+    originalG7Core = (window as any).G7Core;
+    (window as any).G7Core = {
+      ...originalG7Core,
+      useResponsive: mockUseResponsive,
+    };
+    mockUseResponsive.mockReturnValue({
+      width: 1024,
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+      matchedPreset: 'desktop' as const,
+    });
+  });
+
+  afterEach(() => {
+    (window as any).G7Core = originalG7Core;
+    vi.clearAllMocks();
+  });
+
+  describe('데스크톱 렌더링', () => {
+    it('Nav 안의 버튼으로 모든 탭이 렌더링되어야 함', () => {
+      const { container } = render(
+        <TabNavigation tabs={defaultTabs} activeTabId="detail" />
+      );
+
+      expect(container.querySelector('nav')).toBeInTheDocument();
+      expect(screen.getByText('상세정보')).toBeInTheDocument();
+      expect(screen.getByText('리뷰')).toBeInTheDocument();
+      expect(screen.getByText('문의')).toBeInTheDocument();
     });
 
-    it('탭 라벨이 표시되어야 함', () => {
-      render(<MockTabNavigation tabs={defaultTabs} activeTabId="detail" />);
+    it('Select 드롭다운은 렌더링되지 않아야 함', () => {
+      const { container } = render(
+        <TabNavigation tabs={defaultTabs} activeTabId="detail" />
+      );
 
-      expect(screen.getByTestId('tab-label-detail')).toHaveTextContent('상세정보');
-      expect(screen.getByTestId('tab-label-reviews')).toHaveTextContent('리뷰');
-      expect(screen.getByTestId('tab-label-qna')).toHaveTextContent('문의');
+      const selects = container.querySelectorAll('select');
+      expect(selects.length).toBe(0);
     });
 
-    it('활성 탭이 aria-selected=true 이어야 함', () => {
-      render(<MockTabNavigation tabs={defaultTabs} activeTabId="reviews" />);
+    it('활성 탭이 활성화 스타일을 가져야 함', () => {
+      render(
+        <TabNavigation tabs={defaultTabs} activeTabId="reviews" variant="underline" />
+      );
 
-      expect(screen.getByTestId('tab-reviews')).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByTestId('tab-detail')).toHaveAttribute('aria-selected', 'false');
+      const activeButton = screen.getByText('리뷰').closest('button');
+      expect(activeButton).toHaveClass('border-b-2');
     });
   });
 
   describe('뱃지(badge)', () => {
-    it('badge가 있는 탭에 뱃지가 표시되어야 함', () => {
-      render(<MockTabNavigation tabs={defaultTabs} activeTabId="detail" />);
+    it('뱃지가 표시되어야 함', () => {
+      render(<TabNavigation tabs={defaultTabs} activeTabId="detail" />);
 
-      expect(screen.getByTestId('tab-badge-reviews')).toHaveTextContent('12');
-      expect(screen.getByTestId('tab-badge-qna')).toHaveTextContent('3');
-    });
-
-    it('badge가 없는 탭에는 뱃지가 렌더링되지 않아야 함', () => {
-      render(<MockTabNavigation tabs={defaultTabs} activeTabId="detail" />);
-
-      expect(screen.queryByTestId('tab-badge-detail')).not.toBeInTheDocument();
+      expect(screen.getByText('12')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
     });
 
     it('badge 값이 0일 때도 표시되어야 함', () => {
       const tabs: Tab[] = [{ id: 'qna', label: '문의', badge: 0 }];
-      render(<MockTabNavigation tabs={tabs} activeTabId="qna" />);
+      render(<TabNavigation tabs={tabs} activeTabId="qna" />);
 
-      expect(screen.getByTestId('tab-badge-qna')).toHaveTextContent('0');
+      expect(screen.getByText('0')).toBeInTheDocument();
     });
   });
 
@@ -103,10 +108,14 @@ describe('TabNavigation 컴포넌트', () => {
     it('탭 클릭 시 onTabChange가 호출되어야 함', () => {
       const onTabChange = vi.fn();
       render(
-        <MockTabNavigation tabs={defaultTabs} activeTabId="detail" onTabChange={onTabChange} />,
+        <TabNavigation
+          tabs={defaultTabs}
+          activeTabId="detail"
+          onTabChange={onTabChange}
+        />
       );
 
-      fireEvent.click(screen.getByTestId('tab-reviews'));
+      fireEvent.click(screen.getByText('리뷰').closest('button')!);
       expect(onTabChange).toHaveBeenCalledWith('reviews');
     });
 
@@ -114,19 +123,21 @@ describe('TabNavigation 컴포넌트', () => {
       const Wrapper = () => {
         const [activeTabId, setActiveTabId] = useState<string | number>('detail');
         return (
-          <MockTabNavigation
+          <TabNavigation
             tabs={defaultTabs}
             activeTabId={activeTabId}
             onTabChange={setActiveTabId}
+            variant="underline"
           />
         );
       };
       render(<Wrapper />);
 
-      expect(screen.getByTestId('tab-detail')).toHaveAttribute('aria-selected', 'true');
-      fireEvent.click(screen.getByTestId('tab-reviews'));
-      expect(screen.getByTestId('tab-reviews')).toHaveAttribute('aria-selected', 'true');
-      expect(screen.getByTestId('tab-detail')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByText('상세정보').closest('button')).toHaveClass('border-b-2');
+
+      fireEvent.click(screen.getByText('리뷰').closest('button')!);
+
+      expect(screen.getByText('리뷰').closest('button')).toHaveClass('border-b-2');
     });
   });
 
@@ -138,44 +149,91 @@ describe('TabNavigation 컴포넌트', () => {
         { id: 'reviews', label: '리뷰', disabled: true },
       ];
       render(
-        <MockTabNavigation tabs={tabs} activeTabId="detail" onTabChange={onTabChange} />,
+        <TabNavigation
+          tabs={tabs}
+          activeTabId="detail"
+          onTabChange={onTabChange}
+        />
       );
 
-      fireEvent.click(screen.getByTestId('tab-reviews'));
+      fireEvent.click(screen.getByText('리뷰').closest('button')!);
       expect(onTabChange).not.toHaveBeenCalled();
     });
 
     it('disabled 탭은 disabled 속성이 있어야 함', () => {
       const tabs: Tab[] = [{ id: 'reviews', label: '리뷰', disabled: true }];
-      render(<MockTabNavigation tabs={tabs} activeTabId="detail" />);
+      render(<TabNavigation tabs={tabs} activeTabId="detail" />);
 
-      expect(screen.getByTestId('tab-reviews')).toBeDisabled();
+      expect(screen.getByText('리뷰').closest('button')).toBeDisabled();
     });
   });
 
   describe('hiddenTabIds', () => {
     it('hiddenTabIds에 포함된 탭은 렌더링되지 않아야 함', () => {
       render(
-        <MockTabNavigation
+        <TabNavigation
           tabs={defaultTabs}
           activeTabId="detail"
           hiddenTabIds={['qna']}
-        />,
+        />
       );
 
-      expect(screen.getByTestId('tab-detail')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-reviews')).toBeInTheDocument();
-      expect(screen.queryByTestId('tab-qna')).not.toBeInTheDocument();
+      expect(screen.getByText('상세정보')).toBeInTheDocument();
+      expect(screen.getByText('리뷰')).toBeInTheDocument();
+      expect(screen.queryByText('문의')).not.toBeInTheDocument();
     });
 
     it('hiddenTabIds가 빈 배열이면 모든 탭이 표시되어야 함', () => {
       render(
-        <MockTabNavigation tabs={defaultTabs} activeTabId="detail" hiddenTabIds={[]} />,
+        <TabNavigation tabs={defaultTabs} activeTabId="detail" hiddenTabIds={[]} />
       );
 
-      expect(screen.getByTestId('tab-detail')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-reviews')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-qna')).toBeInTheDocument();
+      expect(screen.getByText('상세정보')).toBeInTheDocument();
+      expect(screen.getByText('리뷰')).toBeInTheDocument();
+      expect(screen.getByText('문의')).toBeInTheDocument();
+    });
+  });
+
+  describe('모바일 (useResponsive isMobile=true)', () => {
+    beforeEach(() => {
+      setMobile();
+    });
+
+    it('Nav 대신 Select 드롭다운만 렌더링해야 함', () => {
+      const { container } = render(
+        <TabNavigation tabs={defaultTabs} activeTabId="detail" />
+      );
+
+      expect(container.querySelector('nav')).not.toBeInTheDocument();
+      // custom Select trigger button이 존재해야 함
+      const trigger = container.querySelector('button');
+      expect(trigger).toBeInTheDocument();
+    });
+
+    it('현재 활성 탭의 label을 Select trigger에 표시해야 함', () => {
+      render(<TabNavigation tabs={defaultTabs} activeTabId="detail" />);
+
+      expect(screen.getByText('상세정보')).toBeInTheDocument();
+    });
+
+    it('뱃지가 있는 탭은 label과 함께 뱃지 수를 병기해야 함', () => {
+      render(<TabNavigation tabs={defaultTabs} activeTabId="reviews" />);
+
+      expect(screen.getByText('리뷰 (12)')).toBeInTheDocument();
+    });
+
+    it('hiddenTabIds가 모바일에서도 적용되어야 함', () => {
+      render(
+        <TabNavigation
+          tabs={defaultTabs}
+          activeTabId="detail"
+          hiddenTabIds={['qna']}
+        />
+      );
+
+      // 활성 라벨은 보이지만 숨김 처리된 항목은 보이지 않음 (Select 닫힌 상태)
+      expect(screen.getByText('상세정보')).toBeInTheDocument();
+      expect(screen.queryByText('문의')).not.toBeInTheDocument();
     });
   });
 });

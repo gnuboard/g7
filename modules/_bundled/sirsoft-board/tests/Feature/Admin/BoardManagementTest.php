@@ -268,7 +268,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * getFormData에 _meta (limits, notification_channels) 포함 테스트
+     * getFormData에 _meta (limits) 포함 테스트
      */
     public function test_get_form_data_includes_meta_with_limits_and_depth_fields(): void
     {
@@ -286,8 +286,6 @@ class BoardManagementTest extends ModuleTestCase
                 ],
                 'max_reply_depth',
                 'max_comment_depth',
-                'notify_author_channels',
-                'notify_admin_on_post_channels',
             ],
         ]);
 
@@ -295,21 +293,6 @@ class BoardManagementTest extends ModuleTestCase
         $this->assertIsArray($meta['limits']);
         $this->assertArrayHasKey('max_reply_depth_min', $meta['limits']);
         $this->assertArrayHasKey('max_comment_depth_max', $meta['limits']);
-    }
-
-    /**
-     * getFormData 생성 모드에서 알림 채널 기본값이 환경설정에서 로드되는지 테스트
-     */
-    public function test_get_form_data_create_mode_has_notification_channels_from_settings(): void
-    {
-        // When: 게시판 생성 폼 데이터 조회 (id 없이)
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data');
-
-        // Then: 각 알림별 채널이 배열로 포함됨 (환경설정 기본값 반영)
-        $response->assertStatus(200);
-        $this->assertIsArray($response->json('data.notify_author_channels'));
-        $this->assertIsArray($response->json('data.notify_admin_on_post_channels'));
     }
 
     /**

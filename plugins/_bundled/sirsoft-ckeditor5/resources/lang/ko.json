@@ -1,0 +1,41 @@
+{
+    "settings": {
+        "title": "CKEditor5 설정",
+        "description": "CKEditor5 WYSIWYG 에디터 플러그인 환경설정",
+        "notice": "CKEditor5는 CDN 방식으로 로드됩니다. 인터넷 연결이 필요하며, 별도의 라이선스 없이 무료로 사용할 수 있습니다.",
+        "section_toolbar": "에디터 설정",
+        "section_image": "이미지 설정",
+        "section_preview": "에디터 테스트",
+        "section_preview_hint": "현재 설정이 적용된 CKEditor5 에디터를 미리 확인할 수 있습니다.",
+        "preview_placeholder": "여기에 내용을 입력하여 에디터를 테스트해 보세요.",
+        "fields": {
+            "toolbar": {
+                "label": "툴바 유형",
+                "hint": "에디터에 표시할 툴바 버튼 구성을 선택합니다.",
+                "minimal": "최소 (굵게, 기울임, 밑줄, 링크)",
+                "standard": "표준 (제목, 서식, 정렬, 링크, 목록, 표)",
+                "full": "전체 (표준 + 미디어, 색상, 코드블록, 소스편집)"
+            },
+            "image_upload": {
+                "label": "이미지 업로드 사용",
+                "hint": "에디터 내 이미지 직접 업로드 기능을 활성화합니다. 비활성화 시 URL 입력만 가능합니다."
+            },
+            "image_max_size": {
+                "label": "최대 이미지 크기 (MB)",
+                "hint": "업로드 가능한 이미지의 최대 크기입니다. (1 ~ 10 MB)"
+            },
+            "editor_height": {
+                "label": "에디터 높이 (px)",
+                "hint": "에디터의 최소 높이를 픽셀 단위로 설정합니다. (200 ~ 2000 px)"
+            }
+        },
+        "guide": {
+            "title": "사용 안내",
+            "step1": "플러그인을 활성화하면 레이아웃에서 extension_point로 html_editor, html_content를 사용하는 영역에 CKEditor5가 자동 적용됩니다. 직접 HtmlEditor/HtmlContent 컴포넌트를 사용하는 영역(예: 메일 템플릿)에는 영향을 주지 않습니다.",
+            "step2": "툴바 유형을 선택하여 에디터에 표시할 기능을 조정합니다. 운영 목적에 맞는 툴바를 선택하세요.",
+            "step3": "이미지 업로드를 활성화하면 에디터에서 이미지를 직접 붙여넣거나 업로드할 수 있습니다. 업로드된 이미지는 서버에 저장됩니다.",
+            "step4": "설정 변경 후 저장하면 즉시 모든 에디터에 반영됩니다.",
+            "step5": "플러그인을 비활성화하면 에디터는 기본 HtmlEditor로, 콘텐츠 표시는 기본 HtmlContent로 자동 복원됩니다."
+        }
+    }
+}

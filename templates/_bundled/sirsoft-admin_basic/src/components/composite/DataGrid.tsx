@@ -168,6 +168,8 @@ export interface DataGridFooterCell {
 }
 
 export interface DataGridProps {
+  /** DOM id (transition_overlay.target / overlay_target 으로 spinner mount 영역 지정용) */
+  id?: string;
   columns: DataGridColumn[];
   data: any[];
   sortable?: boolean;
@@ -556,6 +558,7 @@ const renderSubRowChildren = (
  * }
  */
 export const DataGrid: React.FC<DataGridProps> = ({
+  id,
   columns,
   data,
   sortable = true,
@@ -1112,7 +1115,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 모바일 카드 뷰
   if (isMobileView) {
     return (
-      <Div className={`w-full ${className}`} style={style}>
+      <Div id={id} className={`w-full ${className}`} style={style}>
         {/* 컬럼 선택 메뉴 */}
         {showColumnSelector && (
           <Div className="mb-4 flex justify-end">
@@ -1168,20 +1171,22 @@ export const DataGrid: React.FC<DataGridProps> = ({
           </Div>
         )}
 
-        {/* 카드 목록 */}
-        {paginatedData && paginatedData.length > 0 ? (
-          paginatedData.map((row, index) => (
-            <Div key={row[idField] || index}>
-              {cardRenderer
-                ? cardRenderer(row, displayColumns)
-                : defaultCardRenderer(row, displayColumns)}
+        {/* 카드 목록 — body wrapper 에 `${id}__body` 부여 (pagination 제외 영역) */}
+        <Div id={id ? `${id}__body` : undefined}>
+          {paginatedData && paginatedData.length > 0 ? (
+            paginatedData.map((row, index) => (
+              <Div key={row[idField] || index}>
+                {cardRenderer
+                  ? cardRenderer(row, displayColumns)
+                  : defaultCardRenderer(row, displayColumns)}
+              </Div>
+            ))
+          ) : (
+            <Div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              {resolvedEmptyMessage}
             </Div>
-          ))
-        ) : (
-          <Div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            {resolvedEmptyMessage}
-          </Div>
-        )}
+          )}
+        </Div>
 
         {/* 푸터 (모바일 카드 뷰) - v1.19.0+ */}
         {footerCells && footerCells.length > 0 && paginatedData && paginatedData.length > 0 && (
@@ -1229,7 +1234,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 데스크톱 테이블 뷰
   return (
-    <Div className={`w-full ${className}`} style={style}>
+    <Div id={id} className={`w-full ${className}`} style={style}>
       {/* 컬럼 선택 메뉴 */}
       {showColumnSelector && (
         <Div className="mb-4 flex justify-end">
@@ -1285,8 +1290,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
         </Div>
       )}
 
-      {/* 테이블 */}
-      <Div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+      {/* 테이블 — body wrapper 에 `${id}__body` 부여 (pagination 제외 영역) */}
+      <Div id={id ? `${id}__body` : undefined} className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
         <Table className="w-full">
           <Thead className="bg-gray-50 dark:bg-gray-700">
             <Tr>

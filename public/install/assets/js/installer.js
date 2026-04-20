@@ -172,8 +172,8 @@
         let html = '<div class="requirements-result">';
         let failedRequirements = [];
 
-        // API 응답에서 권한 설정값 가져오기
-        const requiredPermissions = data.directories?.required_permissions || '770';
+        // API 응답에서 권한 설정값 가져오기 (카드 헤더 표시용)
+        const requiredPermissions = data.directories?.required_permissions || '755';
 
         // OS 정보 (Windows 여부)
         const isWindows = data.is_windows || false;
@@ -230,11 +230,10 @@
 
         // 4. 디렉토리 권한 카드
         const allDirsPassed = Object.values(data.directories.results).every(dir => dir.passed);
-        const failedDirPaths = []; // chmod 대상 (permission_too_low)
-        const failedOwnershipPaths = []; // chown 대상 (not_writable)
+        const failedDirPaths = []; // chmod 대상 (쓰기/읽기 불가)
+        const ownershipMismatchItems = []; // 소유권 불일치 대상 (chgrp/chown/777 옵션 안내)
         const notExistsPaths = []; // mkdir 대상 (not_exists)
-        const failedDirRelPaths = []; // 상대경로 (permission_too_low)
-        const failedOwnershipRelPaths = []; // 상대경로 (not_writable)
+        const failedDirRelPaths = []; // 상대경로
         const notExistsRelPaths = []; // 상대경로 (not_exists)
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
@@ -248,10 +247,16 @@
                     if (info.error_type === 'not_exists') {
                         notExistsPaths.push(fullPath);
                         notExistsRelPaths.push(relPath);
-                    } else if (info.error_type === 'not_writable') {
-                        failedOwnershipPaths.push(fullPath);
-                        failedOwnershipRelPaths.push(relPath);
+                    } else if (info.error_type === 'ownership_mismatch') {
+                        ownershipMismatchItems.push({
+                            fullPath,
+                            relPath,
+                            owner: info.owner || 'unknown',
+                            webUser: info.web_server_user || 'www-data',
+                            permissions: info.permissions || '755',
+                        });
                     } else {
+                        // not_writable, not_readable, subdirectory_issues 등 모두 chmod 대상
                         failedDirPaths.push(fullPath);
                         failedDirRelPaths.push(relPath);
                     }
@@ -278,7 +283,7 @@
         }
         let dirHtml = '<div class="directory-grid">';
         for (const [path, info] of Object.entries(data.directories.results)) {
-            dirHtml += renderDirectoryItem(path, info, requiredPermissions);
+            dirHtml += renderDirectoryItem(path, info);
         }
         dirHtml += '</div>';
 
@@ -292,23 +297,52 @@
         );
 
         // 5. 필수 파일 카드
-        const missingFileCommands = [];
-        const notWritableFilePaths = [];
+        const missingFileCommands = []; // 파일 생성 대상 (not_exists)
+        const notWritableFilePaths = []; // 쓰기 불가 + 권한 비트 부족 (chmod 644로 해결)
+        const fileOwnershipMismatchItems = []; // 권한 충분하나 소유자 불일치 (chgrp/chown/666)
         if (data.required_files) {
             const allFilesPassed = data.required_files.all_passed;
             if (!allFilesPassed) {
-                const failedNames = Object.entries(data.required_files.files)
-                    .filter(([, info]) => !info.passed)
-                    .map(([name]) => name);
-                failedRequirements.push(`${lang('error_required_files')}: ${failedNames.join(', ')}`);
-
-                // 누락 파일별 명령어 수집 + 쓰기 불가 파일 수집
+                // 상위 에러 메시지: 파일 상태별로 다른 메시지 구성
+                const missingNames = [];
+                const notWritableNames = [];
+                const ownershipMismatchNames = [];
                 Object.entries(data.required_files.files).forEach(([name, info]) => {
-                    if (!info.exists && info.command) {
-                        missingFileCommands.push(info.command);
+                    if (!info.passed) {
+                        if (info.error_type === 'not_exists') {
+                            missingNames.push(name);
+                        } else if (info.error_type === 'ownership_mismatch') {
+                            ownershipMismatchNames.push(name);
+                        } else {
+                            notWritableNames.push(name);
+                        }
                     }
-                    if (info.error_type === 'not_writable') {
-                        notWritableFilePaths.push(data.required_files.base_path + '/' + name);
+                });
+                if (missingNames.length > 0) {
+                    failedRequirements.push(`${lang('error_required_files_missing_label')}: ${missingNames.join(', ')}`);
+                }
+                if (notWritableNames.length > 0) {
+                    failedRequirements.push(`${lang('error_required_files_not_writable_label')}: ${notWritableNames.join(', ')}`);
+                }
+                if (ownershipMismatchNames.length > 0) {
+                    failedRequirements.push(`${lang('error_required_files_ownership_mismatch_label')}: ${ownershipMismatchNames.join(', ')}`);
+                }
+
+                // 파일별 대상 배열 분류
+                Object.entries(data.required_files.files).forEach(([name, info]) => {
+                    const fullPath = data.required_files.base_path + '/' + name;
+                    if (info.error_type === 'not_exists' && info.command) {
+                        missingFileCommands.push(info.command);
+                    } else if (info.error_type === 'ownership_mismatch') {
+                        fileOwnershipMismatchItems.push({
+                            name,
+                            fullPath,
+                            owner: info.owner || 'unknown',
+                            webUser: info.web_server_user || 'www-data',
+                            permissions: info.permissions || '644',
+                        });
+                    } else if (info.error_type === 'not_writable') {
+                        notWritableFilePaths.push(fullPath);
                     }
                 });
             }
@@ -428,14 +462,6 @@
             });
             html += '</ul>';
 
-            // 소유자 === 웹 서버 사용자인 경우 chown/sudo 생략
-            // 모든 디렉토리(통과/실패 무관)의 owner를 확인하여 파일 섹션에서도 재사용
-            const dirWebUser = data.directories.web_server_user;
-            const dirOwners = Object.values(data.directories.results)
-                .filter(info => info.owner)
-                .map(info => info.owner);
-            const dirOwnerIsWebUser = dirWebUser && dirOwners.length > 0 && dirOwners.every(o => o === dirWebUser);
-
             // 디렉토리 미존재 (not_exists): mkdir 명령어 안내
             if (notExistsPaths.length > 0) {
                 html += '<div class="permission-fix-guide">';
@@ -464,65 +490,52 @@
                 html += '</div>';
             }
 
-            // 소유권 문제 (not_writable): 권한 수정 명령어 안내
-            if (failedOwnershipPaths.length > 0) {
+            // 소유권 불일치 (ownership_mismatch): 파일 소유자 != 웹서버 실행 사용자
+            // 3가지 해결 옵션 제시 (그룹 공유 권장 > 소유자 변경 > 777 최후 수단)
+            if (ownershipMismatchItems.length > 0) {
+                // 대상 경로를 공백으로 join (동일 webUser 기준 — 현재는 모두 동일)
+                const owner = ownershipMismatchItems[0].owner;
+                const webUser = ownershipMismatchItems[0].webUser;
+                const mismatchPaths = ownershipMismatchItems.map(i => i.fullPath).join(' ');
+
+                // 그룹 쓰기 비트(0o020) 이미 설정되어 있으면 chmod 생략, chgrp만 안내
+                // 모든 대상이 이미 그룹 쓰기 가능한 경우에만 chmod 생략 (부분 일치 시 안전하게 포함)
+                const allGroupWritable = ownershipMismatchItems.every(i => {
+                    const p = parseInt(i.permissions, 8);
+                    return !isNaN(p) && (p & 0o020) !== 0;
+                });
+                const groupCommand = allGroupWritable
+                    ? `sudo chgrp -R ${webUser} ${mismatchPaths}`
+                    : `sudo chgrp -R ${webUser} ${mismatchPaths} && sudo chmod -R 775 ${mismatchPaths}`;
+
                 html += '<div class="permission-fix-guide">';
-                if (isWindows) {
-                    const winPaths = failedOwnershipPaths.map(p => p.replace(/\//g, '\\'));
-                    const winCommands = winPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
-                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
-                    html += '<div class="code-box">';
-                    html += `<pre class="fix-command">${escapeHtml(winCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                    html += '</div>';
-                    const winRelPaths = failedOwnershipRelPaths.map(p => p.replace(/\//g, '\\'));
-                    const winRelCommands = winRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
-                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                    html += '<div class="code-box">';
-                    html += `<pre class="fix-command">${escapeHtml(winRelCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                    html += '</div>';
-                    html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
-                } else {
-                    const webGroup = data.directories.web_server_group || 'www-data';
-                    const pathList = failedOwnershipPaths.join(' ');
-                    const relPathList = failedOwnershipRelPaths.join(' ');
-                    if (dirOwnerIsWebUser) {
-                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${pathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${relPathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                    } else {
-                        const chownCommand = `sudo chown -R ${webGroup}:${webGroup} ${pathList} && sudo chmod -R 2770 ${pathList}`;
-                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(chownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const relChownCommand = `sudo chown -R ${webGroup}:${webGroup} ${relPathList} && sudo chmod -R 2770 ${relPathList}`;
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(relChownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const webServerUser = data.directories.web_server_user;
-                        if (webServerUser) {
-                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(webServerUser))}</p>`;
-                        } else {
-                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
-                        }
-                    }
-                }
+                html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(groupCommand)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(`sudo chown -R ${webUser}:${webUser} ${mismatchPaths}`)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_777')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(`chmod -R 777 ${mismatchPaths}`)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                const hintText = lang('ownership_mismatch_hint')
+                    .replace(':owner', escapeHtml(owner))
+                    .replace(':web_user', escapeHtml(webUser));
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${hintText}</p>`;
                 html += '</div>';
             }
 
-            // 권한 비트 부족 (permission_too_low): 권한 수정 명령어 안내
+            // 디렉토리 권한 문제 (쓰기/읽기 불가): chmod 755 단일 명령어 안내
+            // 업계 표준(WordPress/Drupal/Joomla/Laravel)에 맞춰 chown 의존성 제거, 비트 강요 제거
             if (failedDirPaths.length > 0) {
                 html += '<div class="permission-fix-guide">';
                 if (isWindows) {
@@ -542,45 +555,25 @@
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
-                    const dirWebGroup = data.directories.web_server_group || 'www-data';
                     const dirPathList = failedDirPaths.join(' ');
                     const dirRelPathList = failedDirRelPaths.join(' ');
-                    if (dirOwnerIsWebUser) {
-                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${dirPathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod -R 2770 ${dirRelPathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                    } else {
-                        const dirChownCommand = `sudo chown -R ${dirWebGroup}:${dirWebGroup} ${dirPathList} && sudo chmod -R 2770 ${dirPathList}`;
-                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(dirChownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const dirRelChownCommand = `sudo chown -R ${dirWebGroup}:${dirWebGroup} ${dirRelPathList} && sudo chmod -R 2770 ${dirRelPathList}`;
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(dirRelChownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const dirWebServerUser = data.directories.web_server_user;
-                        if (dirWebServerUser) {
-                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(dirWebServerUser))}</p>`;
-                        } else {
-                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
-                        }
-                    }
+                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirPathList}`)}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirRelPathList}`)}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
                 }
                 html += '</div>';
             }
 
             // 필수 파일 누락: 생성 + 권한 수정 통합 안내
+            // base_path 소유자가 웹서버 사용자와 다른 경우, 생성 직후 ownership_mismatch가
+            // 재현되므로 복사 명령에 chgrp + chmod 664를 미리 포함시켜 2단계 안내를 방지
             if (missingFileCommands.length > 0) {
                 let fileFixCommand;
                 let fileFixRelCommand;
@@ -590,22 +583,21 @@
                     fileFixCommand = missingFileCommands.join(' && ');
                     fileFixRelCommand = 'copy .env.example .env';
                 } else {
-                    // Linux: 복사 + 권한 수정 통합 명령어 (소유자 === 웹 사용자면 chown 생략)
-                    const fileWebGroup = data.required_files.web_server_group || 'www-data';
+                    // Linux: 복사 + chmod (소유자 일치 여부에 따라 chgrp 포함)
                     const basePath = data.required_files.base_path || '';
                     const envPath = basePath + '/.env';
                     const relEnvPath = relBasePath + '/.env';
-                    if (dirOwnerIsWebUser) {
-                        fileFixCommand = missingFileCommands.join(' && ')
-                            + ` && chmod 660 ${envPath}`;
-                        fileFixRelCommand = `cp ${relBasePath}/.env.example ${relEnvPath}`
-                            + ` && chmod 660 ${relEnvPath}`;
+                    const webUser = data.required_files.web_server_user || 'www-data';
+                    const ownerMatchesWebUser = data.required_files.base_path_owner_matches_web_user === true;
+
+                    if (ownerMatchesWebUser) {
+                        // 소유자 일치 → chmod 644만 필요
+                        fileFixCommand = missingFileCommands.join(' && ') + ` && chmod 644 ${envPath}`;
+                        fileFixRelCommand = `cp ${relBasePath}/.env.example ${relEnvPath} && chmod 644 ${relEnvPath}`;
                     } else {
-                        const sudoFileCommands = missingFileCommands.map(cmd => `sudo ${cmd}`);
-                        fileFixCommand = sudoFileCommands.join(' && ')
-                            + ` && sudo chown ${fileWebGroup}:${fileWebGroup} ${envPath} && sudo chmod 660 ${envPath}`;
-                        fileFixRelCommand = `sudo cp ${relBasePath}/.env.example ${relEnvPath}`
-                            + ` && sudo chown ${fileWebGroup}:${fileWebGroup} ${relEnvPath} && sudo chmod 660 ${relEnvPath}`;
+                        // 소유자 불일치 → 복사 + chgrp + chmod 664 통합
+                        fileFixCommand = missingFileCommands.join(' && ') + ` && sudo chgrp ${webUser} ${envPath} && sudo chmod 664 ${envPath}`;
+                        fileFixRelCommand = `cp ${relBasePath}/.env.example ${relEnvPath} && sudo chgrp ${webUser} ${relEnvPath} && sudo chmod 664 ${relEnvPath}`;
                     }
                 }
                 html += '<div class="permission-fix-guide">';
@@ -622,7 +614,7 @@
                 html += '</div>';
             }
 
-            // 필수 파일 쓰기 불가: 권한 수정 명령어 안내
+            // 필수 파일 쓰기 불가: chmod 644 단일 명령어 안내
             if (notWritableFilePaths.length > 0) {
                 const notWritableRelPaths = notWritableFilePaths.map(p => {
                     const basePath = data.required_files.base_path || '';
@@ -646,41 +638,61 @@
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
-                    const fileWebGroup = data.required_files.web_server_group || 'www-data';
                     const filePathList = notWritableFilePaths.join(' ');
                     const relFilePathList = notWritableRelPaths.join(' ');
-                    if (dirOwnerIsWebUser) {
-                        html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod 660 ${filePathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(`chmod 660 ${relFilePathList}`)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                    } else {
-                        const fileChownCommand = `sudo chown ${fileWebGroup}:${fileWebGroup} ${filePathList} && sudo chmod 660 ${filePathList}`;
-                        html += `<p class="fix-guide-label">${lang('ownership_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(fileChownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const relFileChownCommand = `sudo chown ${fileWebGroup}:${fileWebGroup} ${relFilePathList} && sudo chmod 660 ${relFilePathList}`;
-                        html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(relFileChownCommand)}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        const fileWebServerUser = data.required_files.web_server_user;
-                        if (fileWebServerUser) {
-                            html += `<p class="fix-guide-hint">${lang('ownership_detected_hint').replace(':user', escapeHtml(fileWebServerUser))}</p>`;
-                        } else {
-                            html += `<p class="fix-guide-hint">${lang('ownership_fix_hint')}</p>`;
-                        }
-                    }
+                    html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${filePathList}`)}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
+                    html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
+                    html += '<div class="code-box">';
+                    html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${relFilePathList}`)}</pre>`;
+                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += '</div>';
                 }
+                html += '</div>';
+            }
+
+            // 파일 소유권 불일치: 3가지 해결 옵션 제시
+            // (파일 소유자 ≠ 웹서버 실행 사용자, 권한 비트는 0644 이상이지만 실제 쓰기 불가)
+            if (fileOwnershipMismatchItems.length > 0) {
+                const fileOwner = fileOwnershipMismatchItems[0].owner;
+                const fileWebUser = fileOwnershipMismatchItems[0].webUser;
+                const mismatchFilePaths = fileOwnershipMismatchItems.map(i => i.fullPath).join(' ');
+
+                // 그룹 쓰기 비트(0o020) 이미 설정되어 있으면 chmod 생략
+                const allFileGroupWritable = fileOwnershipMismatchItems.every(i => {
+                    const p = parseInt(i.permissions, 8);
+                    return !isNaN(p) && (p & 0o020) !== 0;
+                });
+                const fileGroupCommand = allFileGroupWritable
+                    ? `sudo chgrp ${fileWebUser} ${mismatchFilePaths}`
+                    : `sudo chgrp ${fileWebUser} ${mismatchFilePaths} && sudo chmod 664 ${mismatchFilePaths}`;
+
+                html += '<div class="permission-fix-guide">';
+                html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(fileGroupCommand)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(`sudo chown ${fileWebUser}:${fileWebUser} ${mismatchFilePaths}`)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_666')}</p>`;
+                html += '<div class="code-box">';
+                html += `<pre class="fix-command">${escapeHtml(`chmod 666 ${mismatchFilePaths}`)}</pre>`;
+                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += '</div>';
+
+                const fileHintText = lang('ownership_mismatch_hint')
+                    .replace(':owner', escapeHtml(fileOwner))
+                    .replace(':web_user', escapeHtml(fileWebUser));
+                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${fileHintText}</p>`;
                 html += '</div>';
             }
 
@@ -775,7 +787,7 @@
     /**
      * 디렉토리 권한 항목 렌더링
      */
-    function renderDirectoryItem(path, info, requiredPermissions = '770') {
+    function renderDirectoryItem(path, info) {
         const statusClass = info.passed ? 'status-pass' : 'status-fail';
         const statusIcon = getStatusIcon(statusClass);
 
@@ -952,7 +964,9 @@
             port: formData.get(`${prefix}_port`),
             database: formData.get(`${prefix}_database`),
             username: formData.get(`${prefix}_username`),
-            password: formData.get(`${prefix}_password`)
+            password: formData.get(`${prefix}_password`),
+            // 기존 테이블 감지 시 g7 시그니처 비교에 사용 (Write DB만 의미 있음)
+            db_prefix: formData.get('db_prefix') || 'g7_',
         };
 
         const resultDiv = document.getElementById(`db-${type}-test-result`);
@@ -973,11 +987,76 @@
             const result = await response.json();
 
             if (result.success) {
+                // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시 (이슈 #244 대응)
+                // PO 요구: 모달 대신 페이지 본문에 즉시 노출, 백업 동의 체크박스로
+                // 다음 단계 진행 여부 제어. 실제 삭제는 Step 5의 db_cleanup task에서 수행.
+                let existingCardHtml = '';
+                if (type === 'write' && result.existing_tables && result.existing_tables.has_tables) {
+                    const info = result.existing_tables;
+                    const sev = info.severity;
+                    const titleKey = {
+                        g7_existing: 'db_existing_g7_title',
+                        foreign_data: 'db_existing_foreign_title',
+                        mixed: 'db_existing_mixed_title',
+                    }[sev] || 'db_existing_generic_title';
+                    const descKey = {
+                        g7_existing: 'db_existing_g7_desc',
+                        foreign_data: 'db_existing_foreign_desc',
+                        mixed: 'db_existing_mixed_desc',
+                    }[sev] || 'db_existing_generic_desc';
+
+                    const tablesList = (info.all_tables || []).slice(0, 20).join(', ');
+                    const dbHost = document.querySelector('input[name="db_write_host"]')?.value || 'localhost';
+                    const dbName = document.querySelector('input[name="db_write_database"]')?.value || '';
+                    const dbUser = document.querySelector('input[name="db_write_username"]')?.value || 'root';
+                    // -p 단독으로 사용해 mysqldump가 비밀번호 prompt를 띄우도록 함 (값 노출 방지)
+                    // --databases 옵션으로 db 이름을 명확히 분리하여 -p와 혼동 방지
+                    const backupCmd = `mysqldump -h ${dbHost} -u ${dbUser} -p --databases ${dbName} > backup_$(date +%Y%m%d_%H%M%S).sql`;
+
+                    // 현재 동의 상태 복원 (DB 필드 변경 없이 테스트 재실행 시 체크 유지)
+                    const alreadyConsented = sessionStorage.getItem('existing_db_action') === 'drop_tables';
+
+                    existingCardHtml = `
+                        <div class="alert alert-warning db-existing-tables-card" data-severity="${escapeHtml(sev)}">
+                            <div class="db-existing-header">
+                                <strong>⚠ ${escapeHtml(lang(titleKey))}</strong>
+                            </div>
+                            <p class="db-existing-desc">${escapeHtml(lang(descKey))}</p>
+                            <p class="db-existing-tables-label"><strong>${escapeHtml(lang('db_existing_tables_list'))}</strong></p>
+                            <pre class="db-existing-tables-list">${escapeHtml(tablesList)}</pre>
+                            <p class="db-existing-backup-label"><strong>${escapeHtml(lang('db_backup_guide'))}</strong></p>
+                            <div class="code-box">
+                                <pre>${escapeHtml(backupCmd)}</pre>
+                                <button type="button" class="btn-copy" onclick="copyPermissionCommand(this)">${escapeHtml(lang('copy_command'))}</button>
+                            </div>
+                            <label class="db-backup-confirm-checkbox">
+                                <input type="checkbox" id="db-backup-confirmed" onchange="onDbBackupConsentChange(this)" ${alreadyConsented ? 'checked' : ''}>
+                                ${escapeHtml(lang('db_backup_confirmed'))}
+                            </label>
+                        </div>
+                    `;
+                    window.__g7_existing_tables = info;
+                    // FormValidator에 동의 요구 등록
+                    if (typeof FormValidator !== 'undefined') {
+                        FormValidator.setDbCleanupRequired(true);
+                        FormValidator.setDbCleanupConsented(alreadyConsented);
+                    }
+                } else if (type === 'write') {
+                    // 빈 DB → 동의 요구 해제 + sessionStorage 정리
+                    window.__g7_existing_tables = null;
+                    sessionStorage.removeItem('existing_db_action');
+                    if (typeof FormValidator !== 'undefined') {
+                        FormValidator.setDbCleanupRequired(false);
+                        FormValidator.setDbCleanupConsented(false);
+                    }
+                }
+
                 resultDiv.innerHTML = `
                     <div class="alert alert-success">
                         ${getIconSvg('completed', '24px', 'test-result-icon')}
                         <span>${escapeHtml(result.message)}</span>
                     </div>
+                    ${existingCardHtml}
                 `;
 
                 // 현재 DB 필드 해시 계산
@@ -992,6 +1071,12 @@
                 if (type === 'write') {
                     sessionStorage.setItem('db_write_tested', 'true');
                     sessionStorage.setItem('db_write_hash', currentHash);
+                    // 기존 테이블 감지 정보도 sessionStorage에 저장 (Step 5까지 보존)
+                    if (result.existing_tables) {
+                        sessionStorage.setItem('db_existing_tables', JSON.stringify(result.existing_tables));
+                    } else {
+                        sessionStorage.removeItem('db_existing_tables');
+                    }
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbTestValid('write', true);
                     }
@@ -1064,12 +1149,18 @@
             write: false,
             read: false
         },
+        // 기존 DB 테이블 감지 시 삭제 동의 추적 (이슈 #244)
+        dbCleanup: {
+            required: false,    // Write DB 테스트 결과 기존 테이블 감지 여부
+            consented: false,   // 사용자가 백업 완료 + 삭제 동의 체크 여부
+        },
 
         /**
          * 필드 검증 상태 설정
          */
         setFieldValid(fieldName, isValid) {
             this.fields[fieldName] = isValid;
+            this.updateSubmitButton();
         },
 
         /**
@@ -1077,6 +1168,50 @@
          */
         setDbTestValid(type, isValid) {
             this.dbTests[type] = isValid;
+            this.updateSubmitButton();
+        },
+
+        /**
+         * 기존 DB 테이블 감지 상태 설정
+         */
+        setDbCleanupRequired(required) {
+            this.dbCleanup.required = !!required;
+            this.updateSubmitButton();
+        },
+
+        /**
+         * 백업 완료 + 삭제 동의 상태 설정
+         */
+        setDbCleanupConsented(consented) {
+            this.dbCleanup.consented = !!consented;
+            this.updateSubmitButton();
+        },
+
+        /**
+         * Step 3 제출 버튼의 disabled 상태를 폼 유효성에 맞춰 동기화.
+         * isFormValid()가 false면 버튼 비활성화 + 적절한 title 안내.
+         */
+        updateSubmitButton() {
+            const submitBtn = document.getElementById('submit-btn');
+            if (!submitBtn) return;
+            // Step 4(확장 선택)에서도 같은 id를 쓰는데, 그쪽은 자체 검증 함수가 처리하므로
+            // Step 3 (config-form) 컨텍스트에서만 동작
+            const configForm = document.getElementById('config-form');
+            if (!configForm) return;
+
+            const valid = this.isFormValid();
+            submitBtn.disabled = !valid;
+            if (!valid) {
+                if (!this.isDbCleanupConsentSatisfied()) {
+                    submitBtn.title = lang('error_db_cleanup_consent_required');
+                } else if (!this.areDbTestsValid()) {
+                    submitBtn.title = lang('error_write_db_not_tested');
+                } else {
+                    submitBtn.title = lang('validation_incomplete_alert');
+                }
+            } else {
+                submitBtn.title = '';
+            }
         },
 
         /**
@@ -1097,10 +1232,18 @@
         },
 
         /**
+         * 기존 DB 테이블 삭제 동의 충족 여부
+         * required=false면 항상 통과, required=true면 consented=true 필요
+         */
+        isDbCleanupConsentSatisfied() {
+            return !this.dbCleanup.required || this.dbCleanup.consented;
+        },
+
+        /**
          * 전체 폼이 유효한지 확인
          */
         isFormValid() {
-            return this.areAllFieldsValid() && this.areDbTestsValid();
+            return this.areAllFieldsValid() && this.areDbTestsValid() && this.isDbCleanupConsentSatisfied();
         },
 
         /**
@@ -1161,6 +1304,9 @@
 
             // DB 필드 변경 감지 리스너 추가
             this.addDbFieldChangeListeners();
+
+            // 초기 submit 버튼 disabled 상태 동기화
+            this.updateSubmitButton();
         },
 
         /**
@@ -1417,6 +1563,14 @@
             }
         }
 
+        // 기존 DB 테이블 감지 동의 미체크 시 경고
+        if (!FormValidator.isDbCleanupConsentSatisfied()) {
+            errors.push(lang('error_db_cleanup_consent_required'));
+            if (!firstInvalidField) {
+                firstInvalidField = document.getElementById('db-backup-confirmed');
+            }
+        }
+
         // Alert 표시 (간단한 메시지만)
         alert(lang('validation_incomplete_alert'));
 
@@ -1565,7 +1719,8 @@
                 if (!window.CliValidator.phpVerified) {
                     errors.push({ field: document.getElementById('php_binary'), message: lang('error_php_cli_not_verified') });
                 }
-                if (!window.CliValidator.composerVerified) {
+                // vendor_mode='bundled' 에서는 composer 실행이 불필요하므로 검증 스킵
+                if (window.CliValidator.isComposerRequired() && !window.CliValidator.composerVerified) {
                     errors.push({ field: document.getElementById('composer_binary'), message: lang('error_composer_not_verified') });
                 }
             }
@@ -1613,6 +1768,9 @@
         plugins: []
     };
 
+    /** 의존성에 의해 자동 선택된 확장 identifier 집합 */
+    const autoSelectedSet = new Set();
+
     async function loadExtensions() {
         const form = document.getElementById('extension-form');
         const loadingEl = document.getElementById('extensions-loading');
@@ -1657,6 +1815,7 @@
 
             restoreSelectionState();
             updateSelectionSummary();
+            autoSelectMissingDependencies();
             validateAdminTemplate();
         } catch (error) {
             if (loadingEl) loadingEl.classList.add('hidden');
@@ -1809,23 +1968,38 @@
         return div.innerHTML;
     }
 
-    window.toggleExtension = function(type, identifier, isSingleSelect) {
+    window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
 
         const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
         const isRequired = (type === 'admin_templates'); // 관리자 템플릿만 필수
 
+        // 선택 해제 시도 시 — 다른 선택된 확장이 이 항목을 의존하면 차단
+        if (isCurrentlySelected && !_isAutoSelect) {
+            const dependents = computeDependents(identifier);
+            if (dependents.length > 0) {
+                const names = dependents.map(function(d) { return d.name; }).join(', ');
+                showDependencyLockToast(identifier, names);
+                return; // 해제 차단
+            }
+        }
+
         if (isSingleSelect) {
-            // 단일 선택 모드
+            // 단일 선택 모드 — 이전 템플릿 해제 시 자동 선택 항목도 정리
             if (isCurrentlySelected && !isRequired) {
                 // 사용자 템플릿: 이미 선택된 항목 클릭 시 선택 해제
+                clearAutoSelectedByOwner(type, identifier);
                 selectedExtensions[type] = [];
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="far fa-circle"></i>';
             } else {
-                // 다른 항목 선택 해제 후 현재 항목 선택
+                // 다른 항목 선택 해제 전 이전 템플릿의 자동 선택 항목 정리
+                const prevId = selectedExtensions[type][0];
+                if (prevId && prevId !== identifier) {
+                    clearAutoSelectedByOwner(type, prevId);
+                }
                 const allCards = document.querySelectorAll('.extension-card[data-type="' + type + '"]');
                 allCards.forEach(function(c) {
                     c.classList.remove('selected');
@@ -1847,6 +2021,9 @@
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-square"></i>';
             } else {
+                // 해제 시 자동 선택 표시 제거
+                autoSelectedSet.delete(identifier);
+                removeAutoSelectedUI(identifier);
                 selectedExtensions[type].splice(index, 1);
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
@@ -1856,6 +2033,11 @@
 
         updateSelectionSummary();
         validateAdminTemplate();
+
+        // 선택 변경 시 의존성 즉시 자동 선택 (자동 선택에 의한 재귀 호출 방지)
+        if (!_isAutoSelect) {
+            autoSelectMissingDependencies();
+        }
     };
 
     function restoreSelectionState() {
@@ -1901,19 +2083,378 @@
     }
 
     /**
-     * 관리자 템플릿이 최소 1개 선택되었는지 검증하고 제출 버튼 활성화
+     * 관리자 템플릿 + 의존성 검증.
+     *
+     * - 관리자 템플릿 최소 1개 선택 필수
+     * - 선택된 모든 확장의 의존성이 충족되어야 함 (누락 시 설치 버튼 비활성화 + 경고)
      */
     function validateAdminTemplate() {
+        return validateExtensionSelection();
+    }
+
+    /**
+     * 선택된 확장 목록에서 누락된 의존성을 계산합니다.
+     *
+     * @returns {Array} 누락 목록 [{ownerType, ownerIdentifier, ownerName, depType, depIdentifier}, ...]
+     */
+    function computeMissingDependencies() {
+        if (!extensionsData) return [];
+
+        const selectedIdSet = new Set();
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (selectedExtensions[cat] || []).forEach((id) => selectedIdSet.add(id));
+        });
+
+        // 모든 확장의 identifier → version 매핑 (버전 검증용)
+        const availableVersions = {};
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (extensionsData[cat] || []).forEach((item) => {
+                availableVersions[item.identifier] = item.version || '0.0.0';
+            });
+        });
+
+        const missing = [];
+        const checkOne = (category, item) => {
+            if (!selectedIdSet.has(item.identifier)) return;
+            const deps = item.dependencies_detailed || [];
+            deps.forEach((dep) => {
+                if (!dep || !dep.identifier) return;
+                if (!selectedIdSet.has(dep.identifier)) {
+                    missing.push({
+                        ownerType: category,
+                        ownerIdentifier: item.identifier,
+                        ownerName: (item.name && (item.name.ko || item.name.en)) || item.identifier,
+                        depType: dep.type || 'unknown',
+                        depIdentifier: dep.identifier,
+                        depVersion: dep.version || '*',
+                        issue: 'missing',
+                    });
+                } else if (dep.version && dep.version !== '*') {
+                    // 선택되어 있지만 버전 제약 미충족 여부 확인
+                    const availVer = availableVersions[dep.identifier];
+                    if (availVer && !satisfiesVersionConstraint(availVer, dep.version)) {
+                        missing.push({
+                            ownerType: category,
+                            ownerIdentifier: item.identifier,
+                            ownerName: (item.name && (item.name.ko || item.name.en)) || item.identifier,
+                            depType: dep.type || 'unknown',
+                            depIdentifier: dep.identifier,
+                            depVersion: dep.version,
+                            availableVersion: availVer,
+                            issue: 'version_mismatch',
+                        });
+                    }
+                }
+            });
+        };
+
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (extensionsData[cat] || []).forEach((item) => checkOne(cat, item));
+        });
+
+        return missing;
+    }
+
+    /**
+     * 누락된 의존성을 자동으로 selectedExtensions에 추가하고 UI에 반영합니다.
+     * 추이적(transitive) 의존성도 자동 해결될 수 있도록 반복 실행됩니다.
+     */
+    function autoSelectMissingDependencies() {
+        if (!extensionsData) return;
+
+        // 카테고리별 identifier → category 역인덱스 구축
+        const idToCategory = {};
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (extensionsData[cat] || []).forEach((item) => {
+                idToCategory[item.identifier] = cat;
+            });
+        });
+
+        // 고정점(fixed-point)까지 반복 — 추이적 의존성 자동 해결
+        let changed = true;
+        let iteration = 0;
+        while (changed && iteration < 10) {
+            changed = false;
+            iteration++;
+            const missing = computeMissingDependencies();
+            if (missing.length === 0) break;
+
+            missing.forEach((m) => {
+                // 의존성 type을 카테고리로 매핑 (modules → modules, plugins → plugins)
+                // detailed에 타입이 없는 레거시인 경우 identifier 역인덱스에서 조회
+                let targetCat = null;
+                if (m.depType === 'modules') targetCat = 'modules';
+                else if (m.depType === 'plugins') targetCat = 'plugins';
+                else if (idToCategory[m.depIdentifier]) targetCat = idToCategory[m.depIdentifier];
+
+                if (targetCat && !selectedExtensions[targetCat].includes(m.depIdentifier)) {
+                    // 자동 선택 추적
+                    autoSelectedSet.add(m.depIdentifier);
+
+                    // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
+                    // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
+                    const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
+                    window.toggleExtension(targetCat, m.depIdentifier, isSingleSelect, true);
+
+                    // 자동 선택 시각적 표시 추가
+                    applyAutoSelectedUI(m.depIdentifier, m.ownerName);
+                    changed = true;
+                }
+            });
+        }
+
+        updateSelectionSummary();
+        validateExtensionSelection();
+    }
+    window.autoSelectMissingDependencies = autoSelectMissingDependencies;
+
+    /**
+     * 관리자 템플릿 + 의존성 그래프 검증.
+     */
+    function validateExtensionSelection() {
         const submitBtn = document.getElementById('submit-btn');
-        if (!submitBtn) return;
+        const warningBox = document.getElementById('dependency-warning');
+        const warningList = document.getElementById('dependency-warning-list');
 
         const hasAdminTemplate = selectedExtensions.admin_templates.length > 0;
-        submitBtn.disabled = !hasAdminTemplate;
+        const missing = computeMissingDependencies();
+
+        // 경고 UI 업데이트
+        if (warningBox && warningList) {
+            if (missing.length > 0) {
+                warningList.innerHTML = '';
+                // 소유자별로 중복 제거
+                const seen = new Set();
+                missing.forEach((m) => {
+                    const key = `${m.ownerIdentifier}→${m.depIdentifier}`;
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    const li = document.createElement('li');
+                    if (m.issue === 'version_mismatch') {
+                        li.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' +
+                            escapeHtml(m.ownerName) + ' → ' + escapeHtml(m.depIdentifier) +
+                            ' <span class="dep-version-conflict">(' +
+                            escapeHtml(lang('dep_version_required')) + ': ' + escapeHtml(m.depVersion) +
+                            ', ' + escapeHtml(lang('dep_version_available')) + ': ' + escapeHtml(m.availableVersion) +
+                            ')</span>';
+                    } else {
+                        li.textContent = `${m.ownerName} (${m.ownerIdentifier}) → ${m.depIdentifier}`;
+                    }
+                    warningList.appendChild(li);
+                });
+                warningBox.classList.remove('hidden');
+            } else {
+                warningBox.classList.add('hidden');
+            }
+        }
+
+        if (!submitBtn) return;
+
+        const valid = hasAdminTemplate && missing.length === 0;
+        submitBtn.disabled = !valid;
 
         if (!hasAdminTemplate) {
             submitBtn.title = window.EXTENSION_LABELS?.admin_template_required || lang('error_admin_template_required');
+        } else if (missing.length > 0) {
+            submitBtn.title = lang('dependency_missing_tooltip');
         } else {
             submitBtn.title = '';
+        }
+    }
+    window.validateExtensionSelection = validateExtensionSelection;
+
+    /**
+     * 지정된 identifier를 의존하는 현재 선택된 확장 목록을 반환합니다.
+     * 선택 해제 잠금 판단에 사용합니다.
+     *
+     * @param {string} identifier - 해제하려는 확장의 식별자
+     * @returns {Array} [{identifier, name, type}, ...] 해당 identifier에 의존하는 선택된 확장 목록
+     */
+    function computeDependents(identifier) {
+        if (!extensionsData) return [];
+        const dependents = [];
+        const selectedIdSet = new Set();
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (selectedExtensions[cat] || []).forEach((id) => selectedIdSet.add(id));
+        });
+
+        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+            (extensionsData[cat] || []).forEach((item) => {
+                if (!selectedIdSet.has(item.identifier)) return;
+                const deps = item.dependencies_detailed || [];
+                deps.forEach((dep) => {
+                    if (dep && dep.identifier === identifier) {
+                        dependents.push({
+                            identifier: item.identifier,
+                            name: getLocalizedText(item.name) || item.identifier,
+                            type: cat
+                        });
+                    }
+                });
+            });
+        });
+        return dependents;
+    }
+
+    /**
+     * 자동 선택된 카드에 시각적 표시(배지 + CSS 클래스)를 적용합니다.
+     *
+     * @param {string} identifier - 자동 선택된 확장 식별자
+     * @param {string} ownerName - 이 항목을 요구하는 확장의 이름
+     */
+    function applyAutoSelectedUI(identifier, ownerName) {
+        const card = document.querySelector('.extension-card[data-identifier="' + identifier + '"]');
+        if (!card || card.classList.contains('dep-auto-selected')) return;
+        card.classList.add('dep-auto-selected');
+
+        // 배지 추가
+        const badge = document.createElement('span');
+        badge.className = 'dep-auto-badge';
+        badge.innerHTML = '<i class="fas fa-link"></i> ' +
+            escapeHtml(lang('dep_auto_badge_label')) +
+            ' <span class="dep-auto-badge-owner">(' + escapeHtml(ownerName) + ')</span>';
+        const infoEl = card.querySelector('.extension-card-info');
+        if (infoEl) {
+            infoEl.appendChild(badge);
+        }
+    }
+
+    /**
+     * 자동 선택 시각적 표시를 제거합니다.
+     *
+     * @param {string} identifier - 대상 확장 식별자
+     */
+    function removeAutoSelectedUI(identifier) {
+        const card = document.querySelector('.extension-card[data-identifier="' + identifier + '"]');
+        if (!card) return;
+        card.classList.remove('dep-auto-selected');
+        const badge = card.querySelector('.dep-auto-badge');
+        if (badge) badge.remove();
+    }
+
+    /**
+     * 특정 소유자(템플릿)의 의존성으로 자동 선택된 항목들을 정리합니다.
+     * 템플릿 변경/해제 시 이전 템플릿의 자동 선택 항목을 해제합니다.
+     * 단, 다른 선택된 확장이 여전히 의존하는 항목은 유지합니다.
+     *
+     * @param {string} ownerType - 소유자 카테고리
+     * @param {string} ownerIdentifier - 소유자 식별자
+     */
+    function clearAutoSelectedByOwner(ownerType, ownerIdentifier) {
+        if (!extensionsData) return;
+
+        // 해제되는 소유자의 의존성 목록 수집
+        const ownerItem = (extensionsData[ownerType] || []).find(e => e.identifier === ownerIdentifier);
+        if (!ownerItem) return;
+        const ownerDeps = (ownerItem.dependencies_detailed || []).map(d => d.identifier);
+
+        ownerDeps.forEach((depId) => {
+            if (!autoSelectedSet.has(depId)) return;
+
+            // 다른 선택된 확장이 여전히 이 항목을 의존하는지 확인
+            const otherDependents = computeDependents(depId).filter(d => d.identifier !== ownerIdentifier);
+            if (otherDependents.length > 0) return; // 다른 의존자 존재 → 유지
+
+            // 자동 선택 해제
+            autoSelectedSet.delete(depId);
+            removeAutoSelectedUI(depId);
+
+            // 카테고리를 찾아 선택 해제
+            ['modules', 'plugins'].forEach((cat) => {
+                const idx = selectedExtensions[cat].indexOf(depId);
+                if (idx !== -1) {
+                    selectedExtensions[cat].splice(idx, 1);
+                    const card = document.querySelector('.extension-card[data-type="' + cat + '"][data-identifier="' + depId + '"]');
+                    if (card) {
+                        card.classList.remove('selected');
+                        const selectEl = card.querySelector('.extension-card-select');
+                        if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * 의존성 잠금으로 인해 선택 해제가 차단될 때 토스트 메시지를 표시합니다.
+     *
+     * @param {string} identifier - 해제 시도된 확장 식별자
+     * @param {string} dependentNames - 의존하는 확장 이름 목록 (콤마 구분)
+     */
+    function showDependencyLockToast(identifier, dependentNames) {
+        // 기존 토스트 제거
+        const existing = document.querySelector('.dep-lock-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'dep-lock-toast';
+        toast.innerHTML = '<i class="fas fa-lock"></i> ' +
+            escapeHtml(lang('dep_lock_message').replace(':names', dependentNames));
+
+        document.body.appendChild(toast);
+
+        // 애니메이션 후 자동 제거
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    /**
+     * Semver 버전 제약 조건을 만족하는지 확인합니다.
+     *
+     * @param {string} available - 사용 가능한 버전 (예: "1.2.3")
+     * @param {string} constraint - 제약 조건 (예: ">=1.0.0", "^1.2.0", "*")
+     * @returns {boolean} 제약 조건 충족 여부
+     */
+    function satisfiesVersionConstraint(available, constraint) {
+        if (!constraint || constraint === '*') return true;
+
+        // 버전 문자열을 숫자 배열로 파싱
+        function parseVersion(v) {
+            const clean = v.replace(/^[v=]/, '');
+            const parts = clean.split('.').map(Number);
+            return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+        }
+
+        // 두 버전 비교: -1(a<b), 0(같음), 1(a>b)
+        function compareVersions(a, b) {
+            for (let i = 0; i < 3; i++) {
+                if (a[i] < b[i]) return -1;
+                if (a[i] > b[i]) return 1;
+            }
+            return 0;
+        }
+
+        const avail = parseVersion(available);
+
+        // 연산자 + 버전 분리
+        const match = constraint.match(/^([><=^~!]*)\s*(.+)$/);
+        if (!match) return true;
+
+        const op = match[1] || '>=';
+        const req = parseVersion(match[2]);
+        const cmp = compareVersions(avail, req);
+
+        switch (op) {
+            case '>=': return cmp >= 0;
+            case '>':  return cmp > 0;
+            case '<=': return cmp <= 0;
+            case '<':  return cmp < 0;
+            case '=':
+            case '==': return cmp === 0;
+            case '!=': return cmp !== 0;
+            case '^':
+                // ^1.2.3 → >=1.2.3, <2.0.0 (major 고정)
+                if (cmp < 0) return false;
+                return avail[0] === req[0];
+            case '~':
+                // ~1.2.3 → >=1.2.3, <1.3.0 (minor 고정)
+                if (cmp < 0) return false;
+                return avail[0] === req[0] && avail[1] === req[1];
+            default:
+                return cmp >= 0;
         }
     }
 
@@ -1999,7 +2540,8 @@
 
     let installationStarted = false;
     let installationCompleted = false;
-    let eventSource = null;
+    let eventSource = null; // deprecated (남아있는 외부 참조 호환용)
+    let currentMonitor = null; // SSE/폴링 모니터 인스턴스
     let lastRollbackFailure = null;
 
     /**
@@ -2084,11 +2626,135 @@
     }
 
     /**
-     * 설치 시작 (SSE 기반)
+     * 기존 DB 테이블 경고 모달 표시 (이슈 #244 대응).
+     *
+     * DB 테스트 배지를 클릭하면 호출되며, 사용자에게 백업 안내 + 강제 진행 옵션을 제공합니다.
+     * "기존 테이블 모두 삭제 후 설치"를 선택하면 sessionStorage에 existing_db_action=drop_tables 저장.
      */
-    async function startInstallation() {
+    function showExistingTablesModal() {
+        const info = window.__g7_existing_tables || null;
+        if (!info || !info.has_tables) return;
+
+        const sev = info.severity;
+        const titleKey = {
+            g7_existing: 'db_existing_g7_title',
+            foreign_data: 'db_existing_foreign_title',
+            mixed: 'db_existing_mixed_title',
+        }[sev] || 'db_existing_generic_title';
+
+        const descKey = {
+            g7_existing: 'db_existing_g7_desc',
+            foreign_data: 'db_existing_foreign_desc',
+            mixed: 'db_existing_mixed_desc',
+        }[sev] || 'db_existing_generic_desc';
+
+        const tablesList = (info.all_tables || []).slice(0, 20).join(', ');
+        const dbHost = document.querySelector('input[name="db_write_host"]')?.value || 'localhost';
+        const dbName = document.querySelector('input[name="db_write_database"]')?.value || '';
+        const dbUser = document.querySelector('input[name="db_write_username"]')?.value || 'root';
+        const backupCmd = `mysqldump -h ${dbHost} -u ${dbUser} -p --databases ${dbName} > backup_$(date +%Y%m%d_%H%M%S).sql`;
+
+        const html = `
+            <div class="modal-backdrop" onclick="closeExistingTablesModal()"></div>
+            <div class="modal-content">
+                <h3 class="modal-title">⚠ ${escapeHtml(lang(titleKey))}</h3>
+                <div class="modal-body">
+                    <p>${escapeHtml(lang(descKey))}</p>
+                    <p class="modal-tables-label">${escapeHtml(lang('db_existing_tables_list'))}</p>
+                    <pre class="modal-tables-list">${escapeHtml(tablesList)}</pre>
+                    <p class="modal-backup-label"><strong>${escapeHtml(lang('db_backup_guide'))}</strong></p>
+                    <div class="code-box">
+                        <pre>${escapeHtml(backupCmd)}</pre>
+                    </div>
+                    <label class="modal-confirm-checkbox">
+                        <input type="checkbox" id="db-backup-confirmed">
+                        ${escapeHtml(lang('db_backup_confirmed'))}
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeExistingTablesModal()">
+                        ${escapeHtml(lang('cancel'))}
+                    </button>
+                    <button type="button" class="btn btn-danger" id="db-force-proceed-btn" disabled onclick="confirmDropTables()">
+                        ${escapeHtml(lang('db_force_proceed_drop'))}
+                    </button>
+                </div>
+            </div>
+        `;
+
+        let modal = document.getElementById('existing-tables-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'existing-tables-modal';
+            modal.className = 'modal modal-existing-tables';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = html;
+        modal.classList.add('modal-open');
+
+        // 체크박스 → 버튼 활성화 연결
+        const cb = modal.querySelector('#db-backup-confirmed');
+        const btn = modal.querySelector('#db-force-proceed-btn');
+        if (cb && btn) {
+            cb.addEventListener('change', () => {
+                btn.disabled = !cb.checked;
+            });
+        }
+    }
+    window.showExistingTablesModal = showExistingTablesModal;
+
+    function closeExistingTablesModal() {
+        const modal = document.getElementById('existing-tables-modal');
+        if (modal) {
+            modal.classList.remove('modal-open');
+            modal.innerHTML = '';
+        }
+    }
+    window.closeExistingTablesModal = closeExistingTablesModal;
+
+    function confirmDropTables() {
+        sessionStorage.setItem('existing_db_action', 'drop_tables');
+        closeExistingTablesModal();
+        // 사용자에게 선택 결과 피드백
+        const resultDiv = document.getElementById('db-write-test-result');
+        if (resultDiv) {
+            const existing = resultDiv.querySelector('.db-existing-tables-badge');
+            if (existing) {
+                existing.innerHTML = `✓ ${escapeHtml(lang('db_force_proceed_confirmed'))}`;
+                existing.classList.remove('alert-warning');
+                existing.classList.add('alert-info');
+            }
+        }
+    }
+
+    /**
+     * 기존 테이블 삭제 동의 체크박스 핸들러 (인라인 카드)
+     * 체크 시 sessionStorage에 existing_db_action=drop_tables 저장 + FormValidator 갱신.
+     */
+    function onDbBackupConsentChange(checkbox) {
+        const consented = !!checkbox.checked;
+        if (consented) {
+            sessionStorage.setItem('existing_db_action', 'drop_tables');
+        } else {
+            sessionStorage.removeItem('existing_db_action');
+        }
+        if (typeof FormValidator !== 'undefined') {
+            FormValidator.setDbCleanupConsented(consented);
+        }
+    }
+    window.onDbBackupConsentChange = onDbBackupConsentChange;
+    window.confirmDropTables = confirmDropTables;
+
+    /**
+     * 설치 시작 (SSE / 폴링 듀얼 모드)
+     */
+    async function startInstallation(modeOverride = null) {
         if (installationStarted) return;
         installationStarted = true;
+
+        // 시작 대기 UI 숨김, 진행 UI 표시 (모드 선택 카드 + 시작 버튼 → 경고 + 진행 카드)
+        hideInstallationStartSection();
+        showInstallationProgressSection();
 
         // 중단 버튼 표시
         showAbortButton();
@@ -2096,21 +2762,33 @@
         // 작업 목록 렌더링
         renderTaskList();
 
+        // 모드 결정: 인자 > Step 5 라디오 값 > 'sse' 기본
+        let installationMode = modeOverride;
+        if (!installationMode) {
+            const modeRadio = document.querySelector('input[name="installation_mode"]:checked');
+            installationMode = modeRadio ? modeRadio.value : 'sse';
+        }
+
         try {
-            // 설정 데이터 저장 (POST 요청)
+            // 설정 데이터 저장 (POST 요청) + 설치 모드 전달
             const configData = window.INSTALLER_CONFIG || {};
             const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
+
+            const existingDbAction = sessionStorage.getItem('existing_db_action') || 'skip';
 
             const response = await fetch(saveConfigUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ config: configData })
+                body: JSON.stringify({
+                    config: configData,
+                    installation_mode: installationMode,
+                    existing_db_action: existingDbAction,
+                }),
             });
 
             const result = await response.json();
 
             if (!result.success) {
-                // 필수 파일 누락 시 파일 생성 안내 표시
                 if (result.env_required) {
                     installationStarted = false;
                     hideAbortButton();
@@ -2121,161 +2799,98 @@
                 return;
             }
 
-            // SSE 연결 시작
-            const sseUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-worker.php`;
-            eventSource = new EventSource(sseUrl);
+            // 공통 모니터 콜백 정의
+            const stateUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=get`;
 
-            let sseConnected = false;
+            const callbacks = {
+                onConnected: () => {},
+                onTaskStart: (taskId, name, target) => {
+                    updateTaskStatus(taskId, 'active', name, target || null);
+                },
+                onTaskComplete: (taskId, message, target) => {
+                    updateTaskStatus(taskId, 'completed', message, target || null);
+                },
+                onLog: (message) => {
+                    addLogMessage(message);
+                },
+                onComplete: (data) => {
+                    installationCompleted = true;
+                    hideAbortButton();
+                    fetch(stateUrl, { cache: 'no-store' })
+                        .then((res) => res.json())
+                        .then((stateData) => showCompletionSection(stateData))
+                        .catch(() => {
+                            if (data && data.redirect) {
+                                window.location.href = data.redirect;
+                            }
+                        });
+                },
+                onAbort: () => {
+                    installationCompleted = true;
+                    hideAbortButton();
+                    fetchInstallationState()
+                        .then((state) => {
+                            showAbortedInstallationSection(state);
+                        })
+                        .catch(() => {
+                            window.location.reload();
+                        });
+                },
+                onRollbackFailed: (data) => {
+                    lastRollbackFailure = {
+                        message: (data && data.message) || lang('failed_rollback_manual_cleanup'),
+                        detail: (data && data.detail) || lang('failed_rollback_manual_cleanup_detail'),
+                    };
+                },
+                onError: (data) => {
+                    const errorMessage = translateWithKey(
+                        data.message_key,
+                        data.message || lang('installation_error_occurred')
+                    );
+                    const errorDetail = data.error || null;
+                    const failedTaskId = data.task || null;
+                    showError(errorMessage, errorDetail, failedTaskId);
+                },
+                onConnectionTimeout: () => {
+                    // SSE 연결 실패 → 폴링 모드로 자동 폴백 제안
+                    if (installationCompleted) return;
 
-            // SSE 연결 타임아웃 (5초)
-            const sseTimeout = setTimeout(() => {
-                if (!sseConnected) {
-                    // eventSource가 null이 아닐 때만 close (onerror에서 이미 close 했을 수 있음)
-                    if (eventSource) {
-                        eventSource.close();
-                        eventSource = null;
-                    }
-
-                    // 설치 완료되지 않은 경우에만 에러 표시
-                    if (!installationCompleted) {
-                        const errorMessage = lang('sse_connection_timeout');
-                        const errorDetail = lang('sse_server_config_guide');
-                        showError(errorMessage, errorDetail);
-                    }
-                }
-            }, 5000);
-
-            // SSE 이벤트 핸들러 등록
-            eventSource.addEventListener('connected', (e) => {
-                clearTimeout(sseTimeout);
-                sseConnected = true;
-            });
-
-            eventSource.addEventListener('task_start', (e) => {
-                const data = JSON.parse(e.data);
-                updateTaskStatus(data.task, 'active', data.name, data.target || null);
-            });
-
-            eventSource.addEventListener('task_complete', (e) => {
-                const data = JSON.parse(e.data);
-                updateTaskStatus(data.task, 'completed', data.message, data.target || null);
-            });
-
-            eventSource.addEventListener('log', (e) => {
-                const data = JSON.parse(e.data);
-                addLogMessage(data.message);
-            });
-
-            eventSource.addEventListener('completed', (e) => {
-                const data = JSON.parse(e.data);
-                eventSource.close();
-                eventSource = null;
-                installationCompleted = true;
-                hideAbortButton();
-
-                // 상태 폴링으로 최종 확인
-                const stateUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=get`;
-                fetch(stateUrl)
-                    .then(res => res.json())
-                    .then(stateData => showCompletionSection(stateData))
-                    .catch(() => {
-                        // 리다이렉트
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
+                    const confirmMsg = lang('sse_fallback_confirm');
+                    if (window.confirm(confirmMsg)) {
+                        // 폴링 모드로 재시도
+                        const pollingRadio = document.querySelector('input[name="installation_mode"][value="polling"]');
+                        if (pollingRadio) {
+                            pollingRadio.checked = true;
                         }
-                    });
-            });
-
-            eventSource.addEventListener('aborted', (e) => {
-                const data = JSON.parse(e.data);
-                eventSource.close();
-                eventSource = null;
-
-                // 즉시 중단 처리 - beforeunload 경고 방지 및 버튼 숨김
-                installationCompleted = true;
-                hideAbortButton();
-
-                // 현재 페이지에서 중단 섹션 표시 (리다이렉트하지 않음)
-                fetchInstallationState()
-                    .then(state => {
-                        showAbortedInstallationSection(state);
-                    })
-                    .catch(err => {
-                        // 상태 조회 실패 시 페이지 새로고침
-                        window.location.reload();
-                    });
-            });
-
-            eventSource.addEventListener('rollback_failed', (e) => {
-                // 롤백 실패 정보 저장 (showError에서 메시지 박스에 표시)
-                try {
-                    const data = JSON.parse(e.data);
-                    lastRollbackFailure = {
-                        message: data.message || lang('failed_rollback_manual_cleanup'),
-                        detail: data.detail || lang('failed_rollback_manual_cleanup_detail'),
-                    };
-                } catch (parseError) {
-                    lastRollbackFailure = {
-                        message: lang('failed_rollback_manual_cleanup'),
-                        detail: lang('failed_rollback_manual_cleanup_detail'),
-                    };
-                }
-            });
-
-            eventSource.addEventListener('error', (e) => {
-                // 서버에서 보낸 'error' 이벤트만 처리 (e.data 있음)
-                // SSE 연결 오류(e.data 없음)는 onerror 핸들러에서 처리
-                if (!e.data) {
-                    return;
-                }
-
-                let errorMessage = lang('installation_error_occurred');
-                let errorDetail = null;
-                let failedTaskId = null;
-
-                try {
-                    const data = JSON.parse(e.data);
-                    // message_key가 있으면 번역, 없으면 message 사용
-                    errorMessage = translateWithKey(data.message_key, data.message || errorMessage);
-
-                    // 상세 오류 정보가 있으면 추가
-                    if (data.error) {
-                        errorDetail = data.error;
+                        installationStarted = false;
+                        startInstallation('polling');
+                    } else {
+                        showError(lang('sse_connection_timeout'), lang('sse_server_config_guide'));
                     }
-
-                    // failed task ID 저장
-                    if (data.task) {
-                        failedTaskId = data.task;
-                    }
-                } catch (parseError) {
-                    // JSON 파싱 실패 시 기본 메시지 사용
-                }
-
-                eventSource.close();
-                eventSource = null;
-
-                showError(errorMessage, errorDetail, failedTaskId);
-            });
-
-            // SSE 연결 오류 처리
-            eventSource.onerror = () => {
-                // 타임아웃 취소 (onerror가 먼저 발생한 경우)
-                clearTimeout(sseTimeout);
-
-                // eventSource가 있으면 정리
-                if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
-                }
-
-                // 설치 완료되지 않은 경우에만 에러 표시
-                if (!installationCompleted) {
-                    const errorMessage = lang('sse_connection_timeout');
-                    const errorDetail = lang('sse_server_config_guide');
-                    showError(errorMessage, errorDetail);
-                }
+                },
             };
 
+            // 모드별 monitor 생성
+            const MonitorNS = window.G7InstallationMonitor;
+            if (!MonitorNS) {
+                showError('installation-monitor.js not loaded');
+                return;
+            }
+
+            if (installationMode === 'polling') {
+                currentMonitor = new MonitorNS.PollingMonitor(callbacks, {
+                    stateUrl: stateUrl,
+                    intervalMs: 1000,
+                });
+            } else {
+                const workerUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-worker.php`;
+                currentMonitor = new MonitorNS.SseMonitor(callbacks, {
+                    workerUrl: workerUrl,
+                    connectionTimeoutMs: 5000,
+                });
+            }
+
+            currentMonitor.start();
         } catch (error) {
             showError(`${lang('installation_start_error')}: ${error.message}`);
         }
@@ -2533,6 +3148,10 @@
     function showCompletionSection(data) {
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
 
+        // 대기 UI 숨기고 진행 카드 표시 (새로고침 후 복원 경로 대응)
+        hideInstallationStartSection();
+        showInstallationProgressSection();
+
         // 중단 버튼 숨김
         hideAbortButton();
 
@@ -2601,6 +3220,10 @@
      */
     function showError(errorMessage, errorDetail = null, failedTaskId = null) {
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
+
+        // 대기 UI 숨기고 진행 카드 표시 (실패 경로 — 작업 목록/로그 노출)
+        hideInstallationStartSection();
+        showInstallationProgressSection();
 
         // 중단 버튼 숨김
         hideAbortButton();
@@ -2788,6 +3411,10 @@
         // 상태 초기화
         installationStarted = false;
         installationCompleted = false;
+        if (currentMonitor) {
+            currentMonitor.stop();
+            currentMonitor = null;
+        }
         if (eventSource) {
             eventSource.close();
             eventSource = null;
@@ -2884,17 +3511,66 @@
                     showAbortedInstallationSection(state);
                 });
             } else {
-                // 처음 시작하는 경우 — 필수 파일 체크 후 시작
+                // 처음 시작하는 경우 — 필수 파일 체크 후 "설치 시작" 버튼 표시 (자동 시작 금지)
+                // PO가 모드(SSE/폴링)를 선택한 뒤 명시적으로 시작할 수 있도록 대기
                 const filesReady = await checkFilesBeforeInstall();
                 if (filesReady) {
-                    startInstallation();
+                    showInstallationStartSection();
                 }
             }
         } catch (error) {
-            // 오류 발생 시에도 설치 시작 (기본 동작)
-            startInstallation();
+            // 오류 발생 시에도 시작 버튼 노출 (자동 시작 금지)
+            showInstallationStartSection();
         }
     }
+
+    /**
+     * 설치 시작 대기 UI 표시 — 모드 선택 카드 + "설치 시작" 버튼을 노출한다.
+     * 진행 UI(경고 alert, 진행 카드)는 숨겨진 상태 유지.
+     */
+    function showInstallationStartSection() {
+        const startSection = document.getElementById('installation-start-section');
+        const modeCard = document.getElementById('installation-mode-card');
+        const warning = document.getElementById('install-warning');
+        const progressCard = document.getElementById('installation-progress-card');
+        if (startSection) startSection.style.display = '';
+        if (modeCard) modeCard.style.display = '';
+        if (warning) warning.style.display = 'none';
+        if (progressCard) progressCard.style.display = 'none';
+    }
+
+    /**
+     * 설치 시작 대기 UI 숨김 — 설치 진행 시작 시 호출.
+     * 모드 선택 카드는 비활성화(변경 불가) 상태로 유지하되 숨기지는 않는다.
+     */
+    function hideInstallationStartSection() {
+        const startSection = document.getElementById('installation-start-section');
+        if (startSection) startSection.style.display = 'none';
+
+        // 모드 선택 라디오 비활성화 (진행 중 변경 방지)
+        document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
+            input.disabled = true;
+        });
+    }
+
+    /**
+     * 설치 진행 UI 표시 — 경고 alert + 진행 카드 노출.
+     */
+    function showInstallationProgressSection() {
+        const warning = document.getElementById('install-warning');
+        const progressCard = document.getElementById('installation-progress-card');
+        if (warning) warning.style.display = '';
+        if (progressCard) progressCard.style.display = '';
+    }
+
+    /**
+     * "설치 시작" 버튼 클릭 핸들러 — 사용자가 모드 선택 후 명시적으로 시작.
+     */
+    function onStartInstallationClick() {
+        // startInstallation()이 라디오 값을 읽어 모드 결정
+        startInstallation();
+    }
+    window.onStartInstallationClick = onStartInstallationClick;
 
     /**
      * 중단된 설치 섹션 표시 (Step 4)
@@ -2904,6 +3580,10 @@
     function showAbortedInstallationSection(state) {
 
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
+
+        // 대기 UI 숨기고 진행 카드 표시 (중단 경로 — 작업 목록/로그 노출)
+        hideInstallationStartSection();
+        showInstallationProgressSection();
 
         // 중단 버튼 숨김
         hideAbortButton();

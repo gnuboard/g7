@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
@@ -27,6 +28,8 @@ class BoardMenuApiTest extends ModuleTestCase
         DB::table('boards')->update(['is_active' => false]);
         // 이 테스트 클래스에서 사용하는 슬러그 정리 (커밋된 경우 대비)
         DB::table('boards')->whereIn('slug', ['free', 'inactive', 'old', 'new'])->delete();
+        // board-menu 캐시 플러시 (이전 테스트 캐시가 남아있으면 데이터 격리 실패)
+        app(BoardService::class)->clearAllBoardCaches();
     }
 
     /**

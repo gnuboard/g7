@@ -1,0 +1,524 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Notification Log List DataGrid"
+    },
+    "id": "notification_log_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "props": {
+        "data": "{{notificationLogs?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{notificationLogs?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? 1}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": "{{notificationLogs?.data?.abilities?.can_delete === true}}",
+        "selectedIds": "{{_global.selectedIds_admin_notification_logs || []}}",
+        "selectedCountText": "",
+        "loading": "{{notificationLogs?.loading}}",
+        "expandable": true,
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-3"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.error_message}}",
+                        "props": {
+                            "className": "flex items-start gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-medium text-red-600 dark:text-red-400 shrink-0"
+                                },
+                                "text": "$t:admin.notification_log.detail.error_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-red-500 dark:text-red-300"
+                                },
+                                "text": "{{row.error_message}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
+                                },
+                                "text": "$t:admin.notification_log.detail.source_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "{{row.source ?? '-'}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0"
+                                },
+                                "text": "$t:admin.notification_log.detail.notification_type_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                },
+                                "text": "{{row.notification_type ?? '-'}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                                },
+                                "text": "$t:admin.notification_log.detail.body_label"
+                            },
+                            {
+                                "type": "composite",
+                                "name": "HtmlContent",
+                                "if": "{{row.body}}",
+                                "props": {
+                                    "content": "{{row.body}}",
+                                    "isHtml": true,
+                                    "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto text-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.body}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                },
+                                "text": "$t:admin.notification_log.detail.no_body"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "rowActions": [
+            {
+                "id": "delete",
+                "label": "$t:admin.notification_log.delete.button",
+                "iconName": "trash",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
+        "actionsColumnHeader": "$t:common.actions",
+        "columns": [
+            {
+                "field": "channel",
+                "header": "$t:admin.notification_log.col_channel",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                        },
+                        "text": "{{row.channel ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "recipient",
+                "header": "$t:admin.notification_log.col_recipient",
+                "width": "180px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!row.recipient}}",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                },
+                                "text": "{{row.recipient_name ?? row.recipient_identifier ?? '-'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.recipient_name && row.recipient_identifier}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "{{row.recipient_identifier}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "composite",
+                        "name": "ActionMenu",
+                        "if": "{{!!row.recipient}}",
+                        "props": {
+                            "position": "right",
+                            "items": [
+                                {
+                                    "id": "view_member",
+                                    "label": "$t:admin.notification_log.action.view_member",
+                                    "iconName": "user"
+                                },
+                                {
+                                    "id": "search_by_recipient",
+                                    "label": "$t:admin.notification_log.action.search_by_recipient",
+                                    "iconName": "search"
+                                }
+                            ]
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-user",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0 flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate block text-sm"
+                                                },
+                                                "text": "{{row.recipient.name}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                },
+                                                "text": "({{row.recipient.email}})",
+                                                "if": "{{!!row.recipient.email}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "value": "{{$args[0]}}",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.recipient.uuid}}"
+                                        }
+                                    },
+                                    "search_by_recipient": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "replace": true,
+                                            "query": {
+                                                "recipient_user_id": "{{row.recipient_user_id}}",
+                                                "page": 1
+                                            },
+                                            "transition_overlay_target": "notification_log_datagrid__body"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "sender",
+                "header": "$t:admin.notification_log.col_sender",
+                "width": "150px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{!row.sender}}",
+                        "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400 italic"
+                        },
+                        "text": "$t:admin.notification_log.system_sender"
+                    },
+                    {
+                        "type": "composite",
+                        "name": "ActionMenu",
+                        "if": "{{!!row.sender}}",
+                        "props": {
+                            "position": "right",
+                            "items": [
+                                {
+                                    "id": "view_member",
+                                    "label": "$t:admin.notification_log.action.view_member",
+                                    "iconName": "user"
+                                },
+                                {
+                                    "id": "search_by_sender",
+                                    "label": "$t:admin.notification_log.action.search_by_sender",
+                                    "iconName": "search"
+                                }
+                            ]
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-user",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0 flex-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate block text-sm"
+                                                },
+                                                "text": "{{row.sender.name}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                },
+                                                "text": "({{row.sender.email}})",
+                                                "if": "{{!!row.sender.email}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "value": "{{$args[0]}}",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.sender.uuid}}"
+                                        }
+                                    },
+                                    "search_by_sender": {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "replace": true,
+                                            "query": {
+                                                "sender_user_id": "{{row.sender_user_id}}",
+                                                "page": 1
+                                            },
+                                            "transition_overlay_target": "notification_log_datagrid__body"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "subject",
+                "header": "$t:admin.notification_log.col_subject",
+                "width": "250px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-1"
+                        },
+                        "text": "{{row.subject ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "extension_type",
+                "header": "$t:admin.notification_log.col_extension",
+                "width": "120px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                },
+                                "text": "{{row.extension_type ?? '-'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.extension_identifier && row.extension_identifier !== row.extension_type}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                },
+                                "text": "{{row.extension_identifier}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "status",
+                "header": "$t:admin.notification_log.col_status",
+                "sortable": true,
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "{{row.status === 'sent' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : row.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'}}"
+                        },
+                        "text": "{{row.status === 'sent' ? '$t:admin.notification_log.status_sent' : row.status === 'failed' ? '$t:admin.notification_log.status_failed' : '$t:admin.notification_log.status_skipped'}}"
+                    }
+                ]
+            },
+            {
+                "field": "sent_at",
+                "header": "$t:admin.notification_log.col_sent_at",
+                "sortable": true,
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "{{row.sent_at ?? '-'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "actions": [
+        {
+            "event": "onPageChange",
+            "type": "change",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/notification-logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "{{$args[0]}}"
+                },
+                "transition_overlay_target": "notification_log_datagrid__body"
+            }
+        },
+        {
+            "event": "onSelectionChange",
+            "type": "action",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "selectedIds_admin_notification_logs": "{{$args[0]}}"
+            }
+        },
+        {
+            "event": "onRowAction",
+            "type": "action",
+            "handler": "switch",
+            "cases": {
+                "delete": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "modal_data": "{{$args[1]}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "openModal",
+                            "target": "delete_confirm_modal"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

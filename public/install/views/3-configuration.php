@@ -373,6 +373,125 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
             </div>
         </div>
 
+        <!-- ========== Vendor 설치 방식 ========== -->
+        <?php
+            $bundleZipExists = file_exists(BASE_PATH . '/vendor-bundle.zip');
+            $zipArchiveAvailable = class_exists('ZipArchive');
+            $procOpenAvailable = function_exists('proc_open')
+                && !in_array('proc_open', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true);
+            $bundleAvailable = $bundleZipExists && $zipArchiveAvailable;
+            $composerAvailable = $procOpenAvailable;
+            $currentVendorMode = $formData['vendor_mode'] ?? 'auto';
+        ?>
+        <div class="requirement-card">
+            <div class="requirement-card-header">
+                <h2 class="card-title">Vendor 설치 방식</h2>
+                <p class="card-description">
+                    PHP 패키지 의존성(vendor/) 을 어떤 방식으로 설치할지 선택합니다.
+                </p>
+            </div>
+            <div class="requirement-card-body">
+                <div class="vendor-mode-cards">
+                    <!-- 자동 (권장) -->
+                    <label class="vendor-mode-card <?= $currentVendorMode === 'auto' ? 'selected' : '' ?>">
+                        <input type="radio" name="vendor_mode" value="auto" class="vendor-mode-card-input"
+                               <?= $currentVendorMode === 'auto' ? 'checked' : '' ?>>
+                        <div class="vendor-mode-card-header">
+                            <div class="vendor-mode-card-icon"><?= getSvgIcon('magic') ?: '✨' ?></div>
+                            <div class="vendor-mode-card-title-wrapper">
+                                <h3 class="vendor-mode-card-title">자동</h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-recommended">권장</span>
+                            </div>
+                            <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
+                        </div>
+                        <p class="vendor-mode-card-description">
+                            Composer 사용 가능 시 Composer, 불가 시 번들 vendor 사용
+                        </p>
+                        <p class="vendor-mode-card-status vendor-mode-card-status-ok">
+                            <?= getSvgIcon('check') ?: '✓' ?> 환경 자동 감지
+                        </p>
+                    </label>
+
+                    <!-- Composer 실행 -->
+                    <label class="vendor-mode-card <?= $currentVendorMode === 'composer' ? 'selected' : '' ?> <?= $composerAvailable ? '' : 'disabled' ?>">
+                        <input type="radio" name="vendor_mode" value="composer" class="vendor-mode-card-input"
+                               <?= $currentVendorMode === 'composer' ? 'checked' : '' ?>
+                               <?= $composerAvailable ? '' : 'disabled' ?>>
+                        <div class="vendor-mode-card-header">
+                            <div class="vendor-mode-card-icon"><?= getSvgIcon('terminal') ?: '⚙' ?></div>
+                            <div class="vendor-mode-card-title-wrapper">
+                                <h3 class="vendor-mode-card-title">Composer 실행</h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-dev">개발 환경</span>
+                            </div>
+                            <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
+                        </div>
+                        <p class="vendor-mode-card-description">
+                            composer install 명령으로 최신 버전 설치 (인터넷 + proc_open 필수)
+                        </p>
+                        <?php if (!$composerAvailable): ?>
+                            <p class="vendor-mode-card-status vendor-mode-card-status-error">
+                                <?= getSvgIcon('warning') ?: '⚠' ?> proc_open() 차단됨 — 사용 불가
+                            </p>
+                        <?php else: ?>
+                            <p class="vendor-mode-card-status vendor-mode-card-status-ok">
+                                <?= getSvgIcon('check') ?: '✓' ?> proc_open 사용 가능
+                            </p>
+                        <?php endif; ?>
+                    </label>
+
+                    <!-- 번들 Vendor 사용 -->
+                    <label class="vendor-mode-card <?= $currentVendorMode === 'bundled' ? 'selected' : '' ?> <?= $bundleAvailable ? '' : 'disabled' ?>">
+                        <input type="radio" name="vendor_mode" value="bundled" class="vendor-mode-card-input"
+                               <?= $currentVendorMode === 'bundled' ? 'checked' : '' ?>
+                               <?= $bundleAvailable ? '' : 'disabled' ?>>
+                        <div class="vendor-mode-card-header">
+                            <div class="vendor-mode-card-icon"><?= getSvgIcon('package') ?: '📦' ?></div>
+                            <div class="vendor-mode-card-title-wrapper">
+                                <h3 class="vendor-mode-card-title">번들 Vendor 사용</h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-shared">공유 호스팅</span>
+                            </div>
+                            <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
+                        </div>
+                        <p class="vendor-mode-card-description">
+                            vendor-bundle.zip 을 추출 (오프라인 설치, composer 불필요)
+                        </p>
+                        <?php if (!$zipArchiveAvailable): ?>
+                            <p class="vendor-mode-card-status vendor-mode-card-status-error">
+                                <?= getSvgIcon('warning') ?: '⚠' ?> ZipArchive 확장 미설치 — 사용 불가
+                            </p>
+                        <?php elseif (!$bundleZipExists): ?>
+                            <p class="vendor-mode-card-status vendor-mode-card-status-error">
+                                <?= getSvgIcon('warning') ?: '⚠' ?> vendor-bundle.zip 파일 없음 — 사용 불가
+                            </p>
+                        <?php else: ?>
+                            <p class="vendor-mode-card-status vendor-mode-card-status-ok">
+                                <?= getSvgIcon('check') ?: '✓' ?> vendor-bundle.zip 발견
+                            </p>
+                        <?php endif; ?>
+                    </label>
+                </div>
+                <p class="form-help" style="margin-top: var(--spacing-md);">
+                    이 설정은 추후 <code>php artisan core:update --vendor-mode=...</code> 옵션으로 변경할 수 있습니다.
+                </p>
+                <script>
+                    // Vendor 모드 카드 — 라디오 변경 시 .selected 클래스 동기화
+                    (function () {
+                        const cards = document.querySelectorAll('.vendor-mode-card');
+                        cards.forEach(function (card) {
+                            const input = card.querySelector('.vendor-mode-card-input');
+                            if (!input) return;
+                            input.addEventListener('change', function () {
+                                if (input.checked) {
+                                    cards.forEach(function (c) { c.classList.remove('selected'); });
+                                    card.classList.add('selected');
+                                }
+                            });
+                        });
+                    })();
+                </script>
+            </div>
+        </div>
+
         <!-- 네비게이션 -->
         <div class="btn-group btn-group-spread">
             <button type="button" onclick="goToStep(2)" class="btn btn-secondary">
@@ -407,6 +526,22 @@ window.CliValidator = {
     composerVerified: false,
     cliRequired: false, // 기본 php 사용 불가 시 true
 
+    /**
+     * Composer 검증이 필수인지 여부 — vendor_mode='bundled' 에서는 선택사항.
+     */
+    isComposerRequired() {
+        const mode = this.getSelectedVendorMode();
+        return mode !== 'bundled';
+    },
+
+    /**
+     * 현재 선택된 vendor_mode 값 (auto/composer/bundled).
+     */
+    getSelectedVendorMode() {
+        const input = document.querySelector('input[name="vendor_mode"]:checked');
+        return input ? input.value : 'auto';
+    },
+
     setPhpVerified(verified) {
         this.phpVerified = verified;
         this.updateStatusDisplay();
@@ -426,7 +561,13 @@ window.CliValidator = {
             // 섹션이 닫혀 있고 필수가 아니면 검증 불필요
             if (!this.cliRequired) return true;
         }
-        return this.phpVerified && this.composerVerified;
+
+        if (!this.phpVerified) return false;
+
+        // Composer 는 vendor_mode='bundled' 에서는 검증 불필요
+        if (this.isComposerRequired() && !this.composerVerified) return false;
+
+        return true;
     },
 
     updateStatusDisplay() {
@@ -442,16 +583,35 @@ window.CliValidator = {
             : '<?= lang("cli_status_not_verified") ?>';
         phpStatus.style.color = this.phpVerified ? 'var(--success-color)' : 'var(--error-color)';
 
-        composerStatus.textContent = this.composerVerified
-            ? '<?= lang("cli_status_verified") ?>'
-            : '<?= lang("cli_status_not_verified") ?>';
-        composerStatus.style.color = this.composerVerified ? 'var(--success-color)' : 'var(--error-color)';
+        const composerOptional = !this.isComposerRequired();
+        if (composerOptional) {
+            composerStatus.textContent = '<?= lang("cli_status_optional_bundled") ?>';
+            composerStatus.style.color = 'var(--text-muted-color, #888)';
+        } else {
+            composerStatus.textContent = this.composerVerified
+                ? '<?= lang("cli_status_verified") ?>'
+                : '<?= lang("cli_status_not_verified") ?>';
+            composerStatus.style.color = this.composerVerified ? 'var(--success-color)' : 'var(--error-color)';
+        }
     },
 
     updateSubmitButton() {
         // submit 버튼 상태는 validateStep3Form에서 최종 체크하므로 여기서는 시각적 힌트만
     }
 };
+
+// vendor_mode 라디오 변경 시 CLI 검증 상태 표시 갱신 (Composer 검증 필수/선택 전환)
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.name === 'vendor_mode') {
+        window.CliValidator.updateStatusDisplay();
+
+        // bundled 모드 전환 시 Composer 설치 안내 숨김
+        if (e.target.value === 'bundled') {
+            const guide = document.getElementById('composer-install-guide');
+            if (guide) guide.style.display = 'none';
+        }
+    }
+});
 
 // PHP CLI 설정 토글
 document.getElementById('show-php-cli-settings')?.addEventListener('change', function() {
@@ -656,9 +816,18 @@ async function testComposer() {
 }
 
 /**
- * Composer 설치 안내를 PHP 경로 반영하여 동적 생성
+ * Composer 설치 안내를 PHP 경로 반영하여 동적 생성.
+ *
+ * vendor_mode='bundled' 에서는 Composer 가 불필요하므로 안내를 띄우지 않는다.
  */
 function showComposerInstallGuide() {
+    // 번들 모드에서는 Composer 가 불필요 → 안내 생략
+    if (window.CliValidator && !window.CliValidator.isComposerRequired()) {
+        const g = document.getElementById('composer-install-guide');
+        if (g) g.style.display = 'none';
+        return;
+    }
+
     const guide = document.getElementById('composer-install-guide');
     if (!guide) return;
 

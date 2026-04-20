@@ -137,5 +137,6 @@ return [
         'extract_fallback' => ':method 방식 실패: :error — 다음 방법을 시도합니다.',
         'all_extract_methods_failed' => '모든 아카이브 추출 방법이 실패했습니다. --source 옵션으로 수동 업데이트를 시도하세요.',
         'unzip_command_failed' => 'unzip 명령어 실행 실패 (종료 코드: :code). :output',
+        'zip_file_not_found' => '지정된 ZIP 파일을 찾을 수 없습니다: :path',
     ],
 ];

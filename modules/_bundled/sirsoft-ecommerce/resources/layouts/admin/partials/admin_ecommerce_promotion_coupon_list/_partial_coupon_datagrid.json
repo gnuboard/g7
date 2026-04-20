@@ -1,750 +1,950 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Coupon List - DataGrid Section with Bulk Actions"
-  },
-  "id": "coupon_datagrid_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "mt-6"
-  },
-  "children": [
-    {
-      "id": "bulk_action_bar",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}"
-        },
-        {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "name": "bulkIssueStatus",
-            "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
-            "value": "{{_local.bulkIssueStatus || ''}}",
-            "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
-            "options": [
-              { "value": "", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status", "disabled": true },
-              { "value": "issuing", "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing" },
-              { "value": "stopped", "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped" }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "_local",
-                "bulkIssueStatus": "{{$event.target.value}}"
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex-1" }
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50",
-            "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "bulkIssueStatus": "{{_local.bulkIssueStatus}}",
-                    "bulkSelectedItems": "{{_local.selectedItems}}"
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_status_change_confirm"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "meta": {
+        "is_partial": true,
+        "description": "Coupon List - DataGrid Section with Bulk Actions"
     },
-    {
-      "id": "table_header_bar",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
-      },
-      "children": [
+    "id": "coupon_datagrid_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-sm text-gray-600 dark:text-gray-400"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center gap-3" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "sortBy",
-                "className": "w-40",
-                "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
-                "options": [
-                  { "value": "created_at_desc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc" },
-                  { "value": "created_at_asc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc" },
-                  { "value": "name_asc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_asc" },
-                  { "value": "name_desc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_desc" },
-                  { "value": "valid_to_asc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_asc" },
-                  { "value": "valid_to_desc", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_desc" }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/ecommerce/promotion-coupons",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                      "sort_order": "{{$event.target.value.split('_').pop()}}",
-                      "page": 1
-                    }
-                  }
-                }
-              ]
+            "id": "bulk_action_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3"
             },
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "perPage",
-                "className": "w-20",
-                "value": "{{query.per_page || '10'}}",
-                "options": [
-                  { "value": "10", "label": "10" },
-                  { "value": "20", "label": "20" },
-                  { "value": "50", "label": "50" },
-                  { "value": "100", "label": "100" }
-                ]
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/ecommerce/promotion-coupons",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "per_page": "{{$event.target.value}}",
-                      "page": 1
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "pc_data_table",
-      "if": "{{!_global.isPortable}}",
-      "type": "composite",
-      "name": "DataGrid",
-      "props": {
-        "data": "{{coupons?.data?.data || []}}",
-        "pagination": true,
-        "serverSidePagination": true,
-        "serverCurrentPage": "{{coupons?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? 1}}",
-        "pageSize": "{{+(query.per_page || 10)}}",
-        "alwaysShowPagination": true,
-        "selectable": true,
-        "selectedIds": "{{_local.selectedItems || []}}",
-        "visibleColumns": "{{_local.visibleColumns}}",
-        "selectedCountText": "",
-        "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
-        "loading": "{{coupons?.$loading}}",
-        "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
-        "rowActions": [
-          {
-            "id": "edit",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
-            "iconName": "fa-regular fa-pen-to-square",
-            "disabledField": "abilities.can_update"
-          },
-          {
-            "id": "divider",
-            "divider": true
-          },
-          {
-            "id": "delete",
-            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
-            "iconName": "fa-regular fa-trash-can",
-            "variant": "danger",
-            "disabledField": "abilities.can_delete"
-          }
-        ],
-        "columns": [
-          {
-            "field": "checkbox",
-            "header": "",
-            "width": "40px",
-            "selectable": true
-          },
-          {
-            "field": "target_type_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.target_type_badge_color}}",
-                  "text": "{{row.target_type_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "name",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name",
-            "width": "200px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "A",
-                "props": {
-                  "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
-                },
-                "text": "{{row.localized_name}}",
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "benefit_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount",
-            "width": "150px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": { "className": "flex items-center gap-1" },
-                "children": [
-                  {
-                    "type": "composite",
-                    "name": "Badge",
-                    "props": {
-                      "color": "{{row.discount_type === 'fixed' ? 'blue' : 'teal'}}",
-                      "text": "{{row.discount_type_label}}",
-                      "size": "sm"
-                    }
-                  },
-                  {
                     "type": "basic",
                     "name": "Span",
-                    "text": "{{row.benefit_formatted}}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "field": "valid_period_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period",
-            "width": "170px"
-          },
-          {
-            "field": "issue_period_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period",
-            "width": "170px"
-          },
-          {
-            "field": "issue_count_formatted",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count",
-            "width": "80px",
-            "align": "center"
-          },
-          {
-            "field": "issue_method_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_method_badge_color}}",
-                  "text": "{{row.issue_method_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "issue_condition_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_condition_badge_color}}",
-                  "text": "{{row.issue_condition_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "issue_status_label",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status",
-            "width": "80px",
-            "cellChildren": [
-              {
-                "type": "composite",
-                "name": "Badge",
-                "props": {
-                  "color": "{{row.issue_status_badge_color}}",
-                  "text": "{{row.issue_status_label}}"
-                }
-              }
-            ]
-          },
-          {
-            "field": "created_at",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at",
-            "width": "100px"
-          },
-          {
-            "field": "created_by_name",
-            "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by",
-            "width": "150px",
-            "cellChildren": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": { "className": "text-gray-500 dark:text-gray-400" },
-                "text": "-",
-                "if": "{{!row.created_by}}"
-              },
-              {
-                "type": "composite",
-                "name": "ActionMenu",
-                "if": "{{!!row.created_by}}",
-                "props": {
-                  "position": "right",
-                  "items": [
-                    { "id": "view_member", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member", "iconName": "user", "if": "{{!!row.created_by}}" },
-                    { "id": "search_by_creator", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator", "iconName": "search" }
-                  ]
+                    "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}"
                 },
-                "children": [
-                  {
+                {
                     "type": "basic",
-                    "name": "Div",
-                    "props": { "className": "flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors" },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "fa-regular fa-user",
-                          "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": { "className": "min-w-0 flex-1" },
-                        "children": [
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "font-medium text-gray-900 dark:text-gray-100 truncate block" },
-                            "text": "{{row.created_by_name}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": { "className": "text-xs text-gray-500 dark:text-gray-400 truncate block" },
-                            "text": "({{row.created_by_email}})",
-                            "if": "{{!!row.created_by_email}}"
-                          }
+                    "name": "Select",
+                    "props": {
+                        "name": "bulkIssueStatus",
+                        "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "value": "{{_local.bulkIssueStatus || ''}}",
+                        "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status",
+                                "disabled": true
+                            },
+                            {
+                                "value": "issuing",
+                                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing"
+                            },
+                            {
+                                "value": "stopped",
+                                "label": "$t:sirsoft-ecommerce.enums.coupon_issue_status.stopped"
+                            }
                         ]
-                      }
-                    ]
-                  }
-                ],
-                "actions": [
-                  {
-                    "event": "onItemClick",
-                    "handler": "switch",
-                    "value": "{{$args[0]}}",
-                    "cases": {
-                      "view_member": {
-                        "handler": "openWindow",
-                        "params": { "path": "/admin/users/{{row.created_by}}" }
-                      },
-                      "search_by_creator": {
-                        "handler": "sequence",
-                        "actions": [
-                          {
+                    },
+                    "actions": [
+                        {
+                            "type": "change",
                             "handler": "setState",
                             "params": {
-                              "target": "local",
-                              "filter.createdBy": "{{row.created_by}}",
-                              "creatorSearchResults": "{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"
+                                "target": "_local",
+                                "bulkIssueStatus": "{{$event.target.value}}"
                             }
-                          },
-                          {
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50",
+                        "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkIssueStatus": "{{_local.bulkIssueStatus}}",
+                                        "bulkSelectedItems": "{{_local.selectedItems}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_status_change_confirm"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "table_header_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "sortBy",
+                                "className": "w-40",
+                                "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                "options": [
+                                    {
+                                        "value": "created_at_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc"
+                                    },
+                                    {
+                                        "value": "created_at_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc"
+                                    },
+                                    {
+                                        "value": "name_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_asc"
+                                    },
+                                    {
+                                        "value": "name_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.name_desc"
+                                    },
+                                    {
+                                        "value": "valid_to_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_asc"
+                                    },
+                                    {
+                                        "value": "valid_to_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.valid_to_desc"
+                                    }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/promotion-coupons",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                            "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                            "page": 1
+                                        },
+                                        "transition_overlay_target": "pc_data_table__body"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "perPage",
+                                "className": "w-20",
+                                "value": "{{query.per_page || '10'}}",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "100"
+                                    }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/promotion-coupons",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "per_page": "{{$event.target.value}}",
+                                            "page": 1
+                                        },
+                                        "transition_overlay_target": "pc_data_table__body"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "pc_data_table",
+            "if": "{{!_global.isPortable}}",
+            "type": "composite",
+            "name": "DataGrid",
+            "props": {
+                "data": "{{coupons?.data?.data || []}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{coupons?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{coupons?.data?.pagination?.last_page ?? 1}}",
+                "pageSize": "{{+(query.per_page || 10)}}",
+                "alwaysShowPagination": true,
+                "selectable": true,
+                "selectedIds": "{{_local.selectedItems || []}}",
+                "visibleColumns": "{{_local.visibleColumns}}",
+                "selectedCountText": "",
+                "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
+                "loading": "{{coupons?.$loading}}",
+                "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
+                "rowActions": [
+                    {
+                        "id": "edit",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
+                        "iconName": "fa-regular fa-pen-to-square",
+                        "disabledField": "abilities.can_update"
+                    },
+                    {
+                        "id": "divider",
+                        "divider": true
+                    },
+                    {
+                        "id": "delete",
+                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
+                        "iconName": "fa-regular fa-trash-can",
+                        "variant": "danger",
+                        "disabledField": "abilities.can_delete"
+                    }
+                ],
+                "columns": [
+                    {
+                        "field": "checkbox",
+                        "header": "",
+                        "width": "40px",
+                        "selectable": true
+                    },
+                    {
+                        "field": "target_type_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.target_type",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.target_type_badge_color}}",
+                                    "text": "{{row.target_type_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "name",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.name",
+                        "width": "200px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "A",
+                                "props": {
+                                    "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
+                                },
+                                "text": "{{row.localized_name}}",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "benefit_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.benefit_amount",
+                        "width": "150px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "{{row.discount_type === 'fixed' ? 'blue' : 'teal'}}",
+                                            "text": "{{row.discount_type_label}}",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{row.benefit_formatted}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "valid_period_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.valid_period",
+                        "width": "170px"
+                    },
+                    {
+                        "field": "issue_period_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_period",
+                        "width": "170px"
+                    },
+                    {
+                        "field": "issue_count_formatted",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_count",
+                        "width": "80px",
+                        "align": "center"
+                    },
+                    {
+                        "field": "issue_method_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_method",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_method_badge_color}}",
+                                    "text": "{{row.issue_method_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "issue_condition_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_condition",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_condition_badge_color}}",
+                                    "text": "{{row.issue_condition_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "issue_status_label",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.issue_status",
+                        "width": "80px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "props": {
+                                    "color": "{{row.issue_status_badge_color}}",
+                                    "text": "{{row.issue_status_label}}"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "created_at",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_at",
+                        "width": "100px"
+                    },
+                    {
+                        "field": "created_by_name",
+                        "header": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.created_by",
+                        "width": "150px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "-",
+                                "if": "{{!row.created_by}}"
+                            },
+                            {
+                                "type": "composite",
+                                "name": "ActionMenu",
+                                "if": "{{!!row.created_by}}",
+                                "props": {
+                                    "position": "right",
+                                    "items": [
+                                        {
+                                            "id": "view_member",
+                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
+                                            "iconName": "user",
+                                            "if": "{{!!row.created_by}}"
+                                        },
+                                        {
+                                            "id": "search_by_creator",
+                                            "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator",
+                                            "iconName": "search"
+                                        }
+                                    ]
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-regular fa-user",
+                                                    "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "min-w-0 flex-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
+                                                        },
+                                                        "text": "{{row.created_by_name}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400 truncate block"
+                                                        },
+                                                        "text": "({{row.created_by_email}})",
+                                                        "if": "{{!!row.created_by_email}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "event": "onItemClick",
+                                        "handler": "switch",
+                                        "value": "{{$args[0]}}",
+                                        "cases": {
+                                            "view_member": {
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "/admin/users/{{row.created_by}}"
+                                                }
+                                            },
+                                            "search_by_creator": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "filter.createdBy": "{{row.created_by}}",
+                                                            "creatorSearchResults": "{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/promotion-coupons",
+                                                            "replace": true,
+                                                            "query": {
+                                                                "created_by": "{{row.created_by}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "pc_data_table__body"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "type": "change",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/ecommerce/promotion-coupons",
+                        "replace": true,
+                        "mergeQuery": true,
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        },
+                        "transition_overlay_target": "pc_data_table__body"
+                    }
+                },
+                {
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "selectedItems": "{{$args[0]}}"
+                    }
+                },
+                {
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "cases": {
+                        "edit": {
                             "handler": "navigate",
                             "params": {
-                              "path": "/admin/ecommerce/promotion-coupons",
-                              "replace": true,
-                              "query": {
-                                "created_by": "{{row.created_by}}",
-                                "page": 1
-                              }
+                                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit"
                             }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "actions": [
-        {
-          "event": "onPageChange",
-          "type": "change",
-          "handler": "navigate",
-          "params": {
-            "path": "/admin/ecommerce/promotion-coupons",
-            "replace": true,
-            "mergeQuery": true,
-            "query": {
-              "page": "{{$args[0]}}"
-            }
-          }
-        },
-        {
-          "event": "onSelectionChange",
-          "handler": "setState",
-          "params": {
-            "target": "_local",
-            "selectedItems": "{{$args[0]}}"
-          }
-        },
-        {
-          "event": "onRowAction",
-          "handler": "switch",
-          "cases": {
-            "edit": {
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/ecommerce/promotion-coupons/{{$args[1].id}}/edit"
-              }
-            },
-            "delete": {
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "deleteTarget": {
-                      "id": "{{$args[1].id}}",
-                      "name": "{{$args[1].localized_name}}"
-                    }
-                  }
-                },
-                {
-                  "handler": "openModal",
-                  "target": "modal_delete_confirm"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "mobile_card_view",
-      "if": "{{_global.isPortable}}",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-4" },
-      "children": [
-        {
-          "iteration": {
-            "source": "coupons?.data?.data || []",
-            "item": "coupon",
-            "key": "coupon.id"
-          },
-          "children": [
-            {
-              "type": "composite",
-              "name": "Card",
-              "props": {
-                "className": "{{(_local.selectedItems || []).includes(coupon.id) ? 'ring-2 ring-blue-500' : ''}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-start justify-between" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-3" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox",
-                            "checked": "{{(_local.selectedItems || []).includes(coupon.id)}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "_local",
-                                "selectedItems": "{{(_local.selectedItems || []).includes(coupon.id) ? (_local.selectedItems || []).filter(id => id !== coupon.id) : [...(_local.selectedItems || []), coupon.id]}}"
-                              }
-                            }
-                          ]
                         },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "font-medium text-gray-900 dark:text-white" },
-                              "text": "{{coupon.localized_name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-sm text-gray-500 dark:text-gray-400 ml-2" },
-                              "text": "{{coupon.created_at}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "ActionMenu",
-                      "props": {
-                        "triggerLabel": "",
-                        "triggerIconName": "ellipsis-vertical",
-                        "position": "right",
-                        "items": [
-                          { "id": "edit", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit", "iconName": "edit", "disabled": "{{!coupon.abilities?.can_update}}" },
-                          { "id": "issue_history", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title", "iconName": "list" },
-                          { "divider": true },
-                          { "id": "delete", "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete", "iconName": "trash", "variant": "danger", "disabled": "{{!coupon.abilities?.can_delete}}" }
-                        ]
-                      },
-                      "actions": [
-                        {
-                          "event": "onItemClick",
-                          "handler": "switch",
-                          "value": "{{$args[0]}}",
-                          "cases": {
-                            "edit": {
-                              "handler": "navigate",
-                              "params": { "path": "/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit" }
-                            },
-                            "issue_history": {
-                              "handler": "sequence",
-                              "actions": [
+                        "delete": {
+                            "handler": "sequence",
+                            "actions": [
                                 {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "issueHistoryCoupon": {
-                                      "id": "{{coupon.id}}",
-                                      "name": "{{coupon.localized_name}}"
-                                    },
-                                    "issueHistoryPage": 1,
-                                    "issueHistoryPerPage": 10,
-                                    "issueHistoryFilterUser": null
-                                  }
-                                },
-                                {
-                                  "handler": "fetchDataSource",
-                                  "params": { "id": "couponIssues" }
-                                },
-                                {
-                                  "handler": "openModal",
-                                  "target": "modal_issue_history"
-                                }
-                              ]
-                            },
-                            "delete": {
-                              "handler": "sequence",
-                              "actions": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "deleteTarget": {
-                                      "id": "{{coupon.id}}",
-                                      "name": "{{coupon.localized_name}}"
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "deleteTarget": {
+                                            "id": "{{$args[1].id}}",
+                                            "name": "{{$args[1].localized_name}}"
+                                        }
                                     }
-                                  }
                                 },
                                 {
-                                  "handler": "openModal",
-                                  "target": "modal_delete_confirm"
+                                    "handler": "openModal",
+                                    "target": "modal_delete_confirm"
                                 }
-                              ]
-                            }
-                          }
+                            ]
                         }
-                      ]
                     }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Hr",
-                  "props": { "className": "my-3 border-gray-200 dark:border-gray-700" }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "space-y-2 text-sm" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "font-medium text-gray-900 dark:text-white" },
-                      "text": "{{coupon.benefit_formatted}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-2" },
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type:" },
-                        { "type": "composite", "name": "Badge", "props": { "color": "{{coupon.target_type_badge_color}}", "text": "{{coupon.target_type_label}}" } }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center gap-2" },
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue:" },
-                        { "type": "composite", "name": "Badge", "props": { "color": "{{coupon.issue_method_badge_color}}", "text": "{{coupon.issue_method_label}}" } },
-                        { "type": "composite", "name": "Badge", "props": { "color": "{{coupon.issue_condition_badge_color}}", "text": "{{coupon.issue_condition_label}}" } }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.valid_period: " },
-                        { "type": "basic", "name": "Span", "text": "{{coupon.valid_period_formatted}}" }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period: " },
-                        { "type": "basic", "name": "Span", "text": "{{coupon.issue_period_formatted}}" }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count: " },
-                        { "type": "basic", "name": "Span", "text": "{{coupon.issue_count_formatted}}" }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex items-center justify-between" },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex items-center gap-2" },
-                          "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status:" },
-                            { "type": "composite", "name": "Badge", "props": { "color": "{{coupon.issue_status_badge_color}}", "text": "{{coupon.issue_status_label}}" } }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": { "className": "text-gray-500 dark:text-gray-400" },
-                          "text": "{{coupon.created_by_name ?? '-'}}"
-                        }
-                      ]
-                    }
-                  ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "id": "mobile_card_view",
+            "if": "{{_global.isPortable}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "iteration": {
+                        "source": "coupons?.data?.data || []",
+                        "item": "coupon",
+                        "key": "coupon.id"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "Card",
+                            "props": {
+                                "className": "{{(_local.selectedItems || []).includes(coupon.id) ? 'ring-2 ring-blue-500' : ''}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-start justify-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox",
+                                                        "checked": "{{(_local.selectedItems || []).includes(coupon.id)}}"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "_local",
+                                                                "selectedItems": "{{(_local.selectedItems || []).includes(coupon.id) ? (_local.selectedItems || []).filter(id => id !== coupon.id) : [...(_local.selectedItems || []), coupon.id]}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium text-gray-900 dark:text-white"
+                                                            },
+                                                            "text": "{{coupon.localized_name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-500 dark:text-gray-400 ml-2"
+                                                            },
+                                                            "text": "{{coupon.created_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ActionMenu",
+                                            "props": {
+                                                "triggerLabel": "",
+                                                "triggerIconName": "ellipsis-vertical",
+                                                "position": "right",
+                                                "items": [
+                                                    {
+                                                        "id": "edit",
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
+                                                        "iconName": "edit",
+                                                        "disabled": "{{!coupon.abilities?.can_update}}"
+                                                    },
+                                                    {
+                                                        "id": "issue_history",
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title",
+                                                        "iconName": "list"
+                                                    },
+                                                    {
+                                                        "divider": true
+                                                    },
+                                                    {
+                                                        "id": "delete",
+                                                        "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.delete",
+                                                        "iconName": "trash",
+                                                        "variant": "danger",
+                                                        "disabled": "{{!coupon.abilities?.can_delete}}"
+                                                    }
+                                                ]
+                                            },
+                                            "actions": [
+                                                {
+                                                    "event": "onItemClick",
+                                                    "handler": "switch",
+                                                    "value": "{{$args[0]}}",
+                                                    "cases": {
+                                                        "edit": {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/ecommerce/promotion-coupons/{{coupon.id}}/edit"
+                                                            }
+                                                        },
+                                                        "issue_history": {
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "issueHistoryCoupon": {
+                                                                            "id": "{{coupon.id}}",
+                                                                            "name": "{{coupon.localized_name}}"
+                                                                        },
+                                                                        "issueHistoryPage": 1,
+                                                                        "issueHistoryPerPage": 10,
+                                                                        "issueHistoryFilterUser": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "fetchDataSource",
+                                                                    "params": {
+                                                                        "id": "couponIssues"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "modal_issue_history"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "delete": {
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "deleteTarget": {
+                                                                            "id": "{{coupon.id}}",
+                                                                            "name": "{{coupon.localized_name}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "modal_delete_confirm"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Hr",
+                                    "props": {
+                                        "className": "my-3 border-gray-200 dark:border-gray-700"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{coupon.benefit_formatted}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.target_type:"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "color": "{{coupon.target_type_badge_color}}",
+                                                        "text": "{{coupon.target_type_label}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue:"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "color": "{{coupon.issue_method_badge_color}}",
+                                                        "text": "{{coupon.issue_method_label}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "color": "{{coupon.issue_condition_badge_color}}",
+                                                        "text": "{{coupon.issue_condition_label}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.valid_period: "
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{coupon.valid_period_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_period: "
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{coupon.issue_period_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.issue_count: "
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{coupon.issue_count_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center justify-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.mobile.status:"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "props": {
+                                                                "color": "{{coupon.issue_status_badge_color}}",
+                                                                "text": "{{coupon.issue_status_label}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{coupon.created_by_name ?? '-'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

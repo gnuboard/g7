@@ -318,6 +318,78 @@
 | `enabled` | `boolean` | `false` | 전환 오버레이 활성화 |
 | `style` | `"opaque" \| "blur" \| "fade" \| "skeleton" \| "spinner"` | `"opaque"` | 오버레이 스타일 |
 | `target` | `string` | - | 오버레이 대상 요소 ID. 미지정 시 전체 화면 |
+| `wait_for` | `string[]` | - | 명시된 데이터소스 fetch 완료까지 오버레이 유지 (engine-v1.34.0+) |
+
+### wait_for — 데이터소스 가드 (engine-v1.34.0+)
+
+`blocking` 데이터소스가 없는 페이지에서도 명시된 progressive 데이터소스가 fetch 완료될 때까지 오버레이가 표시되도록 한다. 베이스 레이아웃에 spinner 설정을 두고, 자식 레이아웃이 `wait_for` 만 추가하는 패턴이 권장된다.
+
+```json
+// 베이스 레이아웃 (_admin_base.json)
+{
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "main_content",
+        "spinner": { "component": "PageLoading" }
+    }
+}
+
+// 자식 레이아웃 (admin_settings.json) — wait_for 만 명시
+{
+    "extends": "_admin_base",
+    "transition_overlay": {
+        "wait_for": ["settings"]
+    }
+}
+```
+
+`LayoutService` 가 `transition_overlay` 를 shallow merge 하므로 자식의 `wait_for` 만 추가되고 베이스의 `enabled/style/target/spinner` 설정이 보존된다.
+
+#### 호환되는 loading_strategy
+
+| loading_strategy | wait_for 동작 | 비고 |
+| ---------------- | ------------- | ---- |
+| `blocking` | step 2.5 에서 spinner 자동 트리거. wait_for 명시는 중복이지만 무해 | 명시 불필요 |
+| `progressive` (default) | wait_for 의 핵심 사용처 — fetch 완료까지 오버레이 유지 | 권장 |
+| `background` | **검증 단계에서 차단됨** — "사용자 차단 없음" 의도와 충돌 | UpdateLayoutContentRequest 422 |
+| `websocket` | **검증 단계에서 차단됨** — fetch 완료 이벤트 없음 | UpdateLayoutContentRequest 422 |
+
+#### 트리거/해제 시점
+
+- **트리거 1 — 페이지 진입**: handleRouteChange step 2.5 에서 `wait_for` 에 명시된 ID 중 progressive/blocking 데이터소스가 1개 이상 존재하면 오버레이 표시
+- **트리거 2 — 탭 전환/페이지네이션** (engine-v1.35.0+): `navigate replace:true` 로 `updateQueryParams` 경로에 진입할 때도 동일 조건으로 오버레이 표시. handleRouteChange 와 동일 정책으로 `wait_for` 검사 + 오버레이 호출
+- **해제**: 모든 progressive 데이터소스 fetch 완료 시 (hideTransitionOverlay 호출)
+- **존재하지 않는 ID**: 엔진이 자동 무시 (백엔드 검증과 별개로 런타임 안전 가드)
+
+#### 동적 target override (engine-v1.36.0+)
+
+`replace: true` navigate 의 `params.transition_overlay_target` 으로 호출별 target 을 override 할 수 있다. 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등)에서 서브 탭 콘텐츠 영역에만 spinner 를 표시하고 싶을 때 사용.
+
+```json
+// 상위 탭 전환: 베이스 transition_overlay.target 사용 (settings_tab_content)
+{ "handler": "navigate", "params": { "path": "/admin/settings", "replace": true, "query": { "tab": "notification_definitions" } } }
+
+// 채널 서브 탭 전환: 채널 콘텐츠 영역에만 spinner
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/settings",
+    "replace": true,
+    "mergeQuery": true,
+    "query": { "channel": "{{ch.id}}" },
+    "transition_overlay_target": "notif_channel_content"
+  }
+}
+```
+
+`transition_overlay_target` 미존재 시 레이아웃의 `transition_overlay.target` 사용. 해당 ID DOM 요소 미발견 시 `fallback_target` → `#app` 3단계 폴백.
+
+> 상세: [actions-handlers-navigation.md#transition_overlay_target-옵션-engine-v1360](actions-handlers-navigation.md#transition_overlay_target-옵션-engine-v1360)
+
+#### refetchDataSource 와의 관계
+
+`refetchDataSource` 핸들러로 단독 데이터를 다시 부르는 경우는 `wait_for` 트리거 대상이 아니다. 이 경우 컴포넌트 단위 `blur_until_loaded` 의 객체 형태(`{ enabled: true, data_sources: ["xxx"] }`)로 처리한다 — 페이지 단위 vs 컴포넌트 단위의 역할 분리를 유지한다.
 
 `target` 지정 시 CSS `<style>` 태그를 `<head>`에 주입하여 타겟 요소에 `::after` 의사 요소로 오버레이를 생성합니다. 타겟 요소에 `position:relative; z-index:0`을 설정하여 명시적 stacking context를 생성하므로, `::after`가 타겟 내부에 갇히고 헤더/네비게이션 등 형제 요소를 절대 가리지 않습니다. `target` 미지정 시 `document.body`에 `position:fixed` div를 삽입하는 폴백 방식을 사용합니다.
 
@@ -621,6 +693,45 @@ lifecycle 핸들러에서는 다음 데이터에 접근할 수 있습니다:
 - ✅ onMount 액션은 순차적으로 실행됨
 - ✅ onUnmount는 컴포넌트가 DOM에서 제거될 때 실행됨
 - ❌ React Strict Mode에서 onMount가 두 번 호출될 수 있음 (개발 환경)
+
+---
+
+## _seo 컨텍스트 네임스페이스
+
+> **버전**: SeoRenderer에서 주입
+
+SEO 변수 시스템이 활성화된 레이아웃에서, SeoRenderer가 확장 설정 SEO 템플릿을 해석한 결과를 `_seo` 네임스페이스에 주입합니다.
+
+### 구조
+
+```text
+_seo.{page_type}.title       — 해석된 SEO 제목
+_seo.{page_type}.description — 해석된 SEO 설명
+```
+
+### 사용법
+
+`_seo` 컨텍스트는 `og`, `structured_data`, 그리고 모든 표현식 영역에서 참조할 수 있습니다.
+
+```json
+"og": {
+    "title": "{{_seo.product.title ?? product.data.name ?? ''}}",
+    "description": "{{_seo.product.description ?? product.data.short_description ?? ''}}"
+},
+"structured_data": {
+    "@type": "Product",
+    "name": "{{_seo.product.title ?? product.data.name ?? ''}}"
+}
+```
+
+### 동작 조건
+
+- `meta.seo.extensions`에 확장이 선언되어 있어야 함
+- 해당 확장의 `seoVariables()`에서 변수가 정의되어 있어야 함
+- 확장 설정에 `seo.meta_{page_type}_title` / `seo.meta_{page_type}_description` 템플릿이 존재해야 함
+- 조건 미충족 시 `_seo.{page_type}` 값이 `undefined` → fallback 표현식(예: `?? product.data.name ?? ''`) 사용 권장
+
+> 상세: [seo-system.md](../backend/seo-system.md) "SEO 변수 시스템" 참조
 
 ---
 

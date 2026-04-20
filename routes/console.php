@@ -19,9 +19,11 @@ Artisan::command('inspire', function () {
 */
 
 // 30초마다 시스템 리소스 브로드캐스트 (대시보드 실시간 업데이트)
+// withoutOverlapping(5): 5분 후 mutex 자동 만료 — 백그라운드 프로세스가 비정상 종료되어도
+// 무한 락에 빠지지 않도록 보호 (기본값은 무한 락)
 Schedule::command('dashboard:broadcast-resources')
     ->everyThirtySeconds()
-    ->withoutOverlapping()
+    ->withoutOverlapping(5)
     ->runInBackground();
 
 // 만료된 레이아웃 미리보기 정리 (30분마다)
@@ -41,6 +43,29 @@ if (file_exists(base_path('.env'))) {
             'hourly' => $sitemapScheduled->hourly(),
             'weekly' => $sitemapScheduled->weekly()->at($sitemapTime),
             default => $sitemapScheduled->daily()->at($sitemapTime),
+        };
+    }
+}
+
+// GeoIP DB 정기 갱신 스케줄
+// 마스터 토글 + 자동 업데이트 토글 + 라이선스 키가 모두 충족되어야 등록됨
+if (file_exists(base_path('.env'))) {
+    $geoipMasterEnabled = (bool) g7_core_settings('geoip.feature_enabled', false);
+    $geoipAutoUpdate = (bool) g7_core_settings('geoip.auto_update_enabled', true);
+    $geoipLicenseKey = (string) g7_core_settings('geoip.license_key', '');
+
+    if ($geoipMasterEnabled && $geoipAutoUpdate && $geoipLicenseKey !== '') {
+        $geoipFrequency = (string) config('geoip.schedule.frequency', 'weekly');
+        $geoipTime = (string) config('geoip.schedule.time', '03:00');
+
+        $geoipScheduled = Schedule::command('geoip:update')
+            ->onOneServer()
+            ->withoutOverlapping(60);
+
+        // MaxMind는 주 2회(화/금) 갱신 — 수요일 다운로드로 충분
+        match ($geoipFrequency) {
+            'daily' => $geoipScheduled->dailyAt($geoipTime),
+            default => $geoipScheduled->weeklyOn(3, $geoipTime),
         };
     }
 }

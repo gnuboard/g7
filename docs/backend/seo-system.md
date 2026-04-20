@@ -422,7 +422,7 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 
 > 확장 라이프사이클은 드문 이벤트이므로 전체 캐시 클리어(`clearAll()`)로 안전하게 처리합니다.
 
-캐시 무효화 시 `Cache::forget('seo:sitemap')` + `SeoConfigMerger::clearCache()`도 함께 호출
+캐시 무효화 시 `app(CacheInterface::class)->forget('seo.sitemap')` + `SeoConfigMerger::clearCache()` 도 함께 호출 (드라이버가 `g7:core:` 접두사 자동 적용)
 
 ## Artisan 커맨드
 
@@ -1242,14 +1242,130 @@ SeoMiddleware의 `buildCacheUrl()`이 캐시 키용 URL을 구성합니다:
 - **`locale` 파라미터 제외**: locale은 캐시 키의 두 번째 차원(`$locale`)으로 별도 관리
 - **쿼리 파라미터 정렬**: `ksort()` — 동일 파라미터 조합 = 동일 캐시 키 보장
 
+## SEO 변수 시스템
+
+확장(모듈/플러그인)이 `seoVariables()` 메서드를 통해 SEO 변수를 선언하면, SeoRenderer가 자동으로 해석하여 설정 템플릿의 `{key}` 플레이스홀더를 치환합니다.
+
+### seoVariables() API
+
+`AbstractModule` / `AbstractPlugin`에서 오버라이드하여 페이지 유형별 SEO 변수를 선언합니다.
+
+```php
+public function seoVariables(): array
+{
+    return [
+        '_common' => [
+            'site_name' => ['source' => 'core_setting', 'key' => 'general.site_name'],
+            'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+        ],
+        'product' => [
+            'product_name' => ['source' => 'data', 'key' => 'product.data.name'],
+            'product_description' => ['source' => 'data', 'key' => 'product.data.short_description'],
+        ],
+        'category' => [
+            'category_name' => ['source' => 'data', 'key' => 'category.data.name'],
+        ],
+        'search' => [
+            'keyword_name' => ['source' => 'query', 'key' => 'q'],
+        ],
+    ];
+}
+```
+
+### _common 키
+
+`_common`에 선언된 변수는 **모든 page_type에 공통 적용**됩니다. 런타임에 page_type별 변수와 병합되며, 동일 키가 있으면 page_type별 선언이 우선합니다.
+
+```text
+최종 변수 = _common 변수 + page_type별 변수 (page_type 우선)
+```
+
+### 변수 소스 타입
+
+| source | 설명 | 자동 해석 | 예시 |
+|--------|------|----------|------|
+| `setting` | 해당 확장(모듈/플러그인)의 설정 값 | ✅ | `{ "source": "setting", "key": "basic_info.shop_name" }` |
+| `core_setting` | 코어 설정 값 | ✅ | `{ "source": "core_setting", "key": "general.site_name" }` |
+| `query` | URL 쿼리 파라미터 | ✅ | `{ "source": "query", "key": "q" }` |
+| `route` | URL 라우트 파라미터 | ✅ | `{ "source": "route", "key": "slug" }` |
+| `data` | 데이터소스 응답 데이터 | ❌ (레이아웃 `vars`에서 매핑 필요) | `{ "source": "data", "key": "product.data.name" }` |
+
+- `setting`, `core_setting`, `query`, `route` 소스는 SeoRenderer가 **자동으로 해석**합니다.
+- `data` 소스는 레이아웃 JSON의 `meta.seo.vars`에서 표현식으로 매핑해야 합니다.
+
+### meta.seo.extensions — 확장 변수 로드 선언
+
+레이아웃 JSON에서 SEO 변수를 제공하는 확장을 선언합니다.
+
+```json
+{
+    "meta": {
+        "seo": {
+            "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-ecommerce" },
+                { "type": "plugin", "id": "sirsoft-payment" }
+            ],
+            "page_type": "product",
+            "vars": {
+                "product_name": "{{product.data.name ?? ''}}",
+                "product_description": "{{product.data.short_description ?? ''}}"
+            }
+        }
+    }
+}
+```
+
+`extensions` 배열에 선언된 확장의 `seoVariables()`가 호출되어, 해당 page_type의 변수가 자동 해석됩니다. `vars`에는 `data` 소스 변수만 표현식으로 매핑하면 됩니다.
+
+### 처리 흐름
+
+```text
+1. SeoRenderer: 레이아웃 meta.seo.extensions 확인
+2. 각 확장의 seoVariables() 호출 → _common + page_type별 변수 병합
+3. 자동 해석 소스(setting, core_setting, query, route) 즉시 해석
+4. data 소스 → 레이아웃 vars에서 표현식 매핑 값 적용
+5. 확장 설정 title/description 템플릿의 {key} 치환
+6. 결과를 _seo.{page_type}.title / _seo.{page_type}.description 컨텍스트에 주입
+```
+
+### _seo 컨텍스트 주입
+
+SeoRenderer가 설정 템플릿을 해석한 후 결과를 `_seo` 네임스페이스에 주입합니다.
+
+```text
+_seo.{page_type}.title       — 해석된 SEO 제목
+_seo.{page_type}.description — 해석된 SEO 설명
+```
+
+레이아웃 JSON에서 다음과 같이 참조할 수 있습니다:
+
+```json
+"og": {
+    "title": "{{_seo.product.title ?? product.data.name ?? ''}}",
+    "description": "{{_seo.product.description ?? product.data.short_description ?? ''}}"
+}
+```
+
+### 변수명 유효성 검증 (ValidatesSeoVariables)
+
+모듈/플러그인 설치 시 `ValidatesSeoVariables` 트레이트가 변수명 고유성을 검증합니다.
+
+- 동일 page_type 내에서 변수명 중복 시 설치 실패
+- `_common` 변수와 page_type별 변수 간 중복도 검증 대상
+- 서로 다른 확장 간 동일 page_type의 변수명 충돌 시 경고 발생
+
 ## 개발 체크리스트
 
 ```
 □ meta.seo 추가 시 UpdateLayoutContentRequest 검증 규칙 확인했는가?
 □ SitemapContributor 구현 시 ServiceProvider에서 등록했는가?
-□ 캐시 무효화 리스너에서 Cache::forget('seo:sitemap')도 무효화했는가?
+□ 캐시 무효화 리스너에서 `app(CacheInterface::class)->forget('seo.sitemap')` 도 무효화했는가?
 □ 봇 감지 패턴 변경 시 BotDetectorTest 통과하는가?
 □ 레이아웃 meta.seo.enabled 변경 시 SeoDeclarationCollectorTest 통과하는가?
 □ 다국어 SEO 변경 시 SeoMiddlewareTest/SeoRendererTest/SitemapGeneratorTest 통과하는가?
 □ 확장 라이프사이클 훅 추가 시 SeoExtensionCacheListener 구독 목록 업데이트했는가?
+□ seoVariables() 선언 시 변수명이 기존 확장과 중복되지 않는가?
+□ meta.seo.extensions에 변수 제공 확장을 선언했는가?
+□ data 소스 변수는 vars에서 표현식 매핑이 완료되었는가?
 ```

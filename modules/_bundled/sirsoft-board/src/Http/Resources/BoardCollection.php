@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  *
  * 게시판 목록을 페이지네이션과 함께 반환합니다.
  */
-class BoardCollection extends ResourceCollection
+class BoardCollection extends BaseApiCollection
 {
     use ChecksBoardPermission;
 
@@ -28,7 +28,7 @@ class BoardCollection extends ResourceCollection
             'data' => $this->collection->map(function ($board) {
                 return new BoardResource($board);
             }),
-            'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, fn () => [
+            'pagination' => $this->resource instanceof LengthAwarePaginator ? [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),
@@ -36,7 +36,7 @@ class BoardCollection extends ResourceCollection
                 'from' => $this->resource->firstItem(),
                 'to' => $this->resource->lastItem(),
                 'has_more_pages' => $this->resource->hasMorePages(),
-            ]),
+            ] : null,
         ];
     }
 

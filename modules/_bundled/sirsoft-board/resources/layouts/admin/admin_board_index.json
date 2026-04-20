@@ -9,6 +9,11 @@
         "title": "$t:sirsoft-board.admin.board.index.title",
         "description": "$t:sirsoft-board.admin.board.index.description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "boards"
+        ]
+    },
     "data_sources": [
         {
             "id": "boards",
@@ -297,10 +302,30 @@
                                                                         "triggerIconName": "ellipsis-h",
                                                                         "position": "right",
                                                                         "items": [
-                                                                            { "id": "edit", "label": "$t:sirsoft-board.admin.board.actions.edit", "iconName": "pencil", "disabled": "{{row.abilities?.can_update !== true}}" },
-                                                                            { "id": "manage_posts", "label": "$t:sirsoft-board.admin.board.actions.manage_posts", "iconName": "list" },
-                                                                            { "id": "copy", "label": "$t:sirsoft-board.admin.board.actions.copy", "iconName": "copy", "disabled": "{{row.abilities?.can_create !== true}}" },
-                                                                            { "id": "delete", "label": "$t:sirsoft-board.admin.board.actions.delete", "iconName": "trash", "variant": "danger", "disabled": "{{row.abilities?.can_delete !== true}}" }
+                                                                            {
+                                                                                "id": "edit",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.edit",
+                                                                                "iconName": "pencil",
+                                                                                "disabled": "{{row.abilities?.can_update !== true}}"
+                                                                            },
+                                                                            {
+                                                                                "id": "manage_posts",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.manage_posts",
+                                                                                "iconName": "list"
+                                                                            },
+                                                                            {
+                                                                                "id": "copy",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.copy",
+                                                                                "iconName": "copy",
+                                                                                "disabled": "{{row.abilities?.can_create !== true}}"
+                                                                            },
+                                                                            {
+                                                                                "id": "delete",
+                                                                                "label": "$t:sirsoft-board.admin.board.actions.delete",
+                                                                                "iconName": "trash",
+                                                                                "variant": "danger",
+                                                                                "disabled": "{{row.abilities?.can_delete !== true}}"
+                                                                            }
                                                                         ]
                                                                     },
                                                                     "actions": [

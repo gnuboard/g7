@@ -224,13 +224,34 @@ class WebSocketManager {
   /**
    * 구독을 해제합니다.
    *
-   * @param subscriptionKey 구독 키
+   * Map 엔트리 제거 + Echo 채널의 listener 명시 해제.
+   * Echo는 동일 채널을 재사용하므로 stopListening() 누락 시
+   * 재subscribe 시 listener가 중복 누적되어 콜백이 여러 번 실행됩니다.
+   *
+   * @param subscriptionKey 구독 키 (형식: "channel:event")
    */
   unsubscribe(subscriptionKey: string): void {
-    if (this.subscriptions.has(subscriptionKey)) {
-      this.subscriptions.delete(subscriptionKey);
-      logger.log(`[WebSocketManager] 구독 해제: ${subscriptionKey}`);
+    const channelInstance = this.subscriptions.get(subscriptionKey);
+    if (!channelInstance) {
+      return;
     }
+
+    // subscriptionKey 형식: "channelName:eventName"
+    // channelName이 ':'를 포함할 수 있으므로 마지막 ':' 기준 분리
+    const lastColon = subscriptionKey.lastIndexOf(':');
+    const eventName = lastColon >= 0 ? subscriptionKey.substring(lastColon + 1) : '';
+
+    if (eventName) {
+      try {
+        // Reverb 이벤트는 '.'으로 시작해야 함 (subscribe와 동일)
+        channelInstance.stopListening(`.${eventName}`);
+      } catch (e) {
+        logger.warn(`[WebSocketManager] stopListening 실패: ${subscriptionKey}`, e);
+      }
+    }
+
+    this.subscriptions.delete(subscriptionKey);
+    logger.log(`[WebSocketManager] 구독 해제: ${subscriptionKey}`);
   }
 
   /**

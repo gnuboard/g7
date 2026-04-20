@@ -139,12 +139,12 @@
       }
     },
     {
-      "path": "*/admin/mail-send-logs",
-      "layout": "admin_mail_send_log_list",
+      "path": "*/admin/notification-logs",
+      "layout": "admin_notification_log_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.mail_send_log.page_title",
-        "permission": "core.mail-send-logs.read"
+        "title": "$t:admin.notification_log.page_title",
+        "permission": "core.notification-logs.read"
       }
     },
     {

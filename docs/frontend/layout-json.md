@@ -120,10 +120,32 @@
 |------|------|------|------|
 | seo.enabled | boolean | X | SEO 렌더링 활성화 (기본: false) |
 | seo.data_sources | string[] | X | SEO 시 사전 로드할 data_sources ID |
+| seo.extensions | array | X | SEO 변수 제공 확장 목록 (아래 참조) |
+| seo.page_type | string | X | 확장 설정 SEO 템플릿 키 결정 (예: `"product"`) |
+| seo.toggle_setting | string | X | SEO 활성화 토글 설정 경로 |
+| seo.vars | object | X | SEO 변수 선언 — data 소스 변수의 표현식 매핑 |
 | seo.priority | number | X | sitemap priority (0.0~1.0) |
 | seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
+
+#### seo.extensions
+
+SEO 변수를 제공하는 확장(모듈/플러그인)을 선언합니다. 여기에 선언된 확장의 `seoVariables()` 메서드가 호출되어, `page_type`에 해당하는 변수가 자동 해석됩니다.
+
+```json
+"extensions": [
+    { "type": "module", "id": "sirsoft-ecommerce" },
+    { "type": "plugin", "id": "sirsoft-payment" }
+]
+```
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| type | `"module"` \| `"plugin"` | ✅ | 확장 타입 |
+| id | string | ✅ | 확장 식별자 (예: `"sirsoft-ecommerce"`) |
+
+이 방식은 레이아웃 이름에 dot-notation `moduleIdentifier`를 포함할 필요 없이, 레이아웃이 어떤 확장의 SEO 변수를 사용하는지 명시적으로 선언합니다.
 
 Partial에 meta.seo 정의 금지 (무시됨)
 meta.seo 추가/변경 시 UpdateLayoutContentRequest 검증 규칙 동기화 필수
@@ -839,24 +861,52 @@ const renderChildren = useMemo(() => {
 
 ---
 
-## extensionPointProps (engine-v1.15.0+)
+## Extension Point 데이터 전달 (engine-v1.15.0+, callbacks: engine-v1.28.0+)
 
-`extension_point` 타입 컴포넌트에서 주입되는 컴포넌트에 추가 props를 전달합니다.
+`extension_point`에서 주입되는 컴포넌트에 데이터와 콜백을 전달합니다.
+
+- `props`: 데이터 전달용 — 표현식이 평가되어 전달됨 (`resolveObject` 재귀 평가)
+- `callbacks`: 액션 객체 전달용 — 평가 없이 그대로 전달 (ActionDispatcher가 실행 시점에 평가)
+
+### 호스트 레이아웃 (extension_point 정의)
 
 ```json
 {
   "type": "extension_point",
-  "name": "product_detail_sidebar",
-  "extensionPointProps": {
+  "name": "address_search_slot",
+  "props": {
     "productId": "{{route.id}}",
-    "currency": "{{_global.currency ?? 'KRW'}}"
+    "readOnlyFields": ["zipcode", "address"]
+  },
+  "callbacks": {
+    "onAddressSelect": {
+      "handler": "setState",
+      "params": { "target": "local", "form.zipcode": "{{$event.zipcode}}" }
+    }
   }
 }
 ```
 
+### 플러그인 extension JSON (주입되는 컴포넌트)
+
+```json
+{
+  "handler": "myPlugin.doSomething",
+  "params": {
+    "id": "{{extensionPointProps.productId}}",
+    "fields": "{{extensionPointProps.readOnlyFields}}",
+    "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}"
+  }
+}
+```
+
+- `{{extensionPointProps.xxx}}`: 호스트의 `props`에서 전달된 데이터 (표현식 평가됨)
+- `{{extensionPointCallbacks.xxx}}`: 호스트의 `callbacks`에서 전달된 액션 객체 (그대로 전달)
+
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `extensionPointProps` | object | ❌ | extension_point에 주입된 컴포넌트에 전달할 props (표현식 지원) |
+| `props` | object | ❌ | 주입 컴포넌트에 전달할 데이터 (표현식 평가) |
+| `callbacks` | object | ❌ | 주입 컴포넌트에 전달할 액션 객체 (평가 없이 전달) |
 
 ---
 

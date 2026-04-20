@@ -4,6 +4,40 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.2] - 2026-04-20
+
+### Added
+
+- 모듈/플러그인/템플릿 정보 모달에 의존성 섹션 추가 — 코어 요구 버전, 의존 확장의 요구/설치 버전과 충족 상태 뱃지 표시
+- 알림센터 구현 — 읽은/안 읽은 알림 표시, 개별/전체 삭제, 모두 읽기, 안 읽은 필터, 무한 스크롤
+- 알림 전체 삭제 확인 모달 추가
+- 실시간 알림 수신 시 뱃지 갱신 + 토스트 표시 (WebSocket 연동)
+- 알림 시각 표시를 사용자 타임존 기준으로 변경
+- 환경설정 알림 탭에 일괄 초기화 확인 모달 추가 — 진행 스피너, 대상 이름 표시, 경고 메시지 포함
+- 편집된 알림 제목이 식별자 대신 다국어 이름으로 표시되도록 개선
+
+### Removed
+
+- 코어 환경설정 > SEO > 애널리틱스/사이트 소유권 확인 카드 제거 (미작동 기능)
+
+### Changed
+
+- 코어 최소 요구 버전을 7.0.0-beta.2 로 상향
+- TabNavigation 컴포넌트를 반응형으로 개선 — 768px 미만에서 Select 드롭다운으로 전환
+- 성능 테스트 fixture 파일(~19MB) 저장소에서 제거 — 테스트 실행 시 자동 생성/삭제로 전환
+- 알림 템플릿 편집 모달 다국어 탭을 동적 생성으로 전환
+- 언어 선택 UI를 하드코딩에서 `localeNames` 기반 동적 생성으로 전환
+- 알림 발송 이력 레이아웃 재구성 — DataGrid 구조, 필터 분리, 일괄 삭제, expandable 상세보기
+- HtmlContent DOMPurify를 FORBID 방식으로 전환 (보안 기본값 항상 유지)
+
+### Fixed
+
+- 확장 install/activate/deactivate/uninstall 직후 라우트·메뉴·다국어 미반영 수정 — `reloadExtensions` 핸들러 도입
+- 여러 관리자 폼의 에러 핸들러에서 저장/삭제 버튼 로딩 상태 고정 수정
+- FileUploader 갤러리 이미지 깨짐 수정 — stale closure로 인한 blob URL 문제
+- FileInput onChange가 ActionDispatcher에서 무시되던 문제 수정
+- 모달 내부 Select 드롭다운이 잘려 보이는 문제 수정
+
 ## [1.0.0-beta.1] - 2026-04-01
 
 ### Changed

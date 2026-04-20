@@ -4,14 +4,14 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 
 /**
  * 카테고리 컬렉션 리소스
  *
  * 카테고리 목록을 계층 구조 및 권한 정보와 함께 반환합니다.
  */
-class CategoryCollection extends ResourceCollection
+class CategoryCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
 

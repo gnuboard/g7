@@ -53,11 +53,23 @@ class ResponseHelper
     ): JsonResponse {
         $response = [
             'success' => false,
-            'message' => self::trans($messageKey, $messageParams, $domain)
+            'message' => self::trans($messageKey, $messageParams, $domain),
         ];
 
-        if ($errors !== null) {
-            $response['errors'] = $errors;
+        if ($errors instanceof \Throwable) {
+            if (config('app.debug')) {
+                // messageParams에 이미 에러 메시지가 포함된 경우 중복 방지
+                if (empty($messageParams)) {
+                    $response['message'] .= ': ' . $errors->getMessage();
+                }
+                $response['debug'] = self::formatException($errors);
+            }
+        } elseif ($errors !== null) {
+            if ($statusCode >= 500 && is_string($errors) && !config('app.debug')) {
+                // 프로덕션 500+ 에러의 string errors 차단 (내부 예외 메시지 노출 방지)
+            } else {
+                $response['errors'] = $errors;
+            }
         }
 
         return response()->json($response, $statusCode);
@@ -159,10 +171,15 @@ class ResponseHelper
     ): JsonResponse {
         $response = [
             'success' => false,
-            'message' => self::trans($messageKey, $messageParams, $domain)
+            'message' => self::trans($messageKey, $messageParams, $domain),
         ];
 
-        if ($error !== null && config('app.debug')) {
+        if ($error instanceof \Throwable) {
+            if (config('app.debug')) {
+                $response['message'] .= ': ' . $error->getMessage();
+                $response['debug'] = self::formatException($error);
+            }
+        } elseif ($error !== null && config('app.debug')) {
             $response['error'] = $error;
         }
 
@@ -225,13 +242,34 @@ class ResponseHelper
     {
         $languages = explode(',', $acceptLanguage);
         $firstLanguage = trim($languages[0]);
-        
+
         // 언어-지역 형태에서 언어만 추출 (예: ko-KR -> ko)
         if (strpos($firstLanguage, '-') !== false) {
             return explode('-', $firstLanguage)[0];
         }
-        
+
         return $firstLanguage;
+    }
+
+    /**
+     * 예외 정보를 디버그용 배열로 변환합니다.
+     *
+     * @param \Throwable $e 예외 인스턴스
+     * @return array 디버그 정보 배열
+     */
+    private static function formatException(\Throwable $e): array
+    {
+        return [
+            'exception' => get_class($e),
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => collect($e->getTrace())->take(10)->map(fn ($frame) => [
+                'file' => $frame['file'] ?? null,
+                'line' => $frame['line'] ?? null,
+                'function' => ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? ''),
+            ])->toArray(),
+        ];
     }
 
     /**

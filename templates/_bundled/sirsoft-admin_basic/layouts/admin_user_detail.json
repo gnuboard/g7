@@ -9,6 +9,14 @@
         "title": "$t:admin.users.detail.page_title",
         "description": "$t:admin.users.detail.page_description"
     },
+    "state": {
+        "activeTab": "basic_info"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "user"
+        ]
+    },
     "data_sources": [
         {
             "id": "user",
@@ -20,11 +28,18 @@
         }
     ],
     "errorHandling": {
-        "403": { "handler": "showErrorPage", "params": { "target": "content" } },
-        "404": { "handler": "showErrorPage", "params": { "target": "content" } }
-    },
-    "state": {
-        "activeTab": "basic_info"
+        "403": {
+            "handler": "showErrorPage",
+            "params": {
+                "target": "content"
+            }
+        },
+        "404": {
+            "handler": "showErrorPage",
+            "params": {
+                "target": "content"
+            }
+        }
     },
     "slots": {
         "content": [
@@ -32,7 +47,6 @@
                 "id": "user_detail_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": true,
                 "props": {
                     "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
                 },
@@ -57,77 +71,77 @@
                                         "id": "page_header",
                                         "type": "composite",
                                         "name": "PageHeader",
-                                "props": {
-                                    "title": "$t:admin.users.detail.page_title",
-                                    "description": "$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}",
-                                    "backLink": "/admin/users",
-                                    "backLinkText": "$t:admin.users.detail.back_to_list"
-                                },
-                                "children": [
-                                    {
-                                        "id": "header_back_button",
-                                        "type": "basic",
-                                        "name": "Button",
                                         "props": {
-                                            "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                            "title": "$t:admin.users.detail.page_title",
+                                            "description": "$t:admin.users.detail.page_description_with_info|name={{user?.data?.name ?? ''}}|email={{user?.data?.email ?? ''}}",
+                                            "backLink": "/admin/users",
+                                            "backLinkText": "$t:admin.users.detail.back_to_list"
                                         },
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigateBack"
-                                            }
-                                        ],
                                         "children": [
                                             {
+                                                "id": "header_back_button",
                                                 "type": "basic",
-                                                "name": "Icon",
+                                                "name": "Button",
                                                 "props": {
-                                                    "name": "arrow-left",
-                                                    "className": "w-4 h-4"
-                                                }
+                                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigateBack"
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "arrow-left",
+                                                            "className": "w-4 h-4"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:common.back"
+                                                    }
+                                                ]
                                             },
                                             {
+                                                "id": "header_edit_button",
                                                 "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:common.back"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "id": "header_edit_button",
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "disabled": "{{user?.data?.abilities?.can_update !== true}}",
-                                            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/users/{{route?.id}}/edit"
-                                                }
-                                            }
-                                        ],
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
+                                                "name": "Button",
                                                 "props": {
-                                                    "name": "pencil",
-                                                    "className": "w-4 h-4"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:admin.users.detail.edit"
+                                                    "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/users/{{route?.id}}/edit"
+                                                        }
+                                                    }
+                                                ],
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "pencil",
+                                                            "className": "w-4 h-4"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.users.detail.edit"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     }
-                                ]
-                            }
                                 ]
                             },
                             {

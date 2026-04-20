@@ -65,7 +65,7 @@ export const CacheTab: React.FC<CacheTabProps> = ({ stats, devTools }) => {
                     <div className="g7dt-stat-label">Entries</div>
                 </div>
                 <div className="g7dt-stat-card">
-                    <div className="g7dt-stat-value g7dt-text-purple">{stats.hitRate.toFixed(1)}%</div>
+                    <div className="g7dt-stat-value g7dt-text-purple">{(stats.hitRate * 100).toFixed(1)}%</div>
                     <div className="g7dt-stat-label">Hit Rate</div>
                 </div>
             </div>
@@ -74,7 +74,7 @@ export const CacheTab: React.FC<CacheTabProps> = ({ stats, devTools }) => {
             <div className="g7dt-space-y-2">
                 <div className="g7dt-text-sm g7dt-text-gray">캐시 히트율</div>
                 <div className="g7dt-progress-bar">
-                    <div className="g7dt-progress-fill" style={{ width: `${stats.hitRate}%` }} />
+                    <div className="g7dt-progress-fill" style={{ width: `${stats.hitRate * 100}%` }} />
                 </div>
             </div>
 

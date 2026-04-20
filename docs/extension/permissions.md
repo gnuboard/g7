@@ -117,6 +117,83 @@ public function isAdmin(): bool
 ],
 ```
 
+### 코어 권한에서 타입 지정 (config/core.php)
+
+코어 권한(`config/core.php`의 `categories`)도 모듈/플러그인 매니페스트와 **동일하게 `type` 필드를 지원**합니다. `CoreUpdateService::syncCoreRolesAndPermissions()`가 이 필드를 읽어 admin/user 컨텍스트를 분리합니다.
+
+```php
+// config/core.php
+'categories' => [
+    [
+        'identifier' => 'core.users',
+        'category' => 'users',
+        'order' => 1,
+        'type' => 'admin',                          // ← 카테고리 타입 명시
+        'permissions' => [
+            ['identifier' => 'core.users.read', 'type' => 'admin', ...],   // ← 권한 타입 명시
+            ['identifier' => 'core.users.create', 'type' => 'admin', ...],
+        ],
+    ],
+    [
+        'identifier' => 'core.user-notifications',
+        'category' => 'user-notifications',
+        'order' => 7.6,
+        'type' => 'user',                           // ← 사용자 컨텍스트 카테고리
+        'permissions' => [
+            ['identifier' => 'core.user-notifications.read', 'type' => 'user', ...],
+        ],
+    ],
+],
+```
+
+```text
+✅ 필수: 신규 코어 권한 정의 시 카테고리/개별 권한 모두에 `type` 명시 (가독성 + 의도 명확화)
+✅ 카테고리 type은 (1) 명시 필드 (2) 하위 권한이 모두 동일 type일 때 추론 (3) admin 기본값 우선순위로 결정됨
+✅ 권한 type 미지정 시 카테고리 type을 상속
+```
+
+### CRITICAL: 단일 unique 제약 함정
+
+```text
+⚠️ CRITICAL: permissions.identifier 컬럼은 단일 unique 제약입니다.
+⚠️ 같은 식별자로 (identifier='core.notifications.read', type='admin')과 (identifier='core.notifications.read', type='user') 두 행을 동시에 생성할 수 없습니다.
+```
+
+| 잘못된 접근 | 올바른 접근 |
+|---|---|
+| `core.notifications.*` 하나의 식별자를 admin/user 양쪽에서 사용 | admin은 `core.notifications.*` (`type=admin`), 사용자는 `core.user-notifications.*` (`type=user`)로 **별도 식별자** 분리 |
+| 라우트 미들웨어에서 admin 식별자를 user 컨텍스트에 사용 | 사용자 라우트(`/api/user/...`)는 반드시 `type=user` 권한 행이 존재하는 식별자를 사용 |
+
+`PermissionMiddleware`는 `(identifier, type)` 쌍으로 권한 행을 조회하므로, 라우트 미들웨어 `permission:user,xxx`는 DB에 `(identifier='xxx', type='user')` 행이 존재할 때만 통과합니다.
+
+### 라우트 미들웨어 type 일치 규칙
+
+```php
+// routes/api.php
+
+// ❌ 잘못된 예: 사용자 라우트에 admin 타입 권한 식별자 사용
+Route::get('/api/user/notifications', [UserNotificationController::class, 'index'])
+    ->middleware('permission:user,core.notifications.read');  // 항상 403 — type 불일치
+
+// ✅ 올바른 예: 사용자 라우트에는 user 타입 권한 식별자 사용
+Route::get('/api/user/notifications', [UserNotificationController::class, 'index'])
+    ->middleware('permission:user,core.user-notifications.read');
+
+// ✅ 관리자 라우트에는 admin 타입 권한 식별자 사용
+Route::get('/api/admin/notifications', [AdminNotificationController::class, 'index'])
+    ->middleware('permission:admin,core.notifications.read');
+```
+
+`Broadcast::channel()` 권한 체크에서도 동일하게 `PermissionType` 인자를 명시해야 합니다:
+
+```php
+// routes/channels.php
+Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
+    return $user->uuid === $uuid
+        && $user->hasPermission('core.user-notifications.read', PermissionType::User);
+});
+```
+
 ### Permission 모델 헬퍼
 
 ```php
@@ -808,9 +885,36 @@ generateIdentifier(name)
 
 ---
 
+## 완전 동기화 (Stale Cleanup)
+
+코어/확장 업그레이드 시 권한·역할 동기화는 단순 upsert 가 아니라 **완전 동기화** 를 수행합니다. config/manifest 에서 제거된 권한·역할은 DB 에서도 삭제됩니다.
+
+### 적용 지점
+
+| 경로 | 호출 시점 | cleanup 대상 |
+|---|---|---|
+| `CoreUpdateService::syncCoreRolesAndPermissions` 말미 | 코어 업데이트 | `core/core` 소유 권한·역할 |
+| `ModuleManager::updateModule` 내 sync 블록 말미 | 모듈 업데이트 | 해당 모듈 소유 권한·역할 |
+| `PluginManager::updatePlugin` 내 sync 블록 말미 | 플러그인 업데이트 | 해당 플러그인 소유 권한·역할 |
+
+### 핵심 정책
+
+- **권한 stale 삭제**: 순수 diff — config 에 없으면 즉시 삭제 (user_overrides 개념 없음)
+- **역할 stale 삭제**: config 에 없으면 삭제. 단 **`user_roles` 피벗에 사용자가 참조 중인 역할은 삭제 차단 + 경고 로그** (수동 재배정 유도)
+- **역할-권한 매핑**: `syncAllRoleAssignments` 가 `core/core` 전체 권한을 diff 기준으로 사용하여 이관된 구 식별자도 detach
+
+### Helper (권장)
+
+직접 Model 조작 금지. `ExtensionRoleSyncHelper` 를 통해 sync/cleanup 수행. 자세한 사용법은 [data-sync-helpers.md](../backend/data-sync-helpers.md#4-extensionrolesynchelper) 참조.
+
+---
+
 ## 관련 문서
 
 - [menus.md](./menus.md) - 메뉴 권한 시스템
 - [hooks.md](./hooks.md) - 훅 권한 시스템
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
 - [index.md](./index.md) - 확장 시스템 인덱스
+- [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
+- [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
+- [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

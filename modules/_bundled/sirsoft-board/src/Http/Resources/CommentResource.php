@@ -117,13 +117,21 @@ class CommentResource extends BaseApiResource
     /**
      * 현재 로그인 사용자가 이 댓글을 이미 신고했는지 반환합니다.
      *
-     * 비로그인 또는 post.board 관계 미로드 시 false 반환.
+     * Controller에서 사전 로드(is_already_reported_preloaded)된 값이 있으면
+     * DB 쿼리 없이 반환합니다. (N+1 방지)
+     * 사전 로드가 없는 경우(목록 등) fallback으로 개별 쿼리를 실행합니다.
      *
      * @param  Request  $request  HTTP 요청
      * @return bool 이미 신고 여부
      */
     private function getIsAlreadyReported(Request $request): bool
     {
+        // 사전 로드된 값이 있으면 DB 쿼리 없이 반환 (N+1 방지)
+        if (isset($this->resource->is_already_reported_preloaded)) {
+            return $this->resource->is_already_reported_preloaded;
+        }
+
+        // fallback: 개별 쿼리 (목록 등 사전 로드 미적용 경로)
         $user = $request->user();
         $boardId = $this->post?->board?->id ?? null;
 

@@ -3,13 +3,11 @@
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
 use App\Helpers\PermissionHelper;
-use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
 use Modules\Sirsoft\Board\Services\BoardService;
@@ -173,29 +171,6 @@ class BoardSettingsController extends AdminBaseController
     }
 
     /**
-     * 사용 가능한 알림 채널 목록을 반환합니다.
-     *
-     * 기본 채널(mail, database)을 제공하며, 플러그인이
-     * 'sirsoft-board.notification.available_channels' Filter 훅으로 채널을 추가할 수 있습니다.
-     * 추후 코어에 공통 API가 생기면 이 메서드만 교체하면 됩니다.
-     *
-     * @return JsonResponse 채널 목록 JSON 응답
-     */
-    public function notificationChannels(): JsonResponse
-    {
-        $defaultChannels = [
-            ['value' => 'mail', 'label' => __('sirsoft-board::admin.settings.notification_channels.channel_mail')],
-        ];
-
-        $channels = HookManager::applyFilters(
-            'sirsoft-board.notification.available_channels',
-            $defaultChannels
-        );
-
-        return ResponseHelper::success('messages.fetch_success', $channels);
-    }
-
-    /**
      * 설정 캐시를 초기화합니다.
      *
      * ModuleSettings 캐시와 게시판 캐시를 모두 초기화합니다.
@@ -208,8 +183,8 @@ class BoardSettingsController extends AdminBaseController
             // ModuleSettings 캐시 초기화
             $this->settingsService->clearCache();
 
-            // 게시판 캐시 초기화 (boards:list)
-            Cache::forget('boards:list');
+            // 게시판 캐시 전체 초기화
+            $this->boardService->clearAllBoardCaches();
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-board',

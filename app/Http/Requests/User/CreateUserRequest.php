@@ -36,7 +36,7 @@ class CreateUserRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::min(8)],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
-            'timezone' => ['nullable', 'string', Rule::in(config('app.supported_timezones', ['Asia/Seoul']))],
+            'timezone' => ['nullable', 'string', 'timezone'],
             'status' => 'nullable|string|in:active,inactive,blocked,withdrawn',
 
             // 연락처 정보

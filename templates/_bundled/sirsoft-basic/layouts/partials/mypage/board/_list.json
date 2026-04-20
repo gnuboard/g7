@@ -5,10 +5,6 @@
     },
     "type": "basic",
     "name": "Div",
-    "blur_until_loaded": {
-        "enabled": true,
-        "data_sources": ["myPosts", "myActivityStats"]
-    },
     "props": {
         "className": "mt-6"
     },
@@ -50,6 +46,10 @@
             "comment": "통계 카드 3개",
             "type": "basic",
             "name": "Div",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": ["myActivityStats"]
+            },
             "props": {
                 "className": "grid grid-cols-3 gap-4 mb-6"
             },
@@ -289,6 +289,10 @@
             "type": "basic",
             "name": "Div",
             "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts'}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": ["myPosts"]
+            },
             "children": [
                 {
                     "partial": "partials/mypage/board/_my_posts.json"
@@ -300,6 +304,10 @@
             "type": "basic",
             "name": "Div",
             "if": "{{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments'}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": ["myComments"]
+            },
             "children": [
                 {
                     "partial": "partials/mypage/board/_my_comments.json"

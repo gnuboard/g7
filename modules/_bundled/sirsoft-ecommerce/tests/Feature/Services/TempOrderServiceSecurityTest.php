@@ -12,7 +12,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -45,7 +44,7 @@ class TempOrderServiceSecurityTest extends ModuleTestCase
     {
         return ShippingPolicy::create([
             'name' => ['ko' => '테스트 배송정책', 'en' => 'Test Shipping Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'charge_policy' => ChargePolicyEnum::FREE,
             'base_fee' => 0,
             'countries' => ['KR'],
@@ -113,7 +112,7 @@ class TempOrderServiceSecurityTest extends ModuleTestCase
             'shipping_policy_id' => $shippingPolicy->id,
         ]);
         $option = ProductOptionFactory::new()->forProduct($product)->create([
-            'price' => 50000,
+            'selling_price' => 50000,
             'stock_quantity' => 100,
         ]);
 
@@ -171,7 +170,7 @@ class TempOrderServiceSecurityTest extends ModuleTestCase
             'shipping_policy_id' => $shippingPolicy->id,
         ]);
         $option = ProductOptionFactory::new()->forProduct($product)->create([
-            'price' => 50000,
+            'selling_price' => 50000,
             'stock_quantity' => 100,
         ]);
 
@@ -216,7 +215,7 @@ class TempOrderServiceSecurityTest extends ModuleTestCase
             'shipping_policy_id' => $shippingPolicy->id,
         ]);
         $option = ProductOptionFactory::new()->forProduct($product)->create([
-            'price' => 50000,
+            'selling_price' => 50000,
             'stock_quantity' => 100,
         ]);
 
@@ -266,7 +265,7 @@ class TempOrderServiceSecurityTest extends ModuleTestCase
             'shipping_policy_id' => $shippingPolicy->id,
         ]);
         $option = ProductOptionFactory::new()->forProduct($product)->create([
-            'price' => 50000,
+            'selling_price' => 50000,
             'stock_quantity' => 100,
         ]);
 

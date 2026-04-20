@@ -55,13 +55,25 @@
           "props": { "className": "flex-1 overflow-y-auto min-h-0 max-h-96" },
           "children": [
             {
-              "type": "composite",
-              "name": "HtmlContent",
+              "id": "terms_html_content",
+              "type": "extension_point",
+              "name": "html_content",
               "props": {
                 "content": "{{termsContent?.data?.content ?? ''}}",
                 "isHtml": "{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}",
                 "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
-              }
+              },
+              "default": [
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{termsContent?.data?.content ?? ''}}",
+                    "isHtml": "{{(termsContent?.data?.content_mode ?? 'html') === 'html'}}",
+                    "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
+                  }
+                }
+              ]
             }
           ]
         },

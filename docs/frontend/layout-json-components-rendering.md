@@ -678,6 +678,7 @@ onSortEnd에서 setState로 소스 배열을 업데이트해야 정렬 결과가
 | `handle` | string | ❌ | - | 드래그 핸들 CSS 선택자 |
 | `itemVar` | string | ❌ | `"$item"` | 아이템 컨텍스트 변수명 |
 | `indexVar` | string | ❌ | `"$index"` | 인덱스 컨텍스트 변수명 |
+| `wrapperElement` | string | ❌ | `"div"` | 래퍼 HTML 요소. Table 내부에서 `"tr"` 지정 시 itemTemplate의 children을 `<tr>` 안에 직접 렌더링 (engine-v1.30.0+) |
 
 ### itemTemplate
 

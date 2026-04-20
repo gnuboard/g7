@@ -30,6 +30,8 @@ function getInstallationState(): array
     clearstatcache(true, STATE_PATH);
 
     // state.json 파일이 없으면 기본 상태 반환
+    // (설치 완료 후 워커가 DELETE_INSTALLER_AFTER_COMPLETE로 정상 삭제하는 경우가 있으므로
+    //  부재 자체는 에러가 아님. 호출자가 g7_installed 플래그 등으로 완료 여부 판정)
     if (!file_exists(STATE_PATH)) {
         return $defaultState;
     }
@@ -53,7 +55,9 @@ function getInstallationState(): array
 
     // JSON 파싱 실패 시 기본 상태 반환 (재귀 호출 제거 - 무한 루프 방지)
     if (json_last_error() !== JSON_ERROR_NONE) {
-        error_log("Failed to parse state file JSON: " . json_last_error_msg());
+        $contentLen = strlen($content);
+        $preview = substr($content, 0, 200);
+        error_log("Failed to parse state file JSON (length={$contentLen}): " . json_last_error_msg() . " / preview: " . $preview);
         return $defaultState;
     }
 
@@ -87,16 +91,30 @@ function saveInstallationState(array $state): bool
     // JSON 형식으로 저장
     $content = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-    // 파일 쓰기
-    $result = @file_put_contents(STATE_PATH, $content);
-
-    if ($result === false) {
-        error_log("Failed to write state file: " . STATE_PATH);
+    if ($content === false) {
+        error_log("Failed to encode state as JSON: " . json_last_error_msg());
         return false;
     }
 
-    // 파일 권한 설정
-    @chmod(STATE_PATH, 0664);
+    // 원자적 쓰기: tmp 파일에 쓰고 rename으로 교체
+    // 동시 쓰기 경쟁 상황에서 부분 쓰기(half-written file)로 인한 JSON 손상 방지.
+    // Linux에서 rename()은 atomic syscall이므로 다른 리더가 항상 완전한 파일만 읽는다.
+    $tmpPath = STATE_PATH . '.tmp.' . getmypid() . '.' . uniqid();
+
+    $result = @file_put_contents($tmpPath, $content, LOCK_EX);
+    if ($result === false || $result !== strlen($content)) {
+        error_log("Failed to write state tmp file: " . $tmpPath);
+        @unlink($tmpPath);
+        return false;
+    }
+
+    @chmod($tmpPath, 0664);
+
+    if (!@rename($tmpPath, STATE_PATH)) {
+        error_log("Failed to rename state tmp file: " . $tmpPath . ' → ' . STATE_PATH);
+        @unlink($tmpPath);
+        return false;
+    }
 
     return true;
 }
@@ -285,27 +303,24 @@ function addLog(string $message): bool
  * 페이지 새로고침 시 최신 로그를 즉시 표시하기 위해
  * clearstatcache()를 적용합니다.
  *
+ * @param int $offset 건너뛸 로그 줄 수 (폴링 모드 증분 조회용, 기본 0)
  * @return array 로그 배열 [{timestamp, message}, ...]
  */
-function getInstallationLogs(): array
+function getInstallationLogs(int $offset = 0): array
 {
     $logFile = BASE_PATH . '/storage/logs/installation.log';
 
-    // 파일 캐시 초기화 (최신 데이터 읽기 보장)
     clearstatcache(true, $logFile);
 
-    // 로그 파일이 없으면 빈 배열 반환
     if (!file_exists($logFile)) {
         return [];
     }
 
-    // 로그 파일 읽기
     $content = @file_get_contents($logFile);
     if ($content === false) {
         return [];
     }
 
-    // 각 라인을 파싱
     $lines = explode("\n", trim($content));
     $logs = [];
 
@@ -314,14 +329,12 @@ function getInstallationLogs(): array
             continue;
         }
 
-        // [timestamp] message 형식 파싱
         if (preg_match('/^\[(.+?)\] (.+)$/', $line, $matches)) {
             $logs[] = [
                 'timestamp' => $matches[1],
                 'message' => $matches[2],
             ];
         } else {
-            // 형식이 맞지 않으면 전체를 메시지로
             $logs[] = [
                 'timestamp' => date('Y-m-d H:i:s'),
                 'message' => $line,
@@ -329,7 +342,44 @@ function getInstallationLogs(): array
         }
     }
 
+    // 증분 조회 (offset > 0이면 이전 결과 이후만 반환)
+    if ($offset > 0 && $offset < count($logs)) {
+        return array_slice($logs, $offset);
+    } elseif ($offset >= count($logs)) {
+        return [];
+    }
+
     return $logs;
+}
+
+/**
+ * 설치 로그 전체 줄 수 조회 (폴링 모드 offset 계산용).
+ *
+ * @return int 전체 로그 줄 수
+ */
+function getInstallationLogCount(): int
+{
+    $logFile = BASE_PATH . '/storage/logs/installation.log';
+
+    clearstatcache(true, $logFile);
+
+    if (!file_exists($logFile)) {
+        return 0;
+    }
+
+    $content = @file_get_contents($logFile);
+    if ($content === false) {
+        return 0;
+    }
+
+    $lines = explode("\n", trim($content));
+    $count = 0;
+    foreach ($lines as $line) {
+        if (!empty($line)) {
+            $count++;
+        }
+    }
+    return $count;
 }
 
 /**

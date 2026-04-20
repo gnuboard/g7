@@ -112,6 +112,9 @@ const toast = (window as any).G7Core?.toast;
 setLocal(updates: Record<string, any>, options?: {
   scope?: 'current' | 'parent' | 'root';
   merge?: 'deep' | 'shallow' | 'replace';  // engine-v1.18.0+ (기본: 'deep')
+  debounce?: number;         // engine-v1.41.0+ — 디바운스 지연 시간 (ms)
+  debounceKey?: string;      // engine-v1.41.0+ — 디바운스 고유 키
+  render?: boolean;          // engine-v1.42.0+ (기본: true) — false이면 React 리렌더 건너뜀
 }): void
 getLocal(): Record<string, any>
 ```
@@ -120,6 +123,22 @@ getLocal(): Record<string, any>
 
 - 액션 실행 중: 컴포넌트의 `dynamicState`를 직접 업데이트하여 즉시 UI에 반영
 - 액션 외부: 전역 `_local` 업데이트 (fallback)
+
+**render: false** (engine-v1.42.0+): 값은 `globalState._local`에 저장하되 React 리렌더를 건너뜁니다.
+외부 라이브러리(CKEditor 등)가 자체 DOM을 관리하는 경우, React 트리 리렌더가 불필요하므로 성능을 대폭 개선합니다.
+`flushPendingDebounceTimers` 실행 시(저장 직전)에는 항상 render: true로 강제되어 데이터 정합성이 보장됩니다.
+
+```typescript
+// 외부 라이브러리에서 자체 DOM을 관리하는 경우 — 리렌더 없이 값만 저장
+G7Core.state.setLocal({
+  [`form.${name}.${locale}`]: html,
+  hasChanges: true,
+}, {
+  debounce: 300,
+  debounceKey: `editor-sync-${name}`,
+  render: false,
+});
+```
 
 **dot notation 지원** (engine-v1.2.0+): 중첩된 객체 경로를 dot notation으로 표현할 수 있습니다.
 

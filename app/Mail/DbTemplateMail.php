@@ -15,9 +15,9 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 /**
- * DB 기반 메일 템플릿 범용 Mailable.
+ * DB 기반 알림 템플릿 범용 Mailable.
  *
- * MailTemplateService에서 렌더링된 제목/본문을 받아 전송합니다.
+ * NotificationTemplateService에서 렌더링된 제목/본문을 받아 전송합니다.
  * 모든 코어/모듈 메일이 이 단일 Mailable을 사용합니다.
  */
 class DbTemplateMail extends Mailable

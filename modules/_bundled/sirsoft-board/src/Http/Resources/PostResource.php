@@ -22,7 +22,7 @@ class PostResource extends BaseApiResource
     use FormatsBoardDate;
 
     /**
-     * 리소스를 배열로 변환합니다.
+     * 리소스를 배열로 변환합니다. (상세 페이지용)
      *
      * @param  Request  $request  HTTP 요청
      * @return array<string, mixed> 변환된 배열 데이터
@@ -32,77 +32,46 @@ class PostResource extends BaseApiResource
         $slug = $this->getSlug($request);
 
         return [
-            'id' => $this->id,
-            'category' => $this->category,
+            ...$this->getCommonFields($request, $slug),
+
+            // 상세 전용: 필터링된 제목/내용 (삭제글·비밀글 권한 체크)
             'title' => $this->getFilteredTitle($slug),
             'content' => $this->getFilteredContent($request, $slug),
 
-            // 작성자 정보
+            // 상세 전용: 작성자 UUID
             'user_id' => $this->user?->uuid,
-            'author' => $this->getAuthorInfo(includeIsGuest: true),
 
-            // 게시글 속성
-            'is_notice' => (bool) $this->is_notice,
-            'is_secret' => (bool) $this->is_secret,
-            'content_mode' => $this->content_mode ?? 'text',
-            'is_new' => $this->isNew(),
-            'status' => $this->status?->value,
-            'status_label' => $this->status?->label(),
+            // 상세 전용: 트리거 타입
             'trigger_type' => $this->trigger_type,
 
-            // 통계
-            'view_count' => $this->view_count,
-            'comment_count' => (int) ($this->comments_count ?? 0),
-            'reply_count' => (int) ($this->replies_count ?? 0),
-            'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
-
-            // 썸네일 이미지 (첫 번째 이미지 첨부파일)
-            'thumbnail' => $this->relationLoaded('attachments') ? $this->getThumbnailUrl() : null,
-
-            // 계층 구조
-            'parent_id' => $this->parent_id,
-            'depth' => $this->depth,
-            'is_reply' => $this->parent_id !== null,
-
-            // 타임스탬프
-            'created_at'           => $this->formatCreatedAt($this->created_at),
-            'created_at_formatted' => $this->formatCreatedAtFormat(
-                $this->created_at,
-                g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
-            ),
+            // 상세 전용: 타임스탬프
             'updated_at' => $this->formatDateTimeStringForUser($this->updated_at),
             'deleted_at' => $this->deleted_at ? $this->formatDateTimeStringForUser($this->deleted_at) : null,
 
-            // IP 주소 (admin.manage 권한 보유자만)
-            'ip_address' => ($slug && $this->checkBoardPermission($slug, 'admin.manage'))
-                ? $this->ip_address
-                : null,
+            // 상세 전용: IP 주소 (admin.manage 권한 보유자만)
+            'ip_address' => $this->getIpAddressForResponse($slug),
 
-            // 상세 정보 (조건부 로딩)
+            // 상세 전용: 관계 데이터 (조건부 로딩)
             'board' => $this->relationLoaded('board') ? $this->getBoardInfo() : null,
-            'navigation' => isset($this->navigation) ? $this->navigation : null,
+            'navigation' => $this->navigation ?? null,
             'parent' => $this->relationLoaded('parent') ? $this->getParentInfo() : null,
             'comments' => $this->relationLoaded('comments') ? CommentResource::collection($this->comments) : null,
-            'attachments' => $this->relationLoaded('attachments')
-                ? (($this->is_secret && ! $this->canViewSecretContent($request)) ? [] : AttachmentResource::collection($this->attachments))
-                : null,
+            'attachments' => $this->getAttachmentsForResponse($request, $slug),
             'replies' => $this->relationLoaded('replies') ? static::collection($this->replies) : null,
 
-            // 소유권 정보
-            // is_author: 회원 글인 경우만 본인 여부 체크 (비회원 글은 세션 검증 불가하므로 항상 false)
-            'is_author' => $this->user_id !== null && $request->user()?->id === $this->user_id,
-            'is_guest_post' => $this->user_id === null,
-
-            // 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
+            // 상세 전용: 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
 
-            // 권한 정보 (is_owner + permissions)
+            // 권한 정보 (is_owner + abilities) — 상세 페이지에서만 포함
             ...$this->resourceMeta($request),
         ];
     }
 
     /**
      * 목록용 간략 정보를 배열로 변환합니다.
+     *
+     * 목록에서는 권한 정보(resourceMeta)를 포함하지 않습니다.
+     * 게시판 권한은 PostCollection의 컬렉션 레벨 abilities로 제공됩니다.
      *
      * 주의: 이 메서드는 toArray() 외부에서 수동 호출되므로
      * $this->when() 대신 삼항 연산자를 사용해야 합니다.
@@ -116,10 +85,82 @@ class PostResource extends BaseApiResource
         $slug = $this->getSlug($request);
 
         return [
-            'id' => $this->id,
+            ...$this->getCommonFields($request, $slug),
+
+            // 목록 전용: 게시판 슬러그
             'slug' => $this->board_slug ?? null,
-            'category' => $this->category,
+
+            // 목록 전용: 필터링 없는 제목 (목록은 권한 체크 불필요)
             'title' => $this->title,
+
+            // 목록 전용: 타임스탬프
+            'deleted_at' => $this->deleted_at ? $this->formatDateTimeStringForUser($this->deleted_at) : null,
+
+            // 목록 전용: 본문 요약 (DB SUBSTRING 우선, 없으면 content에서 추출)
+            'content_preview' => $this->getContentPreviewForList(150),
+        ];
+    }
+
+    /**
+     * 폼(글쓰기/글수정)용 경량 배열을 반환합니다.
+     *
+     * toArray()와 달리 권한 체크(resolveAbilities, IP, 신고 여부)를 생략하여
+     * 불필요한 DB 쿼리를 방지합니다. 폼에서 필요한 필드만 포함합니다.
+     *
+     * @param  Request|null  $request  HTTP 요청
+     * @return array<string, mixed> 변환된 배열 데이터
+     */
+    public function toFormArray(?Request $request = null): array
+    {
+        $request = $request ?? request();
+        $slug = $this->getSlug($request);
+
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'content' => $this->content,
+            'content_mode' => $this->content_mode ?? 'text',
+            'category' => $this->category,
+            'is_notice' => (bool) $this->is_notice,
+            'is_secret' => (bool) $this->is_secret,
+            'parent_id' => $this->parent_id,
+
+            // 작성자 정보
+            'author' => $this->getAuthorInfo(includeIsGuest: true),
+
+            // 타임스탬프
+            'created_at'           => $this->formatCreatedAt($this->created_at),
+            'created_at_formatted' => $this->formatCreatedAtFormat(
+                $this->created_at,
+                g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
+            ),
+
+            // 첨부파일 (권한 체크 없이 직접 반환 — 폼 진입 시 이미 본인/관리자 검증 완료)
+            'attachments' => $this->relationLoaded('attachments')
+                ? AttachmentResource::collection($this->attachments)
+                : null,
+
+            // 원글 정보 (답변글 수정 시)
+            'parent' => $this->relationLoaded('parent') ? $this->getParentInfoForForm() : null,
+        ];
+    }
+
+    // =========================================================================
+    // 공통 필드 추출
+    // =========================================================================
+
+    /**
+     * toArray()와 toListArray()에서 공유하는 공통 필드를 반환합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return array<string, mixed> 공통 필드 데이터
+     */
+    private function getCommonFields(Request $request, ?string $slug): array
+    {
+        return [
+            'id' => $this->id,
+            'category' => $this->category,
 
             // 작성자 정보
             'author' => $this->getAuthorInfo(includeIsGuest: true),
@@ -138,8 +179,8 @@ class PostResource extends BaseApiResource
             'reply_count' => (int) ($this->replies_count ?? 0),
             'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
 
-            // 썸네일 이미지
-            'thumbnail' => $this->relationLoaded('attachments') ? $this->getThumbnailUrl() : null,
+            // 썸네일 이미지 (첫 번째 이미지 첨부파일)
+            'thumbnail' => $this->getThumbnailUrlFromRelations(),
 
             // 계층 구조
             'parent_id' => $this->parent_id,
@@ -152,23 +193,16 @@ class PostResource extends BaseApiResource
                 $this->created_at,
                 g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')
             ),
-            'deleted_at' => $this->deleted_at ? $this->formatDateTimeStringForUser($this->deleted_at) : null,
-
-            // 본문 요약 (html 모드: strip_tags → 평문 앞 150자, text 모드: 그대로 앞 150자)
-            'content_preview' => $this->getContentPreview(150),
 
             // 소유권 정보
             // is_author: 회원 글인 경우만 본인 여부 체크 (비회원 글은 세션 검증 불가하므로 항상 false)
             'is_author' => $this->user_id !== null && $request->user()?->id === $this->user_id,
             'is_guest_post' => $this->user_id === null,
-
-            // 권한 정보 (is_owner + permissions)
-            ...$this->resourceMeta($request),
         ];
     }
 
     // =========================================================================
-    // 헬퍼 메서드 - 공통 데이터 추출
+    // 헬퍼 메서드 - 데이터 추출
     // =========================================================================
 
     /**
@@ -179,7 +213,8 @@ class PostResource extends BaseApiResource
      */
     private function getSlug(Request $request): ?string
     {
-        return $this->board?->slug ?? $request->route('slug');
+        // route slug 우선 → board relation이 미로딩 시 lazy loading 방지
+        return $request->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
     }
 
     /**
@@ -244,6 +279,36 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 썸네일 URL을 관계 로딩 상태에 따라 반환합니다.
+     *
+     * thumbnailAttachment(경량 hasOne) 우선, attachments(전체) fallback.
+     * 둘 다 미로딩 시 null 반환 (lazy loading 방지).
+     *
+     * @return string|null 썸네일 URL
+     */
+    private function getThumbnailUrlFromRelations(): ?string
+    {
+        // 목록용 경량 관계 우선 — slug를 직접 전달하여 Board::find() N+1 방지
+        if ($this->relationLoaded('thumbnailAttachment') && $this->thumbnailAttachment) {
+            $attachment = $this->thumbnailAttachment;
+            $slug = request()->route('slug') ?? ($this->relationLoaded('board') ? $this->board?->slug : null);
+
+            if ($slug && $attachment->hash) {
+                return '/api/modules/sirsoft-board/boards/' . $slug . '/attachment/' . $attachment->hash . '/preview';
+            }
+
+            return null;
+        }
+
+        // 상세 페이지 등에서 attachments가 로딩된 경우 fallback
+        if ($this->relationLoaded('attachments')) {
+            return $this->getThumbnailUrl();
+        }
+
+        return null;
+    }
+
+    /**
      * 게시판 정보 배열을 반환합니다.
      *
      * @return array<string, mixed> 게시판 정보
@@ -287,6 +352,25 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 폼용 원글 정보를 반환합니다.
+     *
+     * getParentInfo()와 달리 toFormArray()를 사용하여
+     * 불필요한 권한 체크(resolveAbilities 등)를 생략합니다.
+     *
+     * @return array|null 원글 정보 또는 null
+     */
+    private function getParentInfoForForm(): ?array
+    {
+        if (! $this->parent) {
+            return null;
+        }
+
+        $parentResource = new static($this->parent);
+
+        return $parentResource->toFormArray();
+    }
+
+    /**
      * 본문 요약 텍스트를 반환합니다.
      *
      * HTML 모드: strip_tags로 태그 제거 후 평문 앞 N자 추출
@@ -312,6 +396,34 @@ class PostResource extends BaseApiResource
     }
 
     /**
+     * 목록용 본문 요약을 반환합니다.
+     *
+     * DB SUBSTRING으로 가져온 content_preview_raw가 있으면 우선 사용하고,
+     * 없으면 content에서 추출합니다. (상세 페이지 등 content가 로딩된 경우)
+     *
+     * @param  int  $length  최대 길이
+     * @return string 본문 요약 텍스트
+     */
+    private function getContentPreviewForList(int $length = 150): string
+    {
+        // DB SUBSTRING으로 가져온 raw가 있으면 우선 사용
+        $raw = $this->content_preview_raw ?? null;
+        if ($raw !== null) {
+            $mode = $this->content_mode ?? 'text';
+            $plain = $mode === 'html'
+                ? trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($raw))))
+                : trim(preg_replace('/\s+/', ' ', $raw));
+
+            $preview = mb_substr($plain, 0, $length);
+
+            return $preview . (mb_strlen($plain) > $length ? '...' : '');
+        }
+
+        // fallback: content 전체가 로딩된 경우 (상세 페이지 등)
+        return $this->getContentPreview($length);
+    }
+
+    /**
      * 현재 로그인 사용자가 이 게시글을 이미 신고했는지 반환합니다.
      *
      * 비로그인 또는 board 관계 미로드 시 false 반환.
@@ -328,6 +440,45 @@ class PostResource extends BaseApiResource
 
         return app(ReportRepositoryInterface::class)
             ->hasUserReported($user->id, $this->board->id, 'post', $this->id);
+    }
+
+    // =========================================================================
+    // 상세 페이지 전용: 조건부 필드 메서드
+    // =========================================================================
+
+    /**
+     * IP 주소를 권한에 따라 반환합니다. (admin.manage 권한 보유자만)
+     *
+     * @param  string|null  $slug  게시판 슬러그
+     * @return string|null IP 주소
+     */
+    private function getIpAddressForResponse(?string $slug): ?string
+    {
+        if (! $slug || ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            return null;
+        }
+
+        return $this->ip_address;
+    }
+
+    /**
+     * 첨부파일을 권한에 따라 반환합니다. (비밀글 열람 권한 체크)
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그
+     * @return mixed 첨부파일 리소스 컬렉션 또는 null
+     */
+    private function getAttachmentsForResponse(Request $request, ?string $slug): mixed
+    {
+        if (! $this->relationLoaded('attachments')) {
+            return null;
+        }
+
+        if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {
+            return [];
+        }
+
+        return AttachmentResource::collection($this->attachments);
     }
 
     // =========================================================================
@@ -349,6 +500,9 @@ class PostResource extends BaseApiResource
      *
      * Admin/User 페이지별로 동일한 키를 사용하되,
      * 실제 체크하는 permission identifier는 컨텍스트에 따라 다릅니다.
+     *
+     * 참고: 목록에서는 이 메서드가 호출되지 않습니다.
+     * 목록의 권한은 PostCollection::getBoardPermissions()에서 컬렉션 레벨로 제공됩니다.
      *
      * @param  Request  $request  HTTP 요청
      * @return array<string, bool> 통합 권한 정보
@@ -409,58 +563,46 @@ class PostResource extends BaseApiResource
     /**
      * 비밀글 내용 열람 가능 여부를 확인합니다.
      *
-     * 열람 가능 조건:
+     * 열람 가능 조건 (우선순위 순):
      * 1. 작성자 본인 (회원 게시글)
      * 2. 비밀번호 검증 완료 (회원/비회원 게시글, password_verified 플래그)
      * 3. 게시판별 비밀글 읽기 권한 (posts.read-secret)
      * 4. 게시판 관리자 권한 (Admin: admin.manage / User: manager)
      *
      * @param  Request  $request  HTTP 요청
+     * @param  string|null  $slug  게시판 슬러그 (getSlug 중복 호출 방지)
      * @return bool 열람 가능 여부
      */
-    private function canViewSecretContent(Request $request): bool
+    private function canViewSecretContent(Request $request, ?string $slug = null): bool
     {
-        $slug = $this->getSlug($request);
-
         // 1. 작성자 본인 (회원 게시글)
         $user = Auth::user();
         if ($user && $this->user_id && $this->user_id === $user->id) {
             return true;
         }
 
-        // 2. 비밀번호 검증 완료 (회원/비회원 게시글 모두 지원)
+        // 2. 비밀번호 검증 완료
         if ($this->password_verified === true) {
             return true;
         }
 
-        // 3. 게시판별 비밀글 읽기 권한 + 4. 게시판 관리자 권한
-        if ($slug) {
-            if ($this->isAdminRequest($request)) {
-                // 3. 비밀글 읽기 권한 (Admin: admin.posts.read-secret)
-                if ($this->checkBoardPermission($slug, 'admin.posts.read-secret')) {
-                    return true;
-                }
-                // 4. 게시판 관리자 권한 (Admin: admin.manage)
-                if ($this->checkBoardPermission($slug, 'admin.manage')) {
-                    return true;
-                }
-            } else {
-                // 3. 비밀글 읽기 권한 (User: posts.read-secret)
-                if ($this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)) {
-                    return true;
-                }
-                // 4. 게시판 관리자 권한 (User: manager)
-                if ($this->checkBoardPermission($slug, 'manager', PermissionType::User)) {
-                    return true;
-                }
-            }
+        // 3-4. 게시판별 권한 체크
+        $slug = $slug ?? $this->getSlug($request);
+        if (! $slug) {
+            return false;
         }
 
-        return false;
+        if ($this->isAdminRequest($request)) {
+            return $this->checkBoardPermission($slug, 'admin.posts.read-secret')
+                || $this->checkBoardPermission($slug, 'admin.manage');
+        }
+
+        return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
     }
 
     // =========================================================================
-    // 콘텐츠 필터링 메서드
+    // 콘텐츠 필터링 메서드 (상세 페이지 전용)
     // =========================================================================
 
     /**
@@ -500,11 +642,10 @@ class PostResource extends BaseApiResource
         // 비밀글: 권한 없으면 content를 null로 반환
         // - is_secret = true인 경우에만 검증 필요
         // - 일반글(is_secret = false)은 비밀번호 유무와 관계없이 공개
-        if ($this->is_secret && ! $this->canViewSecretContent($request)) {
+        if ($this->is_secret && ! $this->canViewSecretContent($request, $slug)) {
             return null;
         }
 
         return $this->content;
     }
-
 }

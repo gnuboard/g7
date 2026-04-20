@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * 관리자용 사용자 관리 컨트롤러
- * 
+ *
  * 관리자가 시스템 사용자들을 관리할 수 있는 기능을 제공합니다.
  */
 class UserController extends AdminBaseController
@@ -78,7 +78,7 @@ class UserController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('user.create_failed', 422, $e->errors());
         } catch (Exception $e) {
-            return $this->error('user.create_failed', 500, $e->getMessage());
+            return $this->error('user.create_failed', 500, $e, ['error' => $e->getMessage()]);
         }
     }
 
@@ -126,7 +126,7 @@ class UserController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('user.update_failed', 422, $e->errors());
         } catch (Exception $e) {
-            return $this->error('user.update_failed', 500, $e->getMessage());
+            return $this->error('user.update_failed', 500, $e, ['error' => $e->getMessage()]);
         }
     }
 
@@ -154,7 +154,7 @@ class UserController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('user.delete_failed', 422, $e->errors());
         } catch (Exception $e) {
-            return $this->error('user.delete_failed', 500);
+            return $this->error('user.delete_failed', 500, $e, ['error' => $e->getMessage()]);
         }
     }
 

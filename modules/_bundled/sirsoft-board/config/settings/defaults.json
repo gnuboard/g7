@@ -2,7 +2,7 @@
   "_meta": {
     "version": "1.0.0",
     "description": "게시판 모듈 환경설정",
-    "categories": ["basic_defaults", "report_policy", "spam_security", "display"]
+    "categories": ["basic_defaults", "report_policy", "spam_security", "display", "seo", "notifications"]
   },
   "defaults": {
     "basic_defaults": {
@@ -44,8 +44,6 @@
         "야동", "포르노", "섹스", "야사", "음란", "성인사이트", "조건만남",
         "원나잇", "섹파", "오피", "키스방", "매춘", "성매매", "몸파는"
       ],
-      "notify_admin_on_post_channels": ["mail"],
-      "notify_author_channels": ["mail"],
       "default_board_permissions": {
         "admin.posts.read": ["admin"],
         "admin.posts.write": ["admin"],
@@ -73,9 +71,7 @@
       "rejection_limit_days": 30,
       "notify_admin_on_report": true,
       "notify_admin_on_report_scope": "per_case",
-      "notify_admin_on_report_channels": ["mail"],
-      "notify_author_on_report_action": true,
-      "notify_author_on_report_action_channels": ["mail"]
+      "notify_author_on_report_action": true
     },
     "spam_security": {
       "post_cooldown_seconds": 0,
@@ -85,6 +81,23 @@
     },
     "display": {
       "date_display_format": "standard"
+    },
+    "seo": {
+      "meta_boards_title": "{site_name}",
+      "meta_boards_description": "",
+      "meta_board_title": "{board_name}",
+      "meta_board_description": "{board_description}",
+      "meta_post_title": "{board_name} - {post_title}",
+      "meta_post_description": "",
+      "seo_boards": true,
+      "seo_board": true,
+      "seo_post_detail": true
+    },
+    "notifications": {
+      "channels": [
+        { "id": "mail", "is_active": true, "sort_order": 0 },
+        { "id": "database", "is_active": true, "sort_order": 1 }
+      ]
     }
   },
   "frontend_schema": {
@@ -99,6 +112,9 @@
       "expose": false
     },
     "display": {
+      "expose": false
+    },
+    "seo": {
       "expose": false
     }
   }

@@ -10,8 +10,14 @@ use Modules\Sirsoft\Board\Database\Seeders\InstallSeeder;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationChannelListener;
-use Modules\Sirsoft\Board\Listeners\BoardNotificationListener;
+use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
+use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
+use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
@@ -230,6 +236,79 @@ class Module extends AbstractModule
     }
 
     /**
+     * 런타임 동적 권한 식별자 전수.
+     *
+     * BoardPermissionService 가 게시판 생성 시 아래 세 계층을 Permission 테이블에 기록한다:
+     *   - {module}                        (모듈 루트)
+     *   - {module}.{slug}                 (게시판 카테고리)
+     *   - {module}.{slug}.{action}        (action ∈ config board_permission_definitions)
+     *
+     * 모듈 루트는 getPermissions() 의 정적 식별자(moduleIdentifier) 와 동일하므로 생략.
+     * cleanup 시 이 목록에 포함된 식별자는 stale 로 판정되지 않는다.
+     */
+    public function getDynamicPermissionIdentifiers(): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+            return [];
+        }
+
+        $actions = array_keys((array) config('sirsoft-board.board_permission_definitions', []));
+        $module = $this->getIdentifier();
+        $ids = [];
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+            $category = $module.'.'.$board->slug;
+            $ids[] = $category;
+            foreach ($actions as $action) {
+                $ids[] = $category.'.'.$action;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * 런타임 동적 역할 식별자 전수.
+     *
+     * BoardService::createBoardRoles 가 게시판 생성 시 생성:
+     *   - {module}.{slug}.manager
+     *   - {module}.{slug}.step
+     */
+    public function getDynamicRoleIdentifiers(): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+            return [];
+        }
+
+        $module = $this->getIdentifier();
+        $ids = [];
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+            $ids[] = $module.'.'.$board->slug.'.manager';
+            $ids[] = $module.'.'.$board->slug.'.step';
+        }
+
+        return $ids;
+    }
+
+    /**
+     * 런타임 동적 메뉴 slug 전수.
+     *
+     * BoardService 가 게시판 생성 시 `board-{slug}` 형식의 메뉴를 기록.
+     */
+    public function getDynamicMenuSlugs(): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
+            return [];
+        }
+
+        $slugs = [];
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
+            $slugs[] = 'board-'.$board->slug;
+        }
+
+        return $slugs;
+    }
+
+    /**
      * 모듈 설치 시 실행할 시더 목록 반환
      *
      * BoardTypeSeeder: 기본 게시판 유형(basic, gallery, card) 생성
@@ -258,13 +337,63 @@ class Module extends AbstractModule
         return [
             UserNotificationSettingsListener::class,
             SearchPostsListener::class,
-            BoardNotificationListener::class,
+            BoardNotificationDataListener::class,
             BoardNotificationChannelListener::class,
             BoardActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
             SeoBoardCacheListener::class,
             SeoBoardSettingsCacheListener::class,
             EcommerceInquiryHookListener::class,
+            PostCountSyncListener::class,
+            PostAttachmentCountSyncListener::class,
+            PostReplySyncListener::class,
+            CommentReplySyncListener::class,
+            BoardPostsCountSyncListener::class,
+            BoardCommentsCountSyncListener::class,
+        ];
+    }
+
+    /**
+     * SEO 변수 메타데이터 정의
+     *
+     * 게시판 모듈이 SEO 렌더링에 제공하는 변수를 page_type별로 선언합니다.
+     *
+     * @return array page_type별 변수 정의 배열
+     */
+    public function seoVariables(): array
+    {
+        return [
+            '_common' => [
+                'site_name' => [
+                    'description' => '사이트명',
+                    'source' => 'core_setting',
+                    'key' => 'general.site_name',
+                ],
+            ],
+            'boards' => [],
+            'board' => [
+                'board_name' => [
+                    'description' => '게시판명',
+                    'source' => 'data',
+                    'required' => true,
+                ],
+                'board_description' => [
+                    'description' => '게시판 설명',
+                    'source' => 'data',
+                ],
+            ],
+            'post' => [
+                'board_name' => [
+                    'description' => '게시판명',
+                    'source' => 'data',
+                    'required' => true,
+                ],
+                'post_title' => [
+                    'description' => '게시글 제목',
+                    'source' => 'data',
+                    'required' => true,
+                ],
+            ],
         ];
     }
 

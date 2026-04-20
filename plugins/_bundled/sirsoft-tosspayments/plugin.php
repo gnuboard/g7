@@ -28,18 +28,6 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 의존성 반환
-     *
-     * @return array 의존하는 모듈 목록
-     */
-    public function getDependencies(): array
-    {
-        return [
-            'sirsoft-ecommerce' => '>=1.0.0',
-        ];
-    }
-
-    /**
      * 환경설정 스키마 반환
      *
      * @return array 설정 스키마

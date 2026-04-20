@@ -63,11 +63,11 @@ define('OPTIONAL_EXTENSIONS', [
 define('MIN_DISK_SPACE_MB', 500);
 
 // 디렉토리 권한 설정 (8진수)
-// chown + chmod 모델: 소유자(www-data) rwx, 그룹(www-data) rwx, 기타 ---
-define('REQUIRED_DIRECTORY_PERMISSIONS', 0770);
+// 업계 표준 755 (WordPress/Drupal/Joomla/Laravel 공통) — 실제 통과 기준은 is_writable() && is_readable()
+define('REQUIRED_DIRECTORY_PERMISSIONS', 0755);
 
 // 권한 표시용 문자열 (사용자에게 보여줄 형식)
-define('REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY', '770');
+define('REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY', '755');
 
 // 권한 검증이 필요한 디렉토리 목록
 // 값이 true인 경우 하위 디렉토리까지 재귀적으로 체크
@@ -120,6 +120,12 @@ define('DEFAULT_INSTALL_CONFIG', [
     // PHP CLI / Composer 경로 설정
     'php_binary' => 'php',        // PHP CLI 바이너리 경로 (예: /usr/local/php82/bin/php)
     'composer_binary' => '',      // Composer 바이너리 경로 (빈 값 = 시스템 PATH 사용)
+
+    // Vendor 설치 모드 (auto|composer|bundled)
+    // - auto: composer 사용 가능 시 composer, 불가 시 vendor-bundle.zip 추출
+    // - composer: 강제 composer 실행
+    // - bundled: 강제 vendor-bundle.zip 추출 (공유 호스팅 환경)
+    'vendor_mode' => 'auto',
 ]);
 
 // 설치 단계별 파일 매핑

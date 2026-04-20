@@ -166,8 +166,8 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (CacheService PREFIX 'g7' + group 'sirsoft-board' + key)
-        $this->assertTrue(Cache::has('g7:sirsoft-board:recent_posts_5'));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5'));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');

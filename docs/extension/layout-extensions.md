@@ -288,13 +288,26 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
         {
           "type": "extension_point",
           "name": "user_form_additional_fields",
-          "default": []
+          "default": [],
+          "props": {
+            "readOnlyFields": ["zipcode", "address"]
+          },
+          "callbacks": {
+            "onAddressSelect": { "handler": "setState", "params": { "target": "local", "form.zipcode": "{{$event.zipcode}}" } }
+          }
         }
       ]
     }
   ]
 }
 ```
+
+#### Extension Point 데이터 전달 (engine-v1.28.0+)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `props` | object | 주입 컴포넌트에 전달할 데이터. 표현식 평가됨. 플러그인에서 `{{extensionPointProps.xxx}}`로 접근 |
+| `callbacks` | object | 주입 컴포넌트에 전달할 액션 객체. 평가 없이 그대로 전달. 플러그인에서 `{{extensionPointCallbacks.xxx}}`로 접근 |
 
 ### 모듈에서 Extension Point에 주입
 

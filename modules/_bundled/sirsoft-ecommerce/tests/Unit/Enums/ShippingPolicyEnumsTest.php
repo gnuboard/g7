@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Enums;
 
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingCountryEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -12,72 +11,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class ShippingPolicyEnumsTest extends ModuleTestCase
 {
-    // ========================================
-    // ShippingMethodEnum 테스트
-    // ========================================
-
-    public function test_shipping_method_has_correct_values(): void
-    {
-        $this->assertEquals('parcel', ShippingMethodEnum::PARCEL->value);
-        $this->assertEquals('freight', ShippingMethodEnum::FREIGHT->value);
-        $this->assertEquals('express', ShippingMethodEnum::EXPRESS->value);
-        $this->assertEquals('economy', ShippingMethodEnum::ECONOMY->value);
-        $this->assertEquals('ems', ShippingMethodEnum::EMS->value);
-        $this->assertEquals('collect', ShippingMethodEnum::COLLECT->value);
-        $this->assertEquals('quick', ShippingMethodEnum::QUICK->value);
-        $this->assertEquals('direct', ShippingMethodEnum::DIRECT->value);
-        $this->assertEquals('pickup', ShippingMethodEnum::PICKUP->value);
-        $this->assertEquals('other', ShippingMethodEnum::OTHER->value);
-    }
-
-    public function test_shipping_method_values_returns_all_values(): void
-    {
-        $values = ShippingMethodEnum::values();
-
-        $this->assertIsArray($values);
-        $this->assertCount(10, $values);
-        $this->assertContains('parcel', $values);
-        $this->assertContains('freight', $values);
-        $this->assertContains('express', $values);
-        $this->assertContains('economy', $values);
-        $this->assertContains('ems', $values);
-        $this->assertContains('collect', $values);
-        $this->assertContains('quick', $values);
-        $this->assertContains('direct', $values);
-        $this->assertContains('pickup', $values);
-        $this->assertContains('other', $values);
-    }
-
-    public function test_shipping_method_to_select_options_returns_array(): void
-    {
-        $options = ShippingMethodEnum::toSelectOptions();
-
-        $this->assertIsArray($options);
-        $this->assertCount(10, $options);
-
-        // 각 옵션에 value와 label이 있는지 확인
-        foreach ($options as $option) {
-            $this->assertArrayHasKey('value', $option);
-            $this->assertArrayHasKey('label', $option);
-        }
-    }
-
-    public function test_shipping_method_label_returns_string(): void
-    {
-        $label = ShippingMethodEnum::PARCEL->label();
-
-        $this->assertIsString($label);
-        $this->assertNotEmpty($label);
-    }
-
-    public function test_shipping_method_get_label_returns_same_as_label(): void
-    {
-        $this->assertEquals(
-            ShippingMethodEnum::PARCEL->label(),
-            ShippingMethodEnum::PARCEL->getLabel()
-        );
-    }
-
     // ========================================
     // ChargePolicyEnum 테스트
     // ========================================

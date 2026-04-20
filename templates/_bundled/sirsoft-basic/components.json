@@ -839,6 +839,27 @@
         }
       },
       {
+        "name": "NotificationCenter",
+        "type": "composite",
+        "description": "알림 센터 드롭다운 — 알림 목록 표시, 무한스크롤, 읽음 추적, 안 읽은 필터, 개별/전체 삭제",
+        "path": "src/components/composite/NotificationCenter.tsx",
+        "props": {
+          "notifications": { "type": "array", "required": false, "default": [], "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)" },
+          "unreadCount": { "type": "number", "required": false, "default": 0, "description": "서버 기반 미읽음 알림 수" },
+          "hasMore": { "type": "boolean", "required": false, "default": false, "description": "추가 로드 가능 여부 (무한스크롤)" },
+          "loading": { "type": "boolean", "required": false, "default": false, "description": "로딩 상태" },
+          "titleText": { "type": "string", "required": false, "default": "알림", "description": "드롭다운 제목" },
+          "emptyText": { "type": "string", "required": false, "description": "알림 없음 텍스트" },
+          "markAllReadText": { "type": "string", "required": false, "description": "모두 읽음 버튼 텍스트" },
+          "deleteAllText": { "type": "string", "required": false, "description": "모두 삭제 버튼 텍스트" },
+          "unreadOnlyText": { "type": "string", "required": false, "description": "안 읽은 알림만 체크박스 텍스트" },
+          "unreadOnly": { "type": "boolean", "required": false, "default": false, "description": "안 읽은 알림만 필터 상태" },
+          "dropdownAlign": { "type": "string", "required": false, "default": "right", "description": "드롭다운 정렬 방향 (right/left)" },
+          "className": { "type": "string", "required": false, "description": "추가 CSS 클래스" }
+        },
+        "events": ["onClose", "onNotificationClick", "onLoadMore", "onMarkAllRead", "onDeleteAll", "onDelete", "onUnreadOnlyToggle"]
+      },
+      {
         "name": "Pagination",
         "type": "composite",
         "description": "페이지네이션 컴포넌트 (페이지 번호, 이전/다음, 처음/마지막 버튼)",

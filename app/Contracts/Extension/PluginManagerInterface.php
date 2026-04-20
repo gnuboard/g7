@@ -97,11 +97,12 @@ interface PluginManagerInterface
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $pluginName  플러그인명
+     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
      * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName): array;
+    public function refreshPluginLayouts(string $pluginName, bool $preserveModified = false): array;
 
     /**
      * 플러그인 삭제 시 삭제될 데이터 정보를 반환합니다.

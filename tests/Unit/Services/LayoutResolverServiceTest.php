@@ -28,10 +28,7 @@ class LayoutResolverServiceTest extends TestCase
     {
         parent::setUp();
         $this->layoutRepository = app(LayoutRepository::class);
-        $this->resolverService = new LayoutResolverService(
-            $this->layoutRepository,
-            app(ModuleManager::class)
-        );
+        $this->resolverService = app(LayoutResolverService::class);
 
         // 테스트용 템플릿 생성
         $this->template = Template::create([

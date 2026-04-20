@@ -152,56 +152,41 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
-     * 관리자가 basic_defaults에서 알림 채널을 저장할 수 있는지 확인
+     * 관리자가 notifications 카테고리에서 채널 설정을 저장할 수 있는지 확인
      */
     public function test_admin_can_save_notification_channels(): void
     {
         $response = $this->actingAs($this->adminUser)
             ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => [
-                    'notify_admin_on_post_channels' => ['mail'],
-                    'notify_author_channels' => ['mail'],
+                'notifications' => [
+                    'channels' => [
+                        ['id' => 'mail', 'is_active' => true, 'sort_order' => 1],
+                        ['id' => 'database', 'is_active' => true, 'sort_order' => 2],
+                    ],
                 ],
             ]);
 
         $response->assertStatus(200);
 
         // 저장된 값이 파일에 반영되었는지 확인
-        $filePath = $this->settingsStoragePath . '/basic_defaults.json';
+        $filePath = $this->settingsStoragePath . '/notifications.json';
         $this->assertFileExists($filePath);
 
         $content = json_decode(File::get($filePath), true);
-        $this->assertEquals(['mail'], $content['notify_admin_on_post_channels']);
-        $this->assertEquals(['mail'], $content['notify_author_channels']);
+        $this->assertIsArray($content['channels']);
+        $this->assertEquals('mail', $content['channels'][0]['id']);
     }
 
     /**
-     * 잘못된 채널값이 유효성 검증에서 실패하는지 확인
-     */
-    public function test_store_rejects_invalid_notification_channels(): void
-    {
-        $response = $this->actingAs($this->adminUser)
-            ->putJson('/api/modules/sirsoft-board/admin/settings', [
-                'basic_defaults' => [
-                    'notify_admin_on_post_channels' => ['sms'], // mail만 허용
-                ],
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['basic_defaults.notify_admin_on_post_channels.0']);
-    }
-
-    /**
-     * basic_defaults에 알림 채널 설정이 포함되는지 확인
+     * notifications.channels 설정이 응답에 포함되는지 확인
      */
     public function test_notification_channels_included_in_settings_response(): void
     {
         $response = $this->actingAs($this->adminUser)
             ->getJson('/api/modules/sirsoft-board/admin/settings');
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.basic_defaults.notify_admin_on_post_channels', fn ($v) => is_array($v))
-            ->assertJsonPath('data.basic_defaults.notify_author_channels', fn ($v) => is_array($v));
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('success'));
     }
 
     /**

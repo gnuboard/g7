@@ -8,6 +8,7 @@ use App\Exceptions\CannotDeleteAdminException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
+use App\Models\ActivityLog;
 use App\Helpers\TimezoneHelper;
 use App\Models\Role;
 use App\Models\User;
@@ -127,7 +128,8 @@ class UserService
             $data = HookManager::applyFilters('core.user.filter_update_data', $data, $user);
 
             // 비밀번호 처리
-            if (! empty($data['password'])) {
+            $passwordChanged = ! empty($data['password']);
+            if ($passwordChanged) {
                 $data['password'] = Hash::make($data['password']);
             } else {
                 // 비밀번호가 비어있으면 업데이트하지 않음
@@ -199,6 +201,11 @@ class UserService
 
             // After 훅: 사용자 객체와 원본 데이터, 스냅샷 전달
             HookManager::doAction('core.user.after_update', $user, $originalData, $snapshot);
+
+            // 비밀번호 변경 시 알림 훅 발화 — 발송은 NotificationHookListener가 처리
+            if ($passwordChanged) {
+                HookManager::doAction('core.auth.after_password_changed', $user);
+            }
 
             return $user->fresh(['modules', 'plugins', 'menus', 'roles']);
         } catch (Exception $e) {
@@ -480,6 +487,29 @@ class UserService
         // $this->userRepository->update($user, ['is_active' => $isActive]);
 
         return $user;
+    }
+
+    /**
+     * 사용자의 활동 로그를 조회합니다.
+     *
+     * @param int $userId 사용자 ID
+     * @param int $limit 조회 건수
+     * @return \Illuminate\Support\Collection
+     */
+    public function getUserActivityLogs(int $userId, int $limit = 50): \Illuminate\Support\Collection
+    {
+        return ActivityLog::byUser($userId)
+            ->latest()
+            ->limit($limit)
+            ->get()
+            ->map(fn (ActivityLog $log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'action_label' => $log->action_label,
+                'description' => $log->localized_description,
+                'ip_address' => $log->ip_address,
+                'created_at' => $log->created_at?->toIso8601String(),
+            ]);
     }
 
     /**

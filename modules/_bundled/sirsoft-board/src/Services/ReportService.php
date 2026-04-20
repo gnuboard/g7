@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
@@ -40,13 +41,21 @@ class ReportService
 
     /**
      * ReportService 생성자
+     *
+     * @param  ReportRepositoryInterface  $reportRepository  신고 리포지토리
+     * @param  PostRepositoryInterface  $postRepository  게시글 리포지토리
+     * @param  CommentRepositoryInterface  $commentRepository  댓글 리포지토리
+     * @param  BoardRepositoryInterface  $boardRepository  게시판 리포지토리
+     * @param  UserRepositoryInterface  $userRepository  사용자 리포지토리
+     * @param  CacheInterface  $cache  모듈 캐시 드라이버
      */
     public function __construct(
         private ReportRepositoryInterface $reportRepository,
         private PostRepositoryInterface $postRepository,
         private CommentRepositoryInterface $commentRepository,
         private BoardRepositoryInterface $boardRepository,
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -1195,6 +1204,22 @@ class ReportService
     }
 
     /**
+     * 특정 사용자가 여러 대상을 신고했는지 일괄 확인합니다.
+     *
+     * N+1 방지를 위해 복수 대상의 신고 여부를 한 번의 쿼리로 조회합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $boardId  게시판 ID
+     * @param  string  $targetType  대상 타입 (post/comment)
+     * @param  array<int>  $targetIds  대상 ID 목록
+     * @return array<int> 신고한 대상 ID 목록
+     */
+    public function getReportedTargetIds(int $userId, int $boardId, string $targetType, array $targetIds): array
+    {
+        return $this->reportRepository->getReportedTargetIds($userId, $boardId, $targetType, $targetIds);
+    }
+
+    /**
      * 본인이 작성한 콘텐츠인지 확인합니다.
      *
      * @param  int  $boardId  게시판 ID
@@ -1462,5 +1487,18 @@ class ReportService
                 'label' => $group->first()->status->label(),
             ];
         })->toArray();
+    }
+
+    /**
+     * 신고 쿨다운을 캐시에 기록합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string|int  $identifier  사용자 ID 또는 IP
+     * @param  int  $seconds  쿨다운 시간(초)
+     * @return void
+     */
+    public function recordReportCooldown(string $slug, string|int $identifier, int $seconds): void
+    {
+        $this->cache->put("report_cooldown_{$slug}_{$identifier}", true, $seconds);
     }
 }

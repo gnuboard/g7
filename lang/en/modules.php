@@ -37,6 +37,7 @@ return [
             'permissions_created' => ':count permissions created',
             'menus_created' => ':count menus created',
             'already_installed' => 'Module ":module" is already installed.',
+            'force_reinstall' => 'Force reinstalling module ":module" (overwriting active directory)...',
         ],
         'activate' => [
             'success' => 'Module ":module" activated successfully',
@@ -122,6 +123,8 @@ return [
     'no_update_available' => 'No update available.',
     'check_updates_success' => 'Update check completed.',
     'check_updates_failed' => 'Update check failed.',
+    'check_modified_layouts_success' => 'Modified layouts check completed.',
+    'check_modified_layouts_failed' => 'Modified layouts check failed: :error',
     'not_installed' => 'Module ":module" is not installed.',
 
     // _pending related messages
@@ -154,6 +157,7 @@ return [
 
     // Error messages
     'errors' => [
+        'force_update_no_source' => 'Cannot force update :module. Neither bundle nor GitHub URL is available.',
         'zip_open_failed' => 'Failed to open ZIP file.',
         'module_json_not_found' => 'module.json file not found.',
         'module_json_invalid' => 'Invalid module.json file format.',
@@ -172,6 +176,7 @@ return [
         'unknown_error' => 'An unknown error occurred.',
         'invalid_permission_structure' => 'Invalid permission structure for module ":identifier": :reason',
         'invalid_translation_path' => 'Invalid translation path for module ":identifier". Use ":correct_path" instead of ":wrong_path".',
+        'seo_variable_conflict' => 'SEO variable name conflict in module ":identifier": :reason',
         'layout_validation_json_error' => 'Failed to parse JSON in layout file :file: :error',
         'layout_validation_missing_name' => 'Layout file :file is missing layout_name.',
         'layout_validation_partial_error' => 'Failed to process partial in layout file :file: :error (partial: :partial)',
@@ -186,6 +191,8 @@ return [
         'reload_failed' => 'Failed to reload module.',
         'delete_directory_failed' => 'Failed to delete module directory.',
         'update_failed' => 'Failed to update module ":module": :error',
+        'invalid_layout_strategy' => 'Invalid layout strategy. (only overwrite or keep allowed)',
+        'invalid_vendor_mode' => 'Invalid vendor installation mode. (only auto, composer, bundled allowed)',
     ],
 
     // Validation messages

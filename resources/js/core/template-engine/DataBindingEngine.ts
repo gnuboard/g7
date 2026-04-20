@@ -1119,10 +1119,27 @@ export class DataBindingEngine {
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
       // 컨텍스트에서 번역 관련 정보 추출
-      const templateId = context.$templateId || '';
+      //
+      // @since engine-v1.38.2 ActionDispatcher 경로 fallback — bindActionsToProps
+      //   이후 createHandler 에서 빌드된 action data context 는 `$templateId`/`$locale`
+      //   을 명시적으로 포함하지 않을 수 있다. 이 경우 `window.__templateApp.getConfig()`
+      //   로부터 회수하여 `{{$event.target.checked ? '$t:A' : '$t:B'}}` 같은 조건부
+      //   $t: 평가가 raw key 를 반환하던 버그를 해결한다.
+      let templateId = context.$templateId;
+      let resolvedLocale = locale;
+      if (!templateId && typeof window !== 'undefined') {
+        const templateApp = (window as any).__templateApp;
+        const appConfig = templateApp?.getConfig?.();
+        if (appConfig?.templateId) {
+          templateId = appConfig.templateId;
+          if (!context.$locale && appConfig.locale) {
+            resolvedLocale = appConfig.locale;
+          }
+        }
+      }
       const translationContext = {
-        templateId,
-        locale,
+        templateId: templateId || '',
+        locale: resolvedLocale,
       };
       extendedContext.$t = (key: string): string => {
         if (!key || typeof key !== 'string') {

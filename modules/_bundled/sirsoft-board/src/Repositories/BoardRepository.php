@@ -202,30 +202,37 @@ class BoardRepository implements BoardRepositoryInterface
             return [];
         }
 
-        // 댓글 수 서브쿼리
-        $commentCountSubquery = Comment::query()
-            ->selectRaw('COUNT(*)')
-            ->whereColumn('board_comments.post_id', 'board_posts.id')
-            ->whereNull('board_comments.deleted_at');
+        $columns = ['id', 'board_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count'];
+
+        // board_id IN (...) + ORDER BY created_at DESC → 풀스캔 방지
+        // 각 board_id별 개별 쿼리(인덱스 활용) 후 UNION ALL로 합침
+        $subQueries = $activeBoardIds->map(
+            fn ($boardId) => Post::query()
+                ->select($columns)
+                ->where('board_id', $boardId)
+                ->whereNull('deleted_at')
+                ->whereNull('parent_id')
+                ->where('status', 'published')
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+        );
+
+        $unionQuery = $subQueries->shift();
+        foreach ($subQueries as $sub) {
+            $unionQuery = $unionQuery->unionAll($sub);
+        }
+
+        $postIds = DB::query()
+            ->fromSub($unionQuery, 'sub')
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->pluck('id');
 
         $posts = Post::query()
             ->with('board:id,slug,name')
-            ->select([
-                'id',
-                'board_id',
-                'title',
-                'author_name',
-                'created_at',
-                'view_count',
-                'is_secret',
-            ])
-            ->selectSub($commentCountSubquery, 'comment_count')
-            ->whereIn('board_id', $activeBoardIds)
-            ->whereNull('deleted_at')
-            ->whereNull('parent_id')
-            ->where('status', 'published')
+            ->select($columns)
+            ->whereIn('id', $postIds)
             ->orderBy('created_at', 'desc')
-            ->limit($limit)
             ->get();
 
         $newHours = g7_module_settings('sirsoft-board', 'basic_defaults.new_display_hours', 24);
@@ -239,7 +246,7 @@ class BoardRepository implements BoardRepositoryInterface
             'created_at'           => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
-            'comment_count' => $post->comment_count ?? 0,
+            'comment_count' => $post->comments_count ?? 0,
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
         ])->toArray();
@@ -262,12 +269,6 @@ class BoardRepository implements BoardRepositoryInterface
             return [];
         }
 
-        // 댓글 수 서브쿼리
-        $commentCountSubquery = Comment::query()
-            ->selectRaw('COUNT(*)')
-            ->whereColumn('board_comments.post_id', 'board_posts.id')
-            ->whereNull('board_comments.deleted_at');
-
         $posts = Post::query()
             ->select([
                 'id',
@@ -278,8 +279,8 @@ class BoardRepository implements BoardRepositoryInterface
                 'category',
                 'is_notice',
                 'is_secret',
+                'comments_count',
             ])
-            ->selectSub($commentCountSubquery, 'comment_count')
             ->where('board_id', $board->id)
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
@@ -297,7 +298,53 @@ class BoardRepository implements BoardRepositoryInterface
             'created_at'           => $this->formatCreatedAt($post->created_at),
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
-            'comment_count' => $post->comment_count ?? 0,
+            'comment_count' => $post->comments_count ?? 0,
+            'category' => $post->category,
+            'is_notice' => $post->is_notice,
+            'is_secret' => (bool) $post->is_secret,
+            'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
+        ])->toArray();
+    }
+
+    /**
+     * 게시판 ID로 최근 게시물을 조회합니다 (slug 재조회 없음).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $limit  조회 개수
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    {
+        $posts = Post::query()
+            ->select([
+                'id',
+                'title',
+                'author_name',
+                'created_at',
+                'view_count',
+                'category',
+                'is_notice',
+                'is_secret',
+                'comments_count',
+            ])
+            ->where('board_id', $boardId)
+            ->whereNull('deleted_at')
+            ->whereNull('parent_id')
+            ->where('status', 'published')
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        $newHours = g7_module_settings('sirsoft-board', 'basic_defaults.new_display_hours', 24);
+
+        return $posts->map(fn ($post) => [
+            'id' => $post->id,
+            'title' => $post->title,
+            'author_name' => $post->author_name,
+            'created_at' => $this->formatCreatedAt($post->created_at),
+            'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
+            'view_count' => $post->view_count,
+            'comment_count' => $post->comments_count ?? 0,
             'category' => $post->category,
             'is_notice' => $post->is_notice,
             'is_secret' => (bool) $post->is_secret,
@@ -334,12 +381,7 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getTotalPostsCount(): int
     {
-        $activeBoardIds = Board::where('is_active', true)->pluck('id');
-
-        return Post::query()
-            ->whereIn('board_id', $activeBoardIds)
-            ->whereNull('deleted_at')
-            ->count();
+        return (int) Board::where('is_active', true)->sum('posts_count');
     }
 
     /**
@@ -360,15 +402,16 @@ class BoardRepository implements BoardRepositoryInterface
     }
 
     /**
-     * 인기 게시글을 조회합니다. (인기도 점수 기준, 기간별 필터링)
+     * 인기 게시글을 조회합니다. (조회수 > 댓글 수 기준, 기간별 필터링)
      *
      * board_posts 단일 테이블에서 활성 게시판의 인기 게시글을 조회합니다.
-     * - 인기도 점수 = 조회수 + (댓글 수 × 5) 기준 내림차순 정렬
-     * - 기간별 필터링 (today, week, month, all)
-     * - author nested 객체 구조
-     * - comment_count 서브쿼리 집계
+     * - 정렬: 조회수 내림차순, 동일 조회수 시 댓글 수 내림차순
+     * - 기간별 필터링 (today, week, month, year)
+     * - idx_board_posts_board_status_created 인덱스로 기간 범위를 먼저 좁힌 후 filesort
+     * - today/week: 수천 건 이내로 1회차부터 빠름
+     * - month/year: 수만 건 이상이나 캐시(getCachedPopularPosts)가 커버
      *
-     * @param  string  $period  기간 필터 (today, week, month, all)
+     * @param  string  $period  기간 필터 (today, week, month, year)
      * @param  int  $limit  조회 개수
      * @return array<int, array<string, mixed>>
      */
@@ -385,14 +428,9 @@ class BoardRepository implements BoardRepositoryInterface
             'today' => now()->startOfDay(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),
-            default => null,
+            'year' => now()->subYear(),
+            default => now()->subYear(),
         };
-
-        // 댓글 수 서브쿼리
-        $commentCountSubquery = Comment::query()
-            ->selectRaw('COUNT(*)')
-            ->whereColumn('board_comments.post_id', 'board_posts.id')
-            ->whereNull('board_comments.deleted_at');
 
         $prefix = DB::getTablePrefix();
 
@@ -408,7 +446,7 @@ class BoardRepository implements BoardRepositoryInterface
                 'board_posts.id',
                 'board_posts.board_id',
                 'board_posts.title',
-                DB::raw("LEFT({$prefix}board_posts.content, 300) as content_raw"),
+                DB::raw("LEFT(`{$prefix}board_posts`.`content`, 300) as content_raw"),
                 'board_posts.user_id',
                 'board_posts.author_name as guest_author_name',
                 'users.name as user_name',
@@ -416,27 +454,25 @@ class BoardRepository implements BoardRepositoryInterface
                 'users.status as user_status',
                 'attachments.hash as attachment_hash',
                 'board_posts.view_count',
+                'board_posts.comments_count',
                 'board_posts.created_at',
             ])
-            ->selectSub($commentCountSubquery, 'comment_count')
             ->whereIn('board_posts.board_id', $activeBoardIds)
             ->whereNull('board_posts.deleted_at')
             ->whereNull('board_posts.parent_id')
             ->where('board_posts.status', 'published')
-            ->where('board_posts.is_secret', false);
-
-        if ($dateFilter) {
-            $query->where('board_posts.created_at', '>=', $dateFilter);
-        }
+            ->where('board_posts.is_secret', false)
+            ->where('board_posts.created_at', '>=', $dateFilter);
 
         $posts = $query
-            ->orderByRaw("({$prefix}board_posts.view_count + (comment_count * 5)) DESC")
+            ->orderBy('board_posts.view_count', 'desc')
+            ->orderBy('board_posts.comments_count', 'desc')
             ->limit($limit)
             ->get();
 
         return $posts->map(function ($post) {
             $viewCount = $post->view_count ?? 0;
-            $commentCount = $post->comment_count ?? 0;
+            $commentCount = $post->comments_count ?? 0;
 
             // Avatar URL 결정
             $avatarUrl = null;
@@ -560,6 +596,35 @@ class BoardRepository implements BoardRepositoryInterface
     {
         return Board::where('is_active', true)
             ->orderBy($orderBy, $orderDirection)
+            ->get();
+    }
+
+    /**
+     * 활성 게시판의 통계를 조회합니다 (게시판 수, 게시글 수, 댓글 수).
+     *
+     * boards 테이블의 카운팅 컬럼을 SUM하여 단일 쿼리로 집계합니다.
+     *
+     * @return object{boards_count: int, posts_total: int, comments_total: int}
+     */
+    public function getActiveBoardStats(): object
+    {
+        return Board::where('is_active', true)
+            ->selectRaw('COUNT(*) as boards_count, COALESCE(SUM(posts_count), 0) as posts_total, COALESCE(SUM(comments_count), 0) as comments_total')
+            ->first();
+    }
+
+    /**
+     * 메뉴용 경량 게시판 목록을 조회합니다.
+     *
+     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     */
+    public function getActiveBoardsForMenu(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Board::where('is_active', true)
+            ->select(['id', 'name', 'slug'])
+            ->orderBy('created_at', 'asc')
             ->get();
     }
 

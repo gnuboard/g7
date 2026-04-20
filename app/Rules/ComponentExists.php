@@ -2,11 +2,12 @@
 
 namespace App\Rules;
 
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Models\Template;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -78,7 +79,9 @@ class ComponentExists implements DataAwareRule, ValidationRule
     {
         $cacheKey = "template.{$templateId}.components_manifest";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($templateId) {
+        $cache = $this->resolveCache();
+
+        return $cache->remember($cacheKey, function () use ($templateId) {
             // 템플릿 identifier 조회 (numeric ID인 경우)
             $templateIdentifier = $templateId;
             if (is_numeric($templateId)) {
@@ -117,7 +120,19 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
             // 컴포넌트 목록을 빠른 조회를 위해 Set으로 변환
             return $this->buildComponentSet($manifest);
-        });
+        }, self::CACHE_TTL);
+    }
+
+    /**
+     * CacheInterface 인스턴스를 lazy 조회합니다.
+     */
+    private function resolveCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 
     /**

@@ -359,16 +359,17 @@ class TemplateService
      * 템플릿을 설치합니다.
      *
      * @param  string  $identifier  설치할 템플릿 식별자
+     * @param  bool  $force  활성 디렉토리가 있어도 원본으로 덮어쓰고 재설치
      * @return array|null 설치된 템플릿 정보 또는 null
      *
      * @throws ValidationException 설치 실패 시
      */
-    public function installTemplate(string $identifier): ?array
+    public function installTemplate(string $identifier, bool $force = false): ?array
     {
         HookManager::doAction('core.templates.before_install', $identifier);
 
         try {
-            $result = $this->templateManager->installTemplate($identifier);
+            $result = $this->templateManager->installTemplate($identifier, null, $force);
 
             if ($result) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
@@ -1465,7 +1466,7 @@ class TemplateService
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->updateTemplate($templateName, $layoutStrategy);
+            $result = $this->templateManager->updateTemplate($templateName, false, null, $layoutStrategy);
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 

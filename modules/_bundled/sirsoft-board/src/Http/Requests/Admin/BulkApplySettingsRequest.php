@@ -42,9 +42,7 @@ class BulkApplySettingsRequest extends FormRequest
         'max_file_count',
         'allowed_extensions',
         'notify_admin_on_post',
-        'notify_admin_on_post_channels',
         'notify_author',
-        'notify_author_channels',
         'new_display_hours',
     ];
 

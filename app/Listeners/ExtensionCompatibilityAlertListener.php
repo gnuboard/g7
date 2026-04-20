@@ -2,10 +2,11 @@
 
 namespace App\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * 확장 호환성 알림 리스너
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class ExtensionCompatibilityAlertListener implements HookListenerInterface
 {
+    private const CACHE_KEY = 'ext.compatibility_alerts';
+
     /**
      * 구독할 훅과 메서드 매핑 반환
      *
@@ -49,7 +52,7 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
      */
     public function addCompatibilityAlerts(array $alerts): array
     {
-        $compatibilityAlerts = Cache::get('extension_compatibility_alerts', []);
+        $compatibilityAlerts = self::resolveCache()->get(self::CACHE_KEY, []);
 
         foreach ($compatibilityAlerts as $type => $data) {
             foreach ($data['deactivated'] as $extension) {
@@ -82,7 +85,8 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
      */
     public static function dismissAlert(string $type, string $identifier): void
     {
-        $alerts = Cache::get('extension_compatibility_alerts', []);
+        $cache = self::resolveCache();
+        $alerts = $cache->get(self::CACHE_KEY, []);
 
         if (isset($alerts[$type]['deactivated'])) {
             $alerts[$type]['deactivated'] = array_filter(
@@ -96,9 +100,9 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
             }
 
             if (empty($alerts)) {
-                Cache::forget('extension_compatibility_alerts');
+                $cache->forget(self::CACHE_KEY);
             } else {
-                Cache::put('extension_compatibility_alerts', $alerts, 86400);
+                $cache->put(self::CACHE_KEY, $alerts, 86400);
             }
         }
     }
@@ -108,6 +112,18 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
      */
     public static function dismissAllAlerts(): void
     {
-        Cache::forget('extension_compatibility_alerts');
+        self::resolveCache()->forget(self::CACHE_KEY);
+    }
+
+    /**
+     * CacheInterface 인스턴스를 lazy 조회합니다.
+     */
+    private static function resolveCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 }

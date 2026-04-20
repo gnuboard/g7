@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Enums\PermissionType;
@@ -24,6 +23,7 @@ use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -46,11 +46,13 @@ class PostController extends PublicBaseController
      * @param  PostService  $postService  게시글 서비스
      * @param  BoardService  $boardService  게시판 서비스
      * @param  CommentService  $commentService  댓글 서비스
+     * @param  ReportService  $reportService  신고 서비스
      */
     public function __construct(
         private PostService $postService,
         private BoardService $boardService,
-        private CommentService $commentService
+        private CommentService $commentService,
+        private ReportService $reportService
     ) {}
 
     /**
@@ -80,9 +82,12 @@ class PostController extends PublicBaseController
             $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
             $withTrashed = $canViewDeleted && $request->boolean('del');
 
-            // 게시글 목록 조회
-            $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $withTrashed, context: 'user');
-            $totalNormalPosts = $this->postService->getTotalNormalPosts($slug, $listParams['filters'], $withTrashed, context: 'user');
+            // 게시글 목록 조회 (simplePaginate — COUNT 쿼리 제거)
+            // board 객체 전달로 Service/Repository의 중복 Board 조회 방지
+            $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $withTrashed, context: 'user', board: $board);
+
+            // 일반 게시글 총 건수는 캐시에서 조회 (simplePaginate는 total 미제공)
+            $totalNormalPosts = $this->postService->getCachedNormalPostCount($slug, $board->id, $listParams['filters'], $withTrashed, 'user');
 
             // PostCollection 구성
             $collection = new PostCollection($posts);
@@ -122,7 +127,7 @@ class PostController extends PublicBaseController
                 throw new BoardNotFoundException($slug);
             }
 
-            // 게시글 조회
+            // 게시글 조회 (스코프 접근 검사 포함)
             $post = $this->postService->getPost($slug, $id, context: 'user');
 
             // 삭제된 게시글은 manager 권한 필요
@@ -135,8 +140,8 @@ class PostController extends PublicBaseController
             // 조회수 증가 (캐시 기반 중복 방지)
             $this->postService->incrementViewCountOnce($slug, $id);
 
-            // 댓글/첨부파일 카운트 포함하여 게시글 조회
-            $post = $this->postService->getPostWithCounts($slug, $id);
+            // 댓글/첨부파일/답글 포함하여 게시글 조회 (boardId 전달로 Board 재조회 방지)
+            $post = $this->postService->getPostWithCounts($slug, $id, $board->id);
 
             // board 관계 수동 설정
             $post->setRelation('board', $board);
@@ -146,19 +151,29 @@ class PostController extends PublicBaseController
 
             // 댓글 로드 (게시판 comment_order 설정 적용, manager 권한 + 토글 ON 시 삭제 댓글 포함)
             $withTrashedComments = $canViewDeleted && $request->boolean('del_cmt');
-            $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments);
+            $comments = $this->commentService->getCommentsByPostId($slug, $id, context: 'user', withTrashed: $withTrashedComments, boardId: $board->id);
 
-            // 댓글의 post에 board 관계 수동 설정 (CommentResource의 권한 체크에 필요)
-            foreach ($comments as $comment) {
-                $comment->setRelation('post', $post);
+            // 신고 여부 일괄 조회 (N+1 방지: 댓글별 개별 쿼리 → 1회 일괄 쿼리)
+            $user = $request->user();
+            if ($user) {
+                $commentIds = $comments->pluck('id')->all();
+                $reportedCommentIds = $this->reportService
+                    ->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds);
+
+                foreach ($comments as $comment) {
+                    $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                    $comment->setRelation('post', $post);
+                }
+            } else {
+                // 비로그인: 신고 불가이므로 모두 false
+                foreach ($comments as $comment) {
+                    $comment->is_already_reported_preloaded = false;
+                    $comment->setRelation('post', $post);
+                }
             }
 
             // 정렬된 댓글을 post에 설정
             $post->setRelation('comments', $comments);
-
-            // 이전/다음 게시글 조회 (manager 권한 + del=1 시 삭제된 게시글 포함)
-            $withTrashedNav = $canViewDeleted && $request->boolean('del');
-            $post->navigation = $this->postService->getAdjacentPosts($slug, $id, filters: [], withTrashed: $withTrashedNav);
 
             // 비밀글 권한 체크 및 content 필터링은 PostResource에서 처리
             return $this->successWithResource(
@@ -170,6 +185,50 @@ class PostController extends PublicBaseController
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
         } catch (BoardNotFoundException|PostNotFoundException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.posts.fetch_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 게시글의 이전/다음 네비게이션 정보를 조회합니다.
+     *
+     * 상세 API에서 분리하여 비동기 로딩 지원.
+     * 게시판 정렬 설정에 따라 이전/다음글을 반환합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  string  $slug  게시판 슬러그
+     * @param  string|int  $id  게시글 ID
+     * @return JsonResponse 이전/다음 게시글 정보
+     */
+    public function navigation(Request $request, string $slug, string|int $id): JsonResponse
+    {
+        $id = (int) $id;
+
+        try {
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+            if (! $board || ! $board->is_active) {
+                throw new BoardNotFoundException($slug);
+            }
+
+            // 공지글은 이전/다음 네비게이션 미제공
+            $post = $this->postService->getPost($slug, $id, context: 'user');
+            if ($post->is_notice) {
+                return $this->success('sirsoft-board::messages.posts.fetch_success', ['prev' => null, 'next' => null]);
+            }
+
+            // manager 권한 + del=1 시 삭제된 게시글 포함
+            $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+            $withTrashed = $canViewDeleted && $request->boolean('del');
+
+            $navigation = $this->postService->getAdjacentPosts($slug, $id, filters: [
+                'order_by' => $board->order_by instanceof \BackedEnum ? $board->order_by->value : $board->order_by,
+                'order_direction' => $board->order_direction instanceof \BackedEnum ? $board->order_direction->value : $board->order_direction,
+            ], withTrashed: $withTrashed, board: $board);
+
+            return $this->success('sirsoft-board::messages.posts.fetch_success', $navigation);
+        } catch (BoardNotFoundException $e) {
             throw $e;
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.posts.fetch_failed', 500, $e->getMessage());
@@ -234,7 +293,7 @@ class PostController extends PublicBaseController
             $cooldown = (int) ($spamSecurity['post_cooldown_seconds'] ?? 0);
             if ($cooldown > 0) {
                 $identifier = Auth::id() ?? $request->ip();
-                Cache::put("post_cooldown_{$slug}_{$identifier}", true, $cooldown);
+                $this->postService->recordPostCooldown($slug, $identifier, $cooldown);
             }
 
             // board 관계 수동 설정
@@ -428,18 +487,17 @@ class PostController extends PublicBaseController
                 return $this->error($verifyResult['error_key'], $verifyResult['error_code']);
             }
 
-            // 검증 성공 시 임시 토큰 생성 및 캐시 저장 (1시간 유효)
+            // 검증 성공 시 임시 토큰 생성 및 캐시 저장
             $verificationToken = Str::random(32);
-            $expiresAt = now()->addHours(1);
-            Cache::put("board_post_verify_{$slug}_{$id}_{$verificationToken}", true, $expiresAt);
+            $tokenResult = $this->postService->storeDeleteVerifyToken($slug, $id, $verificationToken);
 
             return $this->success(
                 'sirsoft-board::messages.posts.password_verified',
                 [
                     'verified' => true,
                     'post_id' => $id,
-                    'verification_token' => $verificationToken,
-                    'expires_at' => $expiresAt->toIso8601String(),
+                    'verification_token' => $tokenResult['token'],
+                    'expires_at' => $tokenResult['expires_at'],
                 ]
             );
         } catch (ModelNotFoundException $e) {
@@ -511,8 +569,9 @@ class PostController extends PublicBaseController
                 // 첨부파일 관계 로드
                 $post->load('attachments');
 
+                // 폼용 경량 변환 (abilities/IP/신고 등 불필요한 권한 체크 생략)
                 $postResource = new PostResource($post);
-                $postData = $postResource->toArray($request);
+                $postData = $postResource->toFormArray($request);
 
                 $metaData['author'] = $postData['author'] ?? null;
                 $metaData['created_at'] = $postData['created_at'] ?? null;
@@ -533,7 +592,7 @@ class PostController extends PublicBaseController
 
                 $parentPost = $this->postService->getPost($slug, $parentId, context: 'user');
                 $parentPostResource = new PostResource($parentPost);
-                $metaData['parent_post'] = $parentPostResource->toArray($request);
+                $metaData['parent_post'] = $parentPostResource->toFormArray($request);
             }
 
             return $this->success('sirsoft-board::messages.posts.form_meta_retrieved', $metaData);
@@ -590,8 +649,9 @@ class PostController extends PublicBaseController
                     }
                 }
 
+                // 폼용 경량 변환 (abilities/IP/신고 등 불필요한 권한 체크 생략)
                 $postResource = new PostResource($post);
-                $postData = $postResource->toArray($request);
+                $postData = $postResource->toFormArray($request);
 
                 $formData = [
                     'id' => $postData['id'] ?? null,
@@ -699,7 +759,7 @@ class PostController extends PublicBaseController
     // =========================================================================
 
     /**
-     * verification_token이 유효한지 확인합니다.
+     * verification_token이 유효한지 확인하고 소비합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
@@ -708,7 +768,7 @@ class PostController extends PublicBaseController
      */
     private function isVerificationTokenValid(string $slug, int $postId, string $token): bool
     {
-        return (bool) Cache::get("board_post_verify_{$slug}_{$postId}_{$token}");
+        return $this->postService->consumeDeleteVerifyToken($slug, $postId, $token);
     }
 
     // =========================================================================

@@ -31,6 +31,7 @@ function flattenAll(node: any): any[] {
     }
     result.push(node);
     if (node.children) result.push(...flattenAll(node.children));
+    if (node.itemTemplate) result.push(...flattenAll(node.itemTemplate));
     if (node.slots) {
         Object.values(node.slots).forEach((s: any) => result.push(...flattenAll(s)));
     }
@@ -463,9 +464,9 @@ describe('택배사 테이블 구조', () => {
         expect(tables.length).toBeGreaterThan(0);
     });
 
-    it('Thead에 6개 컬럼 헤더가 있다 (code, name, type, tracking_url, is_active, actions)', () => {
+    it('Thead에 7개 컬럼 헤더가 있다 (드래그핸들, code, name, type, tracking_url, is_active, actions)', () => {
         const thNodes = findAllByName(allNodes, 'Th');
-        expect(thNodes.length).toBe(6);
+        expect(thNodes.length).toBe(7);
     });
 
     it('컬럼 헤더에 올바른 다국어 키가 사용된다', () => {
@@ -484,15 +485,21 @@ describe('택배사 테이블 구조', () => {
         }
     });
 
-    it('Tbody iteration이 _local.form.shipping.carriers를 .map()으로 _idx 인덱스 포함하여 순회한다', () => {
-        const trs = findAllByName(allNodes, 'Tr');
-        const iterRow = trs.find((tr: any) => tr.iteration);
-        expect(iterRow).toBeDefined();
-        expect(iterRow.iteration.source).toContain('_local.form?.shipping?.carriers');
-        expect(iterRow.iteration.source).toContain('.map(');
-        expect(iterRow.iteration.source).toContain('_idx');
-        expect(iterRow.iteration.item_var).toBe('carrier');
-        expect(iterRow.iteration.index_var).toBe('cIdx');
+    it('Tbody에 sortable이 정의되어 carriers를 드래그앤드롭으로 순서 변경할 수 있다', () => {
+        const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
+        const sortableTbody = tbodies.find((tb: any) => tb.sortable);
+        expect(sortableTbody).toBeDefined();
+        expect(sortableTbody.sortable.source).toContain('_local.form?.shipping?.carriers');
+        expect(sortableTbody.sortable.itemVar).toBe('$carrier');
+        expect(sortableTbody.sortable.wrapperElement).toBe('tr');
+    });
+
+    it('sortable onSortEnd가 sort_order를 재계산한다', () => {
+        const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
+        const sortableTbody = tbodies.find((tb: any) => tb.sortable);
+        const sortEndAction = sortableTbody?.actions?.find((a: any) => a.event === 'onSortEnd');
+        expect(sortEndAction).toBeDefined();
+        expect(sortEndAction.params['form.shipping.carriers']).toContain('sort_order');
     });
 });
 
@@ -503,22 +510,22 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     const allNodes = flattenAll(carrierSection);
 
     describe('코드(code) 컬럼', () => {
-        it('코드 Input의 value가 carrier.code를 직접 참조한다', () => {
+        it('코드 Input의 value가 $carrier.code를 직접 참조한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
                 (i: any) =>
-                    i.props?.value?.includes('carrier.code') &&
+                    i.props?.value?.includes('$carrier.code') &&
                     i.props?.className?.includes('font-mono')
             );
             expect(codeInput).toBeDefined();
-            expect(codeInput.props?.value).toBe('{{carrier.code ?? \'\'}}');
+            expect(codeInput.props?.value).toBe('{{$carrier.code ?? \'\'}}');
         });
 
         it('코드 Input 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
                 (i: any) =>
-                    i.props?.value?.includes('carrier.code') &&
+                    i.props?.value?.includes('$carrier.code') &&
                     i.props?.className?.includes('font-mono')
             );
             const action = codeInput?.actions?.find(
@@ -526,7 +533,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             );
             expect(action).toBeDefined();
             expect(action.params?.['form.shipping.carriers']).toContain('.map(');
-            expect(action.params?.['form.shipping.carriers']).toContain('carrier._idx');
+            expect(action.params?.['form.shipping.carriers']).toContain('$carrier._idx');
             expect(action.params?.['form.shipping.carriers']).toContain('code: $event.target.value');
             expect(action.params?.hasChanges).toBe(true);
         });
@@ -535,7 +542,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
                 (i: any) =>
-                    i.props?.value?.includes('carrier.code') &&
+                    i.props?.value?.includes('$carrier.code') &&
                     i.props?.className?.includes('font-mono')
             );
             const conditionsAction = codeInput?.actions?.find(
@@ -552,7 +559,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
-                    c.props?.value?.includes('carrier.name') &&
+                    c.props?.value?.includes('$carrier.name') &&
                     c.props?.layout === 'compact'
             );
             expect(tableMultilingual).toBeDefined();
@@ -564,7 +571,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
-                    c.props?.value?.includes('carrier.name') &&
+                    c.props?.value?.includes('$carrier.name') &&
                     c.props?.layout === 'compact'
             );
             const action = tableMultilingual?.actions?.find(
@@ -578,11 +585,11 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('유형(type) 컬럼', () => {
-        it('유형 Select의 value가 carrier.type을 직접 참조한다', () => {
+        it('유형 Select의 value가 $carrier.type을 직접 참조한다', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
                 (s: any) =>
-                    s.props?.value?.includes('carrier.type') &&
+                    s.props?.value?.includes('$carrier.type') &&
                     !s.props?.value?.includes('carrierForm')
             );
             expect(typeSelect).toBeDefined();
@@ -592,7 +599,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
                 (s: any) =>
-                    s.props?.value?.includes('carrier.type') &&
+                    s.props?.value?.includes('$carrier.type') &&
                     !s.props?.value?.includes('carrierForm')
             );
             const values = typeSelect?.props?.options?.map((o: any) => o.value);
@@ -604,7 +611,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
                 (s: any) =>
-                    s.props?.value?.includes('carrier.type') &&
+                    s.props?.value?.includes('$carrier.type') &&
                     !s.props?.value?.includes('carrierForm')
             );
             const action = typeSelect?.actions?.find(
@@ -618,11 +625,11 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('추적 URL(tracking_url) 컬럼', () => {
-        it('추적 URL Input의 value가 carrier.tracking_url을 직접 참조한다', () => {
+        it('추적 URL Input의 value가 $carrier.tracking_url을 직접 참조한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const trackingInput = inputs.find(
                 (i: any) =>
-                    i.props?.value?.includes('carrier.tracking_url') &&
+                    i.props?.value?.includes('$carrier.tracking_url') &&
                     !i.props?.value?.includes('carrierForm')
             );
             expect(trackingInput).toBeDefined();
@@ -632,7 +639,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const trackingInput = inputs.find(
                 (i: any) =>
-                    i.props?.value?.includes('carrier.tracking_url') &&
+                    i.props?.value?.includes('$carrier.tracking_url') &&
                     !i.props?.value?.includes('carrierForm')
             );
             const action = trackingInput?.actions?.find(
@@ -646,10 +653,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('활성/비활성(is_active) 컬럼', () => {
-        it('Toggle의 checked가 carrier.is_active를 직접 참조한다', () => {
+        it('Toggle의 checked가 $carrier.is_active를 직접 참조한다', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
-                (t: any) => t.props?.checked?.includes('carrier.is_active')
+                (t: any) => t.props?.checked?.includes('$carrier.is_active')
             );
             expect(activeToggle).toBeDefined();
         });
@@ -657,7 +664,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
         it('Toggle에 size="sm"이 적용되어 있다', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
-                (t: any) => t.props?.checked?.includes('carrier.is_active')
+                (t: any) => t.props?.checked?.includes('$carrier.is_active')
             );
             expect(activeToggle?.props?.size).toBe('sm');
         });
@@ -665,7 +672,7 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
         it('Toggle 변경 시 .map() 패턴 setState로 is_active를 토글한다 (apiCall 아님)', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
-                (t: any) => t.props?.checked?.includes('carrier.is_active')
+                (t: any) => t.props?.checked?.includes('$carrier.is_active')
             );
             const action = activeToggle?.actions?.find(
                 (a: any) => a.type === 'change' && a.handler === 'setState'
@@ -693,7 +700,7 @@ describe('테이블 행 Validation 에러 표시', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const codeInput = inputs.find(
             (i: any) =>
-                i.props?.value?.includes('carrier.code') &&
+                i.props?.value?.includes('$carrier.code') &&
                 i.props?.className?.includes('font-mono')
         );
         expect(codeInput?.props?.className).toContain('_local.errors');
@@ -720,7 +727,7 @@ describe('테이블 행 Validation 에러 표시', () => {
         );
         const tableMultilingual = composites.find(
             (c: any) =>
-                c.props?.value?.includes('carrier.name') &&
+                c.props?.value?.includes('$carrier.name') &&
                 c.props?.layout === 'compact'
         );
         expect(tableMultilingual?.props?.error).toContain('_local.errors');
@@ -732,7 +739,7 @@ describe('테이블 행 Validation 에러 표시', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const trackingInput = inputs.find(
             (i: any) =>
-                i.props?.value?.includes('carrier.tracking_url') &&
+                i.props?.value?.includes('$carrier.tracking_url') &&
                 !i.props?.value?.includes('carrierForm')
         );
         expect(trackingInput?.props?.className).toContain('_local.errors');
@@ -792,7 +799,7 @@ describe('택배사 삭제 버튼', () => {
             (a: any) => a.handler === 'setState'
         );
         expect(action.params?.['form.shipping.carriers']).toContain('.filter(');
-        expect(action.params?.['form.shipping.carriers']).toContain('carrier._idx');
+        expect(action.params?.['form.shipping.carriers']).toContain('$carrier._idx');
         expect(action.params?.hasChanges).toBe(true);
     });
 });
@@ -895,11 +902,11 @@ describe('다크모드', () => {
         expect(formContainer?.props?.className).toContain('dark:');
     });
 
-    it('테이블 행에 다크모드 border 클래스가 적용되어 있다', () => {
+    it('itemTemplate에 다크모드 border 클래스가 적용되어 있다', () => {
         const allNodes = flattenAll(carrierSection);
-        const trs = findAllByName(allNodes, 'Tr');
-        const iterRow = trs.find((tr: any) => tr.iteration);
-        expect(iterRow?.props?.className).toContain('dark:');
+        const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
+        const sortableTbody = tbodies.find((tb: any) => tb.sortable);
+        expect(sortableTbody?.itemTemplate?.props?.className).toContain('dark:');
     });
 });
 
@@ -924,8 +931,8 @@ describe('입력 필드 스타일', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const tableInputs = inputs.filter(
             (i: any) =>
-                (i.props?.value?.includes('carrier.code') ||
-                 i.props?.value?.includes('carrier.tracking_url')) &&
+                (i.props?.value?.includes('$carrier.code') ||
+                 i.props?.value?.includes('$carrier.tracking_url')) &&
                 !i.props?.value?.includes('carrierForm')
         );
         expect(tableInputs.length).toBeGreaterThan(0);
@@ -947,7 +954,7 @@ describe('입력 필드 스타일', () => {
         const selects = findAllByName(allNodes, 'Select');
         const tableTypeSelect = selects.find(
             (s: any) =>
-                s.props?.value?.includes('carrier.type') &&
+                s.props?.value?.includes('$carrier.type') &&
                 !s.props?.value?.includes('carrierForm')
         );
         expect(tableTypeSelect?.props?.className).toContain('w-full');
@@ -1014,6 +1021,12 @@ describe('택배사 테이블 → 카드 responsive 전환', () => {
         expect(wrapper).toBeDefined();
     });
 
+    it('carrier_list에 overflow-x-clip 사용 (Select 드롭다운 가려짐 방지)', () => {
+        const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
+        expect(wrapper?.props?.className).toContain('overflow-x-clip');
+        expect(wrapper?.props?.className).not.toContain('overflow-x-auto');
+    });
+
     it('carrier_list에 responsive.portable이 존재한다', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         expect(wrapper?.responsive?.portable).toBeDefined();
@@ -1059,7 +1072,7 @@ describe('택배사 카드 뷰 루트 구조', () => {
         expect(iterCard.iteration.source).toContain('_local.form?.shipping?.carriers');
         expect(iterCard.iteration.source).toContain('.map(');
         expect(iterCard.iteration.source).toContain('_idx');
-        expect(iterCard.iteration.item_var).toBe('carrier');
+        expect(iterCard.iteration.item_var).toBe('$carrier');
     });
 
     it('카드에 excel-card 클래스가 적용되어 있다', () => {
@@ -1082,30 +1095,30 @@ describe('택배사 카드 헤더', () => {
         expect(header).toBeDefined();
     });
 
-    it('carrier.code가 excel-card-title + font-mono 클래스로 표시된다', () => {
+    it('$carrier.code가 excel-card-title + font-mono 클래스로 표시된다', () => {
         const titleDiv = allCardNodes.find(
             (n: any) =>
                 n.props?.className?.includes('excel-card-title') &&
                 n.props?.className?.includes('font-mono')
         );
         expect(titleDiv).toBeDefined();
-        expect(titleDiv.text).toContain('carrier.code');
+        expect(titleDiv.text).toContain('$carrier.code');
     });
 
-    it('$localized(carrier.name)이 text-tertiary로 표시된다', () => {
+    it('$localized($carrier.name)이 text-tertiary로 표시된다', () => {
         const nameDiv = allCardNodes.find(
             (n: any) =>
                 n.props?.className?.includes('text-tertiary') &&
                 n.text?.includes('$localized')
         );
         expect(nameDiv).toBeDefined();
-        expect(nameDiv.text).toContain('carrier.name');
+        expect(nameDiv.text).toContain('$carrier.name');
     });
 
     it('Toggle(is_active, sm)이 헤더에 존재한다', () => {
         const toggles = findAllByName(allCardNodes, 'Toggle');
         const activeToggle = toggles.find(
-            (t: any) => t.props?.checked?.includes('carrier.is_active')
+            (t: any) => t.props?.checked?.includes('$carrier.is_active')
         );
         expect(activeToggle).toBeDefined();
         expect(activeToggle.props?.size).toBe('sm');
@@ -1138,7 +1151,7 @@ describe('택배사 카드 바디 필드', () => {
             const codeInput = inputs.find(
                 (i: any) =>
                     i.props?.className?.includes('font-mono') &&
-                    i.props?.value?.includes('carrier.code')
+                    i.props?.value?.includes('$carrier.code')
             );
             expect(codeInput).toBeDefined();
         });
@@ -1148,7 +1161,7 @@ describe('택배사 카드 바디 필드', () => {
             const codeInput = inputs.find(
                 (i: any) =>
                     i.props?.className?.includes('font-mono') &&
-                    i.props?.value?.includes('carrier.code')
+                    i.props?.value?.includes('$carrier.code')
             );
             const action = codeInput?.actions?.find(
                 (a: any) => a.type === 'change' && a.handler === 'setState'
@@ -1166,7 +1179,7 @@ describe('택배사 카드 바디 필드', () => {
                 (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
-                (c: any) => c.props?.value?.includes('carrier.name')
+                (c: any) => c.props?.value?.includes('$carrier.name')
             );
             expect(nameInput).toBeDefined();
             expect(nameInput.props?.layout).toBe('compact');
@@ -1177,7 +1190,7 @@ describe('택배사 카드 바디 필드', () => {
                 (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
-                (c: any) => c.props?.value?.includes('carrier.name')
+                (c: any) => c.props?.value?.includes('$carrier.name')
             );
             const action = nameInput?.actions?.find(
                 (a: any) => a.type === 'change' && a.handler === 'setState'
@@ -1193,7 +1206,7 @@ describe('택배사 카드 바디 필드', () => {
         it('Select에 domestic/international 옵션이 있다', () => {
             const selects = findAllByName(allCardNodes, 'Select');
             const typeSelect = selects.find(
-                (s: any) => s.props?.value?.includes('carrier.type')
+                (s: any) => s.props?.value?.includes('$carrier.type')
             );
             expect(typeSelect).toBeDefined();
             const values = typeSelect.props?.options?.map((o: any) => o.value);
@@ -1204,7 +1217,7 @@ describe('택배사 카드 바디 필드', () => {
         it('유형 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const selects = findAllByName(allCardNodes, 'Select');
             const typeSelect = selects.find(
-                (s: any) => s.props?.value?.includes('carrier.type')
+                (s: any) => s.props?.value?.includes('$carrier.type')
             );
             const action = typeSelect?.actions?.find(
                 (a: any) => a.type === 'change' && a.handler === 'setState'
@@ -1220,7 +1233,7 @@ describe('택배사 카드 바디 필드', () => {
         it('추적 URL Input이 존재한다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const trackingInput = inputs.find(
-                (i: any) => i.props?.value?.includes('carrier.tracking_url')
+                (i: any) => i.props?.value?.includes('$carrier.tracking_url')
             );
             expect(trackingInput).toBeDefined();
         });
@@ -1228,7 +1241,7 @@ describe('택배사 카드 바디 필드', () => {
         it('추적 URL 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const trackingInput = inputs.find(
-                (i: any) => i.props?.value?.includes('carrier.tracking_url')
+                (i: any) => i.props?.value?.includes('$carrier.tracking_url')
             );
             const action = trackingInput?.actions?.find(
                 (a: any) => a.type === 'change' && a.handler === 'setState'
@@ -1252,7 +1265,7 @@ describe('택배사 카드 validation 에러', () => {
         const codeInput = inputs.find(
             (i: any) =>
                 i.props?.className?.includes('font-mono') &&
-                i.props?.value?.includes('carrier.code')
+                i.props?.value?.includes('$carrier.code')
         );
         expect(codeInput?.props?.className).toContain('_local.errors');
         expect(codeInput?.props?.className).toContain('input-error');
@@ -1275,7 +1288,7 @@ describe('택배사 카드 validation 에러', () => {
             (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
         );
         const nameInput = composites.find(
-            (c: any) => c.props?.value?.includes('carrier.name')
+            (c: any) => c.props?.value?.includes('$carrier.name')
         );
         expect(nameInput?.props?.error).toContain('_local.errors');
         expect(nameInput?.props?.error).toContain('name');
@@ -1284,7 +1297,7 @@ describe('택배사 카드 validation 에러', () => {
     it('유형 Select에 _local.errors 기반 조건부 select-error 클래스가 적용된다', () => {
         const selects = findAllByName(allCardNodes, 'Select');
         const typeSelect = selects.find(
-            (s: any) => s.props?.value?.includes('carrier.type')
+            (s: any) => s.props?.value?.includes('$carrier.type')
         );
         expect(typeSelect?.props?.className).toContain('_local.errors');
         expect(typeSelect?.props?.className).toContain('select-error');
@@ -1293,7 +1306,7 @@ describe('택배사 카드 validation 에러', () => {
     it('추적 URL Input에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allCardNodes, 'Input');
         const trackingInput = inputs.find(
-            (i: any) => i.props?.value?.includes('carrier.tracking_url')
+            (i: any) => i.props?.value?.includes('$carrier.tracking_url')
         );
         expect(trackingInput?.props?.className).toContain('_local.errors');
         expect(trackingInput?.props?.className).toContain('input-error');
@@ -1324,7 +1337,7 @@ describe('택배사 카드 삭제/토글', () => {
         );
         expect(action).toBeDefined();
         expect(action.params?.['form.shipping.carriers']).toContain('.filter(');
-        expect(action.params?.['form.shipping.carriers']).toContain('carrier._idx');
+        expect(action.params?.['form.shipping.carriers']).toContain('$carrier._idx');
         expect(action.params?.hasChanges).toBe(true);
     });
 
@@ -1344,7 +1357,7 @@ describe('택배사 카드 삭제/토글', () => {
     it('Toggle 변경 시 .map() 패턴 setState로 is_active를 토글한다', () => {
         const toggles = findAllByName(allCardNodes, 'Toggle');
         const activeToggle = toggles.find(
-            (t: any) => t.props?.checked?.includes('carrier.is_active')
+            (t: any) => t.props?.checked?.includes('$carrier.is_active')
         );
         const action = activeToggle?.actions?.find(
             (a: any) => a.handler === 'setState'

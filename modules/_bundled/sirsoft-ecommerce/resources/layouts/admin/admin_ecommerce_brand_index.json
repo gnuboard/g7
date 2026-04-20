@@ -23,6 +23,11 @@
             "isOpen": false
         }
     },
+    "transition_overlay": {
+        "wait_for": [
+            "brands"
+        ]
+    },
     "data_sources": [
         {
             "id": "brands",

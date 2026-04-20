@@ -144,6 +144,21 @@ registerExtensionAutoload($loader)
 ✅ 장점: 확장 간 의존성 충돌 방지, 삭제 시 깔끔한 정리
 ```
 
+### Vendor 설치 모드 (VendorMode)
+
+공유 호스팅 등 Composer 실행 불가 환경을 지원하기 위해 **VendorResolver** 경유로 설치 모드를 결정합니다.
+
+```text
+VendorMode enum:
+- auto: composer 가능 시 composer, 불가 시 bundled (기본값)
+- composer: composer install 강제 (불가 시 예외)
+- bundled: vendor-bundle.zip 추출 강제
+```
+
+설치/업데이트 시 `installModule()` / `installPlugin()` / `updateModule()` / `updatePlugin()` 의 `VendorMode $vendorMode` 파라미터로 전달되며, `VendorResolver::install()` 가 환경 감지 + DB 기록 이전 모드 상속 + 번들 zip 무결성 검증을 거쳐 적절한 전략으로 라우팅합니다. `modules.vendor_mode` / `plugins.vendor_mode` 컬럼에 최종 사용된 모드가 기록되어 업데이트 시 자동 상속됩니다.
+
+> 상세: [vendor-bundle.md](vendor-bundle.md) — 번들 구조, 빌드/검증/설치 흐름, 무결성 검증
+
 ### 동작 방식
 
 ```text

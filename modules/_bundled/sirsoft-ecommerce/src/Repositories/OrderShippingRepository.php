@@ -65,4 +65,14 @@ class OrderShippingRepository implements OrderShippingRepositoryInterface
             ->where('order_option_id', $fromOrderOptionId)
             ->update(['order_option_id' => $toOrderOptionId]);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByShippingType(string $shippingType): int
+    {
+        return $this->model
+            ->where('shipping_type', $shippingType)
+            ->count();
+    }
 }

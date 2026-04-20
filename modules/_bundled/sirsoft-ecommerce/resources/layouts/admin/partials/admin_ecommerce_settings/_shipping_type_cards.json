@@ -1,0 +1,254 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "배송유형 관리 - Mobile 카드 뷰"
+  },
+  "id": "shipping_type_cards_container",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-3"
+  },
+  "children": [
+    {
+      "id": "shipping_type_card",
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))",
+        "item_var": "type",
+        "index_var": "tIdx"
+      },
+      "props": {
+        "className": "excel-card"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-header"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 min-w-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card-title font-mono"
+                      },
+                      "text": "{{type.code}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 shrink-0"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Toggle",
+                  "props": {
+                    "checked": "{{type.is_active ?? false}}",
+                    "size": "sm",
+                    "disabled": "{{_computed.isReadOnly}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, is_active: !(t.is_active)} : t)}}",
+                        "hasChanges": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-body"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "excel-card-row"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "excel-card-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "excel-card-value flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "MultilingualInput",
+                      "props": {
+                        "value": "{{type.name ?? {}}}",
+                        "layout": "compact",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}",
+                            "hasChanges": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "excel-card-row"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "excel-card-label"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "excel-card-value flex-1"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Select",
+                      "props": {
+                        "value": "{{type.category ?? 'domestic'}}",
+                        "className": "w-full",
+                        "options": [
+                          {
+                            "value": "domestic",
+                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
+                          },
+                          {
+                            "value": "international",
+                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
+                          },
+                          {
+                            "value": "other",
+                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
+                          }
+                        ],
+                        "disabled": "{{_computed.isReadOnly}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, category: $event.target.value} : t)}}",
+                            "hasChanges": true
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "excel-card-footer"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "title": "$t:common.delete",
+                "disabled": "{{_computed.isReadOnly}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "setState",
+                  "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete",
+                  "params": {
+                    "target": "local",
+                    "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== type._idx)}}",
+                    "hasChanges": true
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "fa-solid fa-trash",
+                    "className": "text-sm"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

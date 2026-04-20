@@ -2,9 +2,10 @@
 
 namespace App\Extension;
 
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use Composer\Semver\Semver;
 use Exception;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -16,9 +17,9 @@ use Illuminate\Support\Facades\Log;
 class CoreVersionChecker
 {
     /**
-     * 캐시 키 접두사
+     * 캐시 키 접두사 (드라이버 접두사 `g7:core:` 다음에 붙음)
      */
-    private const CACHE_PREFIX = 'core_version_check.';
+    private const CACHE_PREFIX = 'ext.version_check.';
 
     /**
      * 캐시 유효 시간 (초)
@@ -28,11 +29,35 @@ class CoreVersionChecker
     /**
      * 현재 설치된 그누보드7 코어 버전 반환
      *
-     * @return string 코어 버전
+     * 반환 우선순위:
+     *   1. 환경변수 `APP_VERSION` (getenv / $_ENV / $_SERVER)
+     *   2. `config('app.version')`
+     *
+     * 왜 env 를 우선 읽는가:
+     *   코어 업그레이드 중 `core:update` 는 `core:execute-upgrade-steps` / 각 업그레이드 스텝의
+     *   inline 스크립트를 `proc_open` 으로 spawn 한다. 디스크 `.env` 의 `APP_VERSION` 은
+     *   `updateVersionInEnv()` 가 최종 단계(Step 11)에서 기록하므로, spawn 이 부팅되는
+     *   Step 10 시점에는 여전히 이전 버전이 남아있다. 이를 회피하기 위해 spawn 호출부는
+     *   `APP_VERSION={toVersion}` 를 `proc_open` 의 `$env` 로 주입하지만, `bootstrap/cache/config.php`
+     *   가 생성되어 있으면 `LoadConfiguration` 부트스트랩이 **캐시된 리터럴** 을 사용해
+     *   env 오버라이드가 반영되지 않는 회귀가 있었다 (확장이 `>= 신버전` 요구 시
+     *   `validateAndDeactivateIncompatibleExtensions` 가 전 확장을 자동 비활성화).
+     *
+     *   env 를 우선 읽는 본 구현은 config cache 유무와 무관하게 spawn 이 전달한 버전을 그대로
+     *   신뢰한다. 일반 요청 경로에서는 `APP_VERSION` 이 `.env` 에 기록된 값 그대로이므로
+     *   동작에 차이가 없다.
+     *
+     *   규정 예외: "env() 는 config 파일에서만 사용" 규칙의 본문 예외. 정당성은 버전 판정이
+     *   config cache 우회를 요구하기 때문이다.
      */
     public static function getCoreVersion(): string
     {
-        return config('app.version', '7.0.0-alpha.1');
+        $envVersion = $_ENV['APP_VERSION'] ?? $_SERVER['APP_VERSION'] ?? getenv('APP_VERSION');
+        if (is_string($envVersion) && $envVersion !== '') {
+            return $envVersion;
+        }
+
+        return config('app.version');
     }
 
     /**
@@ -117,9 +142,27 @@ class CoreVersionChecker
      */
     public static function clearCache(): void
     {
-        Cache::forget(self::getCacheKey('modules'));
-        Cache::forget(self::getCacheKey('plugins'));
-        Cache::forget(self::getCacheKey('templates'));
+        $cache = self::resolveCache();
+        $cache->forget(self::getCacheKey('modules'));
+        $cache->forget(self::getCacheKey('plugins'));
+        $cache->forget(self::getCacheKey('templates'));
+    }
+
+    /**
+     * CacheInterface 인스턴스를 컨테이너에서 lazy 조회합니다.
+     *
+     * 컨테이너 미구성 환경(예: 일부 단위 테스트)에서도 동작하도록
+     * fallback 으로 직접 CoreCacheDriver 를 생성합니다.
+     *
+     * @return CacheInterface
+     */
+    private static function resolveCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 
     /**
@@ -129,6 +172,6 @@ class CoreVersionChecker
      */
     public static function getCacheTtl(): int
     {
-        return self::CACHE_TTL;
+        return (int) g7_core_settings('cache.version_check_ttl', self::CACHE_TTL);
     }
 }

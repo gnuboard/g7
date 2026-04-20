@@ -6,13 +6,15 @@
     "meta": {
         "seo": {
             "enabled": true,
+            "extensions": [
+                { "type": "module", "id": "sirsoft-ecommerce" }
+            ],
             "data_sources": ["product", "popularProducts", "reviews"],
             "page_type": "product",
             "toggle_setting": "$module_settings:sirsoft-ecommerce:seo.seo_product_detail",
             "vars": {
                 "product_name": "{{product.data.name ?? ''}}",
                 "product_description": "{{product.data.short_description ?? product.data.description ?? ''}}",
-                "commerce_name": "$module_settings:sirsoft-ecommerce:basic_info.shop_name",
                 "site_name": "$core_settings:general.site_name",
                 "shopBase": "$module_settings:sirsoft-ecommerce:basic_info.route_path"
             },
@@ -20,14 +22,14 @@
             "changefreq": "daily",
             "og": {
                 "type": "product",
-                "title": "{{product.data.name ?? ''}}",
-                "description": "{{product.data.description ?? ''}}",
+                "title": "{{_seo.product.title ?? product.data.name ?? ''}}",
+                "description": "{{_seo.product.description ?? product.data.description ?? ''}}",
                 "image": "{{product.data.thumbnail_url ?? ''}}"
             },
             "structured_data": {
                 "@type": "Product",
-                "name": "{{product.data.name ?? ''}}",
-                "description": "{{product.data.description ?? ''}}",
+                "name": "{{_seo.product.title ?? product.data.name ?? ''}}",
+                "description": "{{_seo.product.description ?? product.data.description ?? ''}}",
                 "image": "{{product.data.thumbnail_url ?? ''}}",
                 "offers": {
                     "@type": "Offer",

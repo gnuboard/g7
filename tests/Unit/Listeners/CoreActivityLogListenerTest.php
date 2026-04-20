@@ -133,8 +133,8 @@ class CoreActivityLogListenerTest extends TestCase
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 61개 로깅(after_*) 훅 (스냅샷은 Service에서 캡처하여 인수로 전달)
-        $this->assertCount(61, $hooks);
+        // 59개 로깅(after_*) 훅 (mail_template 2개 제거됨, 스냅샷은 Service에서 캡처하여 인수로 전달)
+        $this->assertCount(59, $hooks);
     }
 
     public function test_handle_does_nothing(): void
@@ -913,60 +913,6 @@ class CoreActivityLogListenerTest extends TestCase
     }
 
     // ═══════════════════════════════════════════
-    // Mail Template 핸들러 테스트 (2개)
-    // ═══════════════════════════════════════════
-
-    public function test_handleMailTemplateAfterUpdate_logs_activity_with_changes(): void
-    {
-        $template = $this->createModelMock(3, ['name' => 'welcome_email']);
-
-        $this->logChannel->shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $action, array $context) {
-                return $action === 'mail_template.update'
-                    && $context['log_type'] === ActivityLogType::Admin
-                    && $context['description_key'] === 'activity_log.description.mail_template_update'
-                    && $context['description_params']['template_name'] === 'welcome_email'
-                    && array_key_exists('changes', $context)
-                    && isset($context['loggable']);
-            });
-
-        $this->listener->handleMailTemplateAfterUpdate($template);
-    }
-
-    public function test_handleMailTemplateAfterUpdate_accepts_snapshot_argument(): void
-    {
-        $template = $this->createModelMock(3, ['name' => 'welcome_email']);
-        $snapshot = ['id' => 3, 'subject' => 'Old Subject'];
-
-        $this->logChannel->shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $action, array $context) {
-                return $action === 'mail_template.update'
-                    && array_key_exists('changes', $context);
-            });
-
-        $this->listener->handleMailTemplateAfterUpdate($template, $snapshot);
-    }
-
-    public function test_handleMailTemplateAfterToggleActive_logs_activity(): void
-    {
-        $template = $this->createModelMock(3, ['name' => 'reset_password']);
-
-        $this->logChannel->shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $action, array $context) {
-                return $action === 'mail_template.toggle_active'
-                    && $context['log_type'] === ActivityLogType::Admin
-                    && $context['description_key'] === 'activity_log.description.mail_template_toggle_active'
-                    && $context['description_params']['template_name'] === 'reset_password'
-                    && isset($context['loggable']);
-            });
-
-        $this->listener->handleMailTemplateAfterToggleActive($template);
-    }
-
-    // ═══════════════════════════════════════════
     // Module 핸들러 테스트 (6개)
     // ═══════════════════════════════════════════
 
@@ -1430,7 +1376,6 @@ class CoreActivityLogListenerTest extends TestCase
             'captureRoleSnapshot',
             'captureMenuSnapshot',
             'captureScheduleSnapshot',
-            'captureMailTemplateSnapshot',
         ];
 
         foreach ($hooks as $hookName => $config) {
@@ -1514,10 +1459,6 @@ class CoreActivityLogListenerTest extends TestCase
             ['core.attachment.after_upload', 'handleAttachmentAfterUpload', 'attachment.upload', ActivityLogType::Admin, 'activity_log.description.attachment_upload'],
             ['core.attachment.after_delete', 'handleAttachmentAfterDelete', 'attachment.delete', ActivityLogType::Admin, 'activity_log.description.attachment_delete'],
             ['core.attachment.after_bulk_delete', 'handleAttachmentAfterBulkDelete', 'attachment.bulk_delete', ActivityLogType::Admin, 'activity_log.description.attachment_bulk_delete'],
-
-            // Mail Template
-            ['core.mail_template.after_update', 'handleMailTemplateAfterUpdate', 'mail_template.update', ActivityLogType::Admin, 'activity_log.description.mail_template_update'],
-            ['core.mail_template.after_toggle_active', 'handleMailTemplateAfterToggleActive', 'mail_template.toggle_active', ActivityLogType::Admin, 'activity_log.description.mail_template_toggle_active'],
 
             // Module
             ['core.modules.after_install', 'handleModuleAfterInstall', 'module.install', ActivityLogType::Admin, 'activity_log.description.module_install'],

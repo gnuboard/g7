@@ -120,31 +120,48 @@ class ExtensionPendingHelperTest extends TestCase
 
     /**
      * JSON 없는 디렉토리를 건너뛰는지 확인합니다.
+     *
+     * 격리된 임시 modulesPath 에서 테스트 — 실제 modules/_pending 디렉토리 상태와
+     * 무관하게 동작해야 한다.
      */
     public function test_load_pending_extensions_skips_invalid_dirs(): void
     {
-        // JSON 없는 디렉토리 생성
-        $invalidPath = $this->modulesPath.'/_pending/invalid-mod';
-        File::ensureDirectoryExists($invalidPath);
+        $isolatedModulesPath = $this->tempBase.'/isolated-modules';
+        $pendingDir = $isolatedModulesPath.'/_pending';
 
-        $result = ExtensionPendingHelper::loadPendingExtensions($this->modulesPath, 'module.json');
+        // 유효한 pending 모듈 1개
+        File::ensureDirectoryExists($pendingDir.'/valid-mod');
+        File::put($pendingDir.'/valid-mod/module.json', json_encode([
+            'identifier' => 'valid-mod',
+            'version' => '1.0.0',
+            'name' => 'Valid Module',
+        ]));
 
-        $this->assertCount(1, $result);
+        // JSON 없는 invalid 디렉토리
+        File::ensureDirectoryExists($pendingDir.'/invalid-mod');
+
+        $result = ExtensionPendingHelper::loadPendingExtensions($isolatedModulesPath, 'module.json');
+
+        $this->assertCount(1, $result, 'JSON 없는 디렉토리는 결과에 포함되지 않아야 함');
+        $this->assertArrayHasKey('valid-mod', $result);
         $this->assertArrayNotHasKey('invalid-mod', $result);
-
-        // 정리
-        File::deleteDirectory($invalidPath);
     }
 
     /**
      * _pending이 비어있으면 빈 배열을 반환하는지 확인합니다.
+     *
+     * 격리된 임시 modulesPath 에서 테스트 — 실제 modules/_pending 디렉토리 상태와
+     * 무관하게 동작해야 한다.
      */
     public function test_load_pending_extensions_returns_empty_when_no_pending(): void
     {
-        // 기존 테스트 데이터 정리
-        File::deleteDirectory($this->modulesPath.'/_pending/test-pending-mod');
+        $isolatedModulesPath = $this->tempBase.'/isolated-modules-empty';
+        $pendingDir = $isolatedModulesPath.'/_pending';
 
-        $result = ExtensionPendingHelper::loadPendingExtensions($this->modulesPath, 'module.json');
+        // _pending 디렉토리는 존재하지만 비어있음
+        File::ensureDirectoryExists($pendingDir);
+
+        $result = ExtensionPendingHelper::loadPendingExtensions($isolatedModulesPath, 'module.json');
 
         $this->assertEmpty($result);
     }
@@ -158,6 +175,78 @@ class ExtensionPendingHelperTest extends TestCase
         $result = ExtensionPendingHelper::loadPendingExtensions(sys_get_temp_dir().'/nonexistent', 'module.json');
 
         $this->assertEmpty($result);
+    }
+
+    /**
+     * 디렉토리명과 manifest 의 identifier 가 일치하지 않는 디렉토리는 스킵되어야 합니다.
+     *
+     * 업데이트/백업 과정에서 남는 임시 디렉토리(예: sirsoft-admin_basic_20260402_081819,
+     * sirsoft-admin_basic_updating_<uniq>, sirsoft-admin_basic_old_<uniq>)는 내부에 원본
+     * manifest 를 그대로 가지고 있어 identifier 가 원본과 동일하다. 이를 등록하면 install
+     * 시 `getPendingPath({identifier})` 가 존재하지 않는 표준 경로를 반환해 실패한다.
+     */
+    public function test_load_extensions_skips_directories_with_mismatched_identifier(): void
+    {
+        $isolatedPath = $this->tempBase.'/isolated-mismatched';
+        $pendingDir = $isolatedPath.'/_pending';
+
+        // 정상 _pending 디렉토리 (디렉토리명 == identifier)
+        File::ensureDirectoryExists($pendingDir.'/sirsoft-board');
+        File::put($pendingDir.'/sirsoft-board/module.json', json_encode([
+            'identifier' => 'sirsoft-board',
+            'version' => '1.0.0',
+            'name' => 'Board',
+        ]));
+
+        // 업데이트 백업 임시 디렉토리 (디렉토리명에 타임스탬프 suffix, manifest 는 원본 그대로)
+        File::ensureDirectoryExists($pendingDir.'/sirsoft-board_20260402_081819');
+        File::put($pendingDir.'/sirsoft-board_20260402_081819/module.json', json_encode([
+            'identifier' => 'sirsoft-board',
+            'version' => '1.0.0',
+            'name' => 'Board',
+        ]));
+
+        // 업데이트 진행 중 임시 디렉토리
+        File::ensureDirectoryExists($pendingDir.'/sirsoft-board_updating_abc123');
+        File::put($pendingDir.'/sirsoft-board_updating_abc123/module.json', json_encode([
+            'identifier' => 'sirsoft-board',
+            'version' => '1.0.0',
+            'name' => 'Board',
+        ]));
+
+        $result = ExtensionPendingHelper::loadPendingExtensions($isolatedPath, 'module.json');
+
+        $this->assertCount(1, $result, '정상 디렉토리 1개만 등록되어야 함');
+        $this->assertArrayHasKey('sirsoft-board', $result);
+        $this->assertEquals(
+            'sirsoft-board',
+            basename($result['sirsoft-board']['source_path']),
+            'source_path 가 표준 디렉토리여야 함 (타임스탬프 suffix 가 붙은 임시 디렉토리가 아님)'
+        );
+    }
+
+    /**
+     * 정상 디렉토리가 없고 임시 디렉토리만 남은 경우 빈 배열을 반환해야 합니다.
+     *
+     * 이전 업데이트가 비정상 종료되어 원본이 삭제되고 임시 디렉토리만 남는 상황.
+     * 이 경우 확장을 "pending" 으로 인식하면 install 이 잘못된 경로로 접근해 실패하므로,
+     * 빈 배열을 반환하여 _bundled 폴백으로 넘어가게 해야 한다.
+     */
+    public function test_load_extensions_returns_empty_when_only_temp_directories_exist(): void
+    {
+        $isolatedPath = $this->tempBase.'/isolated-temp-only';
+        $pendingDir = $isolatedPath.'/_pending';
+
+        File::ensureDirectoryExists($pendingDir.'/orphan-mod_old_xyz');
+        File::put($pendingDir.'/orphan-mod_old_xyz/module.json', json_encode([
+            'identifier' => 'orphan-mod',
+            'version' => '1.0.0',
+            'name' => 'Orphan',
+        ]));
+
+        $result = ExtensionPendingHelper::loadPendingExtensions($isolatedPath, 'module.json');
+
+        $this->assertEmpty($result, '임시 디렉토리만 있으면 pending 로 인식하지 않아야 함');
     }
 
     /**

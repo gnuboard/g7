@@ -8,7 +8,7 @@
   "name": "Div",
   "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}",
   "props": {
-    "className": "mt-6 space-y-6"
+    "className": "space-y-6"
   },
   "classMap": {
     "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
@@ -567,16 +567,6 @@
                       }
                     }
                   ]
-                },
-                {
-                  "id": "field_notify_admin_on_report_channels",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "space-y-1.5" },
-                  "children": [
-                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
-                    { "type": "composite", "name": "TagInput", "props": { "name": "report_policy.notify_admin_on_report_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-full" } }
-                  ]
                 }
               ]
             }
@@ -605,25 +595,6 @@
                   ]
                 },
                 { "type": "composite", "name": "Toggle", "props": { "name": "report_policy.notify_author_on_report_action", "className": "flex-shrink-0 mt-0.5" } }
-              ]
-            },
-            {
-              "comment": "하위 옵션 (토글 ON 시에만 표시)",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_local.form?.report_policy?.notify_author_on_report_action === true}}",
-              "props": { "className": "px-4 py-4 border-t border-gray-200 dark:border-gray-700" },
-              "children": [
-                {
-                  "id": "field_notify_author_on_report_action_channels",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "space-y-1.5" },
-                  "children": [
-                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.notification_channels.channels_label" },
-                    { "type": "composite", "name": "TagInput", "props": { "name": "report_policy.notify_author_on_report_action_channels", "options": "{{notification_channels?.data ?? []}}", "className": "w-full" } }
-                  ]
-                }
               ]
             }
           ]

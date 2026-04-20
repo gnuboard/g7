@@ -83,11 +83,8 @@
           "type": "composite",
           "name": "TabNavigation",
           "props": {
-            "tabs": [
-              { "id": "ko", "label": "한국어" },
-              { "id": "en", "label": "English" }
-            ],
-            "activeTabId": "{{_local.viewLocale ?? 'ko'}}",
+            "tabs": "{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
+            "activeTabId": "{{_local.viewLocale ?? $locale}}",
             "variant": "underline",
             "className": "mb-4"
           },
@@ -104,10 +101,9 @@
           ]
         },
         {
-          "id": "tab_content_ko",
+          "id": "tab_content",
           "type": "basic",
           "name": "Div",
-          "if": "{{(_local.viewLocale ?? 'ko') === 'ko'}}",
           "children": [
             {
               "type": "basic",
@@ -195,7 +191,7 @@
                               "props": {
                                 "className": "px-4 py-3 text-sm text-gray-900 dark:text-white"
                               },
-                              "text": "{{field.name?.ko ?? '-'}}"
+                              "text": "{{field.name?.[_local.viewLocale ?? $locale] ?? '-'}}"
                             },
                             {
                               "type": "basic",
@@ -203,119 +199,7 @@
                               "props": {
                                 "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
                               },
-                              "text": "{{field.content?.ko ?? '-'}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "tab_content_en",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.viewLocale === 'en'}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Table",
-                  "props": {
-                    "className": "w-full"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Thead",
-                      "props": {
-                        "className": "bg-gray-50 dark:bg-gray-700"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Tr",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-16"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.order"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.name"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-                              },
-                              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.fields.content"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Tbody",
-                      "props": {
-                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
-                      },
-                      "iteration": {
-                        "source": "{{_global.selectedTemplate?.fields ?? []}}",
-                        "item_var": "field",
-                        "index_var": "fieldIndex"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Tr",
-                          "props": {
-                            "className": "bg-white dark:bg-gray-800"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
-                              },
-                              "text": "{{fieldIndex + 1}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-4 py-3 text-sm text-gray-900 dark:text-white"
-                              },
-                              "text": "{{field.name?.en ?? '-'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "{{field.content?.en ?? '-'}}"
+                              "text": "{{field.content?.[_local.viewLocale ?? $locale] ?? '-'}}"
                             }
                           ]
                         }

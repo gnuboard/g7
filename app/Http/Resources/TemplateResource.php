@@ -83,6 +83,7 @@ class TemplateResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'github_url' => $this->getValue('github_url'),
             'github_changelog_url' => $this->getValue('github_changelog_url'),
+            'requires_core' => $this->getValue('requires_core'),
             // pending/bundled 상태
             'is_pending' => $this->getValue('is_pending', false),
             'is_bundled' => $this->getValue('is_bundled', false),

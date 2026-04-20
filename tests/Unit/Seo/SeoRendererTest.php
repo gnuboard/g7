@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Seo;
 
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\HookManager;
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\DataSourceResolver;
@@ -42,6 +44,10 @@ class SeoRendererTest extends TestCase
 
     private PluginSettingsService|MockInterface $pluginSettingsService;
 
+    private ModuleManagerInterface|MockInterface $moduleManager;
+
+    private PluginManagerInterface|MockInterface $pluginManager;
+
     private SeoRenderer $renderer;
 
     /**
@@ -61,6 +67,8 @@ class SeoRendererTest extends TestCase
         $this->seoConfigMerger = Mockery::mock(SeoConfigMerger::class);
         $this->settingsService = Mockery::mock(SettingsService::class);
         $this->pluginSettingsService = Mockery::mock(PluginSettingsService::class);
+        $this->moduleManager = Mockery::mock(ModuleManagerInterface::class);
+        $this->pluginManager = Mockery::mock(PluginManagerInterface::class);
 
         // 기본 SettingsService / PluginSettingsService mock
         $this->settingsService->shouldReceive('getFrontendSettings')
@@ -80,8 +88,15 @@ class SeoRendererTest extends TestCase
             ->andReturn(['success' => true, 'data' => [], 'error' => null])
             ->byDefault();
 
-        // 기본 evaluator mock (setTranslations 허용)
+        // 기본 evaluator mock (setTranslations, getPipeRegistry 허용)
         $this->evaluator->shouldReceive('setTranslations')
+            ->byDefault();
+        $pipeRegistry = Mockery::mock(\App\Seo\PipeRegistry::class);
+        $pipeRegistry->shouldReceive('setLocale')->byDefault();
+        $this->evaluator->shouldReceive('getPipeRegistry')
+            ->andReturn($pipeRegistry)
+            ->byDefault();
+        $this->evaluator->shouldReceive('setSeoOverrides')
             ->byDefault();
 
         // 기본 htmlMapper mock (seo-config.json 로드 시 호출되는 설정 메서드 허용)
@@ -111,6 +126,8 @@ class SeoRendererTest extends TestCase
             $this->seoConfigMerger,
             $this->settingsService,
             $this->pluginSettingsService,
+            $this->moduleManager,
+            $this->pluginManager,
         );
     }
 
@@ -869,12 +886,16 @@ class SeoRendererTest extends TestCase
         ?array $initActions = null,
         ?array $structuredData = null,
         ?array $computed = null,
+        ?array $extensions = null,
     ): array {
         $seo = [
             'enabled' => $seoEnabled,
             'data_sources' => $seoDataSources,
         ];
 
+        if ($extensions !== null) {
+            $seo['extensions'] = $extensions;
+        }
         if ($toggleSetting !== null) {
             $seo['toggle_setting'] = $toggleSetting;
         }
@@ -3245,5 +3266,349 @@ class SeoRendererTest extends TestCase
         // 실패한 computed는 null, 성공한 computed는 정상
         $this->assertNull($capturedContext['_computed']['broken']);
         $this->assertEquals('still works', $capturedContext['_computed']['valid']);
+    }
+
+    // =========================================================================
+    // _seo context 주입 테스트 (extensions 기반)
+    // =========================================================================
+
+    /**
+     * 상품 상세 페이지에서 extensions + seoVariables()로 _seo.product context가 주입됩니다.
+     */
+    public function test_seo_context_injected_for_product_page(): void
+    {
+        $request = Request::create('/shop/products/1');
+        $this->setupRouteResolver('/shop/products/1', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '1'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: ['product'],
+            pageType: 'product',
+            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
+            vars: [
+                'product_name' => '{{product.data.name}}',
+                'product_description' => '{{product.data.description}}',
+            ],
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        // 모듈 인스턴스 mock
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
+        $moduleMock->shouldReceive('seoVariables')->andReturn([
+            '_common' => [
+                'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+            ],
+            'product' => [
+                'product_name' => ['source' => 'data', 'required' => true],
+                'product_description' => ['source' => 'data'],
+            ],
+        ]);
+        $this->moduleManager->shouldReceive('getModule')
+            ->with('sirsoft-ecommerce')
+            ->andReturn($moduleMock);
+
+        // 설정값 mock
+        config()->set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '테스트쇼핑몰');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} - {product_name}');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_description', '{product_description}');
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
+            'product' => ['data' => ['name' => '에어맥스', 'description' => '나이키 에어맥스 상품']],
+        ]);
+
+        // vars 해석 시 evaluator 호출
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{product.data.name}}', Mockery::any())
+            ->andReturn('에어맥스');
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{product.data.description}}', Mockery::any())
+            ->andReturn('나이키 에어맥스 상품');
+
+        // _seo context 캡처
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '테스트쇼핑몰 - 에어맥스'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        $this->assertNotNull($capturedContext);
+        $this->assertArrayHasKey('_seo', $capturedContext);
+        $this->assertArrayHasKey('product', $capturedContext['_seo']);
+        $this->assertEquals('테스트쇼핑몰 - 에어맥스', $capturedContext['_seo']['product']['title']);
+        $this->assertEquals('나이키 에어맥스 상품', $capturedContext['_seo']['product']['description']);
+    }
+
+    /**
+     * 카테고리 목록 페이지에서 _seo.category context가 주입됩니다.
+     */
+    public function test_seo_context_injected_for_category_page(): void
+    {
+        $request = Request::create('/shop/category/shoes');
+        $this->setupRouteResolver('/shop/category/shoes', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'shop/category',
+            'routeParams' => ['slug' => 'shoes'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: ['category'],
+            pageType: 'category',
+            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
+            vars: [
+                'category_name' => '{{category.data.name}}',
+                'category_description' => '{{category.data.description}}',
+            ],
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
+        $moduleMock->shouldReceive('seoVariables')->andReturn([
+            '_common' => [
+                'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+            ],
+            'category' => [
+                'category_name' => ['source' => 'data', 'required' => true],
+                'category_description' => ['source' => 'data'],
+            ],
+        ]);
+        $this->moduleManager->shouldReceive('getModule')
+            ->with('sirsoft-ecommerce')
+            ->andReturn($moduleMock);
+
+        config()->set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '테스트쇼핑몰');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_category_title', '{commerce_name} - {category_name}');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_category_description', '{category_description}');
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
+            'category' => ['data' => ['name' => '신발', 'description' => '신발 카테고리']],
+        ]);
+
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{category.data.name}}', Mockery::any())
+            ->andReturn('신발');
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{category.data.description}}', Mockery::any())
+            ->andReturn('신발 카테고리');
+
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '테스트쇼핑몰 - 신발'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        $this->assertNotNull($capturedContext);
+        $this->assertEquals('테스트쇼핑몰 - 신발', $capturedContext['_seo']['category']['title']);
+        $this->assertEquals('신발 카테고리', $capturedContext['_seo']['category']['description']);
+    }
+
+    /**
+     * 검색결과 페이지에서 _seo.search context가 주입됩니다 (query source 변수 포함).
+     */
+    public function test_seo_context_injected_for_search_page(): void
+    {
+        $request = Request::create('/search', 'GET', ['q' => '운동화']);
+        // request() 헬퍼가 이 request를 반환하도록 바인딩
+        app()->instance('request', $request);
+
+        $this->setupRouteResolver('/search', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'search/index',
+            'routeParams' => [],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: [],
+            pageType: 'search',
+            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
+        $moduleMock->shouldReceive('seoVariables')->andReturn([
+            '_common' => [
+                'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
+            ],
+            'search' => [
+                'keyword_name' => ['source' => 'query', 'key' => 'q'],
+            ],
+        ]);
+        $this->moduleManager->shouldReceive('getModule')
+            ->with('sirsoft-ecommerce')
+            ->andReturn($moduleMock);
+
+        config()->set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '테스트쇼핑몰');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_search_title', '{commerce_name} - {keyword_name}');
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_search_description', '');
+
+        $this->dataSourceResolver->shouldReceive('resolve')->never();
+
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '테스트쇼핑몰 - 운동화'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        $this->assertNotNull($capturedContext);
+        $this->assertEquals('테스트쇼핑몰 - 운동화', $capturedContext['_seo']['search']['title']);
+    }
+
+    /**
+     * 설정 템플릿 값이 null인 경우에도 TypeError 없이 정상 동작합니다.
+     */
+    public function test_seo_context_handles_null_settings_template(): void
+    {
+        $request = Request::create('/shop/products/1');
+        $this->setupRouteResolver('/shop/products/1', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '1'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: ['product'],
+            pageType: 'product',
+            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
+            vars: [
+                'product_name' => '{{product.data.name}}',
+            ],
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        $moduleMock = Mockery::mock(\App\Extension\AbstractModule::class)->makePartial();
+        $moduleMock->shouldReceive('seoVariables')->andReturn([
+            'product' => [
+                'product_name' => ['source' => 'data', 'required' => true],
+            ],
+        ]);
+        $this->moduleManager->shouldReceive('getModule')
+            ->with('sirsoft-ecommerce')
+            ->andReturn($moduleMock);
+
+        // 설정값을 null로 설정 (미구성 상태 재현)
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', null);
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_description', null);
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
+            'product' => ['data' => ['name' => '에어맥스']],
+        ]);
+
+        $this->evaluator->shouldReceive('evaluate')
+            ->with('{{product.data.name}}', Mockery::any())
+            ->andReturn('에어맥스');
+
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '에어맥스'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        // TypeError 없이 정상 실행되어야 함
+        $result = $this->renderer->render($request);
+        $this->assertNotNull($result);
+
+        // null 템플릿 → _seo context에 주입되지 않음 (빈 문자열이므로)
+        $this->assertNotNull($capturedContext);
+        $this->assertArrayNotHasKey('_seo', $capturedContext);
+    }
+
+    /**
+     * extensions 미선언 시 _seo context가 주입되지 않습니다 (하위호환).
+     */
+    public function test_seo_context_not_injected_without_extensions(): void
+    {
+        $request = Request::create('/products/1');
+        $this->setupRouteResolver('/products/1', [
+            'templateIdentifier' => 'sirsoft-basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '1'],
+            'moduleIdentifier' => 'sirsoft-ecommerce',
+            'routeMeta' => [],
+        ]);
+
+        $mergedLayout = $this->buildMergedLayout(
+            seoEnabled: true,
+            seoDataSources: ['product'],
+            pageType: 'product',
+            toggleSetting: '$module_settings:seo.seo_product_detail',
+        );
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
+
+        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product_detail', true);
+
+        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
+            'product' => ['data' => ['name' => '에어맥스']],
+        ]);
+
+        $capturedContext = null;
+        $this->metaResolver->shouldReceive('resolve')
+            ->once()
+            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
+                $capturedContext = $context;
+
+                return true;
+            })
+            ->andReturn($this->buildMetaResult(title: '에어맥스'));
+
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        $this->assertNotNull($capturedContext);
+        $this->assertArrayNotHasKey('_seo', $capturedContext);
     }
 }

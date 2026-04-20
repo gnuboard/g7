@@ -386,8 +386,38 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 
 ---
 
+## 완전 동기화 (Stale Cleanup)
+
+코어/확장 업그레이드 시 메뉴 동기화는 **완전 동기화** — config/manifest 에서 제거된 메뉴는 DB 에서도 삭제됩니다. 유지되는 메뉴는 사용자 수정(`user_overrides` 컬럼) 에 따라 필드 단위 보존이 적용됩니다.
+
+### 적용 지점
+
+| 경로 | 호출 시점 | cleanup 대상 |
+|---|---|---|
+| `CoreUpdateService::syncCoreMenus` 말미 | 코어 업데이트 | `core/core` 소유 메뉴 전체 slug |
+| `ModuleManager::updateModule` 내 sync 블록 말미 | 모듈 업데이트 | 해당 모듈 소유 메뉴 |
+
+### 핵심 정책
+
+- **row 존재 여부**: config 기준 (user_overrides 무관 삭제)
+- **필드 값 (유지 row)**: user_overrides 에 등록된 필드 (`name`, `icon`, `order`, `url`) 보존, 나머지 갱신
+- **role-menu 매핑**: 메뉴 삭제 시 `role_menus` 피벗은 FK cascade 로 자동 정리
+
+### 사용자 수정 기록
+
+`Menu` 모델은 `HasUserOverrides` trait + `$trackableFields = ['name', 'icon', 'order', 'url']` 적용. 사용자가 UI/API 로 수정하면 trait 이 자동으로 user_overrides 에 누적 기록합니다 (mass update 포함).
+
+### Helper (권장)
+
+직접 Model 조작 금지. `ExtensionMenuSyncHelper` 를 통해 sync/cleanup 수행. 자세한 사용법은 [data-sync-helpers.md](../backend/data-sync-helpers.md#3-extensionmenusynchelper) 참조.
+
+---
+
 ## 관련 문서
 
 - [permissions.md](./permissions.md) - 권한 시스템 (Role, Permission, 리소스 레벨 권한)
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
 - [index.md](./index.md) - 확장 시스템 인덱스
+- [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
+- [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
+- [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

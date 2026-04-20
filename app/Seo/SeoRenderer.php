@@ -2,6 +2,8 @@
 
 namespace App\Seo;
 
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\HookManager;
 use App\Seo\Contracts\SeoRendererInterface;
 use App\Services\LayoutService;
@@ -25,6 +27,8 @@ class SeoRenderer implements SeoRendererInterface
         private readonly SeoConfigMerger $seoConfigMerger,
         private readonly SettingsService $settingsService,
         private readonly PluginSettingsService $pluginSettingsService,
+        private readonly ModuleManagerInterface $moduleManager,
+        private readonly PluginManagerInterface $pluginManager,
     ) {}
 
     /**
@@ -206,6 +210,12 @@ class SeoRenderer implements SeoRendererInterface
             $resolvedVars = $this->resolveSeoVars($seoVarsDecl, $context, $moduleIdentifier, $pluginIdentifier);
             $this->htmlMapper->setSeoVars($resolvedVars);
         }
+
+        // 5.96. meta.seo.extensions 기반 _seo context 주입
+        // extensions 배열에 선언된 확장의 seoVariables()를 수집하고
+        // 자동 해석 변수(setting/core_setting/query/route) + data 변수(vars 매핑)를 처리하여
+        // 설정 템플릿(meta_{page_type}_title/description)에 적용한 결과를 _seo.{page_type}에 주입
+        $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars ?? []);
 
         // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석
         $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
@@ -547,6 +557,10 @@ class SeoRenderer implements SeoRendererInterface
             $global['settings'] = [];
         }
 
+        // 코어 설정에서 사이트 기본 정보 주입 (structured_data 등에서 참조)
+        $global['site_name'] = g7_core_settings('general.site_name', '');
+        $global['site_url'] = g7_core_settings('general.site_url', url('/'));
+
         // modules: 모듈별 설정 (config에서 로드)
         $global['modules'] = config('g7_settings.modules', []);
 
@@ -779,5 +793,181 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         return $value;
+    }
+
+    /**
+     * meta.seo.extensions 기반으로 SEO 변수를 해석하고 _seo context에 주입합니다.
+     *
+     * 처리 흐름:
+     * 1. extensions 배열에서 확장 인스턴스 조회 → seoVariables() 수집
+     * 2. 자동 해석 변수(setting/core_setting/query/route) 처리
+     * 3. data 변수: meta.seo.vars 매핑 결과 사용 (이미 resolveSeoVars에서 해석됨)
+     * 4. 확장 설정 템플릿(meta_{page_type}_title/description) 조회 → {var} 치환
+     * 5. 결과를 context['_seo'][$pageType] = ['title' => ..., 'description' => ...] 주입
+     *
+     * @param  array  $seoConfig  레이아웃 meta.seo 설정
+     * @param  array  &$context  데이터 컨텍스트 (참조 전달 — _seo 주입)
+     * @param  array  $routeParams  라우트 파라미터
+     * @param  array  $resolvedVars  이미 해석된 vars (resolveSeoVars 결과)
+     */
+    private function resolveSeoContext(array $seoConfig, array &$context, array $routeParams, array $resolvedVars): void
+    {
+        $extensions = $seoConfig['extensions'] ?? [];
+        $pageType = $seoConfig['page_type'] ?? null;
+
+        if (empty($extensions) || ! $pageType) {
+            return;
+        }
+
+        // 확장별 seoVariables() 수집 및 해석
+        $allResolvedVars = [];
+        foreach ($extensions as $extDef) {
+            $extType = $extDef['type'] ?? null;
+            $extId = $extDef['id'] ?? null;
+
+            if (! $extType || ! $extId) {
+                continue;
+            }
+
+            // 확장 인스턴스 조회
+            $extInstance = $this->getExtensionInstance($extType, $extId);
+            if (! $extInstance) {
+                continue;
+            }
+
+            $seoVarsDef = $extInstance->seoVariables();
+            if (empty($seoVarsDef)) {
+                continue;
+            }
+
+            // _common + page_type별 변수 병합
+            $commonVars = $seoVarsDef['_common'] ?? [];
+            $pageTypeVars = $seoVarsDef[$pageType] ?? [];
+            $mergedVarsDef = array_merge($commonVars, $pageTypeVars);
+
+            if (empty($mergedVarsDef)) {
+                continue;
+            }
+
+            // 변수 자동 해석
+            foreach ($mergedVarsDef as $varName => $varDef) {
+                $source = $varDef['source'] ?? 'data';
+                $key = $varDef['key'] ?? $varName;
+
+                $resolved = match ($source) {
+                    'setting' => $this->resolveSettingVar($extType, $extId, $key),
+                    'core_setting' => (string) g7_core_settings($key, ''),
+                    'query' => (string) request()->query($key, ''),
+                    'route' => (string) ($routeParams[$key] ?? ''),
+                    'data' => $resolvedVars[$varName] ?? '',
+                    default => '',
+                };
+
+                // required인데 값이 비어있으면 경고
+                if (($varDef['required'] ?? false) && $resolved === '') {
+                    Log::warning('[SEO] Required variable not resolved', [
+                        'variable' => $varName,
+                        'page_type' => $pageType,
+                        'extension' => $extId,
+                    ]);
+                }
+
+                $allResolvedVars[$varName] = $resolved;
+            }
+
+            // 설정 템플릿 해석 (확장별)
+            $this->applySettingsTemplate($extType, $extId, $pageType, $allResolvedVars, $context);
+        }
+    }
+
+    /**
+     * 확장 설정의 메타 템플릿을 해석하여 _seo context에 주입합니다.
+     *
+     * @param  string  $extType  확장 타입 ('module' 또는 'plugin')
+     * @param  string  $extId  확장 식별자
+     * @param  string  $pageType  페이지 타입
+     * @param  array  $vars  해석된 변수 맵
+     * @param  array  &$context  데이터 컨텍스트 (참조)
+     */
+    private function applySettingsTemplate(string $extType, string $extId, string $pageType, array $vars, array &$context): void
+    {
+        $titleTemplate = (string) ($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_title") ?? '');
+        $descTemplate = (string) ($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_description") ?? '');
+
+        $title = $this->substituteVars($titleTemplate, $vars);
+        $description = $this->substituteVars($descTemplate, $vars);
+
+        if ($title !== '' || $description !== '') {
+            $context['_seo'][$pageType] = [
+                'title' => $title,
+                'description' => $description,
+            ];
+        }
+    }
+
+    /**
+     * 설정 변수(source: setting)를 해석합니다.
+     *
+     * @param  string  $extType  확장 타입
+     * @param  string  $extId  확장 식별자
+     * @param  string  $key  설정 키
+     * @return string 해석된 값
+     */
+    private function resolveSettingVar(string $extType, string $extId, string $key): string
+    {
+        return (string) $this->getExtensionSetting($extType, $extId, $key);
+    }
+
+    /**
+     * 확장 설정 값을 타입에 따라 조회합니다.
+     *
+     * @param  string  $extType  확장 타입 ('module' 또는 'plugin')
+     * @param  string  $extId  확장 식별자
+     * @param  string  $key  설정 키
+     * @return mixed 설정 값
+     */
+    private function getExtensionSetting(string $extType, string $extId, string $key): mixed
+    {
+        return $extType === 'module'
+            ? g7_module_settings($extId, $key, '')
+            : g7_plugin_settings($extId, $key, '');
+    }
+
+    /**
+     * 확장 인스턴스를 조회합니다.
+     *
+     * @param  string  $extType  확장 타입 ('module' 또는 'plugin')
+     * @param  string  $extId  확장 식별자
+     * @return object|null 확장 인스턴스
+     */
+    private function getExtensionInstance(string $extType, string $extId): ?object
+    {
+        if ($extType === 'module') {
+            return $this->moduleManager->getModule($extId);
+        }
+
+        if ($extType === 'plugin') {
+            return $this->pluginManager->getPlugin($extId);
+        }
+
+        return null;
+    }
+
+    /**
+     * 템플릿 문자열 내 {변수명} 플레이스홀더를 치환합니다.
+     *
+     * @param  string  $template  템플릿 문자열 (예: "{commerce_name} - {product_name}")
+     * @param  array  $vars  변수 맵 (키 → 값)
+     * @return string 치환된 문자열
+     */
+    private function substituteVars(string $template, array $vars): string
+    {
+        if ($template === '') {
+            return '';
+        }
+
+        return (string) preg_replace_callback('/\{(\w+)\}/', function ($matches) use ($vars) {
+            return $vars[$matches[1]] ?? $matches[0];
+        }, $template);
     }
 }

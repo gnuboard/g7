@@ -14,7 +14,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-data",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true,
+            "auth_mode": "optional",
             "cache": false,
             "refetchOnMount": true,
             "initLocal": "form",
@@ -54,7 +54,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/form-meta",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true,
+            "auth_mode": "optional",
             "cache": false,
             "refetchOnMount": true,
             "params": {

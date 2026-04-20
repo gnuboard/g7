@@ -1,0 +1,19 @@
+{
+  "manage": "Manage",
+  "modal_title": "Board Type Management",
+  "slug": "Slug",
+  "name": "Name",
+  "actions": "Actions",
+  "empty": "No types registered",
+  "delete_confirm": "Are you sure you want to delete this type?",
+  "delete_success": "Type has been deleted",
+  "edit_title": "Edit Type",
+  "add_title": "Add Type",
+  "add": "Add Type",
+  "adding": "Adding...",
+  "name_placeholder": "e.g., Basic List",
+  "slug_hint": "Only lowercase letters, numbers, and hyphens (-) allowed. Must start with a lowercase letter. (e.g., basic, gallery, photo-card)",
+  "update_success": "Type has been updated",
+  "create_success": "Type has been created",
+  "usage_guide": "The slug is an identifier that distinguishes the board display type. You must add and configure a dedicated layout for the slug in the template for it to take effect."
+}

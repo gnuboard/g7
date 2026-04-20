@@ -45,7 +45,7 @@
                 { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{board.name}}" }
               ]
             },
-            { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{board.posts_count}}" }
+            { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{board.posts_count | number}}" }
           ]
         }
       ]

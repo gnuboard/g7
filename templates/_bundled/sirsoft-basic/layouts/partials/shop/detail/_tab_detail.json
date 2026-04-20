@@ -16,12 +16,25 @@
       },
       "children": [
         {
-          "type": "composite",
-          "name": "HtmlContent",
+          "id": "product_description_html",
+          "type": "extension_point",
+          "name": "html_content",
           "props": {
             "content": "{{product.data?.description_localized ?? ''}}",
+            "isHtml": "{{(product.data?.description_mode ?? 'text') === 'html'}}",
             "className": "prose dark:prose-invert max-w-none"
-          }
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{product.data?.description_localized ?? ''}}",
+                "isHtml": "{{(product.data?.description_mode ?? 'text') === 'html'}}",
+                "className": "prose dark:prose-invert max-w-none"
+              }
+            }
+          ]
         }
       ]
     },
@@ -103,13 +116,26 @@
         },
         {
           "comment": "공통정보 - HTML 모드",
-          "type": "composite",
-          "name": "HtmlContent",
+          "id": "product_common_info_html",
+          "type": "extension_point",
+          "name": "html_content",
           "if": "{{product.data?.common_info?.content_mode === 'html'}}",
           "props": {
             "content": "{{product.data?.common_info?.content ?? ''}}",
-            "className": "prose dark:prose-invert max-w-none text-sm"
-          }
+            "isHtml": true,
+            "className": "prose prose-sm dark:prose-invert max-w-none"
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{product.data?.common_info?.content ?? ''}}",
+                "isHtml": true,
+                "className": "prose prose-sm dark:prose-invert max-w-none"
+              }
+            }
+          ]
         },
         {
           "comment": "공통정보 - Text 모드 (줄바꿈 유지)",

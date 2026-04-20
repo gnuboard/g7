@@ -174,10 +174,6 @@ class UpdateBoardRequest extends FormRequest
             // 알림 설정
             'notify_admin_on_post' => ['sometimes', 'required', 'boolean'],
             'notify_author' => ['sometimes', 'required', 'boolean'],
-            'notify_author_channels' => ['sometimes', 'nullable', 'array'],
-            'notify_author_channels.*' => ['string', 'max:50'],
-            'notify_admin_on_post_channels' => ['sometimes', 'nullable', 'array'],
-            'notify_admin_on_post_channels.*' => ['string', 'max:50'],
 
             // 보안 설정 (배열도 허용)
             'blocked_keywords' => ['sometimes', 'nullable', 'array'],

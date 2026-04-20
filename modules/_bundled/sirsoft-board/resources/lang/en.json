@@ -3,7 +3,33 @@
     "$partial": "partial/en/common.json"
   },
   "admin": {
-    "$partial": "partial/en/admin.json"
+    "board": {
+      "$partial": "partial/en/admin/board.json"
+    },
+    "modals": {
+      "$partial": "partial/en/admin/modals.json"
+    },
+    "form": {
+      "$partial": "partial/en/admin/form.json"
+    },
+    "reports": {
+      "$partial": "partial/en/admin/reports.json"
+    },
+    "posts": {
+      "$partial": "partial/en/admin/posts.json"
+    },
+    "settings": {
+      "$partial": "partial/en/admin/settings.json"
+    },
+    "board_types": {
+      "$partial": "partial/en/admin/board_types.json"
+    },
+    "users": {
+      "$partial": "partial/en/admin/users.json"
+    },
+    "ecommerce_settings": {
+      "$partial": "partial/en/admin/ecommerce_settings.json"
+    }
   },
   "board": {
     "$partial": "partial/en/board.json"

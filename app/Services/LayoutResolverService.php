@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Models\TemplateLayout;
 use Composer\Semver\Semver;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,7 +32,8 @@ class LayoutResolverService
      */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
-        private ModuleManager $moduleManager
+        private ModuleManager $moduleManager,
+        private CacheInterface $cache
     ) {}
 
     /**
@@ -40,7 +41,7 @@ class LayoutResolverService
      */
     private function getCacheTtl(): int
     {
-        return config('template.layout.cache_ttl', 3600);
+        return (int) g7_core_settings('cache.layout_ttl', config('template.layout.cache_ttl', 3600));
     }
 
     /**
@@ -60,7 +61,7 @@ class LayoutResolverService
 
         // 캐시 확인
         $cacheKey = $this->getResolutionCacheKey($layoutName, $templateId);
-        $cachedId = Cache::get($cacheKey);
+        $cachedId = $this->cache->get($cacheKey);
 
         if ($cachedId !== null) {
             $this->cacheStats['hits']++;
@@ -101,7 +102,7 @@ class LayoutResolverService
         // 캐시에 결과 저장 (없는 경우 0으로 저장하여 null 구분)
         $cacheValue = $layout ? $layout->id : 0;
         $cacheTtl = $this->getCacheTtl();
-        Cache::put($cacheKey, $cacheValue, $cacheTtl);
+        $this->cache->put($cacheKey, $cacheValue, $cacheTtl);
 
         Log::info('레이아웃 해석 완료 및 캐싱', [
             'layout_name' => $layoutName,
@@ -254,7 +255,7 @@ class LayoutResolverService
         HookManager::doAction('core.layout_resolver.before_cache_clear', $layoutName, $templateId);
 
         $cacheKey = $this->getResolutionCacheKey($layoutName, $templateId);
-        Cache::forget($cacheKey);
+        $this->cache->forget($cacheKey);
 
         Log::info('레이아웃 해석 캐시 무효화', [
             'layout_name' => $layoutName,
@@ -279,7 +280,7 @@ class LayoutResolverService
 
         foreach ($layouts as $layoutName) {
             $cacheKey = $this->getResolutionCacheKey($layoutName, $templateId);
-            Cache::forget($cacheKey);
+            $this->cache->forget($cacheKey);
         }
 
         Log::info('템플릿의 모든 레이아웃 해석 캐시 무효화', [
@@ -304,7 +305,7 @@ class LayoutResolverService
 
         foreach ($layouts as $layout) {
             $cacheKey = $this->getResolutionCacheKey($layout->name, $layout->template_id);
-            Cache::forget($cacheKey);
+            $this->cache->forget($cacheKey);
         }
 
         Log::info('모듈의 모든 레이아웃 해석 캐시 무효화', [

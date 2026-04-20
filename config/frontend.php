@@ -29,6 +29,10 @@ return [
             'config_key' => 'app.supported_locales',
             'type' => 'array',
         ],
+        'localeNames' => [
+            'config_key' => 'app.locale_names',
+            'type' => 'array',
+        ],
         'releaseYear' => [
             'config_key' => 'app.release_year',
             'type' => 'string',

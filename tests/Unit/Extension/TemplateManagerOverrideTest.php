@@ -242,7 +242,7 @@ class TemplateManagerOverrideTest extends TestCase
         ]);
 
         // 캐시 설정
-        $cacheKey = "template.{$template->id}.layout.{$override->name}";
+        $cacheKey = "g7:core:template.{$template->id}.layout.{$override->name}";
         Cache::put($cacheKey, $override->content, 3600);
         $this->assertNotNull(Cache::get($cacheKey));
 
@@ -448,7 +448,7 @@ class TemplateManagerOverrideTest extends TestCase
     public function test_increment_extension_cache_version(): void
     {
         // 초기 캐시 버전 설정
-        Cache::put('extension_cache_version', 1000);
+        Cache::put('g7:core:ext.cache_version', 1000);
 
         $reflection = new \ReflectionClass($this->templateManager);
         $method = $reflection->getMethod('incrementExtensionCacheVersion');
@@ -458,7 +458,7 @@ class TemplateManagerOverrideTest extends TestCase
         $method->invoke($this->templateManager);
         $afterTime = time();
 
-        $newVersion = Cache::get('extension_cache_version');
+        $newVersion = Cache::get('g7:core:ext.cache_version');
         $this->assertGreaterThanOrEqual($beforeTime, $newVersion);
         $this->assertLessThanOrEqual($afterTime, $newVersion);
     }
@@ -469,7 +469,7 @@ class TemplateManagerOverrideTest extends TestCase
     public function test_get_extension_cache_version(): void
     {
         $expectedVersion = 1735000000;
-        Cache::put('extension_cache_version', $expectedVersion);
+        Cache::put('g7:core:ext.cache_version', $expectedVersion);
 
         // ClearsTemplateCaches trait의 정적 메서드 호출
         $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
@@ -482,7 +482,7 @@ class TemplateManagerOverrideTest extends TestCase
      */
     public function test_get_extension_cache_version_returns_zero_when_not_set(): void
     {
-        Cache::forget('extension_cache_version');
+        Cache::forget('g7:core:ext.cache_version');
 
         $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
 
@@ -650,7 +650,7 @@ class TemplateManagerOverrideTest extends TestCase
         ]);
 
         // 캐시 설정
-        $cacheKey = "template.{$template->id}.layout.{$orphanName}";
+        $cacheKey = "g7:core:template.{$template->id}.layout.{$orphanName}";
         Cache::put($cacheKey, ['cached' => true], 3600);
         $this->assertNotNull(Cache::get($cacheKey));
 

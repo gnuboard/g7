@@ -229,7 +229,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin')
+            ->with('test-plugin', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -288,7 +288,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin')
+            ->with('test-plugin', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -332,7 +332,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('nonexistent-plugin')
+            ->with('nonexistent-plugin', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(
                 ValidationException::withMessages([
@@ -353,7 +353,7 @@ class PluginUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(PluginService::class);
         $mockService->shouldReceive('updatePlugin')
-            ->with('test-plugin')
+            ->with('test-plugin', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(new \RuntimeException('Unexpected error'));
         $this->app->instance(PluginService::class, $mockService);
@@ -402,6 +402,80 @@ class PluginUpdateTest extends TestCase
         $this->assertTrue(
             \Illuminate\Support\Facades\Route::has('api.admin.plugins.update'),
             'Route api.admin.plugins.update should exist'
+        );
+    }
+
+    // ========================================================================
+    // layout_strategy 파라미터 전달 검증
+    // ========================================================================
+
+    public function test_perform_update_sends_layout_strategy_keep_to_service(): void
+    {
+        $mockService = Mockery::mock(PluginService::class);
+        $mockService->shouldReceive('updatePlugin')
+            ->with('test-plugin', Mockery::any(), 'keep')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'from_version' => '1.0.0',
+                'to_version' => '2.0.0',
+                'plugin_info' => null,
+            ]);
+        $this->app->instance(PluginService::class, $mockService);
+
+        $response = $this->authRequest()->postJson('/api/admin/plugins/test-plugin/update', [
+            'layout_strategy' => 'keep',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    public function test_perform_update_rejects_invalid_layout_strategy(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/plugins/test-plugin/update', [
+            'layout_strategy' => 'garbage',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    // ========================================================================
+    // checkModifiedLayouts 엔드포인트 테스트
+    // ========================================================================
+
+    public function test_check_modified_layouts_returns_result_from_service(): void
+    {
+        $mockService = Mockery::mock(PluginService::class);
+        $mockService->shouldReceive('checkModifiedLayouts')
+            ->with('test-plugin')
+            ->once()
+            ->andReturn([
+                'has_modified_layouts' => false,
+                'modified_count' => 0,
+                'modified_layouts' => [],
+            ]);
+        $this->app->instance(PluginService::class, $mockService);
+
+        $response = $this->authRequest()->getJson('/api/admin/plugins/test-plugin/check-modified-layouts');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.has_modified_layouts', false)
+            ->assertJsonPath('data.modified_count', 0);
+    }
+
+    public function test_check_modified_layouts_returns_401_without_authentication(): void
+    {
+        $response = $this->getJson('/api/admin/plugins/test-plugin/check-modified-layouts');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_check_modified_layouts_route_name_exists(): void
+    {
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Route::has('api.admin.plugins.check-modified-layouts'),
+            'Route api.admin.plugins.check-modified-layouts should exist'
         );
     }
 }

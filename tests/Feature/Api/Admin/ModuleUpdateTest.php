@@ -229,7 +229,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module')
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -288,7 +288,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module')
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andReturn([
                 'success' => true,
@@ -332,7 +332,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('nonexistent-module')
+            ->with('nonexistent-module', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(
                 ValidationException::withMessages([
@@ -353,7 +353,7 @@ class ModuleUpdateTest extends TestCase
     {
         $mockService = Mockery::mock(ModuleService::class);
         $mockService->shouldReceive('updateModule')
-            ->with('test-module')
+            ->with('test-module', Mockery::any(), 'overwrite')
             ->once()
             ->andThrow(new \RuntimeException('Unexpected error'));
         $this->app->instance(ModuleService::class, $mockService);
@@ -402,6 +402,98 @@ class ModuleUpdateTest extends TestCase
         $this->assertTrue(
             \Illuminate\Support\Facades\Route::has('api.admin.modules.update'),
             'Route api.admin.modules.update should exist'
+        );
+    }
+
+    // ========================================================================
+    // layout_strategy 파라미터 전달 검증
+    // ========================================================================
+
+    /**
+     * performUpdate 가 layout_strategy='keep' 을 Service 에 전달하는지 확인
+     */
+    public function test_perform_update_sends_layout_strategy_keep_to_service(): void
+    {
+        $mockService = Mockery::mock(ModuleService::class);
+        $mockService->shouldReceive('updateModule')
+            ->with('test-module', Mockery::any(), 'keep')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'from_version' => '1.0.0',
+                'to_version' => '2.0.0',
+                'module_info' => null,
+            ]);
+        $this->app->instance(ModuleService::class, $mockService);
+
+        $response = $this->authRequest()->postJson('/api/admin/modules/test-module/update', [
+            'layout_strategy' => 'keep',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * performUpdate 는 유효하지 않은 layout_strategy 를 거부 (422)
+     */
+    public function test_perform_update_rejects_invalid_layout_strategy(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/modules/test-module/update', [
+            'layout_strategy' => 'garbage',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    // ========================================================================
+    // checkModifiedLayouts 엔드포인트 테스트
+    // ========================================================================
+
+    /**
+     * checkModifiedLayouts 는 Service 결과를 그대로 반환한다
+     */
+    public function test_check_modified_layouts_returns_result_from_service(): void
+    {
+        $mockService = Mockery::mock(ModuleService::class);
+        $mockService->shouldReceive('checkModifiedLayouts')
+            ->with('test-module')
+            ->once()
+            ->andReturn([
+                'has_modified_layouts' => true,
+                'modified_count' => 2,
+                'modified_layouts' => [
+                    ['id' => 1, 'name' => 'test-module.home', 'updated_at' => '2026-04-19 10:00:00', 'size_diff' => 128],
+                    ['id' => 2, 'name' => 'test-module.list', 'updated_at' => '2026-04-19 10:05:00', 'size_diff' => -64],
+                ],
+            ]);
+        $this->app->instance(ModuleService::class, $mockService);
+
+        $response = $this->authRequest()->getJson('/api/admin/modules/test-module/check-modified-layouts');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.has_modified_layouts', true)
+            ->assertJsonPath('data.modified_count', 2);
+    }
+
+    /**
+     * checkModifiedLayouts 는 인증이 없으면 401 반환
+     */
+    public function test_check_modified_layouts_returns_401_without_authentication(): void
+    {
+        $response = $this->getJson('/api/admin/modules/test-module/check-modified-layouts');
+
+        $response->assertStatus(401);
+    }
+
+    /**
+     * check-modified-layouts 라우트 네임 확인
+     */
+    public function test_check_modified_layouts_route_name_exists(): void
+    {
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Route::has('api.admin.modules.check-modified-layouts'),
+            'Route api.admin.modules.check-modified-layouts should exist'
         );
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\PermissionHelper;
-use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Plugin\ActivatePluginRequest;
 use App\Http\Requests\Plugin\DeactivatePluginRequest;
@@ -11,6 +10,7 @@ use App\Http\Requests\Plugin\IndexPluginRequest;
 use App\Http\Requests\Plugin\InstallPluginFromFileRequest;
 use App\Http\Requests\Plugin\InstallPluginFromGithubRequest;
 use App\Http\Requests\Plugin\InstallPluginRequest;
+use App\Http\Requests\Plugin\PerformPluginUpdateRequest;
 use App\Http\Requests\Plugin\RefreshPluginLayoutsRequest;
 use App\Http\Requests\Plugin\UninstallPluginRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
@@ -139,8 +139,12 @@ class PluginController extends AdminBaseController
     public function install(InstallPluginRequest $request): JsonResponse
     {
         try {
-            $pluginName = $request->validated()['plugin_name'];
-            $pluginInfo = $this->pluginService->installPlugin($pluginName);
+            $validated = $request->validated();
+            $pluginName = $validated['plugin_name'];
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+                $validated['vendor_mode'] ?? null
+            );
+            $pluginInfo = $this->pluginService->installPlugin($pluginName, $vendorMode);
 
             if ($pluginInfo) {
                 return $this->successWithResource(
@@ -156,7 +160,7 @@ class PluginController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.install_failed');
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('plugins.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -420,15 +424,44 @@ class PluginController extends AdminBaseController
     }
 
     /**
+     * 특정 플러그인의 수정된 레이아웃을 확인합니다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @return JsonResponse 수정된 레이아웃 정보를 포함한 JSON 응답
+     */
+    public function checkModifiedLayouts(string $pluginName): JsonResponse
+    {
+        try {
+            $result = $this->pluginService->checkModifiedLayouts($pluginName);
+
+            return $this->success('plugins.check_modified_layouts_success', $result);
+        } catch (ValidationException $e) {
+            return $this->error('plugins.check_modified_layouts_failed', 422, $e->errors());
+        } catch (\Exception $e) {
+            return $this->error('plugins.check_modified_layouts_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
      * 특정 플러그인을 업데이트합니다.
      *
+     * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
+     * - overwrite: 모든 레이아웃을 새 버전으로 교체
+     * - keep: 사용자가 수정한 레이아웃을 유지
+     *
+     * @param  PerformPluginUpdateRequest  $request  업데이트 요청 데이터
      * @param  string  $pluginName  업데이트할 플러그인 identifier
      * @return JsonResponse 업데이트 결과 JSON 응답
      */
-    public function performUpdate(string $pluginName): JsonResponse
+    public function performUpdate(PerformPluginUpdateRequest $request, string $pluginName): JsonResponse
     {
         try {
-            $result = $this->pluginService->updatePlugin($pluginName);
+            $validated = $request->validated();
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+                $validated['vendor_mode'] ?? null
+            );
+            $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
+            $result = $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy);
 
             $pluginInfo = $result['plugin_info'] ?? null;
 
@@ -446,7 +479,7 @@ class PluginController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.errors.update_failed', ['plugin' => $pluginName, 'error' => '']);
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('plugins.errors.update_failed', 500, $e->getMessage(), [
                 'plugin' => $pluginName,

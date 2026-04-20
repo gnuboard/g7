@@ -78,6 +78,9 @@ templates/_bundled/*/node_modules/
 # DevTools debug dump
 storage/debug-dump/
 
+# MaxMind GeoLite2 DB (재배포 금지 — 각 환경에서 직접 다운로드)
+storage/app/geoip/
+
 # 개발 전용 파일
 .api-test/
 .serena/

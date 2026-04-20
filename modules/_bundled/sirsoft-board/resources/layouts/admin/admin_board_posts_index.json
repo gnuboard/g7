@@ -13,6 +13,11 @@
         "searchField": "all",
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "posts"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -200,8 +205,8 @@
                                                     "value": "all"
                                                 },
                                                 {
-                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title",
-                                                    "value": "title"
+                                                    "label": "$t:sirsoft-board.admin.posts.search_fields.title_content",
+                                                    "value": "title_content"
                                                 },
                                                 {
                                                     "label": "$t:sirsoft-board.admin.posts.search_fields.author",
@@ -333,7 +338,8 @@
                                                             "query": {
                                                                 "category": "{{$event.target.value === 'all' ? '' : $event.target.value}}",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "posts_data_grid__body"
                                                         }
                                                     }
                                                 ]
@@ -626,7 +632,8 @@
                                                 "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                 "page": 1
-                                            }
+                                            },
+                                            "transition_overlay_target": "posts_data_grid__body"
                                         }
                                     }
                                 ]
@@ -667,7 +674,8 @@
                                             "query": {
                                                 "per_page": "{{$event.target.value}}",
                                                 "page": 1
-                                            }
+                                            },
+                                            "transition_overlay_target": "posts_data_grid__body"
                                         }
                                     }
                                 ]
@@ -729,7 +737,7 @@
                                             "props": {
                                                 "className": "flex items-start gap-2",
                                                 "style": {
-                                                  "paddingLeft": "{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"
+                                                    "paddingLeft": "{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"
                                                 }
                                             },
                                             "children": [
@@ -969,7 +977,8 @@
                                     "mergeQuery": true,
                                     "query": {
                                         "page": "{{$args[0]}}"
-                                    }
+                                    },
+                                    "transition_overlay_target": "posts_data_grid__body"
                                 }
                             }
                         ]

@@ -249,7 +249,9 @@ abstract class ModuleTestCase extends TestCase
                     "ALTER TABLE {$prefix}{$table} ADD PARTITION (PARTITION p{$boardId} VALUES IN ({$boardId}))"
                 );
             } catch (\Exception $e) {
-                if (! str_contains($e->getMessage(), 'Duplicate partition name')) {
+                // 파티션 이미 존재하거나, 파티셔닝되지 않은 테이블(파티션 제거 후 환경)인 경우 무시
+                if (! str_contains($e->getMessage(), 'Duplicate partition name')
+                    && ! str_contains($e->getMessage(), 'not partitioned')) {
                     throw $e;
                 }
             }

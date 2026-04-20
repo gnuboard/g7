@@ -30,7 +30,8 @@
                             "name": "Icon",
                             "props": {
                                 "name": "exclamation",
-                                "className": "w-6 h-6 text-yellow-600 dark:text-yellow-400"
+                                "size": "lg",
+                                "className": "text-yellow-600 dark:text-yellow-400"
                             }
                         }
                     ]
@@ -91,7 +92,20 @@
                                     "params": {
                                         "target": "global",
                                         "selectedId": "{{_global.pendingItemId}}",
-                                        "panelMode": "view"
+                                        "selectedItem": "{{_global.pendingItem}}",
+                                        "panelMode": "view",
+                                        "pendingItemId": null,
+                                        "pendingItem": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form": null,
+                                        "errors": null,
+                                        "isSaving": false,
+                                        "showPreview": false
                                     }
                                 },
                                 {
@@ -99,20 +113,12 @@
                                     "params": {
                                         "target": "local",
                                         "form": {
-                                            "name": {},
-                                            "content": {},
+                                            "name": { "ko": "", "en": "" },
+                                            "content": { "ko": "", "en": "" },
                                             "content_mode": "text",
                                             "is_default": false,
                                             "is_active": true
-                                        },
-                                        "errors": null
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "pendingItemId": null
+                                        }
                                     }
                                 },
                                 {

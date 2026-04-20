@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
  * 이커머스 모듈 메인 시더
  *
  * 설치 필수 시더는 항상 실행되며, 샘플 시더는 --sample 옵션 시에만 실행됩니다.
- * 시퀀스 → 배송사 → 메일 템플릿 순서로 설치 시더를 실행한 뒤,
+ * 시퀀스 → 배송사 → 알림 정의 → 클레임 사유 순서로 설치 시더를 실행한 뒤,
  * 샘플 시더는 브랜드 → 카테고리 → 상품 → 주문 → 리뷰 → 문의 순서로 실행합니다 (의존 관계에 따른 순서).
  */
 class DatabaseSeeder extends Seeder
@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SequenceSeeder::class,
             ShippingCarrierSeeder::class,
-            EcommerceMailTemplateSeeder::class,
+            EcommerceNotificationDefinitionSeeder::class,
             ClaimReasonSeeder::class,
             UserAddressSeeder::class,
         ]);
@@ -49,7 +49,6 @@ class DatabaseSeeder extends Seeder
                 Sample\ProductLabelSeeder::class,
                 Sample\ExtraFeeTemplateSeeder::class,
                 Sample\ShippingPolicySeeder::class,
-                Sample\EcommerceMailSendLogSeeder::class,
             ]);
 
             // count-aware 샘플 시더 (카운트 전파)

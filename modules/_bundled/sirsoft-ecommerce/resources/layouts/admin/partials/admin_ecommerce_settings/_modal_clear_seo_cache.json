@@ -1,0 +1,169 @@
+{
+  "meta": { "is_partial": true, "description": "SEO 캐시 삭제 확인 모달" },
+  "id": "modal_clear_seo_cache",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm_title",
+    "size": "md"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "relative flex flex-col gap-4" },
+      "children": [
+        {
+          "comment": "삭제 중 오버레이 (spinner + blur)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.isClearingCache}}",
+          "props": { "className": "absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-10 flex items-center justify-center rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex flex-col items-center gap-2" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "spinner", "className": "text-2xl text-blue-500 dark:text-blue-400 animate-spin" } },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-300 font-medium" }, "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache" }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": { "name": "triangle-exclamation", "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-amber-800 dark:text-amber-200" },
+              "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-end gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-secondary",
+                "disabled": "{{$parent._local.isClearingCache === true}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal"
+                }
+              ],
+              "children": [
+                { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{$parent._local.isClearingCache !== true}}",
+              "props": {
+                "type": "button",
+                "className": "btn btn-danger"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "$parent._local",
+                        "isClearingCache": true
+                      }
+                    },
+                    {
+                      "handler": "apiCall",
+                      "auth_required": true,
+                      "target": "/api/modules/sirsoft-ecommerce/admin/settings/clear-cache",
+                      "params": {
+                        "method": "POST"
+                      },
+                      "onSuccess": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "$parent._local",
+                            "isClearingCache": false
+                          }
+                        },
+                        {
+                          "handler": "refetchDataSource",
+                          "params": {
+                            "dataSourceId": "seoStats"
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "success",
+                            "message": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_success"
+                          }
+                        },
+                        {
+                          "handler": "closeModal"
+                        }
+                      ],
+                      "onError": [
+                        {
+                          "handler": "setState",
+                          "params": {
+                            "target": "$parent._local",
+                            "isClearingCache": false
+                          }
+                        },
+                        {
+                          "handler": "toast",
+                          "params": {
+                            "type": "error",
+                            "message": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_failed"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "children": [
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{$parent._local.isClearingCache === true}}",
+              "props": {
+                "type": "button",
+                "className": "btn btn-danger",
+                "disabled": true
+              },
+              "children": [
+                { "type": "basic", "name": "Span", "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clearing_cache" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -279,12 +279,16 @@ class LayoutExtensionService
                     $content = $extension->content;
                     $mode = $content['mode'] ?? 'append';
 
-                    // 컴포넌트 추가 (extension_point props를 주입 컴포넌트에 전달)
+                    // 컴포넌트 추가 (extension_point props/callbacks를 주입 컴포넌트에 전달)
                     if (isset($content['components'])) {
                         $extensionPointProps = $component['props'] ?? [];
-                        $componentsWithProps = array_map(function ($injectedComponent) use ($extensionPointProps) {
+                        $extensionPointCallbacks = $component['callbacks'] ?? [];
+                        $componentsWithProps = array_map(function ($injectedComponent) use ($extensionPointProps, $extensionPointCallbacks) {
                             if (! empty($extensionPointProps)) {
                                 $injectedComponent['extensionPointProps'] = $extensionPointProps;
+                            }
+                            if (! empty($extensionPointCallbacks)) {
+                                $injectedComponent['extensionPointCallbacks'] = $extensionPointCallbacks;
                             }
 
                             return $injectedComponent;

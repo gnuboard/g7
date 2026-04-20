@@ -8,6 +8,11 @@
     "meta": {
         "title": "$t:admin.activity_log.page_title"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "activityLogs"
+        ]
+    },
     "state": {
         "filter": {
             "searchType": "all",
@@ -84,7 +89,8 @@
                     "created_by": "{{_local.filter.createdBy || undefined}}",
                     "date_from": "{{_local.filter.dateFrom || undefined}}",
                     "date_to": "{{_local.filter.dateTo || undefined}}"
-                }
+                },
+                "transition_overlay_target": "activity_log_datagrid__body"
             }
         }
     },
@@ -231,7 +237,8 @@
                                                                 "sort_by": "created_at",
                                                                 "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "activity_log_datagrid__body"
                                                         }
                                                     }
                                                 ]
@@ -244,10 +251,22 @@
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [
-                                                        { "value": "10", "label": "10" },
-                                                        { "value": "20", "label": "20" },
-                                                        { "value": "50", "label": "50" },
-                                                        { "value": "100", "label": "100" }
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
+                                                        }
                                                     ]
                                                 },
                                                 "actions": [
@@ -261,7 +280,8 @@
                                                             "query": {
                                                                 "per_page": "{{$event.target.value}}",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "activity_log_datagrid__body"
                                                         }
                                                     }
                                                 ]
@@ -448,10 +468,24 @@
                                             ],
                                             "errorHandling": {
                                                 "403": {
-                                                    "handler": "toast",
+                                                    "handler": "sequence",
                                                     "params": {
-                                                        "type": "error",
-                                                        "message": "$t:auth.permission_denied"
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isDeleting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:auth.permission_denied"
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 }
                                             }
@@ -610,10 +644,24 @@
                                             ],
                                             "errorHandling": {
                                                 "403": {
-                                                    "handler": "toast",
+                                                    "handler": "sequence",
                                                     "params": {
-                                                        "type": "error",
-                                                        "message": "$t:auth.permission_denied"
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "isDeleting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "$t:auth.permission_denied"
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 }
                                             }

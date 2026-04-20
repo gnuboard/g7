@@ -94,14 +94,6 @@
     "min": "Max comment depth must be at least :min.",
     "max": "Max comment depth can be up to :max."
   },
-  "notify_author_channels": {
-    "array": "Author notification channels must be an array.",
-    "item_max": "Channel name can be up to :max characters."
-  },
-  "notify_admin_on_post_channels": {
-    "array": "Admin notification channels must be an array.",
-    "item_max": "Channel name can be up to :max characters."
-  },
   "settings": {
     "category": {
       "required": "Category is required.",

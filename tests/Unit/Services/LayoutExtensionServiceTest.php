@@ -1989,6 +1989,105 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
+     * extension_point의 callbacks가 주입 컴포넌트에 extensionPointCallbacks로 전달되는지 테스트
+     */
+    public function test_passes_extension_point_callbacks_to_injected_components(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'editor_slot',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-test',
+            'content' => [
+                'extension_point' => 'editor_slot',
+                'components' => [
+                    [
+                        'id' => 'editor_container',
+                        'type' => 'basic',
+                        'name' => 'Div',
+                    ],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'test_form',
+            'components' => [
+                [
+                    'id' => 'form_editor_slot',
+                    'type' => 'extension_point',
+                    'name' => 'editor_slot',
+                    'props' => [
+                        'readOnlyFields' => ['content'],
+                    ],
+                    'callbacks' => [
+                        'onContentChange' => [
+                            'handler' => 'setState',
+                            'params' => ['target' => 'local', 'form.content' => '{{$event}}'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $injectedComponent = $result['components'][0]['children'][0];
+
+        // props가 extensionPointProps로 전달되었는지 확인
+        $this->assertArrayHasKey('extensionPointProps', $injectedComponent);
+        $this->assertEquals(['content'], $injectedComponent['extensionPointProps']['readOnlyFields']);
+
+        // callbacks가 extensionPointCallbacks로 전달되었는지 확인
+        $this->assertArrayHasKey('extensionPointCallbacks', $injectedComponent);
+        $this->assertEquals('setState', $injectedComponent['extensionPointCallbacks']['onContentChange']['handler']);
+        $this->assertEquals('{{$event}}', $injectedComponent['extensionPointCallbacks']['onContentChange']['params']['form.content']);
+    }
+
+    /**
+     * callbacks가 없는 extension_point에서 extensionPointCallbacks가 생성되지 않는지 테스트
+     */
+    public function test_no_callbacks_key_when_extension_point_has_no_callbacks(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'simple_slot',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-test',
+            'content' => [
+                'extension_point' => 'simple_slot',
+                'components' => [
+                    ['id' => 'simple_component', 'type' => 'basic', 'name' => 'Div'],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'test_page',
+            'components' => [
+                [
+                    'id' => 'simple_ext_slot',
+                    'type' => 'extension_point',
+                    'name' => 'simple_slot',
+                    'props' => ['label' => 'test'],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $injectedComponent = $result['components'][0]['children'][0];
+        $this->assertArrayHasKey('extensionPointProps', $injectedComponent);
+        $this->assertArrayNotHasKey('extensionPointCallbacks', $injectedComponent);
+    }
+
+    /**
      * components와 modals 양쪽에 동일 이름의 extension_point가 있을 때 모두 주입되는지 테스트
      */
     public function test_injects_into_both_components_and_modals_extension_points(): void

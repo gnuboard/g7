@@ -41,6 +41,45 @@ describe('Router', () => {
       expect(router.getRoutes()).toEqual(mockRoutes);
     });
 
+    // @since engine-v1.19.0
+    it('cacheVersion 전달 시 ?v= 쿼리 파라미터를 URL에 부착해야 합니다', async () => {
+      const mockRoutes = [{ path: '/admin', layout: 'dashboard' }];
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { version: '1.0.0', routes: mockRoutes },
+        }),
+      });
+
+      await router.loadRoutes(1712345678);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/templates/sirsoft-admin_basic/routes.json?v=1712345678'
+      );
+      expect(router.getRoutes()).toEqual(mockRoutes);
+    });
+
+    // @since engine-v1.19.0
+    it('cacheVersion 이 0 또는 undefined 이면 쿼리 파라미터 없이 호출해야 합니다', async () => {
+      const mockRoutes = [{ path: '/admin', layout: 'dashboard' }];
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { version: '1.0.0', routes: mockRoutes },
+        }),
+      });
+
+      await router.loadRoutes(0);
+      expect(global.fetch).toHaveBeenLastCalledWith('/api/templates/sirsoft-admin_basic/routes.json');
+
+      await router.loadRoutes(undefined);
+      expect(global.fetch).toHaveBeenLastCalledWith('/api/templates/sirsoft-admin_basic/routes.json');
+    });
+
     it('API 호출 실패 시 에러를 던져야 합니다', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,

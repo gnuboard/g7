@@ -205,9 +205,17 @@ class ExtensionMenuSyncHelper
     /**
      * 현재 확장에 속하지 않는 stale 메뉴를 정리합니다.
      *
-     * ⚠️ 주의: 이 메서드는 정적 정의(getAdminMenus()) 기반으로만 판단하므로,
-     * 확장이 런타임에 동적으로 생성한 메뉴도 삭제됩니다.
-     * 자동 호출은 폐기되었으며, 필요 시 UpgradeStep에서 명시적으로 호출하세요.
+     * 정책:
+     *  - config/확장 정의에 없는 메뉴는 **user_overrides 유무 무관 삭제**
+     *  - 필드 단위 보존은 **upsert 시점(`syncMenu()`)** 에서만 작동 (유지 row 에 한해 override 필드만 보존)
+     *  - row 자체의 존재 여부는 config 기준으로만 결정 (사용자 수정 이력이 있어도 정의에서 제거되면 삭제)
+     *
+     * 자식 메뉴는 부모 삭제 시 함께 정리 (orphan 회피).
+     *
+     * 자동 호출 경로:
+     *  - `CoreUpdateService::syncCoreMenus()` 말미 (완전 동기화 원칙)
+     *  - `ModuleManager::updateModule()` 말미 (확장 동기화)
+     *  - UpgradeStep 에서 명시 호출
      *
      * @param  ExtensionOwnerType  $extensionType  확장 타입
      * @param  string  $extensionIdentifier  확장 식별자
@@ -225,20 +233,22 @@ class ExtensionMenuSyncHelper
 
         $deleted = 0;
         foreach ($existingMenus as $menu) {
-            if (! in_array($menu->slug, $currentSlugs, true)) {
-                // role_menus 피벗 정리
-                $menu->roles()->detach();
+            if (in_array($menu->slug, $currentSlugs, true)) {
+                continue;
+            }
 
-                // 자식 메뉴 먼저 삭제
-                foreach ($menu->children as $child) {
-                    $child->roles()->detach();
-                    $this->menuRepository->delete($child);
-                    $deleted++;
-                }
+            // role_menus 피벗 정리
+            $menu->roles()->detach();
 
-                $this->menuRepository->delete($menu);
+            // 자식 메뉴 먼저 삭제 (orphan 회피)
+            foreach ($menu->children as $child) {
+                $child->roles()->detach();
+                $this->menuRepository->delete($child);
                 $deleted++;
             }
+
+            $this->menuRepository->delete($menu);
+            $deleted++;
         }
 
         if ($deleted > 0) {

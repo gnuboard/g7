@@ -16,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -145,7 +144,7 @@ class SnapshotRecalculationTest extends ModuleTestCase
             'option_name' => '빨강/XL',
         ];
 
-        $option = new SnapshotProductOption($snapshot);
+        $option = new SnapshotProductOption($snapshot, 50000);
 
         $this->assertEquals(20, $option->id);
         $this->assertEquals(50000, $option->selling_price);
@@ -464,7 +463,7 @@ class SnapshotRecalculationTest extends ModuleTestCase
         ]);
         $policy->countrySettings()->create([
             'country_code' => 'KR',
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'shipping_method' => 'parcel',
             'currency_code' => 'KRW',
             'charge_policy' => ChargePolicyEnum::FIXED,
             'base_fee' => 5000,

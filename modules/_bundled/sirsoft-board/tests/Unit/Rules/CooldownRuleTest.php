@@ -73,7 +73,9 @@ class CooldownRuleTest extends ModuleTestCase
         $user = \App\Models\User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
-        $cacheKey = "post_cooldown_test-board_{$user->id}";
+        // CooldownRule 은 ModuleCacheDriver('sirsoft-board') 를 사용하므로
+        // 동일한 prefix(`g7:module.sirsoft-board:`) 로 키를 작성해야 한다.
+        $cacheKey = "g7:module.sirsoft-board:post_cooldown_test-board_{$user->id}";
         Cache::put($cacheKey, true, 30);
 
         $rule = new CooldownRule('post', 30, 'test-board');
@@ -98,7 +100,7 @@ class CooldownRuleTest extends ModuleTestCase
         // request()->ip()를 모킹
         $this->app['request']->server->set('REMOTE_ADDR', '192.168.1.100');
 
-        $cacheKey = 'comment_cooldown_test-board_192.168.1.100';
+        $cacheKey = 'g7:module.sirsoft-board:comment_cooldown_test-board_192.168.1.100';
         Cache::put($cacheKey, true, 30);
 
         $rule = new CooldownRule('comment', 30, 'test-board');
@@ -121,8 +123,8 @@ class CooldownRuleTest extends ModuleTestCase
         $user = \App\Models\User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
-        // 게시글 쿨다운만 설정
-        $postCacheKey = "post_cooldown_test-board_{$user->id}";
+        // 게시글 쿨다운만 설정 (ModuleCacheDriver prefix)
+        $postCacheKey = "g7:module.sirsoft-board:post_cooldown_test-board_{$user->id}";
         Cache::put($postCacheKey, true, 30);
 
         // 댓글 쿨다운은 없음
@@ -156,7 +158,7 @@ class CooldownRuleTest extends ModuleTestCase
         Auth::shouldReceive('id')->andReturn($user->id);
 
         // board-a에만 쿨다운 설정
-        $cacheKey = "post_cooldown_board-a_{$user->id}";
+        $cacheKey = "g7:module.sirsoft-board:post_cooldown_board-a_{$user->id}";
         Cache::put($cacheKey, true, 30);
 
         // board-b에는 쿨다운 없음
@@ -247,7 +249,7 @@ class CooldownRuleTest extends ModuleTestCase
         $user = \App\Models\User::factory()->create();
         Auth::shouldReceive('id')->andReturn($user->id);
 
-        $cacheKey = "post_cooldown_test-board_{$user->id}";
+        $cacheKey = "g7:module.sirsoft-board:post_cooldown_test-board_{$user->id}";
 
         // 캐시를 1초로 설정 후 만료 시뮬레이션
         Cache::put($cacheKey, true, 1);

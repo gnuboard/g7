@@ -3,14 +3,13 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * 플러그인 컬렉션 리소스
  *
  * 플러그인 목록을 다양한 형태로 변환하여 반환합니다.
  */
-class PluginCollection extends ResourceCollection
+class PluginCollection extends BaseApiCollection
 {
     /**
      * 플러그인 컬렉션을 배열로 변환합니다.

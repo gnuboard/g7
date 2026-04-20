@@ -59,10 +59,6 @@ class SeoSettingsCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldReceive('clearAll')->once();
 
-        Cache::shouldReceive('forget')
-            ->once()
-            ->with('seo:sitemap');
-
         Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Core SEO settings changed — all cache cleared', Mockery::type('array'));

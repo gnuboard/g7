@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Repositories;
 
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingPolicyRepository;
@@ -145,12 +144,12 @@ class ShippingPolicyRepositoryTest extends ModuleTestCase
         // Given: 다양한 배송방법의 정책 생성 (countrySettings 기반)
         $this->createPolicyWithSettings(
             ['name' => ['ko' => '택배배송', 'en' => 'Parcel'], 'sort_order' => 0],
-            [$this->makeKrCountrySetting(['shipping_method' => ShippingMethodEnum::PARCEL->value])]
+            [$this->makeKrCountrySetting(['shipping_method' => 'parcel'])]
         );
 
         $this->createPolicyWithSettings(
             ['name' => ['ko' => '퀵서비스', 'en' => 'Quick'], 'sort_order' => 1],
-            [$this->makeKrCountrySetting(['shipping_method' => ShippingMethodEnum::QUICK->value, 'base_fee' => 10000])]
+            [$this->makeKrCountrySetting(['shipping_method' => 'quick', 'base_fee' => 10000])]
         );
 
         // When: 배송방법 필터 적용

@@ -94,7 +94,16 @@ class SeoMetaResolver
             return $pageSeoTitle;
         }
 
-        // Tier 2: 모듈 설정 템플릿 (page_type 기반)
+        // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
+        $pageType = $seoConfig['page_type'] ?? null;
+        if ($pageType) {
+            $seoTitle = data_get($context, "_seo.{$pageType}.title", '');
+            if ($seoTitle !== '') {
+                return $seoTitle;
+            }
+        }
+
+        // Tier 2 하위호환: moduleIdentifier/pluginIdentifier 기반 (extensions 미선언 시)
         if ($moduleIdentifier) {
             $templateTitle = $this->resolveModuleTemplate($moduleIdentifier, 'title', $seoConfig, $context);
             if ($templateTitle !== '') {
@@ -134,7 +143,16 @@ class SeoMetaResolver
             return $pageSeoDesc;
         }
 
-        // Tier 2: 모듈 설정 템플릿 (page_type 기반)
+        // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
+        $pageType = $seoConfig['page_type'] ?? null;
+        if ($pageType) {
+            $seoDesc = data_get($context, "_seo.{$pageType}.description", '');
+            if ($seoDesc !== '') {
+                return $seoDesc;
+            }
+        }
+
+        // Tier 2 하위호환: moduleIdentifier/pluginIdentifier 기반 (extensions 미선언 시)
         if ($moduleIdentifier) {
             $templateDesc = $this->resolveModuleTemplate($moduleIdentifier, 'description', $seoConfig, $context);
             if ($templateDesc !== '') {
@@ -214,8 +232,8 @@ class SeoMetaResolver
                 return (string) $value;
             }
         }
-
         return '';
+
     }
 
     /**

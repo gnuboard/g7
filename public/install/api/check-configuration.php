@@ -162,6 +162,14 @@ class ValidationApi
                 $message = lang('success_db_write_connected');
             }
 
+            // 기존 테이블 감지 (Write DB만 수행 — 이슈 #244 대응)
+            // 사용자가 입력한 db_prefix를 g7 시그니처에 적용하여 정확히 비교
+            $existingTables = null;
+            if (!$isReadDb) {
+                $tablePrefix = (string) ($input['db_prefix'] ?? 'g7_');
+                $existingTables = checkExistingTables($pdo, $database, $tablePrefix);
+            }
+
             // 성공 응답
             echo json_encode([
                 'success' => true,
@@ -172,6 +180,7 @@ class ValidationApi
                     'found' => $privileges['found'],
                     'required' => $privileges['required'],
                 ],
+                'existing_tables' => $existingTables,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (PDOException $e) {
             // 연결 실패 플래그
@@ -340,6 +349,7 @@ class ValidationApi
                 'relative_path' => './'.$dir,
                 'exists' => $result['exists'],
                 'writable' => $result['writable'],
+                'readable' => $result['readable'],
                 'permissions' => $result['permissions'],
                 'owner' => $result['owner'],
                 'group' => $result['group'],
@@ -381,6 +391,7 @@ class ValidationApi
             '.env' => getEnvCopyCommand($basePath),
         ];
 
+        $webServerUser = getWebServerUser();
         $files = [];
         $allPassed = true;
         $hasNotWritable = false;
@@ -395,12 +406,29 @@ class ValidationApi
                 $allPassed = false;
             }
 
+            // 권한 비트/소유자 정보 수집 (ownership_mismatch 판별용)
+            $permissions = 'N/A';
+            $permsOctal = 0;
+            $owner = null;
+            if ($exists) {
+                $perms = fileperms($fullPath);
+                $permissions = substr(sprintf('%o', $perms), -3);
+                $permsOctal = octdec($permissions);
+                $owner = getFileOwnerName($fullPath);
+            }
+
             // 에러 타입 결정
+            // ownership_mismatch: 파일이 존재하고 권한이 0644 이상인데도 쓰기 불가
+            //                     → 소유자와 웹서버 실행 사용자 불일치
             $errorType = null;
             if (! $exists) {
                 $errorType = 'not_exists';
             } elseif (! $writable) {
-                $errorType = 'not_writable';
+                if ($permsOctal >= 0644 && $webServerUser && $owner && $owner !== $webServerUser) {
+                    $errorType = 'ownership_mismatch';
+                } else {
+                    $errorType = 'not_writable';
+                }
                 $hasNotWritable = true;
             }
 
@@ -409,18 +437,31 @@ class ValidationApi
                 'writable' => $writable,
                 'passed' => $passed,
                 'error_type' => $errorType,
+                'permissions' => $permissions,
+                'owner' => $owner,
+                'web_server_user' => $webServerUser,
                 'command' => $createCommands[$name],
             ];
         }
+
+        // base_path 소유자 정보 — .env 파일 생성 시 chgrp 포함 여부 판단용
+        // 프로젝트 루트 소유자가 웹서버 실행 사용자와 다른 경우, 생성 직후 ownership_mismatch가
+        // 재현되므로 복사 명령 자체에 chgrp + chmod 664를 미리 포함시키기 위함
+        $basePathOwner = function_exists('posix_getpwuid') && is_dir($basePath)
+            ? (posix_getpwuid(fileowner($basePath))['name'] ?? null)
+            : null;
+        $basePathOwnerMatchesWebUser = $basePathOwner && $webServerUser && $basePathOwner === $webServerUser;
 
         return [
             'required' => true,
             'files' => $files,
             'all_passed' => $allPassed,
             'has_not_writable' => $hasNotWritable,
-            'web_server_group' => getWebServerGroup() ?? getWebServerUser() ?? 'www-data',
-            'web_server_user' => getWebServerUser(),
+            'web_server_group' => getWebServerGroup() ?? $webServerUser ?? 'www-data',
+            'web_server_user' => $webServerUser,
             'base_path' => $basePath,
+            'base_path_owner' => $basePathOwner,
+            'base_path_owner_matches_web_user' => $basePathOwnerMatchesWebUser,
             'relative_base_path' => '.',
             'message' => $allPassed
                 ? lang('success_required_files')

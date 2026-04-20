@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\BrandController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceMailTemplateController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController;
@@ -470,6 +469,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-ecommerce.settings.update')
         ->name('admin.settings.store-banks');
 
+    Route::get('settings/seo-cache-info', [EcommerceSettingsController::class, 'seoCacheInfo'])
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->name('admin.settings.seo-cache-info');
+
     Route::get('settings/{category}', [EcommerceSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.show');
@@ -479,32 +482,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->name('admin.settings.clear-cache');
 
     // 메일 템플릿 관리
-    // GET   /api/modules/sirsoft-ecommerce/admin/mail-templates - 목록 조회
-    // PUT   /api/modules/sirsoft-ecommerce/admin/mail-templates/{ecommerceMailTemplate} - 수정
-    // PATCH /api/modules/sirsoft-ecommerce/admin/mail-templates/{ecommerceMailTemplate}/toggle-active - 활성 토글
-    // POST  /api/modules/sirsoft-ecommerce/admin/mail-templates/{ecommerceMailTemplate}/reset - 기본값 복원
-    Route::prefix('mail-templates')->group(function () {
-        Route::get('/', [EcommerceMailTemplateController::class, 'index'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
-            ->name('admin.mail-templates.index');
-
-        Route::put('{ecommerceMailTemplate}', [EcommerceMailTemplateController::class, 'update'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.update')
-            ->name('admin.mail-templates.update');
-
-        Route::patch('{ecommerceMailTemplate}/toggle-active', [EcommerceMailTemplateController::class, 'toggleActive'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.update')
-            ->name('admin.mail-templates.toggle-active');
-
-        Route::post('preview', [EcommerceMailTemplateController::class, 'preview'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
-            ->name('admin.mail-templates.preview');
-
-        Route::post('{ecommerceMailTemplate}/reset', [EcommerceMailTemplateController::class, 'reset'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.update')
-            ->name('admin.mail-templates.reset');
-    });
-
     // 배송정책 관리 API
     // GET    /api/modules/sirsoft-ecommerce/admin/shipping-policies - 배송정책 목록 조회
     // POST   /api/modules/sirsoft-ecommerce/admin/shipping-policies - 배송정책 생성

@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
-use App\Contracts\UniqueIdServiceInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
+use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
@@ -13,10 +14,12 @@ use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
-use App\Contracts\Repositories\MailSendLogRepositoryInterface;
-use App\Contracts\Repositories\MailTemplateRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
+use App\Contracts\Repositories\NotificationLogRepositoryInterface;
+use App\Contracts\Repositories\NotificationRepositoryInterface;
+use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -27,11 +30,14 @@ use App\Contracts\Repositories\SystemConfigRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Contracts\UniqueIdServiceInterface;
 use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\TemplateManager;
 use App\Repositories\ActivityLogRepository;
@@ -41,10 +47,12 @@ use App\Repositories\LayoutExtensionRepository;
 use App\Repositories\LayoutPreviewRepository;
 use App\Repositories\LayoutRepository;
 use App\Repositories\LayoutVersionRepository;
-use App\Repositories\MailSendLogRepository;
-use App\Repositories\MailTemplateRepository;
 use App\Repositories\MenuRepository;
 use App\Repositories\ModuleRepository;
+use App\Repositories\NotificationDefinitionRepository;
+use App\Repositories\NotificationLogRepository;
+use App\Repositories\NotificationRepository;
+use App\Repositories\NotificationTemplateRepository;
 use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\PluginRepository;
@@ -56,9 +64,9 @@ use App\Repositories\TemplateRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserRepository;
 use App\Services\AttachmentService;
-use App\Services\UniqueIdService;
+use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
-use Illuminate\Support\Facades\Cache;
+use App\Services\UniqueIdService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -67,6 +75,14 @@ use Illuminate\Support\ServiceProvider;
 
 class CoreServiceProvider extends ServiceProvider
 {
+    /**
+     * registerDynamicHooks() 메서드를 가진 리스너 클래스 목록.
+     * boot 후반부(DB 접근 가능 시점)에서 일괄 실행됩니다.
+     *
+     * @var array<string>
+     */
+    private array $deferredDynamicListeners = [];
+
     /**
      * 코어 서비스들을 등록합니다.
      */
@@ -160,8 +176,10 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(TemplateRepositoryInterface::class, TemplateRepository::class);
         $this->app->bind(UserConsentRepositoryInterface::class, UserConsentRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
-        $this->app->bind(MailTemplateRepositoryInterface::class, MailTemplateRepository::class);
-        $this->app->bind(MailSendLogRepositoryInterface::class, MailSendLogRepository::class);
+        $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
+        $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
+        $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
+        $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
@@ -172,6 +190,12 @@ class CoreServiceProvider extends ServiceProvider
             ->give(function () {
                 return new CoreStorageDriver(config('attachment.disk', 'local'));
             });
+
+        // 코어 서비스용 CoreCacheDriver 바인딩
+        // Phase 7(이관)에서 각 서비스에 CacheInterface DI 추가 시 when() 목록 확대 예정
+        $this->app->bind(CacheInterface::class, function () {
+            return new CoreCacheDriver(config('cache.default'));
+        });
     }
 
     /**
@@ -229,7 +253,7 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         // 템플릿 매니저 인터페이스 바인딩
-        $this->app->singleton(\App\Contracts\Extension\TemplateManagerInterface::class, function ($app) {
+        $this->app->singleton(TemplateManagerInterface::class, function ($app) {
             return $app->make(TemplateManager::class);
         });
     }
@@ -277,12 +301,18 @@ class CoreServiceProvider extends ServiceProvider
         // 플러그인 환경설정 로딩 (활성화된 플러그인만)
         $this->loadPluginSettingsToConfig($pluginManager);
 
+        // 확장 드라이버 Config 적용: 유효성 검증 + 폴백 + 훅 발행
+        $this->applyExtensionDriverConfigs();
+
         // 템플릿 로드 (콘솔 환경에서는 조건부 실행)
         if (! $skipTemplateLoading) {
             $templateManager = $this->app->make(TemplateManager::class);
             $templateManager->loadTemplates();
             $this->validateAndDeactivateIncompatibleTemplates($templateManager);
         }
+
+        // 동적 훅 리스너 일괄 실행 (registerDynamicHooks 메서드를 가진 리스너)
+        $this->registerDeferredDynamicHooks();
     }
 
     /**
@@ -330,10 +360,30 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function validateAndDeactivateIncompatibleExtensions($manager, string $type): void
     {
+        // 코어 업데이트 진행 중에는 자동 비활성화 스킵.
+        //
+        // 업데이트는 다음 순서로 진행된다:
+        //   1. 코어 파일 교체 (디스크)
+        //   2. 업그레이드 스텝 실행 (spawn 프로세스)
+        //   3. 번들 확장 일괄 업데이트 (spawn 내부, 파일 교체 + DB sync)
+        //   4. .env APP_VERSION 갱신
+        //
+        // 3단계 동안 spawn 프로세스가 부팅될 때, 코어는 이미 신버전이지만 확장의 manifest 는
+        // 아직 구버전이거나 그 반대. 버전 기반 호환성 판정을 수행하면 일시적 불일치로 전 확장이
+        // 자동 비활성화되며, updateModule 이 `previousStatus` 를 잘못 캡처해 영구 비활성 상태로
+        // 복원된다. 업데이트 중에는 판정 자체가 의미 없으므로 전면 skip 한다.
+        //
+        // `G7_UPDATE_IN_PROGRESS` 는 CoreUpdateCommand 가 시작 시 설정하고 spawn 의 `$env` 로
+        // 전파된다. 업데이트가 종료되면 부모 프로세스 종료와 함께 env 도 소멸.
+        if (self::isCoreUpdateInProgress()) {
+            return;
+        }
+
+        $cache = $this->app->make(CacheInterface::class);
         $cacheKey = CoreVersionChecker::getCacheKey($type);
 
         // 캐시가 있으면 이미 검증된 것으로 간주
-        if (Cache::has($cacheKey)) {
+        if ($cache->has($cacheKey)) {
             return;
         }
 
@@ -365,7 +415,7 @@ class CoreServiceProvider extends ServiceProvider
             $this->storeDeactivatedExtensionsAlert($type, $deactivated);
         }
 
-        Cache::put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
     }
 
     /**
@@ -376,12 +426,41 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
      */
+    /**
+     * 현재 프로세스가 코어 업데이트 중인지 판정합니다.
+     *
+     * 판정 조건 (OR):
+     *   1. 환경변수 `G7_UPDATE_IN_PROGRESS=1` — 부모 CoreUpdateCommand 가 시작 시 설정,
+     *      spawn 자식에도 `$env` 로 전파
+     *   2. artisan command 이름이 `core:update` / `core:execute-upgrade-steps` — 1 이 전파되지
+     *      않은 극단 상황 대비 보조 판정
+     *
+     * 둘 중 하나라도 true 면 업데이트 컨텍스트로 간주하여 version-based 자동 비활성화 스킵.
+     */
+    public static function isCoreUpdateInProgress(): bool
+    {
+        $envFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
+        if ($envFlag === '1' || $envFlag === 1 || $envFlag === true) {
+            return true;
+        }
+
+        $argv = $_SERVER['argv'] ?? [];
+        $command = $argv[1] ?? '';
+        return in_array($command, ['core:update', 'core:execute-upgrade-steps'], true);
+    }
+
     protected function validateAndDeactivateIncompatibleTemplates(TemplateManager $templateManager): void
     {
+        // 업데이트 중 자동 비활성화 스킵 (validateAndDeactivateIncompatibleExtensions 와 동일 사유)
+        if (self::isCoreUpdateInProgress()) {
+            return;
+        }
+
+        $cache = $this->app->make(CacheInterface::class);
         $cacheKey = CoreVersionChecker::getCacheKey('templates');
 
         // 캐시가 있으면 이미 검증된 것으로 간주
-        if (Cache::has($cacheKey)) {
+        if ($cache->has($cacheKey)) {
             return;
         }
 
@@ -419,7 +498,7 @@ class CoreServiceProvider extends ServiceProvider
             $this->storeDeactivatedExtensionsAlert('templates', $deactivated);
         }
 
-        Cache::put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
     }
 
     /**
@@ -433,13 +512,14 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function storeDeactivatedExtensionsAlert(string $type, array $deactivated): void
     {
-        $alerts = Cache::get('extension_compatibility_alerts', []);
+        $cache = $this->app->make(CacheInterface::class);
+        $alerts = $cache->get('ext.compatibility_alerts', []);
         $alerts[$type] = [
             'deactivated' => $deactivated,
             'core_version' => config('app.version'),
             'timestamp' => now()->toIso8601String(),
         ];
-        Cache::put('extension_compatibility_alerts', $alerts, 86400); // 24시간
+        $cache->put('ext.compatibility_alerts', $alerts, 86400); // 24시간
     }
 
     /**
@@ -551,6 +631,69 @@ class CoreServiceProvider extends ServiceProvider
         Config::set('g7_settings.plugins', $pluginSettings);
     }
 
+    /**
+     * 확장 드라이버 Config을 적용합니다.
+     *
+     * 플러그인이 필터 훅으로 등록한 드라이버의 유효성을 검증하고,
+     * 사용 가능하면 액션 훅을 발행하여 Config을 적용합니다.
+     * 사용 불가능하면 기본 드라이버로 안전하게 폴백합니다.
+     *
+     * SettingsServiceProvider::register()에서 코어 드라이버 Config은 이미 적용된 상태이므로,
+     * 여기서는 플러그인 드라이버만 처리합니다.
+     */
+    protected function applyExtensionDriverConfigs(): void
+    {
+        try {
+            $driverRegistry = $this->app->make(DriverRegistryService::class);
+            $configRepository = $this->app->make(JsonConfigRepository::class);
+
+            foreach ($driverRegistry->getCategories() as $category) {
+                $settingsKey = $driverRegistry->getSettingsKey($category);
+
+                if ($settingsKey === null) {
+                    continue;
+                }
+
+                $settings = $configRepository->getCategory($settingsKey['category']);
+                $selectedDriver = $settings[$settingsKey['key']] ?? '';
+
+                if (empty($selectedDriver)) {
+                    continue;
+                }
+
+                // 코어 드라이버는 SettingsServiceProvider::register()에서 이미 적용됨
+                if ($driverRegistry->isCoreDriver($category, $selectedDriver)) {
+                    continue;
+                }
+
+                // 플러그인 드라이버: 사용 가능 여부 확인
+                if ($driverRegistry->isDriverAvailable($category, $selectedDriver)) {
+                    // 플러그인이 Config을 직접 적용하도록 액션 훅 발행
+                    HookManager::doAction(
+                        'core.settings.apply_driver_config',
+                        $category,
+                        $selectedDriver,
+                        $settings
+                    );
+                } else {
+                    // 플러그인 드라이버가 사용 불가 → 기본 드라이버로 폴백
+                    $defaultDriver = $driverRegistry->getDefaultDriver($category);
+                    $configKey = $driverRegistry->getConfigKey($category);
+
+                    if ($configKey && $defaultDriver) {
+                        Config::set($configKey, $defaultDriver);
+                    }
+
+                    Log::warning("플러그인 드라이버 '{$selectedDriver}'가 '{$category}' 카테고리에서 사용 불가능합니다. 기본 드라이버 '{$defaultDriver}'로 폴백합니다.");
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('확장 드라이버 Config 적용 실패', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     // registerActivityLogManager() 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
 
     /**
@@ -605,36 +748,11 @@ class CoreServiceProvider extends ServiceProvider
     private function registerCoreHookListener(string $listenerClass): void
     {
         try {
-            // 구독할 훅 정보 가져오기
-            $subscribedHooks = $listenerClass::getSubscribedHooks();
+            HookListenerRegistrar::register($listenerClass, 'core');
 
-            foreach ($subscribedHooks as $hookName => $config) {
-                $method = $config['method'] ?? 'handle';
-                $priority = $config['priority'] ?? 10;
-                $type = $config['type'] ?? 'action';
-
-                if ($type === 'filter') {
-                    // Filter 훅: 반환값을 전달 (클로저 래퍼로 지연 인스턴스 생성)
-                    HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method) {
-                        $listener = app($listenerClass);
-
-                        return $listener->{$method}($value, ...$args);
-                    }, $priority);
-                } else {
-                    // Action 훅 (클로저 래퍼로 지연 인스턴스 생성)
-                    HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method) {
-                        $listener = app($listenerClass);
-                        $listener->{$method}(...$args);
-                    }, $priority);
-                }
-
-                Log::info('코어 훅 리스너 등록 완료', [
-                    'hook' => $hookName,
-                    'listener' => $listenerClass,
-                    'method' => $method,
-                    'priority' => $priority,
-                    'type' => $type,
-                ]);
+            // registerDynamicHooks() 메서드를 가진 리스너는 boot 후반부에서 실행
+            if (method_exists($listenerClass, 'registerDynamicHooks')) {
+                $this->deferredDynamicListeners[] = $listenerClass;
             }
         } catch (\Exception $e) {
             Log::error('코어 훅 리스너 등록 중 오류 발생', [
@@ -646,12 +764,32 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
+     * registerDynamicHooks() 메서드를 가진 리스너들의 동적 훅을 일괄 등록합니다.
+     *
+     * DB 접근이 필요하므로 boot() 후반부(DB 유효성 검증 후)에서 호출됩니다.
+     */
+    private function registerDeferredDynamicHooks(): void
+    {
+        foreach ($this->deferredDynamicListeners as $listenerClass) {
+            try {
+                $listener = app($listenerClass);
+                $listener->registerDynamicHooks();
+
+                Log::info('동적 훅 리스너 등록 완료', ['listener' => $listenerClass]);
+            } catch (\Throwable $e) {
+                Log::warning('동적 훅 리스너 등록 실패', [
+                    'listener' => $listenerClass,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
      * 시스템 전역 라우트를 주입하는 필터를 등록합니다.
      *
      * core.routes.filter_merged 필터를 통해 프리뷰 등 코어 시스템 라우트를
      * 모든 템플릿의 routes.json 응답에 자동 주입합니다.
-     *
-     * @return void
      */
     private function registerSystemRouteFilters(): void
     {

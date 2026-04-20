@@ -29,6 +29,13 @@
             "roles": []
         }
     },
+    "transition_overlay": {
+        "wait_for": [
+            "menus",
+            "modules",
+            "roles"
+        ]
+    },
     "data_sources": [
         {
             "id": "menus",

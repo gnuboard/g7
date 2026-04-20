@@ -1,8 +1,8 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, rmdirSync } from 'fs';
 import { join } from 'path';
 import { CodeEditor } from '../composite/CodeEditor';
 import { LayoutFileList, LayoutFileItem } from '../composite/LayoutFileList';
@@ -42,6 +42,67 @@ vi.mock('@monaco-editor/react', () => ({
   },
 }));
 
+const FIXTURES_DIR = join(__dirname, '__fixtures__');
+const FIXTURE_FILES = [
+  { size: 1, filename: 'test-1mb.json' },
+  { size: 5, filename: 'test-5mb.json' },
+  { size: 10, filename: 'test-10mb.json' },
+];
+
+/**
+ * 대용량 JSON 데이터 생성 (generate-test-fixtures.ts와 동일 로직)
+ */
+const generateLargeJSON = (sizeInMB: number): string => {
+  const targetSize = sizeInMB * 1024 * 1024;
+  const baseObject = {
+    id: 1,
+    name: 'test-layout',
+    version: '1.0.0',
+    components: [] as any[],
+  };
+
+  const sampleComponent = {
+    id: 'component-0',
+    type: 'div',
+    className: 'container flex flex-col items-center justify-center p-4 m-2',
+    children: [
+      { id: 'child-0-1', type: 'h1', className: 'text-2xl font-bold', content: 'Title Component' },
+      { id: 'child-0-2', type: 'p', className: 'text-base', content: 'Description text for the component' },
+    ],
+    metadata: {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      author: 'system',
+      tags: ['component', 'layout', 'container', 'responsive'],
+    },
+  };
+
+  const sampleJSON = JSON.stringify({ components: [sampleComponent] }, null, 2);
+  const componentSize = sampleJSON.length - JSON.stringify({ components: [] }, null, 2).length;
+  const baseSize = JSON.stringify(baseObject).length;
+  const componentsNeeded = Math.ceil((targetSize - baseSize) / componentSize * 1.1);
+
+  for (let i = 0; i < componentsNeeded; i++) {
+    baseObject.components.push({
+      id: `component-${i}`,
+      type: 'div',
+      className: 'container flex flex-col items-center justify-center p-4 m-2',
+      children: [
+        { id: `child-${i}-1`, type: 'h1', className: 'text-2xl font-bold', content: `Title Component ${i}` },
+        { id: `child-${i}-2`, type: 'p', className: 'text-base', content: `Description text for the component ${i}` },
+      ],
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        author: 'system',
+        tags: ['component', 'layout', 'container', 'responsive'],
+      },
+    });
+  }
+
+  return JSON.stringify(baseObject, null, 2);
+};
+
 /**
  * 픽스처 파일에서 테스트 데이터 로드
  */
@@ -77,6 +138,35 @@ const generateLargeVersionList = (count: number): VersionItem[] => {
 };
 
 describe('레이아웃 에디터 성능 테스트', () => {
+  beforeAll(() => {
+    // fixture 디렉토리 생성
+    if (!existsSync(FIXTURES_DIR)) {
+      mkdirSync(FIXTURES_DIR, { recursive: true });
+    }
+    // fixture 파일 생성
+    for (const { size, filename } of FIXTURE_FILES) {
+      const filePath = join(FIXTURES_DIR, filename);
+      if (!existsSync(filePath)) {
+        const data = generateLargeJSON(size);
+        writeFileSync(filePath, data, 'utf-8');
+      }
+    }
+  });
+
+  afterAll(() => {
+    // fixture 파일 삭제
+    for (const { filename } of FIXTURE_FILES) {
+      const filePath = join(FIXTURES_DIR, filename);
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
+    }
+    // fixture 디렉토리 삭제 (비어있을 때만)
+    if (existsSync(FIXTURES_DIR)) {
+      try { rmdirSync(FIXTURES_DIR); } catch { /* 디렉토리가 비어있지 않으면 무시 */ }
+    }
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

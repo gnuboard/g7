@@ -181,7 +181,7 @@ class ModuleManagerLayoutTest extends TestCase
         ]);
 
         // LayoutService와 동일한 캐시 키 패턴으로 설정: template.{templateId}.layout.{layoutName}
-        $cacheKey = "template.{$this->adminTemplate->id}.layout.{$layoutName}";
+        $cacheKey = "g7:core:template.{$this->adminTemplate->id}.layout.{$layoutName}";
         Cache::put($cacheKey, $layout->content, 3600);
         $this->assertNotNull(Cache::get($cacheKey));
 
@@ -520,12 +520,127 @@ class ModuleManagerLayoutTest extends TestCase
     }
 
     /**
+     * registerLayoutToTemplate 호출 시 original_content_hash / size 가 저장되는지 테스트.
+     *
+     * layout_strategy=keep 에서 사용자 수정 감지에 사용되므로 신규 등록 시 hash 가 채워져야 함.
+     */
+    public function test_register_layout_stores_original_content_hash_and_size(): void
+    {
+        $moduleIdentifier = 'test-hash-module';
+
+        Module::create([
+            'identifier' => $moduleIdentifier,
+            'vendor' => 'test',
+            'name' => ['ko' => '해시 테스트', 'en' => 'Hash Test'],
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '테스트용', 'en' => 'For testing'],
+        ]);
+
+        $layoutData = [
+            'layout_name' => 'admin_home',
+            'version' => '1.0.0',
+            'slots' => ['content' => [['component' => 'Div']]],
+        ];
+
+        $reflection = new \ReflectionClass($this->moduleManager);
+        $method = $reflection->getMethod('registerLayoutToTemplate');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $this->moduleManager,
+            $this->adminTemplate,
+            $moduleIdentifier.'.admin_home',
+            $layoutData,
+            $moduleIdentifier,
+        );
+
+        $layout = TemplateLayout::where('template_id', $this->adminTemplate->id)
+            ->where('source_identifier', $moduleIdentifier)
+            ->first();
+
+        $this->assertNotNull($layout);
+        $this->assertNotNull($layout->original_content_hash, 'hash 가 저장되어야 함');
+        $this->assertEquals(64, strlen($layout->original_content_hash), 'SHA-256 hex length');
+        $this->assertGreaterThan(0, $layout->original_content_size);
+
+        // hash 재계산이 동일한지
+        $expectedHash = hash('sha256', json_encode($layoutData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $this->assertEquals($expectedHash, $layout->original_content_hash);
+    }
+
+    /**
+     * hasModifiedLayouts: 수정된 레이아웃이 없을 때 결과 검증.
+     */
+    public function test_has_modified_layouts_returns_false_when_unchanged(): void
+    {
+        $moduleIdentifier = 'test-nomod-module';
+
+        Module::create([
+            'identifier' => $moduleIdentifier,
+            'vendor' => 'test',
+            'name' => ['ko' => '미수정 테스트', 'en' => 'Unmodified Test'],
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '테스트용', 'en' => 'For testing'],
+        ]);
+
+        $layoutData = ['layout_name' => 'home', 'slots' => []];
+
+        $reflection = new \ReflectionClass($this->moduleManager);
+        $method = $reflection->getMethod('registerLayoutToTemplate');
+        $method->setAccessible(true);
+        $method->invoke($this->moduleManager, $this->adminTemplate, $moduleIdentifier.'.home', $layoutData, $moduleIdentifier);
+
+        $result = $this->moduleManager->hasModifiedLayouts($moduleIdentifier);
+
+        $this->assertFalse($result['has_modified_layouts']);
+        $this->assertEquals(0, $result['modified_count']);
+        $this->assertEmpty($result['modified_layouts']);
+    }
+
+    /**
+     * hasModifiedLayouts: 사용자가 content 를 수정한 레이아웃을 감지한다.
+     */
+    public function test_has_modified_layouts_detects_user_modification(): void
+    {
+        $moduleIdentifier = 'test-modified-module';
+
+        Module::create([
+            'identifier' => $moduleIdentifier,
+            'vendor' => 'test',
+            'name' => ['ko' => '수정 테스트', 'en' => 'Modified Test'],
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+            'description' => ['ko' => '테스트용', 'en' => 'For testing'],
+        ]);
+
+        $originalData = ['layout_name' => 'home', 'slots' => ['content' => []]];
+
+        $reflection = new \ReflectionClass($this->moduleManager);
+        $method = $reflection->getMethod('registerLayoutToTemplate');
+        $method->setAccessible(true);
+        $method->invoke($this->moduleManager, $this->adminTemplate, $moduleIdentifier.'.home', $originalData, $moduleIdentifier);
+
+        // 사용자 UI 에서 content 만 수정 (hash 는 그대로 유지)
+        TemplateLayout::where('source_identifier', $moduleIdentifier)
+            ->update(['content' => ['layout_name' => 'home', 'slots' => ['content' => [['component' => 'Div', 'props' => ['className' => 'user-added']]]]]]);
+
+        $result = $this->moduleManager->hasModifiedLayouts($moduleIdentifier);
+
+        $this->assertTrue($result['has_modified_layouts']);
+        $this->assertEquals(1, $result['modified_count']);
+        $this->assertCount(1, $result['modified_layouts']);
+        $this->assertEquals($moduleIdentifier.'.home', $result['modified_layouts'][0]['name']);
+    }
+
+    /**
      * refreshModuleLayouts 호출 시 레이아웃이 변경되면 캐시 버전이 증가하는지 테스트
      */
     public function test_refresh_module_layouts_increments_cache_version_on_change(): void
     {
         // 초기 캐시 버전 설정
-        Cache::put('extension_cache_version', 1000);
+        Cache::put('g7:core:ext.cache_version', 1000);
 
         // 테스트용 모듈 생성
         $module = Module::create([
@@ -551,7 +666,7 @@ class ModuleManagerLayoutTest extends TestCase
         $method->invoke($this->moduleManager);
         $afterTime = time();
 
-        $newVersion = Cache::get('extension_cache_version');
+        $newVersion = Cache::get('g7:core:ext.cache_version');
         $this->assertGreaterThanOrEqual($beforeTime, $newVersion);
         $this->assertLessThanOrEqual($afterTime, $newVersion);
     }
@@ -680,11 +795,11 @@ class ModuleManagerLayoutTest extends TestCase
     public function test_cache_version_not_incremented_when_no_layout_changes(): void
     {
         $initialVersion = 1000;
-        Cache::put('extension_cache_version', $initialVersion);
+        Cache::put('g7:core:ext.cache_version', $initialVersion);
 
         // 변경 없는 상태에서는 incrementExtensionCacheVersion이 호출되지 않으므로
         // 캐시 버전이 유지됨
-        $currentVersion = Cache::get('extension_cache_version');
+        $currentVersion = Cache::get('g7:core:ext.cache_version');
 
         $this->assertEquals($initialVersion, $currentVersion);
     }

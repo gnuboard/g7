@@ -9,6 +9,11 @@
         "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title",
         "description": "$t:sirsoft-ecommerce.admin.product_notice_template.description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "templates"
+        ]
+    },
     "data_sources": [
         {
             "id": "templates",
@@ -39,11 +44,11 @@
             },
             "initLocal": {
                 "form": {
-                    "name": {},
+                    "name": [],
                     "fields": [
                         {
-                            "name": {},
-                            "content": {}
+                            "name": [],
+                            "content": []
                         }
                     ],
                     "is_active": true
@@ -180,11 +185,11 @@
                                                         "params": {
                                                             "target": "local",
                                                             "form": {
-                                                                "name": {},
+                                                                "name": [],
                                                                 "fields": [
                                                                     {
-                                                                        "name": {},
-                                                                        "content": {}
+                                                                        "name": [],
+                                                                        "content": []
                                                                     }
                                                                 ],
                                                                 "is_active": true
@@ -260,7 +265,7 @@
     },
     "initLocal": {
         "form": {
-            "name": {},
+            "name": [],
             "fields": [],
             "is_active": true
         },

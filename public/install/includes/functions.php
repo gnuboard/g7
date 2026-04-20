@@ -756,8 +756,10 @@ function checkDirectoryPermissions(array $directories): array
 
     $results = [];
     $allPassed = true;
-    $requiredPerms = REQUIRED_DIRECTORY_PERMISSIONS;
     $requiredPermsDisplay = REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY;
+
+    // 웹서버 실행 사용자 (ownership_mismatch 판별용)
+    $webServerUser = getWebServerUser();
 
     foreach ($directories as $path => $checkRecursive) {
         $fullPath = BASE_PATH . '/' . $path;
@@ -765,20 +767,26 @@ function checkDirectoryPermissions(array $directories): array
         // 디렉토리 존재 여부 확인 (생성하지 않음)
         $exists = is_dir($fullPath);
 
-        // 쓰기 권한 확인
+        // 실제 동작 기준 검증: 비트 값이 아닌 is_writable/is_readable로 판정
+        // 업계 표준에 따라 어떤 권한 조합이든 실제 동작하면 통과 (0755/0775/0770/0777 등)
         $writable = $exists && is_writable($fullPath);
+        $readable = $exists && is_readable($fullPath);
 
-        // 권한 코드 가져오기 (8진수 3자리)
+        // 권한 코드는 정보 표시용으로만 유지
         $permissions = 'N/A';
-        $hasCorrectPermissions = false;
-
+        $permsOctal = 0;
         if ($exists) {
             $perms = fileperms($fullPath);
             $permissions = substr(sprintf('%o', $perms), -3);
+            $permsOctal = octdec($permissions);
+        }
 
-            // 설정된 권한과 비교
-            $currentPermsOctal = octdec($permissions);
-            $hasCorrectPermissions = ($currentPermsOctal & $requiredPerms) === $requiredPerms;
+        // 소유자/소유그룹 정보 가져오기
+        $owner = null;
+        $group = null;
+        if ($exists) {
+            $owner = getFileOwnerName($fullPath);
+            $group = getFileGroupName($fullPath);
         }
 
         // 재귀 체크 여부 확인
@@ -791,49 +799,41 @@ function checkDirectoryPermissions(array $directories): array
             $hasSubdirectoryIssues = count($failedSubdirectories) > 0;
         }
 
-        // 상위 디렉토리 자체의 통과 여부
-        $parentPassed = $writable && $hasCorrectPermissions;
+        // 상위 디렉토리 자체의 통과 여부 — is_writable && is_readable만 충족하면 OK
+        $parentPassed = $writable && $readable;
 
         // 최종 통과 여부: 상위 + 하위 모두 통과해야 함
         $passed = $parentPassed && !$hasSubdirectoryIssues;
 
         // 에러 타입 구분
+        // ownership_mismatch: 권한 비트는 0755 이상이지만 소유자가 웹서버 사용자와 달라
+        //                     실제 쓰기 불가 (전통적 Apache: 파일 소유자 != www-data)
         $errorType = null;
         if (!$exists) {
             $errorType = 'not_exists';
-        } elseif (!$parentPassed) {
-            // 상위 디렉토리 자체의 문제
-            if (!$hasCorrectPermissions && $writable) {
-                // 권한 코드는 낮지만 쓰기 가능 (소유자/그룹 권한)
-                $errorType = 'permission_low_but_writable';
-            } elseif (!$hasCorrectPermissions) {
-                // 권한 코드가 필요한 것보다 낮음
-                $errorType = 'permission_too_low';
-            } elseif (!$writable) {
-                // 권한 코드는 충분하지만 쓰기 권한 없음
+        } elseif (!$writable) {
+            // 권한 비트가 충분(0755+)한데도 쓰기 불가 → 소유권 불일치 가능성
+            if ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
+                $errorType = 'ownership_mismatch';
+            } else {
                 $errorType = 'not_writable';
             }
+        } elseif (!$readable) {
+            $errorType = 'not_readable';
         } elseif ($hasSubdirectoryIssues) {
             // 상위는 OK, 하위 디렉토리만 문제
             $errorType = 'subdirectory_issues';
         }
 
-        // 소유자/소유그룹 정보 가져오기
-        $owner = null;
-        $group = null;
-        if ($exists) {
-            $owner = getFileOwnerName($fullPath);
-            $group = getFileGroupName($fullPath);
-        }
-
         $results[$path] = [
             'exists' => $exists,
             'writable' => $writable,
+            'readable' => $readable,
             'permissions' => $permissions,
             'required_permissions' => $requiredPermsDisplay,
-            'has_correct_permissions' => $hasCorrectPermissions,
             'owner' => $owner,
             'group' => $group,
+            'web_server_user' => $webServerUser,
             'passed' => $passed,
             'error_type' => $errorType,
             'has_subdirectory_issues' => $hasSubdirectoryIssues,
@@ -1075,14 +1075,17 @@ function getEnvCopyCommand(string $basePath = ''): string
 }
 
 /**
- * OS에 맞는 디렉토리 권한 수정 명령어를 반환합니다.
+ * OS에 맞는 권한 수정 명령어를 반환합니다.
  *
- * @param string $webGroup 웹 서버 그룹명
+ * 업계 표준(WordPress/Drupal/Joomla/Laravel)에 맞춰 디렉토리 755, 파일 644로 통일.
+ * chown/setgid 의존성을 제거하여 공유호스팅 호환성 확보.
+ * 실제 통과 기준은 is_writable() && is_readable()이므로 비트 값은 참고용.
+ *
  * @param string $pathList 대상 경로 (공백 구분)
- * @param string $mode 'ownership' (chown+chmod) 또는 'file' (파일 권한)
+ * @param string $mode 'ownership' (디렉토리) 또는 'file' (파일)
  * @return string 권한 수정 명령어
  */
-function getPermissionFixCommand(string $webGroup, string $pathList, string $mode = 'ownership', bool $skipChown = false): string
+function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): string
 {
     if (isWindows()) {
         $winPath = str_replace('/', '\\', $pathList);
@@ -1094,15 +1097,76 @@ function getPermissionFixCommand(string $webGroup, string $pathList, string $mod
     }
 
     if ($mode === 'file') {
-        if ($skipChown) {
-            return 'chmod 660 ' . $pathList;
-        }
-        return 'sudo chown ' . $webGroup . ':' . $webGroup . ' ' . $pathList . ' && sudo chmod 660 ' . $pathList;
+        return 'chmod 644 ' . $pathList;
     }
 
-    if ($skipChown) {
-        return 'chmod -R 2770 ' . $pathList;
-    }
-    return 'sudo chown -R ' . $webGroup . ':' . $webGroup . ' ' . $pathList . ' && sudo chmod -R 2770 ' . $pathList;
+    return 'chmod -R 755 ' . $pathList;
 }
 
+
+/**
+ * 기존 DB 테이블 감지 (이슈 #244 대응).
+ *
+ * Write DB에 테이블이 존재하는지 확인하고, G7 시그니처 테이블과 비교하여
+ * 설치 진행 가능 여부를 판정합니다.
+ *
+ * severity:
+ * - 'empty'        : 빈 DB (정상 진행)
+ * - 'g7_existing'  : G7 시그니처 4개 모두 존재 (기존 설치 감지)
+ * - 'mixed'        : G7 일부 + 기타 혼재
+ * - 'foreign_data' : G7 시그니처 없음 + 기타 테이블 존재
+ *
+ * @param PDO $pdo 연결된 PDO 인스턴스
+ * @param string $database 대상 데이터베이스명
+ * @return array
+ */
+function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = ''): array
+{
+    try {
+        $stmt = $pdo->query('SHOW TABLES');
+        $tables = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    } catch (PDOException $e) {
+        return [
+            'has_tables' => false,
+            'is_g7_install' => false,
+            'g7_tables_found' => [],
+            'other_tables_count' => 0,
+            'all_tables' => [],
+            'severity' => 'empty',
+            'error' => $e->getMessage(),
+        ];
+    }
+
+    if (empty($tables)) {
+        return [
+            'has_tables' => false,
+            'is_g7_install' => false,
+            'g7_tables_found' => [],
+            'other_tables_count' => 0,
+            'all_tables' => [],
+            'severity' => 'empty',
+        ];
+    }
+
+    // G7 핵심 시그니처 테이블 — PO 결정: 4개 모두 일치 시 "G7 설치됨"으로 판단
+    // 테이블 prefix를 적용하여 비교 (예: prefix='g7_'이면 'g7_users', 'g7_migrations' 등)
+    $coreSignatures = ['users', 'migrations', 'roles', 'permissions'];
+    $g7Signatures = array_map(fn ($t) => $tablePrefix . $t, $coreSignatures);
+    $g7TablesFound = array_values(array_intersect($g7Signatures, $tables));
+
+    $severity = 'foreign_data';
+    if (count($g7TablesFound) >= 4) {
+        $severity = 'g7_existing';
+    } elseif (count($g7TablesFound) > 0) {
+        $severity = 'mixed';
+    }
+
+    return [
+        'has_tables' => true,
+        'is_g7_install' => $severity === 'g7_existing',
+        'g7_tables_found' => $g7TablesFound,
+        'other_tables_count' => max(0, count($tables) - count($g7TablesFound)),
+        'all_tables' => $tables,
+        'severity' => $severity,
+    ];
+}

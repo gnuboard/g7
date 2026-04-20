@@ -25,6 +25,7 @@ class InstallModuleRequest extends FormRequest
     {
         $rules = [
             'module_name' => ['required', 'string', 'max:255', new ValidExtensionIdentifier],
+            'vendor_mode' => ['nullable', 'string', 'in:auto,composer,bundled'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공

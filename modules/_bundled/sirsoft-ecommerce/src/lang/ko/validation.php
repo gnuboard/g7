@@ -869,6 +869,7 @@ return [
         'is_active_required' => '사용여부를 선택해주세요.',
         'is_active_boolean' => '사용여부는 true 또는 false여야 합니다.',
         'base_fee_zero_not_allowed' => '무료배송이 아닌 정책은 배송비를 0원으로 설정할 수 없습니다.',
+        'custom_shipping_name_required' => '직접입력 배송방법 선택 시 배송방법명을 입력해주세요.',
         'ranges' => [
             'first_min_zero' => '첫 구간의 시작값은 0이어야 합니다.',
             'last_max_unlimited' => '마지막 구간의 종료값은 비워야 합니다.',
@@ -1124,6 +1125,9 @@ return [
         'seo.meta_search_description' => '검색 페이지 설명',
         'seo.meta_product_title' => '상품 페이지 타이틀',
         'seo.meta_product_description' => '상품 페이지 설명',
+        'seo.meta_shop_index_title' => '쇼핑몰 메인 페이지 타이틀',
+        'seo.meta_shop_index_description' => '쇼핑몰 메인 페이지 설명',
+        'seo.seo_shop_index' => '쇼핑몰 메인 페이지 SEO 사용',
         'seo.seo_user_agents' => 'SEO 사용자 에이전트',
 
         // 주문 설정
@@ -1351,6 +1355,17 @@ return [
             'seo_product_detail' => [
                 'boolean' => '상품상세 페이지 SEO 사용 여부는 참/거짓 값이어야 합니다.',
             ],
+            'meta_shop_index_title' => [
+                'string' => '쇼핑몰 메인 페이지 타이틀은 문자열이어야 합니다.',
+                'max' => '쇼핑몰 메인 페이지 타이틀은 최대 500자까지 입력 가능합니다.',
+            ],
+            'meta_shop_index_description' => [
+                'string' => '쇼핑몰 메인 페이지 설명은 문자열이어야 합니다.',
+                'max' => '쇼핑몰 메인 페이지 설명은 최대 1000자까지 입력 가능합니다.',
+            ],
+            'seo_shop_index' => [
+                'boolean' => '쇼핑몰 메인 페이지 SEO 사용 여부는 참/거짓 값이어야 합니다.',
+            ],
             'seo_user_agents' => [
                 'string' => 'SEO 사용자 에이전트는 문자열이어야 합니다.',
                 'max' => 'SEO 사용자 에이전트는 최대 100자까지 입력 가능합니다.',
@@ -1497,6 +1512,27 @@ return [
             'address_api_provider' => [
                 'string' => '주소검증 API 제공자는 문자열이어야 합니다.',
                 'max' => '주소검증 API 제공자는 최대 50자까지 입력 가능합니다.',
+            ],
+            'types' => [
+                'duplicate_code' => '중복된 배송유형 코드가 있습니다.',
+                'name_required' => '배송유형명은 필수 항목입니다.',
+                'code' => [
+                    'required_with' => '배송유형 코드는 필수입니다.',
+                    'string' => '배송유형 코드는 문자열이어야 합니다.',
+                    'max' => '배송유형 코드는 최대 50자까지 입력 가능합니다.',
+                    'regex' => '배송유형 코드는 영문 소문자, 숫자, 하이픈, 언더스코어만 사용 가능합니다.',
+                ],
+                'name' => [
+                    'required_with' => '배송유형명은 필수입니다.',
+                    'array' => '배송유형명은 다국어 배열 형식이어야 합니다.',
+                ],
+                'category' => [
+                    'required_with' => '배송유형 카테고리는 필수입니다.',
+                    'in' => '배송유형 카테고리는 국내배송, 해외배송, 기타 중 하나여야 합니다.',
+                ],
+                'is_active' => [
+                    'boolean' => '배송유형 사용여부는 참/거짓 값이어야 합니다.',
+                ],
             ],
             'carriers' => [
                 'duplicate_code' => '중복된 배송사 코드가 있습니다.',

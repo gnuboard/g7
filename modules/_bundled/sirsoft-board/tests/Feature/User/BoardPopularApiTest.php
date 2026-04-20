@@ -133,12 +133,11 @@ class BoardPopularApiTest extends ModuleTestCase
     }
 
     /**
-     * 인기도 점수(view_count + comment_count * 5) 기준으로 정렬되는지 테스트
-     * 이 테스트는 comment_count=0이므로 view_count 순서와 동일
+     * view_count 기준 내림차순 정렬되는지 테스트
      */
     public function test_popular_sorted_by_popularity_score_desc(): void
     {
-        // Given: view_count가 다른 게시글 생성 (comment_count=0이므로 인기도=view_count)
+        // Given: view_count가 다른 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
         $this->ensureBoardPartitions($board->id);
 
@@ -211,27 +210,33 @@ class BoardPopularApiTest extends ModuleTestCase
     }
 
     /**
-     * period=all이 모든 게시글을 반환하는지 테스트
+     * period=all이 year(최근 1년)로 매핑되는지 테스트
+     * all → year 하위 호환 매핑: 최근 1년 이내 게시글만 반환
      */
-    public function test_popular_period_all_returns_all_posts(): void
+    public function test_popular_period_all_maps_to_year(): void
     {
-        // Given: 다양한 시기의 게시글 생성
+        // Given: 1년 이내/이전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
         $this->ensureBoardPartitions($board->id);
 
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
-            ['board_id' => $board->id, 'title' => 'Old', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(6), 'updated_at' => now()],
+            ['board_id' => $board->id, 'title' => 'Six Months Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(6), 'updated_at' => now()],
+            ['board_id' => $board->id, 'title' => 'Over One Year', 'content' => 'Content', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(13), 'updated_at' => now()],
         ]);
 
-        // When: period=all로 API 호출
+        // When: period=all로 API 호출 (year로 매핑됨)
         $response = $this->getJson('/api/modules/sirsoft-board/boards/popular?period=all');
 
-        // Then: 모든 게시글 반환
+        // Then: 1년 이내 게시글만 반환 (Over One Year 제외)
         $response->assertStatus(200);
         $data = $response->json('data');
 
         $this->assertCount(2, $data);
+        $titles = array_column($data, 'title');
+        $this->assertContains('Recent', $titles);
+        $this->assertContains('Six Months Ago', $titles);
+        $this->assertNotContains('Over One Year', $titles);
     }
 
     /**
@@ -288,30 +293,18 @@ class BoardPopularApiTest extends ModuleTestCase
         $board = Board::factory()->create(['is_active' => true]);
         $this->ensureBoardPartitions($board->id);
 
+        // comments_count 컬럼에 직접 값 설정 (캐시 컬럼 방식)
         $postId = DB::table('board_posts')->insertGetId([
             'board_id' => $board->id,
             'title' => 'Post with comments',
             'content' => 'Content',
             'view_count' => 100,
+            'comments_count' => 3,
             'status' => PostStatus::Published->value,
             'ip_address' => '127.0.0.1',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-
-        // 댓글 3개 추가
-        for ($i = 0; $i < 3; $i++) {
-            DB::table('board_comments')->insert([
-                'board_id' => $board->id,
-                'post_id' => $postId,
-                'content' => "Comment {$i}",
-                'author_name' => 'Commenter',
-                'status' => PostStatus::Published->value,
-                'ip_address' => '127.0.0.1',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
 
         // When: API 호출
         $response = $this->getJson('/api/modules/sirsoft-board/boards/popular');
@@ -370,9 +363,8 @@ class BoardPopularApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (형식: g7:sirsoft-board:popular_posts_{locale}_{period}_{limit})
-        $locale = app()->getLocale();
-        $this->assertTrue(Cache::has("g7:sirsoft-board:popular_posts_{$locale}_week_5"));
+        // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_{period}_{limit})
+        $this->assertTrue(Cache::has("g7:module.sirsoft-board:popular_posts_week_5"));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');

@@ -9,6 +9,12 @@
         "title": "$t:sirsoft-page.admin.page.detail.page_title",
         "description": "$t:sirsoft-page.admin.page.detail.page_description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "page",
+            "versions"
+        ]
+    },
     "data_sources": [
         {
             "id": "page",
@@ -271,68 +277,68 @@
                                     "handler": "sequence",
                                     "params": {
                                         "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isRestoringVersion": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "auth_required": true,
-                                            "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore",
-                                            "params": {
-                                                "method": "POST"
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isRestoringVersion": true
+                                                }
                                             },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRestoringVersion": false,
-                                                        "modalStack": [],
-                                                        "activeModal": null
-                                                    }
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/modules/sirsoft-page/admin/pages/{{route.id}}/versions/{{_global.restoreVersionId}}/restore",
+                                                "params": {
+                                                    "method": "POST"
                                                 },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:sirsoft-page.admin.page.modals.restore_success"
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isRestoringVersion": false,
+                                                            "modalStack": [],
+                                                            "activeModal": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-page.admin.page.modals.restore_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "page"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "versions"
+                                                        }
                                                     }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "page"
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isRestoringVersion": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"
+                                                        }
                                                     }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "versions"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isRestoringVersion": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{$error.message ?? '$t:sirsoft-page.admin.page.errors.restore_failed'}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
+                                                ]
+                                            }
+                                        ]
                                     }
                                 }
                             ],
@@ -415,13 +421,25 @@
                                     },
                                     "children": [
                                         {
-                                            "type": "composite",
-                                            "name": "HtmlContent",
+                                            "id": "preview_version_html",
+                                            "type": "extension_point",
+                                            "name": "html_content",
                                             "props": {
                                                 "content": "{{_global.previewVersion?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
                                                 "isHtml": "{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}",
                                                 "className": "text-gray-900 dark:text-gray-100 text-sm"
-                                            }
+                                            },
+                                            "default": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "HtmlContent",
+                                                    "props": {
+                                                        "content": "{{_global.previewVersion?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                        "isHtml": "{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}",
+                                                        "className": "text-gray-900 dark:text-gray-100 text-sm"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
@@ -748,7 +766,6 @@
                             }
                         ]
                     },
-
                     {
                         "id": "page_api_error",
                         "type": "composite",
@@ -760,7 +777,6 @@
                             "className": "mb-6"
                         }
                     },
-
                     {
                         "id": "unified_lang_tabs",
                         "type": "basic",
@@ -802,9 +818,13 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
+                                        "iteration": {
+                                            "source": "$locales",
+                                            "item_var": "loc"
+                                        },
                                         "props": {
                                             "type": "button",
-                                            "className": "{{(_local.lang ?? 'ko') === 'ko' ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}"
+                                            "className": "{{(_local.lang ?? $locale) === loc ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}"
                                         },
                                         "actions": [
                                             {
@@ -812,7 +832,7 @@
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "local",
-                                                    "lang": "ko"
+                                                    "lang": "{{loc}}"
                                                 }
                                             }
                                         ],
@@ -820,32 +840,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
-                                                "text": "$t:sirsoft-page.admin.page.form.lang_tabs.ko"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "{{(_local.lang ?? 'ko') === 'en' ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}"
-                                        },
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "lang": "en"
-                                                }
-                                            }
-                                        ],
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-page.admin.page.form.lang_tabs.en"
+                                                "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                             }
                                         ]
                                     }
@@ -861,7 +856,6 @@
                             }
                         ]
                     },
-
                     {
                         "id": "page_info_section",
                         "type": "basic",
@@ -1169,7 +1163,6 @@
                             }
                         ]
                     },
-
                     {
                         "id": "content_section",
                         "type": "basic",
@@ -1226,19 +1219,29 @@
                                 "children": [
                                     {
                                         "id": "content_preview",
-                                        "type": "composite",
-                                        "name": "HtmlContent",
+                                        "type": "extension_point",
+                                        "name": "html_content",
                                         "props": {
                                             "content": "{{page?.data?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
                                             "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
                                             "className": "text-gray-900 dark:text-gray-100"
-                                        }
+                                        },
+                                        "default": [
+                                            {
+                                                "type": "composite",
+                                                "name": "HtmlContent",
+                                                "props": {
+                                                    "content": "{{page?.data?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                    "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
+                                                    "className": "text-gray-900 dark:text-gray-100"
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }
                         ]
                     },
-
                     {
                         "id": "attachments_section",
                         "type": "basic",
@@ -1402,7 +1405,6 @@
                             }
                         ]
                     },
-
                     {
                         "id": "seo_section",
                         "type": "basic",
@@ -1511,7 +1513,6 @@
                             }
                         ]
                     },
-
                     {
                         "id": "versions_section",
                         "type": "basic",
@@ -1673,51 +1674,51 @@
                                             ]
                                         },
                                         {
-                                        "field": "actions",
-                                        "header": "$t:sirsoft-page.admin.page.detail.versions.actions",
-                                        "width": "80px",
-                                        "cellChildren": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "global",
-                                                                        "previewVersion": "{{row}}"
+                                            "field": "actions",
+                                            "header": "$t:sirsoft-page.admin.page.detail.versions.actions",
+                                            "width": "80px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "params": {
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "previewVersion": "{{row}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "versionPreviewModal"
                                                                     }
-                                                                },
-                                                                {
-                                                                    "handler": "openModal",
-                                                                    "target": "versionPreviewModal"
-                                                                }
-                                                            ]
+                                                                ]
+                                                            }
                                                         }
-                                                    }
-                                                ],
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "$t:sirsoft-page.admin.page.detail.versions.view"
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                ]
+                                                    ],
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-page.admin.page.detail.versions.view"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
                             }
-                        }
                         ]
                     }
                 ]

@@ -1,6 +1,11 @@
 # 템플릿 캐싱 전략
 
-> **관련 문서**: [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [index.md](./index.md)
+> **관련 문서**: [cache-driver.md](./cache-driver.md) (공통 캐시 인터페이스 · 권장) | [template-basics.md](./template-basics.md) | [template-security.md](./template-security.md) | [index.md](./index.md)
+
+> **⚠️ 중요**: 본 문서는 템플릿 캐싱의 **개념적 계층**을 설명합니다.
+> 실제 구현은 [`CacheInterface`](./cache-driver.md) 를 사용해야 하며, `Cache::` 파사드 직접 호출은 금지되었습니다.
+> 모든 캐시 키는 드라이버 접두사(`g7:core:` / `g7:module.{id}:` / `g7:plugin.{id}:`)가 자동 적용됩니다.
+> TTL 은 `g7_core_settings('cache.*_ttl')` 중앙 관리를 따릅니다.
 
 ---
 
@@ -123,36 +128,44 @@ Cache::rememberForever("template.components.sirsoft-admin_basic", function () us
 
 #### ClearsTemplateCaches Trait
 
-모듈/플러그인/템플릿 매니저에서 사용하는 공통 trait입니다.
+모듈/플러그인/템플릿 매니저에서 사용하는 공통 trait입니다. 내부적으로 `CacheInterface` 를 lazy resolve 해서 사용합니다.
 
 ```php
 <?php
 
 namespace App\Extension\Traits;
 
-use Illuminate\Support\Facades\Cache;
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 
 trait ClearsTemplateCaches
 {
+    // 드라이버 접두사 `g7:core:` 가 자동 적용되어 실제 저장 키는 `g7:core:ext.cache_version`
+    private static string $extensionCacheVersionKey = 'ext.cache_version';
+
     /**
      * 확장 기능 캐시 버전을 증가시킵니다.
-     *
-     * 모듈/플러그인 활성화/비활성화 시 호출되어
-     * 프론트엔드가 새로운 캐시 버전으로 API를 요청하도록 합니다.
      */
     protected function incrementExtensionCacheVersion(): void
     {
-        Cache::put('extension_cache_version', time());
+        self::resolveExtensionCache()->put(self::$extensionCacheVersionKey, time());
     }
 
     /**
      * 현재 확장 기능 캐시 버전을 반환합니다.
-     *
-     * @return int 캐시 버전 (타임스탬프) 또는 0 (미설정 시)
      */
     public static function getExtensionCacheVersion(): int
     {
-        return (int) Cache::get('extension_cache_version', 0);
+        return (int) self::resolveExtensionCache()->get(self::$extensionCacheVersionKey, 0);
+    }
+
+    private static function resolveExtensionCache(): CacheInterface
+    {
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
+        }
     }
 
     /**
@@ -294,7 +307,7 @@ Route::get('/extension/cache-version', function () {
 
 | 저장소 | 키 | 값 | 용도 |
 |--------|-----|-----|------|
-| Laravel Cache | `extension_cache_version` | 타임스탬프 | 서버 측 버전 관리 |
+| Laravel Cache | `g7:core:ext.cache_version` | 타임스탬프 | 서버 측 버전 관리 (CacheInterface 경유) |
 | localStorage | `g7_extension_cache_version` | 타임스탬프 | 클라이언트 측 버전 유지 |
 
 ---

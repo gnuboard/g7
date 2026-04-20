@@ -453,6 +453,37 @@ describe('DataBindingEngine', () => {
       const result = engine.evaluateExpression('flag ? $t:sirsoft-board.admin.key1 : $t:sirsoft-board.admin.key2', context);
       expect(result).toBe('$t:sirsoft-board.admin.key2');
     });
+
+    // @since engine-v1.38.2
+    // 회귀 방지: action context 가 $templateId 를 누락한 경우에도
+    // window.__templateApp.getConfig() 로부터 회수하여 $t() 가 정상 동작해야 한다.
+    // (admin_module_list 토스트가 raw key 를 노출하던 버그)
+    it('$templateId 누락 시 window.__templateApp.getConfig() 로부터 fallback', async () => {
+      const { TranslationEngine } = await import('../TranslationEngine');
+      const te = TranslationEngine.getInstance();
+      // 테스트 격리: 직접 translations 맵에 데이터 주입
+      (te as any).translations.set('sirsoft-admin_basic:ko', {
+        admin: { modules: { activate_success: '모듈 활성화 성공' } },
+      });
+
+      const originalTemplateApp = (globalThis as any).__templateApp;
+      (globalThis as any).__templateApp = {
+        getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'ko' }),
+      };
+
+      try {
+        // action context 에는 $templateId 가 없음 (실제 dispatchAction 컨텍스트 시뮬레이션)
+        const context = { $event: { target: { checked: true } } };
+        const result = engine.evaluateExpression(
+          "$event.target.checked ? '$t:admin.modules.activate_success' : '$t:admin.modules.deactivate_success'",
+          context
+        );
+        expect(result).toBe('모듈 활성화 성공');
+      } finally {
+        (globalThis as any).__templateApp = originalTemplateApp;
+        (te as any).translations.delete('sirsoft-admin_basic:ko');
+      }
+    });
   });
 
   describe('$localized 헬퍼 함수', () => {

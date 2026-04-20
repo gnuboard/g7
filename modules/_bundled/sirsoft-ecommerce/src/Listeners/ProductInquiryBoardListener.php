@@ -80,8 +80,12 @@ class ProductInquiryBoardListener implements HookListenerInterface
      * @param  array  $options  삭제 옵션
      * @return void
      */
-    public function handlePostDeleted(object $post, string $slug, array $options = []): void
+    public function handlePostDeleted(?object $post, string $slug, array $options = []): void
     {
+        if ($post === null) {
+            return; // 큐 워커 시점에 모델이 이미 사라진 경우 스킵
+        }
+
         try {
             $this->repository->deleteByInquirableIds(
                 get_class($post),

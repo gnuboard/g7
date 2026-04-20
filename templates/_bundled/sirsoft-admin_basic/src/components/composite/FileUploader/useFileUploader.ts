@@ -147,6 +147,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const galleryKeyRef = useRef(0);
   // 인증된 이미지 URL 캐시 (기존 첨부파일용)
   const [authenticatedImageUrls, setAuthenticatedImageUrls] = useState<Map<number, string>>(new Map());
+  // ref로 URL 캐시 추적 (stale closure 방지 — cleanup/has 체크에서 항상 최신 참조)
+  const authenticatedImageUrlsRef = useRef<Map<number, string>>(new Map());
 
   // onFilesChange를 ref로 관리하여 useEffect 의존성에서 제거
   // (Form 자동 바인딩이 매 렌더링마다 새 함수 참조를 생성하므로
@@ -651,34 +653,55 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
   // 기존 첨부파일 인증된 이미지 URL 로드 (갤러리용)
   useEffect(() => {
+    let cancelled = false;
+
     const loadAuthenticatedUrls = async () => {
-      const existingImageFiles = existingFiles.filter((f) => f.mime_type?.startsWith('image/') ?? false);
+      // is_image 필드 사용 (imageFiles 필터와 일치)
+      const existingImageFiles = existingFiles.filter((f) => f.is_image);
+
+      // existingFiles에서 제거된 파일의 URL 정리
+      const currentIds = new Set(existingImageFiles.map((f) => f.id));
+      for (const [id, url] of authenticatedImageUrlsRef.current) {
+        if (!currentIds.has(id)) {
+          URL.revokeObjectURL(url);
+          authenticatedImageUrlsRef.current.delete(id);
+        }
+      }
 
       for (const file of existingImageFiles) {
-        if (!authenticatedImageUrls.has(file.id)) {
-          try {
-            const blob = await G7Core.api.get(file.download_url, {
-              responseType: 'blob',
-            });
-            if (blob) {
-              const objectUrl = URL.createObjectURL(blob);
-              setAuthenticatedImageUrls((prev) => new Map(prev).set(file.id, objectUrl));
-            }
-          } catch (error) {
-            logger.error('Failed to load authenticated image:', error);
+        if (cancelled) break;
+        // ref 기반 has 체크 (stale closure 방지)
+        if (authenticatedImageUrlsRef.current.has(file.id)) continue;
+
+        try {
+          const blob = await G7Core.api.get(file.download_url, {
+            responseType: 'blob',
+          });
+          if (!cancelled && blob) {
+            const objectUrl = URL.createObjectURL(blob);
+            authenticatedImageUrlsRef.current.set(file.id, objectUrl);
+            setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
           }
+        } catch (error) {
+          logger.error('Failed to load authenticated image:', error);
         }
       }
     };
 
     loadAuthenticatedUrls();
 
-    // 클린업: 컴포넌트 언마운트 시 URL 해제
     return () => {
-      authenticatedImageUrls.forEach((url) => URL.revokeObjectURL(url));
+      cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingFiles]);
+
+  // 언마운트 시에만 모든 인증된 이미지 URL 해제
+  useEffect(() => {
+    return () => {
+      authenticatedImageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      authenticatedImageUrlsRef.current.clear();
+    };
+  }, []);
 
   // 파일 다운로드 실행
   const handleDownload = useCallback(async (item: Attachment) => {

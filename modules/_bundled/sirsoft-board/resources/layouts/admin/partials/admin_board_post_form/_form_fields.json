@@ -371,42 +371,55 @@
         },
         {
           "id": "content_section",
-          "type": "composite",
-          "name": "HtmlEditor",
+          "type": "extension_point",
+          "name": "html_editor",
           "props": {
-            "content": "{{_local.form?.content ?? ''}}",
-            "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
-            "disabled": "{{_computed.isReadOnly}}",
-            "rows": 15,
+            "name": "content",
             "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
             "label": "$t:sirsoft-board.admin.posts.form.content",
-            "showHtmlModeToggle": true,
-            "name": "content"
+            "rows": 15,
+            "showHtmlModeToggle": true
           },
-          "actions": [
+          "default": [
             {
-              "event": "onChange",
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "form": {
-                  "content": "{{$args[0].target.value}}"
+              "type": "composite",
+              "name": "HtmlEditor",
+              "props": {
+                "name": "content",
+                "content": "{{_local.form?.content ?? ''}}",
+                "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
+                "disabled": "{{_computed.isReadOnly}}",
+                "rows": 15,
+                "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
+                "label": "$t:sirsoft-board.admin.posts.form.content",
+                "showHtmlModeToggle": true
+              },
+              "actions": [
+                {
+                  "event": "onChange",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "content": "{{$args[0].target.value}}"
+                    },
+                    "hasChanges": true
+                  }
                 },
-                "hasChanges": true
-              }
-            },
-            {
-              "event": "onIsHtmlChange",
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "form": {
-                  "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
-                },
-                "hasChanges": true
-              }
+                {
+                  "event": "onIsHtmlChange",
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "local",
+                    "form": {
+                      "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+                    },
+                    "hasChanges": true
+                  }
+                }
+              ]
             }
           ]
         }

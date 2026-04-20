@@ -60,24 +60,28 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.storage_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "local" },
-                      "text": "$t:admin.settings.drivers.storage.options.local"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.storage_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}",
+                        "options": "{{(_local.form?.available_drivers?.storage ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "s3" },
-                      "text": "$t:admin.settings.drivers.storage.options.s3"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.storage_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.storage_driver']?.[0] ?? ''}}"
                     }
                   ]
                 }
@@ -115,8 +119,17 @@
                         "name": "drivers.s3_bucket",
                         "placeholder": "my-bucket",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                        "className": "{{_local.errors?.['drivers.s3_bucket'] ? 'w-full md:w-64 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                       }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.s3_bucket']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.s3_bucket']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -137,42 +150,34 @@
                     },
                     {
                       "type": "basic",
-                      "name": "Select",
-                      "props": {
-                        "name": "drivers.s3_region",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                      },
+                      "name": "Div",
+                      "props": { "className": "w-full md:w-64" },
                       "children": [
                         {
-                          "type": "basic",
-                          "name": "Option",
-                          "props": { "value": "ap-northeast-2" },
-                          "text": "$t:admin.settings.drivers.storage.regions.ap_northeast_2"
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "drivers.s3_region",
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "w-full",
+                            "error": "{{_local.errors?.['drivers.s3_region']?.[0] ?? ''}}",
+                            "options": [
+                              { "value": "ap-northeast-2", "label": "$t:admin.settings.drivers.storage.regions.ap_northeast_2" },
+                              { "value": "ap-northeast-1", "label": "$t:admin.settings.drivers.storage.regions.ap_northeast_1" },
+                              { "value": "us-east-1", "label": "$t:admin.settings.drivers.storage.regions.us_east_1" },
+                              { "value": "us-west-2", "label": "$t:admin.settings.drivers.storage.regions.us_west_2" },
+                              { "value": "eu-west-1", "label": "$t:admin.settings.drivers.storage.regions.eu_west_1" }
+                            ]
+                          }
                         },
                         {
                           "type": "basic",
-                          "name": "Option",
-                          "props": { "value": "ap-northeast-1" },
-                          "text": "$t:admin.settings.drivers.storage.regions.ap_northeast_1"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Option",
-                          "props": { "value": "us-east-1" },
-                          "text": "$t:admin.settings.drivers.storage.regions.us_east_1"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Option",
-                          "props": { "value": "us-west-2" },
-                          "text": "$t:admin.settings.drivers.storage.regions.us_west_2"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Option",
-                          "props": { "value": "eu-west-1" },
-                          "text": "$t:admin.settings.drivers.storage.regions.eu_west_1"
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.s3_region']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.s3_region']?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -201,8 +206,17 @@
                         "name": "drivers.s3_access_key",
                         "placeholder": "AKIAIOSFODNN7EXAMPLE",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
+                        "className": "{{_local.errors?.['drivers.s3_access_key'] ? 'w-full md:w-80 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono' : 'w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono'}}"
                       }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.s3_access_key']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.s3_access_key']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -229,8 +243,17 @@
                         "name": "drivers.s3_secret_key",
                         "placeholder": "********",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
+                        "className": "{{_local.errors?.['drivers.s3_secret_key'] ? 'w-full md:w-80 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono' : 'w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono'}}"
                       }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.s3_secret_key']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.s3_secret_key']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -257,8 +280,17 @@
                         "name": "drivers.s3_url",
                         "placeholder": "https://my-bucket.s3.ap-northeast-2.amazonaws.com",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                        "className": "{{_local.errors?.['drivers.s3_url'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                       }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.s3_url']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.s3_url']?.[0] ?? ''}}"
                     },
                     {
                       "type": "basic",
@@ -430,24 +462,28 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.cache_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "file" },
-                      "text": "$t:admin.settings.drivers.cache.options.file"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.cache_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}",
+                        "options": "{{(_local.form?.available_drivers?.cache ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "redis" },
-                      "text": "$t:admin.settings.drivers.cache.options.redis"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.cache_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.cache_driver']?.[0] ?? ''}}"
                     }
                   ]
                 }
@@ -492,8 +528,17 @@
                             "name": "drivers.redis_host",
                             "placeholder": "127.0.0.1",
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.redis_host'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.redis_host']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.redis_host']?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -522,8 +567,17 @@
                             "min": 1,
                             "max": 65535,
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.redis_port'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.redis_port']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.redis_port']?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -559,8 +613,17 @@
                             "name": "drivers.redis_password",
                             "placeholder": "$t:admin.settings.drivers.common.optional",
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.redis_password'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.redis_password']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.redis_password']?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -589,8 +652,17 @@
                             "min": 0,
                             "max": 15,
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.redis_database'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.redis_database']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.redis_database']?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -742,8 +814,17 @@
                             "name": "drivers.memcached_host",
                             "placeholder": "127.0.0.1",
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.memcached_host'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.memcached_host']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.memcached_host']?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -772,8 +853,17 @@
                             "min": 1,
                             "max": 65535,
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.memcached_port'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.memcached_port']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.memcached_port']?.[0] ?? ''}}"
                         }
                       ]
                     }
@@ -937,18 +1027,30 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.search_engine_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.search_engine_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}",
+                        "options": [
+                          { "value": "mysql-fulltext", "label": "$t:admin.settings.drivers.search_engine.options.mysql_fulltext" }
+                        ]
+                      }
+                    },
+                    {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "mysql-fulltext" },
-                      "text": "$t:admin.settings.drivers.search_engine.options.mysql_fulltext"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.search_engine_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.search_engine_driver']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -1040,30 +1142,28 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.session_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "file" },
-                      "text": "$t:admin.settings.drivers.session.options.file"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.session_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}",
+                        "options": "{{(_local.form?.available_drivers?.session ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "database" },
-                      "text": "$t:admin.settings.drivers.session.options.database"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "redis" },
-                      "text": "$t:admin.settings.drivers.session.options.redis"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.session_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.session_driver']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -1125,7 +1225,7 @@
                         "min": 1,
                         "max": 43200,
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                        "className": "{{_local.errors?.['drivers.session_lifetime'] ? 'w-32 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                       }
                     },
                     {
@@ -1137,6 +1237,15 @@
                       "text": "$t:admin.settings.drivers.session.minutes"
                     }
                   ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['drivers.session_lifetime']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['drivers.session_lifetime']?.[0] ?? ''}}"
                 }
               ]
             }
@@ -1193,30 +1302,28 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.queue_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "sync" },
-                      "text": "$t:admin.settings.drivers.queue.options.sync"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.queue_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}",
+                        "options": "{{(_local.form?.available_drivers?.queue ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "database" },
-                      "text": "$t:admin.settings.drivers.queue.options.database"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "redis" },
-                      "text": "$t:admin.settings.drivers.queue.options.redis"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.queue_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.queue_driver']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -1347,24 +1454,28 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.log_driver",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "single" },
-                      "text": "$t:admin.settings.drivers.log.options.single"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.log_driver",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}",
+                        "options": "{{(_local.form?.available_drivers?.log ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}"
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "daily" },
-                      "text": "$t:admin.settings.drivers.log.options.daily"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.log_driver']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.log_driver']?.[0] ?? ''}}"
                     }
                   ]
                 }
@@ -1388,60 +1499,37 @@
                 },
                 {
                   "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "name": "drivers.log_level",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                  },
+                  "name": "Div",
+                  "props": { "className": "w-full md:w-64" },
                   "children": [
                     {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "debug" },
-                      "text": "$t:admin.settings.drivers.log.levels.debug"
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "drivers.log_level",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full",
+                        "error": "{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}",
+                        "options": [
+                          { "value": "debug", "label": "$t:admin.settings.drivers.log.levels.debug" },
+                          { "value": "info", "label": "$t:admin.settings.drivers.log.levels.info" },
+                          { "value": "notice", "label": "$t:admin.settings.drivers.log.levels.notice" },
+                          { "value": "warning", "label": "$t:admin.settings.drivers.log.levels.warning" },
+                          { "value": "error", "label": "$t:admin.settings.drivers.log.levels.error" },
+                          { "value": "critical", "label": "$t:admin.settings.drivers.log.levels.critical" },
+                          { "value": "alert", "label": "$t:admin.settings.drivers.log.levels.alert" },
+                          { "value": "emergency", "label": "$t:admin.settings.drivers.log.levels.emergency" }
+                        ]
+                      }
                     },
                     {
                       "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "info" },
-                      "text": "$t:admin.settings.drivers.log.levels.info"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "notice" },
-                      "text": "$t:admin.settings.drivers.log.levels.notice"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "warning" },
-                      "text": "$t:admin.settings.drivers.log.levels.warning"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "error" },
-                      "text": "$t:admin.settings.drivers.log.levels.error"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "critical" },
-                      "text": "$t:admin.settings.drivers.log.levels.critical"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "alert" },
-                      "text": "$t:admin.settings.drivers.log.levels.alert"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Option",
-                      "props": { "value": "emergency" },
-                      "text": "$t:admin.settings.drivers.log.levels.emergency"
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.log_level']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.log_level']?.[0] ?? ''}}"
                     }
                   ]
                 },
@@ -1496,7 +1584,7 @@
                             "min": 1,
                             "max": 365,
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.log_days'] ? 'w-32 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
                         },
                         {
@@ -1508,6 +1596,15 @@
                           "text": "$t:admin.settings.drivers.log.days"
                         }
                       ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{_local.errors?.['drivers.log_days']}}",
+                      "props": {
+                        "className": "text-red-500 text-xs mt-1 block"
+                      },
+                      "text": "{{_local.errors?.['drivers.log_days']?.[0] ?? ''}}"
                     },
                     {
                       "type": "basic",
@@ -1641,27 +1738,158 @@
                   "type": "basic",
                   "name": "Div",
                   "props": {
-                    "className": "py-3"
+                    "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
                   },
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Label",
+                      "name": "Div",
                       "props": {
-                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        "className": "py-3"
                       },
-                      "text": "$t:admin.settings.drivers.websocket.app_key"
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:admin.settings.drivers.websocket.app_id"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-red-500 ml-1" },
+                              "text": "*"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "drivers.websocket_app_id",
+                            "placeholder": "my-app-id",
+                            "required": true,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "{{_local.errors?.['drivers.websocket_app_id'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_app_id']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_app_id']?.[0] ?? ''}}"
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
-                      "name": "Input",
+                      "name": "Div",
                       "props": {
-                        "type": "text",
-                        "name": "drivers.websocket_app_key",
-                        "placeholder": "my-app-key",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "className": "w-full md:w-80 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono"
-                      }
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:admin.settings.drivers.websocket.app_key"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-red-500 ml-1" },
+                              "text": "*"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "text",
+                            "name": "drivers.websocket_app_key",
+                            "placeholder": "my-app-key",
+                            "required": true,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "{{_local.errors?.['drivers.websocket_app_key'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_app_key']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_app_key']?.[0] ?? ''}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "py-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "text": "$t:admin.settings.drivers.websocket.app_secret"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-red-500 ml-1" },
+                              "text": "*"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "password",
+                            "name": "drivers.websocket_app_secret",
+                            "placeholder": "my-app-secret",
+                            "required": true,
+                            "disabled": "{{_computed.isReadOnly}}",
+                            "className": "{{_local.errors?.['drivers.websocket_app_secret'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed font-mono'}}"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_app_secret']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_app_secret']?.[0] ?? ''}}"
+                        }
+                      ]
                     }
                   ]
                 },
@@ -1695,8 +1923,17 @@
                             "name": "drivers.websocket_host",
                             "placeholder": "localhost",
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.websocket_host'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_host']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_host']?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -1725,8 +1962,17 @@
                             "min": 1,
                             "max": 65535,
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "{{_local.errors?.['drivers.websocket_port'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
                           }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_port']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_port']?.[0] ?? ''}}"
                         }
                       ]
                     },
@@ -1746,25 +1992,220 @@
                           "text": "$t:admin.settings.drivers.websocket.scheme"
                         },
                         {
-                          "type": "basic",
+                          "type": "composite",
                           "name": "Select",
                           "props": {
                             "name": "drivers.websocket_scheme",
                             "disabled": "{{_computed.isReadOnly}}",
-                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                            "className": "w-full",
+                            "error": "{{_local.errors?.['drivers.websocket_scheme']?.[0] ?? ''}}",
+                            "options": [
+                              { "value": "https", "label": "HTTPS" },
+                              { "value": "http", "label": "HTTP" }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "if": "{{_local.errors?.['drivers.websocket_scheme']}}",
+                          "props": {
+                            "className": "text-red-500 text-xs mt-1 block"
+                          },
+                          "text": "{{_local.errors?.['drivers.websocket_scheme']?.[0] ?? ''}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "websocket_verify_ssl_field",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-3 mt-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "id": "input_websocket_verify_ssl",
+                        "type": "checkbox",
+                        "name": "drivers.websocket_verify_ssl",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "htmlFor": "input_websocket_verify_ssl",
+                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                          },
+                          "text": "$t:admin.settings.drivers.websocket.verify_ssl"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.settings.drivers.websocket.verify_ssl_desc"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "websocket_server_endpoint_section",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "H4",
+                      "props": {
+                        "className": "text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.drivers.websocket.server_endpoint_title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                      },
+                      "text": "$t:admin.settings.drivers.websocket.server_endpoint_desc"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "py-3"
                           },
                           "children": [
                             {
                               "type": "basic",
-                              "name": "Option",
-                              "props": { "value": "https" },
-                              "text": "HTTPS"
+                              "name": "Label",
+                              "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                              },
+                              "text": "$t:admin.settings.drivers.websocket.server_host"
                             },
                             {
                               "type": "basic",
-                              "name": "Option",
-                              "props": { "value": "http" },
-                              "text": "HTTP"
+                              "name": "Input",
+                              "props": {
+                                "type": "text",
+                                "name": "drivers.websocket_server_host",
+                                "placeholder": "127.0.0.1",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "{{_local.errors?.['drivers.websocket_server_host'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['drivers.websocket_server_host']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['drivers.websocket_server_host']?.[0] ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "py-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                              },
+                              "text": "$t:admin.settings.drivers.websocket.server_port"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "number",
+                                "name": "drivers.websocket_server_port",
+                                "placeholder": "8080",
+                                "min": 1,
+                                "max": 65535,
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "{{_local.errors?.['drivers.websocket_server_port'] ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed'}}"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['drivers.websocket_server_port']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['drivers.websocket_server_port']?.[0] ?? ''}}"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "py-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                              },
+                              "text": "$t:admin.settings.drivers.websocket.server_scheme"
+                            },
+                            {
+                              "type": "composite",
+                              "name": "Select",
+                              "props": {
+                                "name": "drivers.websocket_server_scheme",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "w-full",
+                                "error": "{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}",
+                                "options": [
+                                  { "value": "http", "label": "HTTP" },
+                                  { "value": "https", "label": "HTTPS" }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "if": "{{_local.errors?.['drivers.websocket_server_scheme']}}",
+                              "props": {
+                                "className": "text-red-500 text-xs mt-1 block"
+                              },
+                              "text": "{{_local.errors?.['drivers.websocket_server_scheme']?.[0] ?? ''}}"
                             }
                           ]
                         }

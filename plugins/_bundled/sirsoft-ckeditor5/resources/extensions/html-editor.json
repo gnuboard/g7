@@ -1,0 +1,48 @@
+{
+  "extension_point": "html_editor",
+  "mode": "replace",
+  "scripts": [
+    {
+      "src": "https://cdn.ckeditor.com/ckeditor5/43.3.1/ckeditor5.umd.js",
+      "id": "ckeditor5_script"
+    }
+  ],
+  "components": [
+    {
+      "id": "ckeditor5_container",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "id": "ckeditor5-{{extensionPointProps.name ?? 'content'}}",
+        "className": "ckeditor5-wrapper"
+      },
+      "lifecycle": {
+        "onMount": [
+          {
+            "handler": "sirsoft-ckeditor5.initEditor",
+            "params": {
+              "name": "{{extensionPointProps.name ?? 'content'}}",
+              "content": "{{extensionPointProps.content ?? extensionPointProps.value ?? ''}}",
+              "multilingual": "{{extensionPointProps.multilingual ?? false}}",
+              "placeholder": "{{extensionPointProps.placeholder ?? ''}}",
+              "readOnly": "{{_computed.isReadOnly ?? extensionPointProps.disabled ?? extensionPointProps.readOnly ?? false}}",
+              "imageUpload": "{{_global.plugins['sirsoft-ckeditor5']?.imageUpload ?? false}}",
+              "uploadPermission": "{{extensionPointProps.uploadPermission ?? ''}}",
+              "height": "{{_global.plugins['sirsoft-ckeditor5']?.editorHeight ?? 400}}",
+              "toolbar": "{{_global.plugins['sirsoft-ckeditor5']?.toolbar ?? 'standard'}}"
+            }
+          }
+        ],
+        "onUnmount": [
+          {
+            "handler": "sirsoft-ckeditor5.destroyEditor",
+            "params": {
+              "name": "{{extensionPointProps.name ?? 'content'}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "priority": 100
+}

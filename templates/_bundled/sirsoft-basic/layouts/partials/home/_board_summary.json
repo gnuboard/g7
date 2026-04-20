@@ -21,7 +21,7 @@
           "text": "{{item.name}}",
           "actions": [{ "type": "click", "handler": "navigate", "params": { "path": "/board/{{item.slug}}" } }]
         },
-        { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{item.posts_count}}" }
+        { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded" }, "text": "{{item.posts_count | number}}" }
       ]
     },
     {

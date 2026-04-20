@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Helpers\PermissionHelper;
-use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Module\ActivateModuleRequest;
 use App\Http\Requests\Module\DeactivateModuleRequest;
@@ -11,6 +9,7 @@ use App\Http\Requests\Module\IndexModuleRequest;
 use App\Http\Requests\Module\InstallModuleFromFileRequest;
 use App\Http\Requests\Module\InstallModuleFromGithubRequest;
 use App\Http\Requests\Module\InstallModuleRequest;
+use App\Http\Requests\Module\PerformModuleUpdateRequest;
 use App\Http\Requests\Module\RefreshModuleLayoutsRequest;
 use App\Http\Requests\Module\UninstallModuleRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
@@ -62,14 +61,8 @@ class ModuleController extends AdminBaseController
                 $collection = new ModuleCollection(collect($responseData['data']));
                 $responseData['data'] = $collection->toArray($request)['data'];
                 $responseData['meta'] = $collection->with($request)['meta'];
+                $responseData['abilities'] = $collection->resolveCollectionAbilities($request);
             }
-
-            // 컬렉션 레벨 abilities (페이지 레벨 버튼 제어용)
-            $responseData['abilities'] = [
-                'can_install' => PermissionHelper::check('core.modules.install', $request->user()),
-                'can_activate' => PermissionHelper::check('core.modules.activate', $request->user()),
-                'can_uninstall' => PermissionHelper::check('core.modules.uninstall', $request->user()),
-            ];
 
             return $this->success('module.fetch_success', $responseData);
         } catch (\Exception $e) {
@@ -154,8 +147,12 @@ class ModuleController extends AdminBaseController
     public function install(InstallModuleRequest $request): JsonResponse
     {
         try {
-            $moduleName = $request->validated()['module_name'];
-            $module = $this->moduleService->installModule($moduleName);
+            $validated = $request->validated();
+            $moduleName = $validated['module_name'];
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+                $validated['vendor_mode'] ?? null
+            );
+            $module = $this->moduleService->installModule($moduleName, $vendorMode);
 
             if ($module) {
                 return $this->successWithResource(
@@ -172,7 +169,7 @@ class ModuleController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('module.install_failed');
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('modules.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -412,15 +409,47 @@ class ModuleController extends AdminBaseController
     }
 
     /**
+     * 특정 모듈의 수정된 레이아웃을 확인합니다.
+     *
+     * 업데이트 전 사용자가 수정한 레이아웃이 있는지 확인하여
+     * 레이아웃 전략(overwrite/keep) 선택에 참고할 수 있도록 합니다.
+     *
+     * @param  string  $moduleName  모듈 식별자
+     * @return JsonResponse 수정된 레이아웃 정보를 포함한 JSON 응답
+     */
+    public function checkModifiedLayouts(string $moduleName): JsonResponse
+    {
+        try {
+            $result = $this->moduleService->checkModifiedLayouts($moduleName);
+
+            return $this->success('modules.check_modified_layouts_success', $result);
+        } catch (ValidationException $e) {
+            return $this->error('modules.check_modified_layouts_failed', 422, $e->errors());
+        } catch (\Exception $e) {
+            return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
      * 특정 모듈을 업데이트합니다.
      *
+     * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
+     * - overwrite: 모든 레이아웃을 새 버전으로 교체
+     * - keep: 사용자가 수정한 레이아웃을 유지
+     *
+     * @param  PerformModuleUpdateRequest  $request  업데이트 요청 데이터
      * @param  string  $moduleName  업데이트할 모듈 identifier
      * @return JsonResponse 업데이트 결과 JSON 응답
      */
-    public function performUpdate(string $moduleName): JsonResponse
+    public function performUpdate(PerformModuleUpdateRequest $request, string $moduleName): JsonResponse
     {
         try {
-            $result = $this->moduleService->updateModule($moduleName);
+            $validated = $request->validated();
+            $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
+                $validated['vendor_mode'] ?? null
+            );
+            $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
+            $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy);
 
             $moduleInfo = $result['module_info'] ?? null;
 
@@ -438,7 +467,7 @@ class ModuleController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('modules.errors.update_failed', ['module' => $moduleName, 'error' => '']);
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('modules.errors.update_failed', 500, $e->getMessage(), [
                 'module' => $moduleName,

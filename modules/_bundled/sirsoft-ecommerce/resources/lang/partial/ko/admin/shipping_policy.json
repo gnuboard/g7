@@ -201,6 +201,8 @@
     "country_active": "국가 활성",
     "extra_fee_kr_only": "도서산간 추가배송비 (한국 전용)",
     "shipping_method": "배송방법",
+    "custom_shipping_name": "배송방법명 (직접입력)",
+    "custom_shipping_name_placeholder": "배송방법명을 입력하세요",
     "carrier": "운송사",
     "carrier_placeholder": "운송사를 선택하세요",
     "currency_code": "기준 통화",

@@ -14,14 +14,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceMailTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\CouponIssueRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CouponRepository;
-use Modules\Sirsoft\Ecommerce\Repositories\EcommerceMailTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ExtraFeeTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductInquiryRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductLogRepository;
@@ -39,6 +37,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SearchPresetRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
@@ -48,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderShippingRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingCarrierRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ShippingPolicyRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ShippingTypeRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\TempOrderRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\UserAddressRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ProductImageRepository;
@@ -104,7 +104,6 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CategoryImageRepositoryInterface::class => CategoryImageRepository::class,
         CouponIssueRepositoryInterface::class => CouponIssueRepository::class,
         CouponRepositoryInterface::class => CouponRepository::class,
-        EcommerceMailTemplateRepositoryInterface::class => EcommerceMailTemplateRepository::class,
         ExtraFeeTemplateRepositoryInterface::class => ExtraFeeTemplateRepository::class,
         OrderOptionRepositoryInterface::class => OrderOptionRepository::class,
         OrderRepositoryInterface::class => OrderRepository::class,
@@ -123,6 +122,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         SequenceRepositoryInterface::class => SequenceRepository::class,
         ShippingCarrierRepositoryInterface::class => ShippingCarrierRepository::class,
         ShippingPolicyRepositoryInterface::class => ShippingPolicyRepository::class,
+        ShippingTypeRepositoryInterface::class => ShippingTypeRepository::class,
         TempOrderRepositoryInterface::class => TempOrderRepository::class,
         ProductWishlistRepositoryInterface::class => ProductWishlistRepository::class,
         UserAddressRepositoryInterface::class => UserAddressRepository::class,

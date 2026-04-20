@@ -26,11 +26,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: [path.resolve(rootDir, 'resources/js/tests/setup.ts')],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', '__tests__/**/*.{test,spec}.{ts,tsx}'],
   },
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'resources/js'),
+      '@core': path.resolve(rootDir, 'resources/js/core'),
     },
   },
 });

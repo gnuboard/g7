@@ -111,8 +111,8 @@ class BoardStatsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/stats');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (CacheService PREFIX 'g7' + group 'sirsoft-board' + key 'stats')
-        $this->assertTrue(Cache::has('g7:sirsoft-board:stats'));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key 'stats')
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:stats'));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/stats');

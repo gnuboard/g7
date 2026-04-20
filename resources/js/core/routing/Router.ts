@@ -99,10 +99,18 @@ export class Router {
 
   /**
    * API에서 라우트 목록을 로드합니다.
+   *
+   * @param cacheVersion - 확장 캐시 버전. 전달 시 `?v=${version}` 쿼리로 부착되어
+   *   백엔드 응답 캐시(PublicTemplateController::getRoutes)의 버전 키를 일치시킵니다.
+   *   미전달 시 `v=0`으로 해석되어 구 버전과 TTL 공유 — 확장 라이프사이클 직후
+   *   재로드 시에는 반드시 최신 cache_version을 전달해야 합니다.
    */
-  async loadRoutes(): Promise<void> {
+  async loadRoutes(cacheVersion?: number): Promise<void> {
     try {
-      const response = await fetch(`/api/templates/${this.templateIdentifier}/routes.json`);
+      const versionQuery = cacheVersion !== undefined && cacheVersion > 0
+        ? `?v=${cacheVersion}`
+        : '';
+      const response = await fetch(`/api/templates/${this.templateIdentifier}/routes.json${versionQuery}`);
 
       if (!response.ok) {
         throw new Error(`Failed to load routes: ${response.statusText}`);
@@ -117,7 +125,7 @@ export class Router {
       // API 응답 형태: { success: true, data: { version: "1.0.0", routes: [...] } }
       if (result.data && Array.isArray(result.data.routes)) {
         this.routes = result.data.routes;
-        logger.log(`Loaded ${this.routes.length} routes`);
+        logger.log(`Loaded ${this.routes.length} routes${cacheVersion ? ` (v=${cacheVersion})` : ''}`);
       } else {
         throw new Error('Invalid routes data format');
       }

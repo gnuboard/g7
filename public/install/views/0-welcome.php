@@ -48,6 +48,8 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     // 에러 타입에 따른 제목 표시
                     if ($storageResult['error_type'] === 'not_exists') {
                         echo lang('storage_not_exists');
+                    } elseif ($storageResult['error_type'] === 'ownership_mismatch') {
+                        echo lang('storage_ownership_mismatch');
                     } elseif ($storageResult['error_type'] === 'not_writable') {
                         echo lang('storage_not_writable');
                     } else {
@@ -61,6 +63,12 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                 // 에러 타입에 따른 메시지 표시
                 if ($storageResult['error_type'] === 'not_exists') {
                     echo lang('storage_not_exists_message');
+                } elseif ($storageResult['error_type'] === 'ownership_mismatch') {
+                    echo lang('storage_ownership_mismatch_message', [
+                        'owner' => $storageResult['owner'] ?? '?',
+                        'web_user' => $storageResult['web_server_user'] ?? 'www-data',
+                        'permissions' => $storageResult['permissions'] ?? '?',
+                    ]);
                 } elseif ($storageResult['error_type'] === 'not_writable') {
                     echo lang('storage_not_writable_message');
                 } else {
@@ -70,11 +78,9 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
             </p>
             <div class="alert-details">
                 <?php
-                    $detectedUser = getWebServerUser();
-                    $webGroup = getWebServerGroup() ?? getWebServerUser() ?? 'www-data';
                     $storagePath = BASE_PATH . '/storage';
+                    $relativeStorage = './storage';
                 ?>
-                <?php $relativeStorage = './storage'; ?>
                 <?php if ($storageResult['error_type'] === 'not_exists'): ?>
                     <!-- 디렉토리 미존재: mkdir 명령어 안내 -->
                     <p class="fix-guide-label"><?= lang('directory_create_guide') ?></p>
@@ -95,7 +101,35 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <?php endif; ?>
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
-                <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'permission_too_low', 'permission_low_but_writable', 'subdirectory_issues'])): ?>
+                <?php elseif ($storageResult['error_type'] === 'ownership_mismatch'): ?>
+                    <?php
+                        $webUser = $storageResult['web_server_user'] ?? 'www-data';
+                        $owner = $storageResult['owner'] ?? 'unknown';
+                        // 그룹 쓰기 비트(020) 이미 설정되어 있으면 chmod 생략 (예: 775 → chgrp만)
+                        $storagePermsOctal = octdec($storageResult['permissions'] ?? '755');
+                        $storageGroupWritable = ($storagePermsOctal & 0020) !== 0;
+                        $groupCommand = $storageGroupWritable
+                            ? "sudo chgrp -R {$webUser} {$storagePath}"
+                            : "sudo chgrp -R {$webUser} {$storagePath} && sudo chmod -R 775 {$storagePath}";
+                    ?>
+                    <!-- 소유권 불일치: 3가지 해결 옵션 제시 (공유 그룹 권장 > 소유자 변경 > 777) -->
+                    <p class="fix-guide-label"><?= lang('ownership_mismatch_option_group') ?></p>
+                    <div class="code-box">
+                        <pre class="fix-command"><?= htmlspecialchars($groupCommand) ?></pre>
+                        <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                    </div>
+                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_chown') ?></p>
+                    <div class="code-box">
+                        <pre class="fix-command"><?= htmlspecialchars("sudo chown -R {$webUser}:{$webUser} {$storagePath}") ?></pre>
+                        <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                    </div>
+                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_777') ?></p>
+                    <div class="code-box">
+                        <pre class="fix-command"><?= htmlspecialchars("chmod -R 777 {$storagePath}") ?></pre>
+                        <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                    </div>
+                    <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
+                <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])): ?>
                     <?php if (isWindows()): ?>
                         <!-- Windows: icacls 명령어 안내 -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
@@ -110,36 +144,17 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         </div>
                         <p class="fix-guide-hint"><?= lang('permission_windows_hint') ?></p>
                     <?php else: ?>
-                        <!-- Linux/Mac: chmod (+ chown if owner ≠ web user) 명령어 안내 -->
-                        <?php $ownerIsWebUser = $detectedUser && ($storageResult['owner'] ?? null) === $detectedUser; ?>
-                        <?php if ($ownerIsWebUser): ?>
-                            <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
-                            <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars('chmod -R 2770 ' . $storagePath) ?></pre>
-                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
-                            </div>
-                            <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
-                            <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars('chmod -R 2770 ' . $relativeStorage) ?></pre>
-                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
-                            </div>
-                        <?php else: ?>
-                            <p class="fix-guide-label"><?= lang('ownership_fix_guide') ?></p>
-                            <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars('sudo chown -R ' . $webGroup . ':' . $webGroup . ' ' . $storagePath . ' && sudo chmod -R 2770 ' . $storagePath) ?></pre>
-                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
-                            </div>
-                            <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
-                            <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars('sudo chown -R ' . $webGroup . ':' . $webGroup . ' ' . $relativeStorage . ' && sudo chmod -R 2770 ' . $relativeStorage) ?></pre>
-                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
-                            </div>
-                            <?php if ($detectedUser): ?>
-                                <p class="fix-guide-hint"><?= lang('ownership_detected_hint', ['user' => htmlspecialchars($detectedUser)]) ?></p>
-                            <?php else: ?>
-                                <p class="fix-guide-hint"><?= lang('ownership_fix_hint') ?></p>
-                            <?php endif; ?>
-                        <?php endif; ?>
+                        <!-- Linux/Mac: chmod 755 단일 명령어 (chown 의존성 제거) -->
+                        <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
+                        <div class="code-box">
+                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 ' . $storagePath) ?></pre>
+                            <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                        </div>
+                        <p class="fix-guide-hint"><?= lang('or_relative_path') ?></p>
+                        <div class="code-box">
+                            <pre class="fix-command"><?= htmlspecialchars('chmod -R 755 ' . $relativeStorage) ?></pre>
+                            <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                        </div>
                     <?php endif; ?>
                 <?php endif; ?>
                 <div class="permission-details">
@@ -149,11 +164,6 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     <span class="permission-badge badge-current"><?= htmlspecialchars($storageResult['group'] ?? lang('unknown')) ?></span>
                     <span class="permission-label"><?= lang('current_permissions') ?>:</span>
                     <span class="permission-badge badge-current"><?= $storageResult['permissions'] ?></span>
-                    <?php if (in_array($storageResult['error_type'], ['permission_too_low', 'permission_low_but_writable'])): ?>
-                        <span class="permission-arrow">→</span>
-                        <span class="permission-label"><?= lang('required_permissions') ?>:</span>
-                        <span class="permission-badge badge-required"><?= $storageResult['required_permissions'] ?></span>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

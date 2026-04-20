@@ -377,7 +377,7 @@
       "name": "Div",
       "if": "{{(_local.form?.claim?.refund_reasons ?? []).length > 0}}",
       "props": {
-        "className": "overflow-x-auto"
+        "className": "overflow-x-clip"
       },
       "responsive": {
         "portable": {

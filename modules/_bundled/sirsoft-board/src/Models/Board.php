@@ -125,8 +125,6 @@ class Board extends Model
         // 알림 설정
         'notify_author',
         'notify_admin_on_post',
-        'notify_author_channels',
-        'notify_admin_on_post_channels',
 
         // 기타 설정
         'blocked_keywords',
@@ -156,8 +154,6 @@ class Board extends Model
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
             'notify_admin_on_post' => 'boolean',
-            'notify_author_channels' => 'array',
-            'notify_admin_on_post_channels' => 'array',
             'secret_mode' => SecretMode::class,
             'order_by' => BoardOrderBy::class,
             'order_direction' => OrderDirection::class,

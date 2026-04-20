@@ -3,9 +3,8 @@
 namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Enums\PermissionType;
-use App\Http\Resources\Traits\HasRowNumber;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -14,10 +13,9 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  * 게시글 목록을 페이지네이션과 함께 반환합니다.
  * 순번, 공지사항, 답글 표시를 지원합니다.
  */
-class PostCollection extends ResourceCollection
+class PostCollection extends BaseApiCollection
 {
     use ChecksBoardPermission;
-    use HasRowNumber;
 
     /**
      * 전체 일반 게시글(원글) 수
@@ -198,13 +196,14 @@ class PostCollection extends ResourceCollection
 
         return [
             'total' => $total,
-            'all_total' => $this->total(),
+            'all_total' => $total,
             'count' => $currentPageItemCount,
             'per_page' => $perPage,
             'current_page' => $currentPage,
             'last_page' => $lastPage,
             'from' => $from,
             'to' => $to,
+            'has_more_pages' => $this->hasMorePages(),
         ];
     }
 

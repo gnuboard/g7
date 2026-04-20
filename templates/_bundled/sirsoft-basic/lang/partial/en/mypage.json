@@ -324,8 +324,13 @@
     "unread_count": "{{count}} unread notifications",
     "mark_all_read": "Mark all as read",
     "delete_all": "Delete all",
+    "delete_all_title": "Delete all notifications",
     "delete_all_confirm": "Are you sure you want to delete all notifications?",
+    "delete_all_success": "All notifications have been deleted.",
+    "delete_all_failed": "Failed to delete notifications.",
     "all_deleted": "All notifications have been deleted.",
+    "unread_only": "Unread only",
+    "new_notification_received": "New notification received.",
     "empty": "No notifications.",
     "type": {
       "order": "Order",

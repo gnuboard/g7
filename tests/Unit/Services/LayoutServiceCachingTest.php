@@ -65,7 +65,7 @@ class LayoutServiceCachingTest extends TestCase
         );
 
         // Assert: 캐시에 저장되었는지 확인
-        $cacheKey = "template.{$this->template->id}.layout.dashboard";
+        $cacheKey = "g7:core:template.{$this->template->id}.layout.dashboard";
         $this->assertTrue(Cache::has($cacheKey));
 
         // Act: 두 번째 호출 (캐시 히트)
@@ -106,7 +106,7 @@ class LayoutServiceCachingTest extends TestCase
         // 캐시 생성
         $this->layoutService->loadAndMergeLayout($this->template->id, '_base');
 
-        $cacheKey = "template.{$this->template->id}.layout._base";
+        $cacheKey = "g7:core:template.{$this->template->id}.layout._base";
         $this->assertTrue(Cache::has($cacheKey));
 
         // Act: 캐시 무효화
@@ -173,9 +173,9 @@ class LayoutServiceCachingTest extends TestCase
         $this->layoutService->loadAndMergeLayout($this->template->id, 'dashboard');
         $this->layoutService->loadAndMergeLayout($this->template->id, 'dashboard_custom');
 
-        $baseCacheKey = "template.{$this->template->id}.layout._base";
-        $dashboardCacheKey = "template.{$this->template->id}.layout.dashboard";
-        $customCacheKey = "template.{$this->template->id}.layout.dashboard_custom";
+        $baseCacheKey = "g7:core:template.{$this->template->id}.layout._base";
+        $dashboardCacheKey = "g7:core:template.{$this->template->id}.layout.dashboard";
+        $customCacheKey = "g7:core:template.{$this->template->id}.layout.dashboard_custom";
 
         $this->assertTrue(Cache::has($baseCacheKey));
         $this->assertTrue(Cache::has($dashboardCacheKey));
@@ -241,7 +241,7 @@ class LayoutServiceCachingTest extends TestCase
         // Act: 첫 호출로 캐시 생성
         $result1 = $this->layoutService->loadAndMergeLayout($this->template->id, '_base');
 
-        $cacheKey = "template.{$this->template->id}.layout._base";
+        $cacheKey = "g7:core:template.{$this->template->id}.layout._base";
         $this->assertTrue(Cache::has($cacheKey));
 
         // 캐시 수동 삭제 (만료 시뮬레이션)
@@ -295,8 +295,8 @@ class LayoutServiceCachingTest extends TestCase
         $this->layoutService->loadAndMergeLayout($this->template->id, 'dashboard');
 
         // Assert: 부모와 자식 모두 캐싱됨
-        $baseCacheKey = "template.{$this->template->id}.layout._base";
-        $dashboardCacheKey = "template.{$this->template->id}.layout.dashboard";
+        $baseCacheKey = "g7:core:template.{$this->template->id}.layout._base";
+        $dashboardCacheKey = "g7:core:template.{$this->template->id}.layout.dashboard";
 
         $this->assertTrue(Cache::has($baseCacheKey));
         $this->assertTrue(Cache::has($dashboardCacheKey));

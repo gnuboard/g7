@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
 use App\Models\Attachment;
+use App\Search\Engines\DatabaseFulltextEngine;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -98,6 +99,41 @@ class SaveSettingsRequest extends FormRequest
                 ]),
             ]);
         }
+
+        // GeoIP 토글 필드: 신규 필드라 초기값이 settings에 없을 수 있음.
+        // Toggle 컴포넌트가 undefined → true 전환 시 비표준 타입을 보낼 수 있으므로
+        // boolean으로 명시 캐스팅하여 Laravel boolean 검증 호환 보장.
+        $this->castAdvancedBooleanFields([
+            'advanced.geoip_enabled',
+            'advanced.geoip_auto_update_enabled',
+        ]);
+    }
+
+    /**
+     * advanced 탭의 boolean 필드를 PHP boolean으로 캐스팅합니다.
+     *
+     * Toggle 컴포넌트가 초기값 미존재(undefined) 상태에서 전환 시
+     * 비표준 타입(문자열 "true", null 등)을 전송할 수 있으므로
+     * prepareForValidation 단계에서 명시 캐스팅합니다.
+     *
+     * @param  array<int, string>  $fields  dot-notation 필드 경로 배열
+     */
+    private function castAdvancedBooleanFields(array $fields): void
+    {
+        $advanced = $this->input('advanced', []);
+        $changed = false;
+
+        foreach ($fields as $dotPath) {
+            $key = str_replace('advanced.', '', $dotPath);
+            if (array_key_exists($key, $advanced)) {
+                $advanced[$key] = filter_var($advanced[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            $this->merge(['advanced' => $advanced]);
+        }
     }
 
     /**
@@ -114,7 +150,7 @@ class SaveSettingsRequest extends FormRequest
 
         $rules = [
             // 탭 식별자
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -124,13 +160,18 @@ class SaveSettingsRequest extends FormRequest
             'security' => ['sometimes', 'array'],
             'drivers' => ['sometimes', 'array'],
             'advanced' => ['sometimes', 'array'],
+            'notifications' => ['sometimes', 'array'],
+            'notifications.channels' => ['sometimes', 'array'],
+            'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
+            'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
+            'notifications.channels.*.sort_order' => ['nullable', 'integer', 'min:0'],
 
             // 일반 설정
             'general.site_name' => $this->getTabRules($tab, 'general', 'string|max:100'),
             'general.site_url' => $this->getTabRules($tab, 'general', 'url|max:255'),
             'general.site_description' => ['nullable', 'string', 'max:500'],
             'general.admin_email' => $this->getTabRules($tab, 'general', 'email|max:255'),
-            'general.timezone' => $this->getTabRules($tab, 'general', [Rule::in(config('app.supported_timezones', ['Asia/Seoul', 'UTC']))]),
+            'general.timezone' => $this->getTabRules($tab, 'general', ['timezone']),
             'general.language' => $this->getTabRules($tab, 'general', [Rule::in(self::SUPPORTED_LANGUAGES)]),
             'general.currency' => ['nullable', 'string', 'max:10'],
             'general.maintenance_mode' => ['nullable', 'boolean'],
@@ -201,6 +242,13 @@ class SaveSettingsRequest extends FormRequest
             'advanced.core_update_github_url' => ['nullable', 'url', 'max:500'],
             'advanced.core_update_github_token' => ['nullable', 'string', 'max:500'],
 
+            // GeoIP 설정 (advanced 탭)
+            // 마스터 토글 OFF 시 하위 필드(license_key, auto_update)는 collapse 되어 미전송됨
+            // → nullable 필수 (기존 cache/debug 필드와 달리 조건부 렌더링 내부에 있음)
+            'advanced.geoip_enabled' => ['nullable', 'boolean'],
+            'advanced.geoip_license_key' => ['nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_]+$/'],
+            'advanced.geoip_auto_update_enabled' => ['nullable', 'boolean'],
+
             // 드라이버 설정 (drivers 탭)
             'drivers.storage_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_STORAGE_DRIVERS)]),
             'drivers.s3_bucket' => ['nullable', 'string', 'max:255'],
@@ -219,10 +267,16 @@ class SaveSettingsRequest extends FormRequest
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:1', 'max:43200'], // 1분 ~ 30일
             'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_QUEUE_DRIVERS)]),
             'drivers.websocket_enabled' => ['nullable', 'boolean'],
-            'drivers.websocket_app_key' => ['nullable', 'string', 'max:255'],
+            'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
+            'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
+            'drivers.websocket_app_secret' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_host' => ['nullable', 'string', 'max:255'],
             'drivers.websocket_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'drivers.websocket_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
+            'drivers.websocket_verify_ssl' => ['nullable', 'boolean'],
+            'drivers.websocket_server_host' => ['nullable', 'string', 'max:255'],
+            'drivers.websocket_server_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
             'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_DRIVERS)]),
             'drivers.log_level' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_LEVELS)]),
@@ -366,7 +420,7 @@ class SaveSettingsRequest extends FormRequest
     {
         $drivers = HookManager::applyFilters(
             'core.search.engine_drivers',
-            ['mysql-fulltext' => \App\Search\Engines\DatabaseFulltextEngine::class]
+            ['mysql-fulltext' => DatabaseFulltextEngine::class]
         );
 
         return array_keys($drivers);
@@ -535,12 +589,23 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_driver.required' => __('validation.settings.queue_driver_required'),
             'drivers.queue_driver.in' => __('validation.settings.queue_driver_invalid'),
             'drivers.websocket_enabled.boolean' => __('validation.settings.websocket_enabled_boolean'),
+            'drivers.websocket_app_id.required' => __('validation.settings.websocket_app_id_required'),
+            'drivers.websocket_app_id.max' => __('validation.settings.websocket_app_id_max'),
+            'drivers.websocket_app_key.required' => __('validation.settings.websocket_app_key_required'),
             'drivers.websocket_app_key.max' => __('validation.settings.websocket_app_key_max'),
+            'drivers.websocket_app_secret.required' => __('validation.settings.websocket_app_secret_required'),
+            'drivers.websocket_app_secret.max' => __('validation.settings.websocket_app_secret_max'),
             'drivers.websocket_host.max' => __('validation.settings.websocket_host_max'),
             'drivers.websocket_port.integer' => __('validation.settings.websocket_port_integer'),
             'drivers.websocket_port.min' => __('validation.settings.websocket_port_min'),
             'drivers.websocket_port.max' => __('validation.settings.websocket_port_max'),
             'drivers.websocket_scheme.in' => __('validation.settings.websocket_scheme_invalid'),
+            'drivers.websocket_verify_ssl.boolean' => __('validation.settings.websocket_verify_ssl_boolean'),
+            'drivers.websocket_server_host.max' => __('validation.settings.websocket_server_host_max'),
+            'drivers.websocket_server_port.integer' => __('validation.settings.websocket_server_port_integer'),
+            'drivers.websocket_server_port.min' => __('validation.settings.websocket_server_port_min'),
+            'drivers.websocket_server_port.max' => __('validation.settings.websocket_server_port_max'),
+            'drivers.websocket_server_scheme.in' => __('validation.settings.websocket_server_scheme_invalid'),
             'drivers.search_engine_driver.in' => __('validation.settings.search_engine_driver_invalid'),
             'drivers.log_driver.required' => __('validation.settings.log_driver_required'),
             'drivers.log_driver.in' => __('validation.settings.log_driver_invalid'),

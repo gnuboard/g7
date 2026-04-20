@@ -119,10 +119,10 @@ const generateLargeJSON = (sizeInMB: number): string => {
 const generateFixtures = () => {
   const fixturesDir = path.join(__dirname, '../src/components/__tests__/__fixtures__');
 
-  // 디렉토리 확인
+  // 디렉토리 확인 및 자동 생성
   if (!fs.existsSync(fixturesDir)) {
-    console.error(`❌ 디렉토리가 존재하지 않습니다: ${fixturesDir}`);
-    process.exit(1);
+    fs.mkdirSync(fixturesDir, { recursive: true });
+    console.log(`📁 디렉토리 생성: ${fixturesDir}`);
   }
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

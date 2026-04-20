@@ -9,6 +9,27 @@
         "title": "$t:sirsoft-ecommerce.admin.order.title",
         "description": "$t:sirsoft-ecommerce.admin.order.description"
     },
+    "computed": {
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'ordered_at'}}",
+        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
+        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
+        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_amount ?? ''}}",
+        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_amount ?? ''}}",
+        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || query.category4 || query.category3 || query.category2 || query.category1 || ''}}",
+        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
+        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name[_global.locale || 'ko'] || c.name.ko || c.code }))}}",
+        "availablePaymentMethods": "{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name[_global.locale || 'ko'] || m._cached_name.ko || m.id }))}}",
+        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
+        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}",
+        "filterMinShippingFee": "{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}",
+        "filterMaxShippingFee": "{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}",
+        "shippingTypeOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name[_global.locale || 'ko'] || t.name.ko || t.code}))}}"
+    },
     "state": {
         "showDetailFilter": false,
         "isEditMode": false,
@@ -70,25 +91,10 @@
             "orderStatus"
         ]
     },
-    "computed": {
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'ordered_at'}}",
-        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
-        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
-        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_amount ?? ''}}",
-        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_amount ?? ''}}",
-        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || query.category4 || query.category3 || query.category2 || query.category1 || ''}}",
-        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
-        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name[_global.locale || 'ko'] || c.name.ko || c.code }))}}",
-        "availablePaymentMethods": "{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name[_global.locale || 'ko'] || m._cached_name.ko || m.id }))}}",
-        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
-        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}",
-        "filterMinShippingFee": "{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}",
-        "filterMaxShippingFee": "{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}"
+    "transition_overlay": {
+        "wait_for": [
+            "orders"
+        ]
     },
     "data_sources": [
         {
@@ -306,7 +312,8 @@
                     "min_shipping_amount": "{{_local.filter.minShippingFee || null}}",
                     "max_shipping_amount": "{{_local.filter.maxShippingFee || null}}",
                     "orderer_uuid": "{{_local.filter.ordererUuid || null}}"
-                }
+                },
+                "transition_overlay_target": "order_datagrid__body"
             }
         }
     },

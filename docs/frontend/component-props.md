@@ -57,6 +57,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   options?: SelectOption[] | string[];  // 옵션 배열
   label?: string;                        // 레이블 텍스트 (상위 컴포넌트에서 처리)
   error?: string;                        // 에러 메시지 (상위 컴포넌트에서 처리)
+  searchable?: boolean;                  // 드롭다운 내 검색 input 활성화 (engine-v1.40.0+)
+  searchPlaceholder?: string;            // 검색 input placeholder (searchable=true일 때)
 
   // HTML Select 표준 Props (모두 지원)
   value?: string | number;              // 선택된 값 (제어 컴포넌트)
@@ -83,6 +85,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 | `required` | `boolean` | ❌ | `false` | 필수 입력 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
 | `placeholder` | `string` | ❌ | - | 플레이스홀더 (옵션 배열 첫 항목) |
+| `searchable` | `boolean` | ❌ | `false` | 드롭다운 내 검색 input 활성화 (label/value 부분일치 필터링, engine-v1.40.0+) |
+| `searchPlaceholder` | `string` | ❌ | `'Search...'` | 검색 input placeholder (searchable=true일 때) |
 
 ### 렌더링 모드
 

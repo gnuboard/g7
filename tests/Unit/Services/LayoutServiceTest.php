@@ -1192,4 +1192,120 @@ class LayoutServiceTest extends TestCase
         // 첫 번째 DOT에서 매칭
         $this->assertTrue($method->invoke($this->layoutService, 'sirsoft-sample.admin.sub'));
     }
+
+    /**
+     * transition_overlay 병합 - 자식이 wait_for 만 명시해도 부모의 spinner 설정이 보존되어야 함
+     *
+     * 이슈 #245 — engine-v1.30.0
+     */
+    public function test_merge_transition_overlay_shallow_merge_preserves_parent_keys(): void
+    {
+        $parent = [
+            'transition_overlay' => [
+                'enabled' => true,
+                'style' => 'spinner',
+                'target' => 'main_content',
+                'spinner' => ['component' => 'PageLoading'],
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $child = [
+            'transition_overlay' => [
+                'wait_for' => ['settings'],
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertSame(true, $result['transition_overlay']['enabled']);
+        $this->assertSame('spinner', $result['transition_overlay']['style']);
+        $this->assertSame('main_content', $result['transition_overlay']['target']);
+        $this->assertSame(['component' => 'PageLoading'], $result['transition_overlay']['spinner']);
+        $this->assertSame(['settings'], $result['transition_overlay']['wait_for']);
+    }
+
+    /**
+     * transition_overlay 병합 - 자식이 동일 키를 명시하면 자식이 우선
+     */
+    public function test_merge_transition_overlay_child_overrides_parent_keys(): void
+    {
+        $parent = [
+            'transition_overlay' => [
+                'enabled' => true,
+                'style' => 'spinner',
+                'target' => 'main_content',
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $child = [
+            'transition_overlay' => [
+                'target' => 'tab_content',
+                'wait_for' => ['tab_data'],
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertSame('tab_content', $result['transition_overlay']['target']);
+        $this->assertSame('spinner', $result['transition_overlay']['style']);
+        $this->assertSame(['tab_data'], $result['transition_overlay']['wait_for']);
+    }
+
+    /**
+     * transition_overlay 병합 - 부모만 정의된 경우 자식 폴백
+     */
+    public function test_merge_transition_overlay_parent_only_fallback(): void
+    {
+        $parent = [
+            'transition_overlay' => [
+                'enabled' => true,
+                'style' => 'spinner',
+                'target' => 'main_content',
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $child = [
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertSame('main_content', $result['transition_overlay']['target']);
+    }
+
+    /**
+     * transition_overlay 병합 - boolean 케이스는 shallow merge 가 의미 없으므로 자식 우선
+     */
+    public function test_merge_transition_overlay_boolean_uses_child_priority(): void
+    {
+        $parent = [
+            'transition_overlay' => [
+                'enabled' => true,
+                'style' => 'spinner',
+            ],
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $child = [
+            'transition_overlay' => false,
+            'data_sources' => [],
+            'components' => [],
+        ];
+
+        $result = $this->layoutService->mergeLayouts($parent, $child);
+
+        $this->assertSame(false, $result['transition_overlay']);
+    }
 }

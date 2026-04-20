@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ClearTemplateCacheCommand extends Command
@@ -26,7 +26,8 @@ class ClearTemplateCacheCommand extends Command
      * 템플릿 관리자
      */
     public function __construct(
-        private TemplateManager $templateManager
+        private TemplateManager $templateManager,
+        private CacheInterface $cache
     ) {
         parent::__construct();
     }
@@ -82,25 +83,25 @@ class ClearTemplateCacheCommand extends Command
         if ($templateRecord) {
             $layouts = TemplateLayout::where('template_id', $templateRecord->id)->get();
             foreach ($layouts as $layout) {
-                Cache::forget("layout.{$identifier}.{$layout->name}");
+                $this->cache->forget("layout.{$identifier}.{$layout->name}");
                 $clearedCount++;
             }
         }
 
         // 2. Routes 캐시 삭제
-        Cache::forget("template.routes.{$identifier}");
+        $this->cache->forget("template.routes.{$identifier}");
         $clearedCount++;
 
         // 3. 다국어 파일 캐시 삭제
         $supportedLocales = config('app.supported_locales', ['ko', 'en']);
         foreach ($supportedLocales as $locale) {
-            Cache::forget("template.language.{$identifier}.{$locale}");
+            $this->cache->forget("template.language.{$identifier}.{$locale}");
             $clearedCount++;
         }
 
         // 4. 활성 템플릿 타입 캐시 삭제
         if ($templateRecord) {
-            Cache::forget("templates.active.{$templateRecord->type}");
+            $this->cache->forget("templates.active.{$templateRecord->type}");
             $clearedCount++;
         }
 
@@ -132,24 +133,24 @@ class ClearTemplateCacheCommand extends Command
             // 1. 레이아웃 캐시 삭제
             $layouts = TemplateLayout::where('template_id', $templateRecord->id)->get();
             foreach ($layouts as $layout) {
-                Cache::forget("layout.{$templateRecord->identifier}.{$layout->name}");
+                $this->cache->forget("layout.{$templateRecord->identifier}.{$layout->name}");
                 $clearedCount++;
             }
 
             // 2. Routes 캐시 삭제
-            Cache::forget("template.routes.{$templateRecord->identifier}");
+            $this->cache->forget("template.routes.{$templateRecord->identifier}");
             $clearedCount++;
 
             // 3. 다국어 파일 캐시 삭제
             foreach ($supportedLocales as $locale) {
-                Cache::forget("template.language.{$templateRecord->identifier}.{$locale}");
+                $this->cache->forget("template.language.{$templateRecord->identifier}.{$locale}");
                 $clearedCount++;
             }
         }
 
         // 4. 활성 템플릿 타입 캐시 삭제
-        Cache::forget('templates.active.admin');
-        Cache::forget('templates.active.user');
+        $this->cache->forget('templates.active.admin');
+        $this->cache->forget('templates.active.user');
         $clearedCount += 2;
 
         $this->info('✅ '.__('templates.commands.cache_clear.success_all', [

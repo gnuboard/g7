@@ -30,7 +30,7 @@ class SearchRequest extends FormRequest
     {
         $rules = [
             // 기본 검색 파라미터
-            'q' => ['nullable', 'string', 'max:200'],
+            'q' => ['nullable', 'string', 'min:2', 'max:200'],
             'type' => ['nullable', 'string'],
             'sort' => ['nullable', 'string'],
             'page' => ['nullable', 'integer', 'min:1'],
@@ -50,6 +50,7 @@ class SearchRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'q.min' => __('search.validation.q_min'),
             'q.max' => __('search.validation.q_max'),
             'page.integer' => __('search.validation.page_integer'),
             'page.min' => __('search.validation.page_min'),

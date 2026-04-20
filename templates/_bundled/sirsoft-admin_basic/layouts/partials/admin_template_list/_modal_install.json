@@ -122,6 +122,9 @@
                       }
                     },
                     {
+                      "handler": "reloadExtensions"
+                    },
+                    {
                       "handler": "closeModal"
                     }
                   ],

@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Jobs;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Jobs\GenerateSitemapJob;
 use App\Seo\SitemapGenerator;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
@@ -60,9 +60,10 @@ class GenerateSitemapJobTest extends TestCase
             ->once()
             ->andReturn($xml);
 
-        Cache::shouldReceive('put')
+        $cache = Mockery::mock(CacheInterface::class);
+        $cache->shouldReceive('put')
             ->once()
-            ->with('seo:sitemap', $xml, 86400);
+            ->with('seo.sitemap', $xml, 86400);
 
         Log::shouldReceive('info')
             ->once()
@@ -71,7 +72,7 @@ class GenerateSitemapJobTest extends TestCase
             }));
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator);
+        $job->handle($generator, $cache);
 
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }
@@ -85,23 +86,25 @@ class GenerateSitemapJobTest extends TestCase
 
         $generator = Mockery::mock(SitemapGenerator::class);
         $generator->shouldNotReceive('generate');
+        $cache = Mockery::mock(CacheInterface::class);
 
         Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Sitemap generation skipped (disabled)');
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator);
+        $job->handle($generator, $cache);
 
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }
 
     /**
-     * 설정된 커스텀 TTL이 Cache::put에 전달되는지 확인합니다.
+     * 설정된 커스텀 TTL이 cache->put에 전달되는지 확인합니다.
      */
     public function test_handle_uses_configured_cache_ttl(): void
     {
         Config::set('g7_settings.core.seo.sitemap_enabled', true);
+        Config::set('g7_settings.core.cache.seo_sitemap_ttl', 3600);
         Config::set('g7_settings.core.seo.sitemap_cache_ttl', 3600);
 
         $xml = '<urlset/>';
@@ -111,9 +114,10 @@ class GenerateSitemapJobTest extends TestCase
             ->once()
             ->andReturn($xml);
 
-        Cache::shouldReceive('put')
+        $cache = Mockery::mock(CacheInterface::class);
+        $cache->shouldReceive('put')
             ->once()
-            ->with('seo:sitemap', $xml, 3600);
+            ->with('seo.sitemap', $xml, 3600);
 
         Log::shouldReceive('info')
             ->once()
@@ -122,7 +126,7 @@ class GenerateSitemapJobTest extends TestCase
             }));
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator);
+        $job->handle($generator, $cache);
 
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }

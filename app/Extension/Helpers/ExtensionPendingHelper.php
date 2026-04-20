@@ -57,6 +57,17 @@ class ExtensionPendingHelper
             $dirName = basename($dir);
             $identifier = $data['identifier'] ?? $dirName;
 
+            // 디렉토리명과 identifier 가 일치하는 경우만 등록.
+            // _pending / _bundled 에는 업데이트·백업 과정의 임시 디렉토리
+            // (예: sirsoft-admin_basic_20260402_081819, sirsoft-admin_basic_updating_<uniq>,
+            // sirsoft-admin_basic_old_<uniq>) 가 남을 수 있고, 그 내부에 원본 manifest 가 그대로
+            // 있어 identifier 가 원본과 동일해진다. 이 경우 표준 경로({basePath}/{subDir}/{identifier})
+            // 와 실제 디렉토리 경로가 어긋나 install 이 실패하므로, 엄격히 일치하는 경로만
+            // 정식 확장 소스로 인정한다.
+            if ($dirName !== $identifier) {
+                continue;
+            }
+
             $result[$identifier] = array_merge($data, [
                 'identifier' => $identifier,
                 'directory' => $dirName,
@@ -178,6 +189,19 @@ class ExtensionPendingHelper
 
         // 교체 완료 후 _old 삭제 (실패해도 무해)
         File::deleteDirectory($oldPath);
+
+        // 원자적 rename 은 inode 단위로 교체되므로 PHP realpath/stat 캐시가
+        // 이전 디렉토리의 파일 존재 여부를 기준으로 판단할 수 있다. 직후 Composer
+        // PSR-4 autoload 가 신규 파일(beta.1 에 없던 Seeder/Model)을 file_exists 로
+        // 탐색할 때 false 반환 → "Class not found" fatal 로 업그레이드 스텝이 실패.
+        // clearstatcache(true) 로 전체 stat 캐시를 비워 신규 파일이 즉시 보이도록 한다.
+        clearstatcache(true);
+
+        // opcache 가 활성화된 프로덕션에서는 활성 디렉토리 하위의 이전 컴파일 바이트코드가
+        // 남아있을 수 있어 신규 PHP 파일을 즉시 invalidate (재컴파일 유도).
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
     }
 
     /**

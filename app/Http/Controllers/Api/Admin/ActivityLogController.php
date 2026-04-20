@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\ActivityLog\ActivityLogBulkDeleteRequest;
 use App\Http\Requests\ActivityLog\ActivityLogDeleteRequest;
@@ -42,14 +41,7 @@ class ActivityLogController extends AdminBaseController
 
             $collection = new ActivityLogCollection($logs);
 
-            $responseData = $collection->toArray($request);
-
-            // 컬렉션 레벨 abilities (페이지 레벨 버튼 제어용)
-            $responseData['abilities'] = [
-                'can_delete' => PermissionHelper::check('core.activities.delete', $request->user()),
-            ];
-
-            return $this->success('activity_log.fetch_success', $responseData);
+            return $this->success('activity_log.fetch_success', $collection->toArray($request));
         } catch (Exception $e) {
             return $this->error('activity_log.fetch_failed', 500, $e->getMessage());
         }

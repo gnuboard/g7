@@ -5,156 +5,94 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
-use Modules\Sirsoft\Ecommerce\Models\SequenceCode;
 
 /**
- * 시퀀스 초기 데이터 시더
+ * 시퀀스 초기 데이터 시더.
+ *
+ * 설치 시 각 시퀀스 타입의 기본 설정을 1회 등록한다.
+ * 재실행(install --force 등) 시 기존 레코드의 `current_value` 는 운영 중 자동 증가한
+ * counter 이므로 절대 리셋되면 안 된다. `firstOrCreate` 를 사용해 기존 행을
+ * 완전히 보존하고, 존재하지 않는 경우에만 기본 설정을 삽입한다.
+ *
+ * 시더 정의 값의 추후 변경이 필요하면 upgrade step 에서 명시적으로 처리.
  */
 class SequenceSeeder extends Seeder
 {
-    /**
-     * 시더 실행
-     */
     public function run(): void
     {
-        $this->command->info('시퀀스 초기 데이터 생성을 시작합니다.');
+        $this->command->info('시퀀스 초기 데이터 동기화를 시작합니다.');
 
-        // 기존 데이터 삭제
-        $this->deleteExistingSequences();
+        $types = [
+            SequenceType::PRODUCT,
+            SequenceType::ORDER,
+            SequenceType::CANCEL,
+            SequenceType::REFUND,
+        ];
 
-        // 상품 시퀀스 생성
-        $this->createProductSequence();
-
-        // 주문 시퀀스 생성
-        $this->createOrderSequence();
-
-        // 취소 시퀀스 생성
-        $this->createCancelSequence();
-
-        // 환불 시퀀스 생성
-        $this->createRefundSequence();
-
-        $this->command->info('시퀀스 초기 데이터가 성공적으로 생성되었습니다.');
-    }
-
-    /**
-     * 기존 시퀀스 및 이력 삭제
-     */
-    private function deleteExistingSequences(): void
-    {
-        $types = [SequenceType::PRODUCT, SequenceType::ORDER, SequenceType::CANCEL, SequenceType::REFUND];
+        $created = 0;
+        $preserved = 0;
 
         foreach ($types as $type) {
-            $typeLabel = match ($type) {
-                SequenceType::PRODUCT => '상품',
-                SequenceType::ORDER => '주문',
-                SequenceType::SHIPPING => '배송',
-                SequenceType::CANCEL => '취소',
-                SequenceType::REFUND => '환불',
-            };
+            $typeLabel = $this->getTypeLabel($type);
+            $defaultConfig = $type->getDefaultConfig();
 
-            // 시퀀스 설정 삭제
-            $deletedSequenceCount = Sequence::where('type', $type->value)->delete();
+            [, $wasCreated] = $this->firstOrCreateSequence($type, $defaultConfig);
 
-            if ($deletedSequenceCount > 0) {
-                $this->command->warn("기존 {$typeLabel} 시퀀스 설정 {$deletedSequenceCount}건을 삭제했습니다.");
-            }
-
-            // 시퀀스 코드 이력 삭제
-            $deletedCodeCount = SequenceCode::where('type', $type->value)->delete();
-
-            if ($deletedCodeCount > 0) {
-                $this->command->warn("기존 {$typeLabel} 시퀀스 코드 이력 {$deletedCodeCount}건을 삭제했습니다.");
+            if ($wasCreated) {
+                $created++;
+                $prefixInfo = isset($defaultConfig['prefix']) && $defaultConfig['prefix'] !== null
+                    ? ", 접두사: {$defaultConfig['prefix']}"
+                    : ' (채번테이블 미사용)';
+                $this->command->line("  - {$typeLabel} 시퀀스 생성 완료 (알고리즘: {$defaultConfig['algorithm']->value}{$prefixInfo})");
+            } else {
+                $preserved++;
+                $this->command->line("  - {$typeLabel} 시퀀스 보존 (기존 current_value 유지)");
             }
         }
+
+        $this->command->info("시퀀스 동기화 완료: {$created}건 생성, {$preserved}건 보존");
     }
 
     /**
-     * 상품 시퀀스 생성 (NanoID 알고리즘 — 채번테이블 미사용)
+     * 시퀀스 레코드를 찾거나 생성합니다 (기존 레코드 보존).
+     *
+     * @param  SequenceType  $type  시퀀스 타입
+     * @param  array<string, mixed>  $defaultConfig  기본 설정
+     * @return array{0: Sequence, 1: bool}  [모델, 신규생성여부]
      */
-    private function createProductSequence(): void
+    private function firstOrCreateSequence(SequenceType $type, array $defaultConfig): array
     {
-        $defaultConfig = SequenceType::PRODUCT->getDefaultConfig();
+        $existed = Sequence::where('type', $type->value)->exists();
 
-        Sequence::create([
-            'type' => SequenceType::PRODUCT->value,
-            'algorithm' => $defaultConfig['algorithm']->value,
-            'prefix' => $defaultConfig['prefix'],
-            'current_value' => 0,
-            'increment' => 1,
-            'min_value' => 1,
-            'max_value' => $defaultConfig['max_value'],
-            'cycle' => false,
-            'pad_length' => $defaultConfig['pad_length'],
-            'max_history_count' => $defaultConfig['max_history_count'],
-        ]);
+        $sequence = Sequence::firstOrCreate(
+            ['type' => $type->value],
+            [
+                'algorithm' => $defaultConfig['algorithm']->value,
+                'prefix' => $defaultConfig['prefix'] ?? null,
+                'current_value' => 0,
+                'increment' => 1,
+                'min_value' => 1,
+                'max_value' => $defaultConfig['max_value'],
+                'cycle' => false,
+                'pad_length' => $defaultConfig['pad_length'],
+                'max_history_count' => $defaultConfig['max_history_count'] ?? 0,
+            ],
+        );
 
-        $this->command->info("상품 시퀀스가 생성되었습니다. 알고리즘: {$defaultConfig['algorithm']->value} (채번테이블 미사용)");
+        return [$sequence, ! $existed];
     }
 
     /**
-     * 주문 시퀀스 생성
+     * 시퀀스 타입의 한국어 라벨을 반환합니다.
      */
-    private function createOrderSequence(): void
+    private function getTypeLabel(SequenceType $type): string
     {
-        $defaultConfig = SequenceType::ORDER->getDefaultConfig();
-
-        Sequence::create([
-            'type' => SequenceType::ORDER->value,
-            'algorithm' => $defaultConfig['algorithm']->value,
-            'prefix' => $defaultConfig['prefix'],
-            'current_value' => 0,
-            'increment' => 1,
-            'min_value' => 1,
-            'max_value' => $defaultConfig['max_value'],
-            'cycle' => false,
-            'pad_length' => $defaultConfig['pad_length'],
-        ]);
-
-        $this->command->info("주문 시퀀스가 생성되었습니다. 알고리즘: {$defaultConfig['algorithm']->value}, 접두사: {$defaultConfig['prefix']}");
-    }
-
-    /**
-     * 취소 시퀀스 생성
-     */
-    private function createCancelSequence(): void
-    {
-        $defaultConfig = SequenceType::CANCEL->getDefaultConfig();
-
-        Sequence::create([
-            'type' => SequenceType::CANCEL->value,
-            'algorithm' => $defaultConfig['algorithm']->value,
-            'prefix' => $defaultConfig['prefix'],
-            'current_value' => 0,
-            'increment' => 1,
-            'min_value' => 1,
-            'max_value' => $defaultConfig['max_value'],
-            'cycle' => false,
-            'pad_length' => $defaultConfig['pad_length'],
-        ]);
-
-        $this->command->info("취소 시퀀스가 생성되었습니다. 알고리즘: {$defaultConfig['algorithm']->value}, 접두사: {$defaultConfig['prefix']}");
-    }
-
-    /**
-     * 환불 시퀀스 생성
-     */
-    private function createRefundSequence(): void
-    {
-        $defaultConfig = SequenceType::REFUND->getDefaultConfig();
-
-        Sequence::create([
-            'type' => SequenceType::REFUND->value,
-            'algorithm' => $defaultConfig['algorithm']->value,
-            'prefix' => $defaultConfig['prefix'],
-            'current_value' => 0,
-            'increment' => 1,
-            'min_value' => 1,
-            'max_value' => $defaultConfig['max_value'],
-            'cycle' => false,
-            'pad_length' => $defaultConfig['pad_length'],
-        ]);
-
-        $this->command->info("환불 시퀀스가 생성되었습니다. 알고리즘: {$defaultConfig['algorithm']->value}, 접두사: {$defaultConfig['prefix']}");
+        return match ($type) {
+            SequenceType::PRODUCT => '상품',
+            SequenceType::ORDER => '주문',
+            SequenceType::SHIPPING => '배송',
+            SequenceType::CANCEL => '취소',
+            SequenceType::REFUND => '환불',
+        };
     }
 }

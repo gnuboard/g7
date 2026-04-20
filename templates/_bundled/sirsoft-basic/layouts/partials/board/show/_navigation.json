@@ -28,7 +28,7 @@
       ],
       "children": [
         {
-          "type": "composite",
+          "type": "basic",
           "name": "Icon",
           "props": {
             "name": "list",
@@ -62,7 +62,7 @@
           "comment": "이전글 버튼 - 아이콘 + 텍스트",
           "type": "basic",
           "name": "Button",
-          "if": "{{post?.data?.navigation?.prev?.id}}",
+          "if": "{{navigation?.data?.prev?.id}}",
           "props": {
             "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
           },
@@ -71,7 +71,7 @@
               "type": "click",
               "handler": "navigate",
               "params": {
-                "path": "/board/{{route.slug}}/{{post.data.navigation.prev.id}}",
+                "path": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
                 "query": {
                   "del": "{{query.del ?? ''}}"
                 }
@@ -98,7 +98,7 @@
           "comment": "다음글 버튼 - 아이콘 + 텍스트",
           "type": "basic",
           "name": "Button",
-          "if": "{{post?.data?.navigation?.next?.id}}",
+          "if": "{{navigation?.data?.next?.id}}",
           "props": {
             "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
           },
@@ -107,7 +107,7 @@
               "type": "click",
               "handler": "navigate",
               "params": {
-                "path": "/board/{{route.slug}}/{{post.data.navigation.next.id}}",
+                "path": "/board/{{route.slug}}/{{navigation.data.next.id}}",
                 "query": {
                   "del": "{{query.del ?? ''}}"
                 }

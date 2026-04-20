@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -75,7 +75,7 @@ class SeoCategoryCacheListener implements HookListenerInterface
             $cache->invalidateByLayout('search/index');
 
             // Sitemap 캐시 무효화
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             $categoryId = is_object($category) ? ($category->id ?? null) : $category;
 

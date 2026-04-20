@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "알림 발송 이력 상세 모달"
+  },
+  "id": "modal_notification_log_detail",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.notification_log.detail_title",
+    "size": "lg"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "space-y-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "grid grid-cols-2 gap-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_channel"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white"
+                  },
+                  "text": "{{$parent._local.selectedLog?.channel ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_status"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "{{($parent._local.selectedLog?.status === 'sent') ? 'text-sm text-green-600 dark:text-green-400 font-medium' : ($parent._local.selectedLog?.status === 'failed') ? 'text-sm text-red-600 dark:text-red-400 font-medium' : 'text-sm text-gray-500 dark:text-gray-400 font-medium'}}"
+                  },
+                  "text": "{{$parent._local.selectedLog?.status ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_type"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-mono text-gray-900 dark:text-white"
+                  },
+                  "text": "{{$parent._local.selectedLog?.notification_type ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_sent_at"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white"
+                  },
+                  "text": "{{$parent._local.selectedLog?.sent_at ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_recipient"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white"
+                  },
+                  "text": "{{($parent._local.selectedLog?.recipient_name ?? '') + ' (' + ($parent._local.selectedLog?.recipient_identifier ?? '') + ')'}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                  },
+                  "text": "$t:admin.notification_log.col_extension"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white"
+                  },
+                  "text": "{{$parent._local.selectedLog?.extension_identifier ?? ''}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.selectedLog?.subject}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+              },
+              "text": "$t:admin.notification_log.col_subject"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-gray-900 dark:text-white"
+              },
+              "text": "{{$parent._local.selectedLog?.subject ?? ''}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.selectedLog?.body}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+              },
+              "text": "$t:admin.notification_log.detail_body"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto",
+                "dangerouslySetInnerHTML": "{{$parent._local.selectedLog?.body ?? ''}}"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{$parent._local.selectedLog?.error_message}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "Label",
+              "props": {
+                "className": "block text-xs font-medium text-red-500 dark:text-red-400 mb-1"
+              },
+              "text": "$t:admin.notification_log.detail_error"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 rounded-lg p-3"
+              },
+              "text": "{{$parent._local.selectedLog?.error_message ?? ''}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "text": "$t:common.close",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal",
+              "target": "modal_notification_log_detail"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

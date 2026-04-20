@@ -57,6 +57,11 @@ class RolePermissionSeeder extends Seeder
      * 계층형 권한을 생성합니다.
      * 구조: 모듈(1레벨) → 카테고리(2레벨) → 개별 권한(3레벨)
      * 정의는 config/core.php의 permissions에서 읽습니다.
+     *
+     * type 결정 우선순위 (CoreUpdateService::syncCoreRolesAndPermissions와 동일):
+     *  - 개별 권한: 명시된 type > 상위 카테고리 type
+     *  - 카테고리: 명시된 type > 하위가 모두 user이면 User, 그 외 Admin
+     *  - 모듈 루트: 명시된 type > Admin
      */
     private function createHierarchicalPermissions(): void
     {
@@ -70,7 +75,9 @@ class RolePermissionSeeder extends Seeder
             'description' => $moduleConfig['description'],
             'extension_type' => ExtensionOwnerType::Core,
             'extension_identifier' => 'core',
-            'type' => PermissionType::Admin,
+            'type' => isset($moduleConfig['type'])
+                ? PermissionType::from($moduleConfig['type'])
+                : PermissionType::Admin,
             'order' => $moduleConfig['order'],
             'parent_id' => null,
         ]);
@@ -79,6 +86,19 @@ class RolePermissionSeeder extends Seeder
         $categories = $permConfig['categories'];
 
         foreach ($categories as $categoryData) {
+            // 카테고리 type 결정: 명시 > 하위 권한 type 자동 추론
+            $childTypes = collect($categoryData['permissions'] ?? [])
+                ->map(fn ($p) => $p['type'] ?? 'admin')
+                ->unique();
+
+            $categoryType = ($childTypes->count() === 1 && $childTypes->first() === 'user')
+                ? PermissionType::User
+                : PermissionType::Admin;
+
+            if (isset($categoryData['type'])) {
+                $categoryType = PermissionType::from($categoryData['type']);
+            }
+
             // 2레벨: 카테고리 생성
             $category = Permission::create([
                 'identifier' => $categoryData['identifier'],
@@ -86,20 +106,25 @@ class RolePermissionSeeder extends Seeder
                 'description' => $categoryData['description'],
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                'type' => PermissionType::Admin,
+                'type' => $categoryType,
                 'order' => $categoryData['order'],
                 'parent_id' => $coreModule->id,
             ]);
 
             // 3레벨: 개별 권한 생성
             foreach ($categoryData['permissions'] as $permData) {
+                // 개별 권한 type: 명시 우선, 없으면 카테고리 type 상속
+                $permissionType = isset($permData['type'])
+                    ? PermissionType::from($permData['type'])
+                    : $categoryType;
+
                 $permissionData = [
                     'identifier' => $permData['identifier'],
                     'name' => $permData['name'],
                     'description' => $permData['description'],
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => PermissionType::Admin,
+                    'type' => $permissionType,
                     'order' => $permData['order'],
                     'parent_id' => $category->id,
                 ];

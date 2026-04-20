@@ -10,7 +10,7 @@
  * - 전역 레지스트리 관리 및 캐싱
  */
 
-import type { ComponentType } from 'react';
+import React, { type ComponentType } from 'react';
 import { createLogger } from '../utils/Logger';
 
 const logger = createLogger('ComponentRegistry');
@@ -422,6 +422,11 @@ export class ComponentRegistry {
 
   /**
    * 개별 컴포넌트 등록
+   *
+   * 등록 시 React.memo로 자동 래핑하여, props가 변경되지 않은 컴포넌트의
+   * 불필요한 리렌더링을 방지합니다.
+   *
+   * @since engine-v1.25.0
    */
   private registerComponent(
     name: string,
@@ -432,8 +437,15 @@ export class ComponentRegistry {
       logger.warn(`Component '${name}' already registered, overwriting`);
     }
 
+    // 성능 최적화: React.memo 자동 래핑 (engine-v1.25.0)
+    // - basic/composite/layout 모든 타입에 적용
+    // - forwardRef 컴포넌트도 memo(forwardRef(...)) 패턴으로 정상 작동
+    // - 내부 useState/useRef는 memo와 무관 (외부 props 비교만 수행)
+    // - worst case: memo 비교 실패 → 기존과 동일하게 리렌더 (회귀 없음)
+    const memoizedComponent = React.memo(component);
+
     this.registry[name] = {
-      component,
+      component: memoizedComponent,
       metadata,
     };
 

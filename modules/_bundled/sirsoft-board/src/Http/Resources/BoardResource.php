@@ -78,17 +78,12 @@ class BoardResource extends BaseApiResource
             // 표시 설정
             'new_display_hours' => $this->new_display_hours ?? 24,
 
-            // 게시판 관리 인원 (역할 기반)
-            'board_managers' => $this->getBoardRoleUsers("sirsoft-board.{$this->slug}.manager"),
-            'board_steps' => $this->getBoardRoleUsers("sirsoft-board.{$this->slug}.step"),
-            'board_manager_ids' => $this->getBoardRoleUserIds("sirsoft-board.{$this->slug}.manager"),
-            'board_step_ids' => $this->getBoardRoleUserIds("sirsoft-board.{$this->slug}.step"),
+            // 게시판 관리 인원 (역할 기반, 역할별 1회 조회로 통합)
+            ...$this->getBoardRoleData("sirsoft-board.{$this->slug}"),
 
             // 알림 설정
             'notify_author' => $this->notify_author,
             'notify_admin_on_post' => $this->notify_admin_on_post,
-            'notify_author_channels' => $this->notify_author_channels ?? [],
-            'notify_admin_on_post_channels' => $this->notify_admin_on_post_channels ?? [],
 
             // 타임스탬프
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
@@ -258,36 +253,48 @@ class BoardResource extends BaseApiResource
      * @param  string  $roleIdentifier  역할 identifier
      * @return array 사용자 목록 [{id, name, email}, ...]
      */
-    private function getBoardRoleUsers(string $roleIdentifier): array
-    {
-        $role = \App\Models\Role::where('identifier', $roleIdentifier)->first();
-
-        if (! $role) {
-            return [];
-        }
-
-        return $role->users->map(fn ($user) => [
-            'uuid' => $user->uuid,
-            'name' => $user->name,
-            'email' => $user->email,
-        ])->values()->toArray();
-    }
-
     /**
-     * 게시판 역할에 할당된 사용자 ID 목록을 반환합니다.
+     * 게시판 역할(manager/step) 사용자 정보를 1회 조회로 통합 반환합니다.
      *
-     * @param  string  $roleIdentifier  역할 identifier
-     * @return array 사용자 ID 배열
+     * 기존 getBoardRoleUsers() + getBoardRoleUserIds()가 역할별 2회씩 조회하던 것을
+     * 역할별 1회 조회로 통합합니다.
+     *
+     * @param  string  $rolePrefix  역할 접두사 (예: "sirsoft-board.free")
+     * @return array board_managers, board_steps, board_manager_ids, board_step_ids
      */
-    private function getBoardRoleUserIds(string $roleIdentifier): array
+    private function getBoardRoleData(string $rolePrefix): array
     {
-        $role = \App\Models\Role::where('identifier', $roleIdentifier)->first();
+        $result = [
+            'board_managers' => [],
+            'board_steps' => [],
+            'board_manager_ids' => [],
+            'board_step_ids' => [],
+        ];
 
-        if (! $role) {
-            return [];
+        $roles = \App\Models\Role::whereIn('identifier', [
+            "{$rolePrefix}.manager",
+            "{$rolePrefix}.step",
+        ])->with('users')->get();
+
+        foreach ($roles as $role) {
+            $users = $role->users->map(fn ($user) => [
+                'uuid' => $user->uuid,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])->values()->toArray();
+
+            $ids = $role->users->pluck('uuid')->toArray();
+
+            if (str_ends_with($role->identifier, '.manager')) {
+                $result['board_managers'] = $users;
+                $result['board_manager_ids'] = $ids;
+            } else {
+                $result['board_steps'] = $users;
+                $result['board_step_ids'] = $ids;
+            }
         }
 
-        return $role->users->pluck('uuid')->toArray();
+        return $result;
     }
 
     // =========================================================================
@@ -385,18 +392,41 @@ class BoardResource extends BaseApiResource
                 'can_manage' => "sirsoft-board.{$slug}.manager",
             ];
 
+        // 8개 권한을 일괄 조회 (개별 Permission::where() 8회 → whereIn 1회)
+        $identifiers = array_values($permissionMap);
+        $permissions = Permission::whereIn('identifier', $identifiers)->get()->keyBy('identifier');
+
         $result = [];
 
-        foreach ($permissionMap as $canKey => $identifier) {
-            $permission = Permission::where('identifier', $identifier)->first();
+        if ($user) {
+            // 사용자의 역할별 권한을 한 번만 로드 (identifier + type 쌍으로 메모리 체크)
+            $userPermissions = $user->roles()
+                ->with('permissions')
+                ->get()
+                ->pluck('permissions')
+                ->flatten()
+                ->map(fn ($p) => $p->identifier . '|' . ($p->type instanceof \BackedEnum ? $p->type->value : $p->type))
+                ->unique()
+                ->toArray();
 
-            if (! $permission) {
-                continue;
+            foreach ($permissionMap as $canKey => $identifier) {
+                $permission = $permissions->get($identifier);
+                if (! $permission) {
+                    continue;
+                }
+
+                $typeValue = $permission->type instanceof \BackedEnum ? $permission->type->value : $permission->type;
+                $result[$canKey] = in_array($permission->identifier . '|' . $typeValue, $userPermissions);
             }
+        } else {
+            foreach ($permissionMap as $canKey => $identifier) {
+                $permission = $permissions->get($identifier);
+                if (! $permission) {
+                    continue;
+                }
 
-            $result[$canKey] = $user
-                ? $user->hasPermission($permission->identifier, $permission->type)
-                : $this->checkGuestPermission($permission);
+                $result[$canKey] = $this->checkGuestPermission($permission);
+            }
         }
 
         return $result;

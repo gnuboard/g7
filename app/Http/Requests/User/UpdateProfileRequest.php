@@ -44,7 +44,7 @@ class UpdateProfileRequest extends FormRequest
             'current_password' => ['required_with:password', 'current_password'],
             'language' => ['nullable', 'string', Rule::in($supportedLocales)],
             'country' => ['nullable', 'string', 'size:2', 'alpha'],
-            'timezone' => ['nullable', 'string', Rule::in(config('app.supported_timezones', ['Asia/Seoul']))],
+            'timezone' => ['nullable', 'string', 'timezone'],
 
             // 연락처 정보
             'homepage' => ['nullable', 'url', 'max:255'],

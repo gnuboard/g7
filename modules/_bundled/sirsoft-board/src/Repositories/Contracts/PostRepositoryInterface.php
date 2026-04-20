@@ -2,7 +2,11 @@
 
 namespace Modules\Sirsoft\Board\Repositories\Contracts;
 
+use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 
 /**
@@ -17,8 +21,9 @@ interface PostRepositoryInterface
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  Board|null  $board  게시판 모델 (이미 조회된 경우 전달하여 중복 쿼리 방지)
      */
-    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false): LengthAwarePaginator;
+    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null): Paginator;
 
     /**
      * 게시글을 생성합니다.
@@ -34,6 +39,7 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return Post|null 게시글 모델 또는 null
      */
     public function find(string $slug, int $id): ?Post;
 
@@ -42,8 +48,9 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return Post 게시글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(string $slug, int $id): Post;
 
@@ -53,8 +60,9 @@ interface PostRepositoryInterface
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
      * @param  array  $data  수정할 데이터
+     * @return Post 수정된 게시글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function update(string $slug, int $id, array $data): Post;
 
@@ -63,8 +71,9 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function delete(string $slug, int $id): bool;
 
@@ -73,8 +82,9 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function forceDelete(string $slug, int $id): bool;
 
@@ -87,7 +97,7 @@ interface PostRepositoryInterface
      * @param  array  $actionLog  작업 이력 데이터
      * @param  string|null  $triggerType  트리거 유형 (admin, report 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatus(string $slug, int $id, string $status, array $actionLog, ?string $triggerType = null): Post;
 
@@ -108,7 +118,7 @@ interface PostRepositoryInterface
      * @param  array  $updates  업데이트할 데이터 (status, trigger_type, deleted_at, action_log)
      * @return Post 수정된 게시글
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatusBulk(string $slug, int $id, array $updates): Post;
 
@@ -117,9 +127,10 @@ interface PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
      * @return Post|null 게시글 모델 (카운트 포함)
      */
-    public function findWithCounts(string $slug, int $id): ?Post;
+    public function findWithCounts(string $slug, int $id, ?int $boardId = null): ?Post;
 
     /**
      * 전체 일반 게시글(원글) 수를 조회합니다.
@@ -139,9 +150,10 @@ interface PostRepositoryInterface
      * @param  int  $id  현재 게시글 ID
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      */
-    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false): array;
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null): array;
 
     /**
      * 사용자의 게시글 활동 목록을 조회합니다.
@@ -161,7 +173,7 @@ interface PostRepositoryInterface
      * @param  string  $orderBy  정렬 컬럼
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchByKeyword(string $slug, string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array;
 
@@ -183,7 +195,7 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
+     * @return array{total: int, items: Collection}
      */
     public function searchAcrossBoards(array $boardIds, string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $perPage = 10, int $page = 1): array;
 
@@ -192,7 +204,6 @@ interface PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
-     * @return int
      */
     public function countAcrossBoards(array $boardIds, string $keyword): int;
 
@@ -252,9 +263,9 @@ interface PostRepositoryInterface
      * 이커머스 문의 목록 구성 시 게시글 데이터를 일괄 조회할 때 사용합니다.
      *
      * @param  array<int>  $ids  게시글 ID 배열
-     * @return \Illuminate\Database\Eloquent\Collection<int, Post> 게시글 컬렉션
+     * @return Collection<int, Post> 게시글 컬렉션
      */
-    public function findByIdsWithRelations(array $ids): \Illuminate\Database\Eloquent\Collection;
+    public function findByIdsWithRelations(array $ids): Collection;
 
     /**
      * 부모 게시글 ID로 첫 번째 자식(답변) 게시글을 조회합니다 (board 관계 포함).

@@ -5,6 +5,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
+import { Select } from '../basic/Select';
 
 export interface Tab {
   id: string | number;
@@ -21,6 +22,8 @@ export interface TabNavigationProps {
   variant?: 'default' | 'pills' | 'underline';
   className?: string;
   style?: React.CSSProperties;
+  /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
+  mobileBreakpoint?: number;
 }
 
 /**
@@ -29,10 +32,14 @@ export interface TabNavigationProps {
  * 탭 네비게이션을 제공하는 컴포넌트입니다.
  * 여러 탭을 전환할 수 있으며, 아이콘과 뱃지를 지원합니다.
  *
+ * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
+ * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
+ * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
+ *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
  *
- * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span
+ * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span + Select
  *
  * @example
  * // 레이아웃 JSON 사용 예시
@@ -46,16 +53,6 @@ export interface TabNavigationProps {
  *     ]
  *   }
  * }
- *
- * // 부모 컴포넌트에서 컨텐츠 렌더링 예시:
- * const [activeTab, setActiveTab] = useState(1);
- * return (
- *   <>
- *     <TabNavigation tabs={tabs} activeTabId={activeTab} onTabChange={setActiveTab} />
- *     {activeTab === 1 && <ProfileContent />}
- *     {activeTab === 2 && <SettingsContent />}
- *   </>
- * );
  */
 export const TabNavigation: React.FC<TabNavigationProps> = ({
   tabs,
@@ -64,12 +61,54 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   variant = 'default',
   className = '',
   style,
+  mobileBreakpoint = 768,
 }) => {
+  // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
+  const G7Core = (window as any).G7Core;
+  const useResponsive = G7Core?.useResponsive;
+  const responsiveValue = useResponsive?.();
+  const isMobile = responsiveValue
+    ? responsiveValue.width < mobileBreakpoint
+    : typeof window !== 'undefined' && window.innerWidth < mobileBreakpoint;
+
   const handleTabClick = (tab: Tab) => {
     if (!tab.disabled && tab.id !== activeTabId) {
       onTabChange?.(tab.id);
     }
   };
+
+  const handleSelectChange = (
+    e: React.ChangeEvent<HTMLSelectElement> | { target: { value: string | number } }
+  ) => {
+    const selectedId = e.target.value;
+    const numericId = Number(selectedId);
+    const finalId =
+      typeof selectedId === 'string' && selectedId !== '' && !Number.isNaN(numericId)
+        ? numericId
+        : selectedId;
+    const selectedTab = tabs.find((tab) => String(tab.id) === String(finalId));
+    if (selectedTab) {
+      handleTabClick(selectedTab);
+    }
+  };
+
+  // 모바일: Select 드롭다운 단일 렌더
+  if (isMobile) {
+    return (
+      <Div className={className} style={style}>
+        <Select
+          value={activeTabId !== undefined ? String(activeTabId) : ''}
+          onChange={handleSelectChange}
+          options={tabs.map((tab) => ({
+            value: String(tab.id),
+            label: tab.badge !== undefined ? `${tab.label} (${tab.badge})` : tab.label,
+            disabled: tab.disabled,
+          }))}
+          className="w-full"
+        />
+      </Div>
+    );
+  }
 
   const getTabClasses = (tab: Tab) => {
     const isActive = tab.id === activeTabId;
@@ -103,6 +142,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
       : 'flex gap-2';
 
+  // 데스크톱: 탭 버튼 단일 렌더
   return (
     <Nav
       className={`${navClasses} ${className}`}

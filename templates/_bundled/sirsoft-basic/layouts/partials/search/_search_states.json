@@ -16,7 +16,9 @@
           "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
           "children": [
             { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" }, "text": "\"{{query?.q}}\"" },
-            { "type": "basic", "name": "Span", "text": " $t:search.result_summary|count={{searchResults?.data?.total ?? 0}}" }
+            { "type": "basic", "name": "Span", "text": " $t:search.results" },
+            { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": " {{(searchResults.data.total ?? 0) | number}}" },
+            { "type": "basic", "name": "Span", "text": "$t:search.result_count_suffix" }
           ]
         }
       ]

@@ -13,6 +13,11 @@
         "searchField": "all",
         "searchQuery": ""
     },
+    "transition_overlay": {
+        "wait_for": [
+            "users"
+        ]
+    },
     "init_actions": [
         {
             "handler": "setState",
@@ -770,7 +775,8 @@
                                                         "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
                                                         "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "users_data_grid__body"
                                                 }
                                             }
                                         ]
@@ -811,7 +817,8 @@
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "users_data_grid__body"
                                                 }
                                             }
                                         ]
@@ -1040,7 +1047,8 @@
                                     "mergeQuery": true,
                                     "query": {
                                         "page": "{{$args[0]}}"
-                                    }
+                                    },
+                                    "transition_overlay_target": "users_data_grid__body"
                                 }
                             },
                             {

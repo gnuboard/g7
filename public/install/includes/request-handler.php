@@ -163,6 +163,13 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     $formData['php_binary'] = $phpBinary !== '' ? $phpBinary : 'php';
     $formData['composer_binary'] = trim($formData['composer_binary'] ?? '');
 
+    // Vendor 설치 모드 처리 (auto|composer|bundled)
+    $vendorMode = trim($formData['vendor_mode'] ?? 'auto');
+    if (! in_array($vendorMode, ['auto', 'composer', 'bundled'], true)) {
+        $vendorMode = 'auto';
+    }
+    $formData['vendor_mode'] = $vendorMode;
+
     // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
     $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
     if ($corePendingPath !== '') {

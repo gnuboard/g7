@@ -9,7 +9,6 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -254,53 +253,6 @@ class OrderEnumsTest extends ModuleTestCase
     }
 
     // ========================================
-    // ShippingTypeEnum 테스트
-    // ========================================
-
-    public function test_shipping_type_has_correct_values(): void
-    {
-        // 실제 Enum 값에 맞춤
-        $this->assertEquals('domestic_parcel', ShippingTypeEnum::DOMESTIC_PARCEL->value);
-        $this->assertEquals('domestic_express', ShippingTypeEnum::DOMESTIC_EXPRESS->value);
-        $this->assertEquals('domestic_quick', ShippingTypeEnum::DOMESTIC_QUICK->value);
-        $this->assertEquals('international_ems', ShippingTypeEnum::INTERNATIONAL_EMS->value);
-        $this->assertEquals('international_standard', ShippingTypeEnum::INTERNATIONAL_STANDARD->value);
-        $this->assertEquals('pickup', ShippingTypeEnum::PICKUP->value);
-        $this->assertEquals('cvs', ShippingTypeEnum::CVS->value);
-        $this->assertEquals('digital', ShippingTypeEnum::DIGITAL->value);
-    }
-
-    public function test_shipping_type_values_returns_all_values(): void
-    {
-        $values = ShippingTypeEnum::values();
-
-        $this->assertIsArray($values);
-        $this->assertCount(8, $values);
-        $this->assertContains('domestic_parcel', $values);
-        $this->assertContains('pickup', $values);
-        $this->assertContains('digital', $values);
-    }
-
-    public function test_shipping_type_domestic_types(): void
-    {
-        $domesticTypes = ShippingTypeEnum::domesticTypes();
-
-        $this->assertCount(3, $domesticTypes);
-        $this->assertContains(ShippingTypeEnum::DOMESTIC_PARCEL, $domesticTypes);
-        $this->assertContains(ShippingTypeEnum::DOMESTIC_EXPRESS, $domesticTypes);
-        $this->assertContains(ShippingTypeEnum::DOMESTIC_QUICK, $domesticTypes);
-    }
-
-    public function test_shipping_type_international_types(): void
-    {
-        $internationalTypes = ShippingTypeEnum::internationalTypes();
-
-        $this->assertCount(2, $internationalTypes);
-        $this->assertContains(ShippingTypeEnum::INTERNATIONAL_EMS, $internationalTypes);
-        $this->assertContains(ShippingTypeEnum::INTERNATIONAL_STANDARD, $internationalTypes);
-    }
-
-    // ========================================
     // TaxInvoiceStatusEnum 테스트
     // ========================================
 
@@ -398,24 +350,6 @@ class OrderEnumsTest extends ModuleTestCase
                 "PaymentMethodEnum::{$case->name} ({$case->value})의 다국어 키가 누락되었습니다."
             );
             $this->assertNotEmpty($label, "PaymentMethodEnum::{$case->name}의 label()이 빈 문자열입니다.");
-        }
-    }
-
-    /**
-     * ShippingTypeEnum의 모든 case에 대해 label()이 번역된 문자열을 반환하는지 검증합니다.
-     */
-    public function test_shipping_type_label_returns_translated_string_for_all_cases(): void
-    {
-        foreach (ShippingTypeEnum::cases() as $case) {
-            $label = $case->label();
-            $rawKey = 'sirsoft-ecommerce::enums.shipping_type.'.$case->value;
-
-            $this->assertNotEquals(
-                $rawKey,
-                $label,
-                "ShippingTypeEnum::{$case->name} ({$case->value})의 다국어 키가 누락되었습니다."
-            );
-            $this->assertNotEmpty($label, "ShippingTypeEnum::{$case->name}의 label()이 빈 문자열입니다.");
         }
     }
 

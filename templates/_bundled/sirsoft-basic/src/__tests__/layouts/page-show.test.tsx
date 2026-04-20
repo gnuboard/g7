@@ -6,7 +6,7 @@
  * - 기본 렌더링: 페이지 데이터 있을 때 제목/본문/첨부파일 영역 확인
  * - 조건부 렌더링: 데이터 없을 때 not_found 영역 표시, 데이터 있을 때 back_button 표시
  * - 첨부파일: 없을 때 섹션 미표시, 있을 때 섹션 표시
- * - 상태 배지: draft/archived 상태에 따른 배지 조건부 렌더링
+ * - 버전 배지: 관리자에게만 표시되는 버전 배지 렌더링
  * - 관리자 편집 버튼: 관리자만 표시
  *
  * @vitest-environment jsdom
@@ -95,16 +95,9 @@ const pageShowFixture = {
         {
           type: 'basic',
           name: 'Span',
-          if: '{{page?.data?.status === "draft"}}',
-          props: { 'data-testid': 'badge-draft' },
-          text: 'status_draft',
-        },
-        {
-          type: 'basic',
-          name: 'Span',
-          if: '{{page?.data?.status === "archived"}}',
-          props: { 'data-testid': 'badge-archived' },
-          text: 'status_archived',
+          if: '{{_global.currentUser?.is_admin}}',
+          props: { 'data-testid': 'badge-version' },
+          text: 'v{{page?.data?.current_version ?? 1}}',
         },
         {
           id: 'page_admin_edit_button',
@@ -202,9 +195,8 @@ function makePageApiResponse(overrides: Record<string, unknown> = {}) {
         id: 1,
         title: '이용약관',
         content: '<p>내용</p>',
-        status: 'active',
         attachments: [],
-        version: 1,
+        current_version: 1,
         ...overrides,
       },
     },
@@ -279,46 +271,37 @@ describe('page/show.json 레이아웃 렌더링 (Issue #99)', () => {
     });
   });
 
-  describe('상태 배지 조건부 렌더링', () => {
-    it('active 상태에서는 draft/archived 배지가 표시되지 않는다', async () => {
-      const testUtils = createLayoutTest(pageShowFixture, { componentRegistry: registry });
-      testUtils.mockApi('terms', makePageApiResponse({ status: 'active' }));
+  describe('버전 배지 조건부 렌더링', () => {
+    it('관리자에게는 버전 배지가 표시된다', async () => {
+      const testUtils = createLayoutTest(pageShowFixture, {
+        componentRegistry: registry,
+        initialState: { _global: { currentUser: { is_admin: true } } },
+      });
+      testUtils.mockApi('terms', makePageApiResponse({ current_version: 2 }));
+
+      await testUtils.render();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('badge-version')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('badge-version')).toHaveTextContent('v2');
+
+      testUtils.cleanup();
+    });
+
+    it('비관리자에게는 버전 배지가 표시되지 않는다', async () => {
+      const testUtils = createLayoutTest(pageShowFixture, {
+        componentRegistry: registry,
+        initialState: { _global: { currentUser: { is_admin: false } } },
+      });
+      testUtils.mockApi('terms', makePageApiResponse());
 
       await testUtils.render();
 
       await waitFor(() => {
         expect(screen.getByTestId('page-content-card')).toBeInTheDocument();
       });
-      expect(screen.queryByTestId('badge-draft')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('badge-archived')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    it('draft 상태에서는 draft 배지가 표시된다', async () => {
-      const testUtils = createLayoutTest(pageShowFixture, { componentRegistry: registry });
-      testUtils.mockApi('terms', makePageApiResponse({ status: 'draft' }));
-
-      await testUtils.render();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('badge-draft')).toBeInTheDocument();
-      });
-      expect(screen.queryByTestId('badge-archived')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    it('archived 상태에서는 archived 배지가 표시된다', async () => {
-      const testUtils = createLayoutTest(pageShowFixture, { componentRegistry: registry });
-      testUtils.mockApi('terms', makePageApiResponse({ status: 'archived' }));
-
-      await testUtils.render();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('badge-archived')).toBeInTheDocument();
-      });
-      expect(screen.queryByTestId('badge-draft')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('badge-version')).not.toBeInTheDocument();
 
       testUtils.cleanup();
     });

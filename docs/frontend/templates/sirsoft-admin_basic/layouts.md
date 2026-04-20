@@ -61,8 +61,8 @@ _admin_base.json (베이스 레이아웃)
 │   └── admin_settings.json (탭 네비게이션)
 │       └── partials/admin_settings/
 │           ├── _tab_general.json (일반)
-│           ├── _tab_mail.json (메일 발송)
-│           ├── _tab_mail_templates.json (메일 템플릿)
+│           ├── _tab_mail.json (메일 발송 SMTP 설정)
+│           ├── _tab_notification_definitions.json (알림 정의)
 │           ├── _tab_security.json (보안)
 │           ├── _tab_upload.json (업로드)
 │           ├── _tab_drivers.json (드라이버)
@@ -73,8 +73,8 @@ _admin_base.json (베이스 레이아웃)
 │           ├── _modal_core_changelog.json
 │           ├── _modal_core_update_guide.json
 │           ├── _modal_core_update_result.json
-│           ├── _modal_mail_template_form.json
-│           ├── _modal_mail_template_preview.json
+│           ├── _modal_notification_template_form.json
+│           ├── _modal_notification_template_preview.json
 │           └── _modal_password_confirm.json
 │
 ├── 모듈 관리

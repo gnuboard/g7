@@ -4,6 +4,42 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.2] - 2026-04-20
+
+### Added
+
+- NotificationCenter 컴포넌트 — 알림 드롭다운, 무한 스크롤, 안 읽은 필터, 개별/전체 삭제 (관리자 템플릿과 동일 UX)
+- 알림 전체 삭제 확인 모달 추가
+- 마이페이지 알림 목록에 "안 읽은 알림만" 필터 토글 추가
+- 실시간 알림 수신 시 카운트 갱신 + 토스트 표시 (WebSocket 연동)
+- 게시판/쇼핑몰 레이아웃에 SEO 설정 적용
+- 게시글 상세 페이지에 이전글/다음글 네비게이션 추가 — 독립 API로 비동기 로딩하여 초기 렌더링 속도 개선
+
+### Changed
+
+- 코어 최소 요구 버전을 7.0.0-beta.2 로 상향
+- 모듈/플러그인 의존성 버전 제약을 실제 릴리스 버전에 맞춰 정비
+- TabNavigation / Header / MobileNav / PageSkeleton 컴포넌트를 반응형으로 개선 — `useResponsive()` hook 기반 단일 분기 렌더링
+- 헤더 알림 버튼을 NotificationCenter 드롭다운으로 교체
+- 언어 선택 UI를 하드코딩에서 `localeNames` 기반 동적 생성으로 전환
+- HtmlContent DOMPurify를 FORBID 방식으로 전환 (보안 기본값 항상 유지)
+- HtmlEditor/HtmlContent를 extension_point로 변환
+- 인기글 기간 필터 "전체" 옵션을 "연간"으로 변경
+
+### Fixed
+
+- 마이페이지 배송지 관리에서 수정 버튼에 권한 체크가 누락되어 있던 문제 수정
+- 인기상품/신상품/최근본상품 섹션 반응형 개선 — grid 기반 카드 크기 제어 및 스크롤 버튼 breakpoint별 비활성화 처리
+- 다크 모드 variant 누락 보완
+- FileUploader 갤러리 이미지 깨짐 수정 — stale closure 문제
+- 사용자 화면 버전 배지 표현식 수정
+- 모바일 메뉴 통합검색 Enter 키 미작동 수정 — keydown 액션 누락
+- 상품 상세 페이지 모바일에서 가격이 중복 표시되던 문제 수정 — 모바일/데스크톱 가격 섹션을 상호 배타적 조건부 렌더링으로 분리
+- 상품 상세 모바일 가격 표시에 할인율 누락 수정 — PC와 동일하게 할인율 표시 추가
+- 주문 상세 아이템의 상태 뱃지·배송정보·구매확정/리뷰 버튼이 DOM에 이중 렌더링되던 문제 수정 — CSS hidden 토글에서 조건부 렌더링으로 전환
+- 장바구니 요약 패널이 모바일에서 sticky로 고정되어 스크롤 시 비정상 동작하던 문제 수정
+- 모달 내부 Select 드롭다운이 잘려 보이는 문제 수정
+
 ## [1.0.0-beta.1] - 2026-04-01
 
 ### Changed

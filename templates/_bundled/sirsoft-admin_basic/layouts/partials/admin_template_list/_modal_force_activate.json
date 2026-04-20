@@ -294,7 +294,13 @@
                       }
                     },
                     {
-                      "handler": "refresh"
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "templates"
+                      }
+                    },
+                    {
+                      "handler": "reloadExtensions"
                     },
                     {
                       "handler": "toast",

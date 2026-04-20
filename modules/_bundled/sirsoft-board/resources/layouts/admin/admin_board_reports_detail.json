@@ -20,6 +20,12 @@
             "actionType": ""
         }
     },
+    "transition_overlay": {
+        "wait_for": [
+            "report_detail",
+            "reporters_list"
+        ]
+    },
     "data_sources": [
         {
             "id": "report_detail",

@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\PluginManager;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ClearPluginCacheCommand extends Command
@@ -26,7 +26,8 @@ class ClearPluginCacheCommand extends Command
      */
     public function __construct(
         private PluginManager $pluginManager,
-        private PluginRepositoryInterface $pluginRepository
+        private PluginRepositoryInterface $pluginRepository,
+        private CacheInterface $cache
     ) {
         parent::__construct();
     }
@@ -74,7 +75,7 @@ class ClearPluginCacheCommand extends Command
                 ];
 
                 foreach ($cacheKeys as $key) {
-                    if (Cache::forget($key)) {
+                    if ($this->cache->forget($key)) {
                         $clearedCount++;
                     }
                 }
@@ -121,7 +122,7 @@ class ClearPluginCacheCommand extends Command
         ];
 
         foreach ($cacheKeys as $key) {
-            if (Cache::forget($key)) {
+            if ($this->cache->forget($key)) {
                 $clearedCount++;
             }
         }

@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "게시판 알림 정의 기본값 복원 확인 모달 (스피너 포함)"
+  },
+  "id": "modal_board_notification_definition_reset",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.confirm_message"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block mb-1" },
+          "text": "$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.target_label"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "text": "{{_global.resetTargetName ?? ''}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-red-700 dark:text-red-300"
+          },
+          "text": "$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.warning_message"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isResettingNotification}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal",
+              "target": "modal_board_notification_definition_reset"
+            }
+          ],
+          "text": "$t:common.cancel"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isResettingNotification}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isResettingNotification": true
+                  }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/notification-definitions/{{_global.resetTargetId}}/reset",
+                  "params": { "method": "POST" },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isResettingNotification": false,
+                        "resetTargetId": null,
+                        "resetTargetName": ""
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": { "dataSourceId": "boardNotificationDefinitions" }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:sirsoft-board.admin.settings.notification_definitions.reset_success"
+                      }
+                    },
+                    {
+                      "handler": "closeModal",
+                      "target": "modal_board_notification_definition_reset"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isResettingNotification": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.notification_definitions.reset_failed'}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isResettingNotification}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isResettingNotification ? '$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.btn_confirming' : '$t:sirsoft-board.admin.settings.notification_definitions.reset_modal.btn_confirm'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -408,7 +408,7 @@
                       "type": "basic",
                       "name": "Div",
                       "props": {
-                        "className": "overflow-x-auto"
+                        "className": "overflow-x-clip"
                       },
                       "children": [
                         {

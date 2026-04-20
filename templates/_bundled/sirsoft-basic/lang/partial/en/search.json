@@ -6,6 +6,7 @@
   "results": "Search Results",
   "results_count": "{{count}} results",
   "result_summary": "{{count}} results found",
+  "result_count_suffix": " results found",
   "no_results": "No results found.",
   "try_different": "Try a different search term.",
   "tabs": {

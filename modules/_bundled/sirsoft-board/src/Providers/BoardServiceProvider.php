@@ -11,15 +11,17 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardMailTemplateRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\UserNotificationSettingRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\BoardMailTemplateRepository;
 use Modules\Sirsoft\Board\Repositories\BoardTypeRepository;
 use Modules\Sirsoft\Board\Repositories\PostRepository;
 use Modules\Sirsoft\Board\Repositories\ReportRepository;
 use Modules\Sirsoft\Board\Repositories\UserNotificationSettingRepository;
 use Modules\Sirsoft\Board\Services\AttachmentService;
+use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Services\CommentService;
+use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReportService;
 
 /**
  * Board 모듈 서비스 프로바이더
@@ -45,6 +47,21 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     ];
 
     /**
+     * CacheInterface가 필요한 서비스 클래스 목록
+     *
+     * 이 배열에 정의된 서비스들은 모듈별 ModuleCacheDriver 가
+     * `CacheInterface` 로 자동 주입됩니다 (접두사: `g7:module.sirsoft-board:`).
+     *
+     * @var array<int, class-string>
+     */
+    protected array $cacheServices = [
+        BoardService::class,
+        CommentService::class,
+        PostService::class,
+        ReportService::class,
+    ];
+
+    /**
      * Repository 인터페이스와 구현체 매핑
      *
      * @var array<class-string, class-string>
@@ -57,7 +74,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
         PostRepositoryInterface::class => PostRepository::class,
         ReportRepositoryInterface::class => ReportRepository::class,
         UserNotificationSettingRepositoryInterface::class => UserNotificationSettingRepository::class,
-        BoardMailTemplateRepositoryInterface::class => BoardMailTemplateRepository::class,
     ];
 
     /**

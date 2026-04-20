@@ -217,7 +217,8 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "pendingItemId": "{{item.id}}"
+                                                                "pendingItemId": "{{item.id}}",
+                                                                "pendingItem": "{{item}}"
                                                             }
                                                         },
                                                         {

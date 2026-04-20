@@ -183,20 +183,6 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 의존성 반환
-     *
-     * sirsoft-page 모듈이 필요합니다 (약관 페이지 slug 연동).
-     *
-     * @return array 모듈/플러그인 의존성 배열
-     */
-    public function getDependencies(): array
-    {
-        return [
-            'sirsoft-page' => '>=0.1.0',
-        ];
-    }
-
-    /**
      * 훅 리스너 목록 반환
      *
      * @return array 훅 리스너 클래스 배열

@@ -31,7 +31,15 @@ class AsUnicodeJson implements CastsAttributes
             return null;
         }
 
-        return json_decode($value, true);
+        // 이미 배열인 경우 (다시 read 시점에 배열이 들어오는 시나리오 방어)
+        if (is_array($value)) {
+            return $value;
+        }
+
+        $decoded = json_decode((string) $value, true);
+
+        // 스칼라/문자열로 디코드된 경우는 반환 타입(?array) 위반 → null 처리
+        return is_array($decoded) ? $decoded : null;
     }
 
     /**

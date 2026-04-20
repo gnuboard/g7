@@ -118,13 +118,6 @@ return [
     'notify_author' => [
         'required' => 'Author email notification is required.',
     ],
-    'notify_author_channels' => [
-        'array' => 'Author notification channels must be an array.',
-    ],
-    'notify_admin_on_post_channels' => [
-        'array' => 'Admin notification channels must be an array.',
-    ],
-
     // title length limit validation messages
     'min_title_length' => [
         'min' => 'Minimum title length must be at least :min characters.',
@@ -318,9 +311,6 @@ return [
             'spam_security.comment_cooldown_seconds' => 'Comment Cooldown (Seconds)',
             'spam_security.report_cooldown_seconds' => 'Report Cooldown (Seconds)',
             'spam_security.view_count_cache_ttl' => 'View Count Cache TTL (Seconds)',
-            // notification_channels
-            'notification_channels.notify_admin_on_post_channels' => 'Admin Notification Channels',
-            'notification_channels.notify_author_channels' => 'Author Notification Channels',
         ],
         'post' => [
             'title' => 'Title',

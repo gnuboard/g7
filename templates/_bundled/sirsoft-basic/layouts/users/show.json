@@ -329,7 +329,7 @@
                             "props": {
                               "className": "text-3xl font-bold text-blue-600 dark:text-blue-400"
                             },
-                            "text": "{{postStats.data?.posts_count ?? 0}}"
+                            "text": "{{postStats.data.posts_count ?? 0 | number}}"
                           },
                           {
                             "type": "basic",
@@ -355,7 +355,7 @@
                             "props": {
                               "className": "text-3xl font-bold text-green-600 dark:text-green-400"
                             },
-                            "text": "{{postStats.data?.comments_count ?? 0}}"
+                            "text": "{{postStats.data.comments_count ?? 0 | number}}"
                           },
                           {
                             "type": "basic",

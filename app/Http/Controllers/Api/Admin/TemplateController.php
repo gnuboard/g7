@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\PermissionHelper;
-use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Template\ActivateTemplateRequest;
 use App\Http\Requests\Template\DeactivateTemplateRequest;
@@ -135,7 +134,7 @@ class TemplateController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.install_failed');
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('templates.errors.installation_failed', 500, $e->getMessage(), [
                 'error' => $e->getMessage(),
@@ -414,7 +413,7 @@ class TemplateController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.errors.update_failed', ['template' => $templateName, 'error' => '']);
 
-            return ResponseHelper::error($firstError, 422, $e->errors());
+            return $this->validationError($e->errors(), $firstError);
         } catch (\Exception $e) {
             return $this->error('templates.errors.update_failed', 500, $e->getMessage(), [
                 'template' => $templateName,

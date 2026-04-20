@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderShippingFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingTypeEnum;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 주문 배송 모델
@@ -74,7 +74,6 @@ class OrderShipping extends Model
         'delivered_at' => 'datetime',
         'confirmed_at' => 'datetime',
         'shipping_status' => ShippingStatusEnum::class,
-        'shipping_type' => ShippingTypeEnum::class,
         // 다중 통화 컬럼 (JSON)
         'mc_base_shipping_amount' => 'array',
         'mc_extra_shipping_amount' => 'array',
@@ -180,11 +179,9 @@ class OrderShipping extends Model
      */
     public function isDomestic(): bool
     {
-        return in_array($this->shipping_type, [
-            ShippingTypeEnum::DOMESTIC_PARCEL,
-            ShippingTypeEnum::DOMESTIC_EXPRESS,
-            ShippingTypeEnum::DOMESTIC_QUICK,
-        ]);
+        $type = ShippingType::getCachedByCode($this->shipping_type);
+
+        return $type?->category === 'domestic';
     }
 
     /**
@@ -194,10 +191,9 @@ class OrderShipping extends Model
      */
     public function isInternational(): bool
     {
-        return in_array($this->shipping_type, [
-            ShippingTypeEnum::INTERNATIONAL_EMS,
-            ShippingTypeEnum::INTERNATIONAL_STANDARD,
-        ]);
+        $type = ShippingType::getCachedByCode($this->shipping_type);
+
+        return $type?->category === 'international';
     }
 
     /**
@@ -207,7 +203,7 @@ class OrderShipping extends Model
      */
     public function isPickup(): bool
     {
-        return $this->shipping_type === ShippingTypeEnum::PICKUP;
+        return $this->shipping_type === 'pickup';
     }
 
     /**

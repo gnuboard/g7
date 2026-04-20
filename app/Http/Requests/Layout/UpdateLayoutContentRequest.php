@@ -195,6 +195,10 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.transition_overlay.spinner' => ['nullable', 'array'],
             'content.transition_overlay.spinner.component' => ['nullable', 'string', 'max:100'],
             'content.transition_overlay.spinner.text' => ['nullable', 'string', 'max:200'],
+            // wait_for: spinner 가 명시된 progressive/blocking 데이터소스 fetch 완료까지 표시되도록 가드
+            // background/websocket 데이터소스는 의도상 사용자 차단 불가 → withValidator 에서 cross-field 검증
+            'content.transition_overlay.wait_for' => ['nullable', 'array'],
+            'content.transition_overlay.wait_for.*' => ['string', 'max:100'],
         ];
 
         // extends 레이아웃 또는 Base 레이아웃이 아닌 경우에만 endpoint, components 필수
@@ -223,6 +227,54 @@ class UpdateLayoutContentRequest extends FormRequest
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.layout.update_content_validation_rules', $rules, $this);
+    }
+
+    /**
+     * Cross-field 검증 — transition_overlay.wait_for 가 가리키는 데이터소스의 type/loading_strategy 검증
+     *
+     * wait_for 는 spinner 가 fetch 완료까지 표시되어야 할 데이터소스 ID 목록이지만,
+     * 의미상 사용자를 차단할 수 없는 background/websocket 데이터소스는 사전에 차단한다.
+     */
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Contracts\Validation\Validator $v): void {
+            $waitFor = $this->input('content.transition_overlay.wait_for');
+            if (! is_array($waitFor) || empty($waitFor)) {
+                return;
+            }
+
+            $dataSources = $this->input('content.data_sources');
+            if (! is_array($dataSources)) {
+                return;
+            }
+
+            $byId = [];
+            foreach ($dataSources as $source) {
+                if (is_array($source) && isset($source['id'])) {
+                    $byId[$source['id']] = $source;
+                }
+            }
+
+            foreach ($waitFor as $index => $id) {
+                if (! is_string($id) || ! isset($byId[$id])) {
+                    continue; // 미존재 ID 는 엔진에서 자동 무시됨 (가드 무시)
+                }
+                $source = $byId[$id];
+                $type = $source['type'] ?? 'api';
+                $strategy = $source['loading_strategy'] ?? 'progressive';
+                if ($type === 'websocket') {
+                    $v->errors()->add(
+                        "content.transition_overlay.wait_for.$index",
+                        __('validation.layout.transition_overlay.wait_for.websocket', ['id' => $id])
+                    );
+                } elseif ($strategy === 'background') {
+                    $v->errors()->add(
+                        "content.transition_overlay.wait_for.$index",
+                        __('validation.layout.transition_overlay.wait_for.background', ['id' => $id])
+                    );
+                }
+            }
+        });
     }
 
     /**

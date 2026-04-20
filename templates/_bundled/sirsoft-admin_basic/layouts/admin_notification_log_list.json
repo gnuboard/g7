@@ -1,0 +1,814 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_notification_log_list",
+    "permissions": [
+        "core.notification-logs.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.notification_log.page_title"
+    },
+    "state": {
+        "filter": {
+            "searchType": "all",
+            "search": "",
+            "extensionTypes": [],
+            "statuses": []
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "notificationChannels",
+            "notificationLogs"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "notificationChannels",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            }
+        },
+        {
+            "id": "notificationLogs",
+            "type": "api",
+            "endpoint": "/api/admin/notification-logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}",
+                "channel": "{{query.channel}}",
+                "notification_type": "{{query.notification_type}}",
+                "extension_type": "{{query.extension_type}}",
+                "status": "{{query.status}}",
+                "sort_by": "{{query.sort_by || 'sent_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": []
+                }
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "filter": {
+                        "searchType": "{{query.search_type || 'all'}}",
+                        "search": "{{query.search || ''}}",
+                        "extensionTypes": "{{query.extension_type ? [query.extension_type] : []}}",
+                        "statuses": "{{query.status ? [query.status] : []}}"
+                    }
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchNotificationLogs": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/notification-logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
+                    "extension_type": "{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}",
+                    "status": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"
+                },
+                "transition_overlay_target": "notification_log_datagrid__body"
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "notification_log_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.notification_log.page_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:admin.notification_log.page_description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/notification-logs",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "channel_tabs",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "border-b border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-1 -mb-px overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{!query.channel ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
+                                        },
+                                        "text": "$t:admin.notification_log.tab_all",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/notification-logs",
+                                                    "replace": true,
+                                                    "query": []
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "iteration": {
+                                            "source": "{{notificationChannels?.data?.channels ?? []}}",
+                                            "item_var": "ch"
+                                        },
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{query.channel === ch.id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{ch.icon ?? 'fas fa-bell'}}",
+                                                    "className": "mr-2"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-col items-start"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{ch.source !== 'core'}}",
+                                                        "props": {
+                                                            "className": "flex items-center gap-0.5 text-[10px] text-indigo-500 dark:text-indigo-400"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "fas fa-puzzle-piece",
+                                                                    "className": "text-[8px]"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "{{ch.source_label?.[$locale] ?? ch.source_label?.ko ?? ch.source ?? ''}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/notification-logs",
+                                                    "replace": true,
+                                                    "query": {
+                                                        "channel": "{{ch.id}}",
+                                                        "page": 1
+                                                    },
+                                                    "transition_overlay_target": "notification_log_datagrid__body"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_notification_log_list/_partial_filter.json"
+                    },
+                    {
+                        "id": "data_table_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "table_header_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                },
+                                                "text": "$t:admin.notification_log.total_count|count={{notificationLogs?.data?.pagination?.total || 0}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "sortBy",
+                                                    "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'sent_at_desc'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "sent_at_desc",
+                                                            "label": "$t:admin.notification_log.sort.sent_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "sent_at_asc",
+                                                            "label": "$t:admin.notification_log.sort.sent_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "recipient_name_asc",
+                                                            "label": "$t:admin.notification_log.sort.recipient_name_asc"
+                                                        },
+                                                        {
+                                                            "value": "subject_asc",
+                                                            "label": "$t:admin.notification_log.sort.subject_asc"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/notification-logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "notification_log_datagrid__body"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "perPage",
+                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.per_page || '20'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
+                                                        }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/notification-logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "notification_log_datagrid__body"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "bulk_action_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                        },
+                                        "text": "$t:admin.notification_log.delete.selected_count|count={{(_global.selectedIds_admin_notification_logs ?? []).length}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-1"
+                                        }
+                                    },
+                                    {
+                                        "id": "bulk_delete_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "disabled": "{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}"
+                                        },
+                                        "text": "$t:admin.notification_log.delete.bulk_button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "bulk_delete_confirm_modal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_notification_log_list/_partial_datagrid.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "id": "delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.notification_log.delete.confirm_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.notification_log.delete.confirm_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/notification-logs/{{_global.modal_data.id}}",
+                                                "params": {
+                                                    "method": "DELETE"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "notificationLogs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.notification_log.delete.success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isDeleting": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:auth.permission_denied"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.delete"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "bulk_delete_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.notification_log.delete.bulk_confirm_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.notification_log.delete.bulk_confirm_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isDeleting}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "/api/admin/notification-logs/bulk-delete",
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": {
+                                                        "ids": "{{_global.selectedIds_admin_notification_logs ?? []}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false,
+                                                            "selectedIds_admin_notification_logs": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "notificationLogs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.notification_log.delete.bulk_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isDeleting": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "errorHandling": {
+                                                    "403": {
+                                                        "handler": "sequence",
+                                                        "params": {
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "isDeleting": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "$t:auth.permission_denied"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.delete"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

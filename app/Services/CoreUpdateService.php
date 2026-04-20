@@ -14,9 +14,16 @@ use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\UpgradeContext;
-use App\Models\MailTemplate;
+use App\Extension\Vendor\VendorInstallContext;
+use App\Extension\Vendor\VendorInstallResult;
+use App\Extension\Vendor\VendorMode;
+use App\Extension\Vendor\VendorResolver;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -180,40 +187,39 @@ class CoreUpdateService
             $owner = $matches[1];
             $repo = $matches[2];
             $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
+            $token = (string) (config('app.update.github_token') ?? '');
 
-            $token = config('app.update.github_token');
-
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'GET',
-                    'header' => $this->buildGithubHeaders($token),
-                    'timeout' => 5,
-                    'ignore_errors' => true,
-                ],
-            ]);
-
-            $response = @file_get_contents($apiUrl, false, $context);
-
-            if ($response === false) {
-                Log::warning(__('settings.core_update.log_api_call_failed'), ['url' => $apiUrl]);
+            try {
+                $response = Http::withHeaders([
+                    'User-Agent' => 'G7',
+                    'Accept' => 'application/vnd.github.v3+json',
+                ])
+                    ->when($token !== '', fn ($r) => $r->withToken($token))
+                    ->timeout(5)
+                    ->connectTimeout(5)
+                    ->get($apiUrl);
+            } catch (ConnectionException $e) {
+                Log::warning(__('settings.core_update.log_api_call_failed'), [
+                    'url' => $apiUrl,
+                    'error' => $e->getMessage(),
+                ]);
 
                 return ['version' => null, 'error' => __('settings.core_update.github_api_failed')];
             }
 
-            // HTTP 상태 코드 확인
-            $statusCode = $this->extractHttpStatusCode($http_response_header ?? []);
-            $data = json_decode($response, true);
-            $apiMessage = $data['message'] ?? '';
+            $statusCode = $response->status();
+            $data = $response->json();
+            $apiMessage = is_array($data) && isset($data['message']) ? $data['message'] : '';
 
             if ($statusCode === 401 || $statusCode === 403) {
                 Log::warning(__('settings.core_update.log_auth_failed'), [
                     'url' => $apiUrl,
                     'status' => $statusCode,
-                    'has_token' => ! empty($token),
+                    'has_token' => $token !== '',
                     'api_message' => $apiMessage,
                 ]);
 
-                return ['version' => null, 'error' => empty($token)
+                return ['version' => null, 'error' => $token === ''
                     ? __('settings.core_update.github_token_required')
                     : __('settings.core_update.github_token_invalid', ['status' => $statusCode, 'message' => $apiMessage]),
                 ];
@@ -236,11 +242,11 @@ class CoreUpdateService
                 // 저장소 자체를 찾을 수 없음
                 Log::warning(__('settings.core_update.log_not_found'), [
                     'url' => $apiUrl,
-                    'has_token' => ! empty($token),
+                    'has_token' => $token !== '',
                     'api_message' => $apiMessage,
                 ]);
 
-                return ['version' => null, 'error' => empty($token)
+                return ['version' => null, 'error' => $token === ''
                     ? __('settings.core_update.github_repo_not_found_no_token', ['status' => $statusCode, 'message' => $apiMessage])
                     : __('settings.core_update.github_repo_not_found', ['status' => $statusCode, 'message' => $apiMessage]),
                 ];
@@ -256,7 +262,7 @@ class CoreUpdateService
                 return ['version' => null, 'error' => __('settings.core_update.github_api_error', ['status' => $statusCode, 'message' => $apiMessage])];
             }
 
-            if (isset($data['tag_name'])) {
+            if (is_array($data) && isset($data['tag_name'])) {
                 return ['version' => ltrim($data['tag_name'], 'v'), 'error' => null];
             }
 
@@ -266,28 +272,6 @@ class CoreUpdateService
 
             return ['version' => null, 'error' => __('settings.core_update.github_api_failed')];
         }
-    }
-
-    /**
-     * HTTP 응답 헤더에서 상태 코드를 추출합니다.
-     *
-     * @param  array  $responseHeaders  $http_response_header 배열
-     * @return int HTTP 상태 코드
-     */
-    protected function extractHttpStatusCode(array $responseHeaders): int
-    {
-        return GithubHelper::extractStatusCode($responseHeaders);
-    }
-
-    /**
-     * GitHub API 요청용 HTTP 헤더를 생성합니다.
-     *
-     * @param  string  $token  GitHub Personal Access Token (빈 문자열이면 인증 없음)
-     * @return array HTTP 헤더 배열
-     */
-    protected function buildGithubHeaders(string $token = ''): array
-    {
-        return GithubHelper::buildHeaders($token);
     }
 
     /**
@@ -375,8 +359,7 @@ class CoreUpdateService
 
         $onProgress?->__invoke('download', __('settings.core_update.downloading'));
 
-        $token = config('app.update.github_token');
-        $authHeaders = $this->buildGithubHeaders($token);
+        $token = (string) (config('app.update.github_token') ?? '');
         $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
 
         // 폴백 체인: zipball(ZipArchive → unzip) → tarball(PharData)
@@ -389,7 +372,7 @@ class CoreUpdateService
             $label = $strategy['label'];
 
             // GitHub URL 해석
-            $archiveUrl = $this->resolveGithubArchiveUrl($owner, $repo, $version, $archiveType, $authHeaders);
+            $archiveUrl = GithubHelper::resolveArchiveUrl($owner, $repo, $version, $archiveType, $token);
             if (! $archiveUrl) {
                 $onProgress?->__invoke('fallback', __('settings.core_update.archive_url_not_found', ['type' => $archiveType]));
 
@@ -400,9 +383,8 @@ class CoreUpdateService
             $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update'.$extension;
 
             try {
-                // 다운로드
-                $content = $this->downloadArchive($archiveUrl, $authHeaders);
-                File::put($archivePath, $content);
+                // 다운로드 (Http 파사드 sink 사용 → allow_url_fopen 의존 제거)
+                GithubHelper::downloadArchive($archiveUrl, $archivePath, $token);
 
                 $onProgress?->__invoke('extract', __('settings.core_update.extracting_with', ['method' => $label]));
 
@@ -486,66 +468,6 @@ class CoreUpdateService
         }
 
         return $strategies;
-    }
-
-    /**
-     * GitHub 아카이브 URL을 해석합니다 (v 접두사 유/무 모두 시도).
-     *
-     * @param  string  $owner  저장소 소유자
-     * @param  string  $repo  저장소명
-     * @param  string  $version  버전
-     * @param  string  $archiveType  zipball 또는 tarball
-     * @param  array  $authHeaders  인증 헤더
-     * @return string|null 유효한 아카이브 URL 또는 null
-     */
-    protected function resolveGithubArchiveUrl(string $owner, string $repo, string $version, string $archiveType, array $authHeaders): ?string
-    {
-        $tagVariants = ["v{$version}", $version];
-
-        foreach ($tagVariants as $tag) {
-            $testUrl = "https://api.github.com/repos/{$owner}/{$repo}/{$archiveType}/{$tag}";
-            $testContext = stream_context_create([
-                'http' => [
-                    'method' => 'HEAD',
-                    'header' => $authHeaders,
-                    'timeout' => 10,
-                    'ignore_errors' => true,
-                ],
-            ]);
-            @file_get_contents($testUrl, false, $testContext);
-            $statusCode = $this->extractHttpStatusCode($http_response_header ?? []);
-            if ($statusCode === 200 || $statusCode === 302) {
-                return $testUrl;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * GitHub에서 아카이브 파일을 다운로드합니다.
-     *
-     * @param  string  $url  다운로드 URL
-     * @param  array  $authHeaders  인증 헤더
-     * @return string 다운로드된 파일 내용
-     */
-    protected function downloadArchive(string $url, array $authHeaders): string
-    {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => $authHeaders,
-                'follow_location' => true,
-                'timeout' => 120,
-            ],
-        ]);
-
-        $content = @file_get_contents($url, false, $context);
-        if ($content === false) {
-            throw new \RuntimeException(__('settings.core_update.download_failed', ['version' => basename($url)]));
-        }
-
-        return $content;
     }
 
     /**
@@ -647,6 +569,96 @@ class CoreUpdateService
     }
 
     /**
+     * 외부 ZIP 파일을 _pending으로 추출합니다.
+     *
+     * --zip 모드에서 사용합니다. ZIP 구조가 GitHub 릴리스 zipball(owner-repo-hash/ 래퍼)이든
+     * 평탄한 G7 루트든 모두 지원합니다. 추출 후 validatePendingUpdate() 로 G7 패키지
+     * 구조(composer.json + app/ + config/app.php)를 검증합니다.
+     *
+     * 추출 전략은 downloadUpdate() 와 동일한 폴백 체인(ZipArchive → unzip) 을 사용하며,
+     * GitHub 호출은 수행하지 않습니다.
+     *
+     * @param  string  $zipPath  외부 ZIP 파일 경로
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return string _pending 내 추출된 소스 경로 (래퍼 감지 후)
+     *
+     * @throws \RuntimeException ZIP 미존재 / 추출 실패 / 패키지 검증 실패 시
+     */
+    public function extractZipToPending(string $zipPath, ?\Closure $onProgress = null): string
+    {
+        if (! File::exists($zipPath)) {
+            throw new \RuntimeException(__('settings.core_update.zip_file_not_found', ['path' => $zipPath]));
+        }
+
+        $pendingPath = $this->createPendingDirectory();
+        $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
+        File::ensureDirectoryExists($extractDir);
+
+        $strategies = $this->buildExtractionStrategies();
+        if (empty($strategies)) {
+            throw new \RuntimeException(__('settings.core_update.no_extract_method_available'));
+        }
+
+        $lastError = null;
+        foreach ($strategies as $strategy) {
+            $method = $strategy['method'];
+            $label = $strategy['label'];
+
+            $onProgress?->__invoke('extract', __('settings.core_update.extracting_with', ['method' => $label]));
+
+            try {
+                // 전 전략 잔여물 제거
+                if (File::isDirectory($extractDir)) {
+                    File::deleteDirectory($extractDir);
+                }
+                File::ensureDirectoryExists($extractDir);
+
+                $this->$method($zipPath, $extractDir);
+
+                $sourcePath = $this->resolveExtractedRoot($extractDir);
+
+                $onProgress?->__invoke('validate', __('settings.core_update.validating'));
+                $this->validatePendingUpdate($sourcePath);
+
+                return $sourcePath;
+            } catch (\Throwable $e) {
+                $lastError = $e;
+                $onProgress?->__invoke('fallback', __('settings.core_update.extract_fallback', [
+                    'method' => $label,
+                    'error' => $e->getMessage(),
+                ]));
+            }
+        }
+
+        throw new \RuntimeException(
+            __('settings.core_update.all_extract_methods_failed'),
+            0,
+            $lastError
+        );
+    }
+
+    /**
+     * 추출 디렉토리에서 G7 소스 루트를 판별합니다.
+     *
+     * - 하위에 디렉토리 1개, 파일 0개 → 래퍼 디렉토리(GitHub zipball 등) → 하위 반환
+     * - 그 외 → extractDir 자체를 반환 (composer.json 등이 루트에 있다고 가정)
+     *
+     * @param  string  $extractDir  추출 대상 디렉토리
+     * @return string 확장 소스 디렉토리 경로
+     */
+    protected function resolveExtractedRoot(string $extractDir): string
+    {
+        $dirs = File::directories($extractDir);
+        $files = File::files($extractDir);
+
+        if (count($dirs) === 1 && count($files) === 0) {
+            return $dirs[0];
+        }
+
+        return $extractDir;
+    }
+
+    /**
      * 코어 핵심 파일을 백업합니다.
      *
      * @param  \Closure|null  $onProgress  진행 콜백
@@ -710,6 +722,55 @@ class CoreUpdateService
     public function runComposerInstallInPending(string $pendingPath, ?\Closure $onProgress = null): void
     {
         $this->executeComposerInstall($pendingPath, $onProgress, noScripts: true);
+    }
+
+    /**
+     * _pending 디렉토리의 vendor/ 를 구성합니다 (VendorResolver 경유).
+     *
+     * VendorMode에 따라:
+     * - Composer: 기존 흐름 재사용 (runComposerInstallInPending + copyVendorFromPending)
+     * - Bundled: vendor-bundle.zip 추출 (pending 디렉토리에 배치 후 운영 vendor로 복사 필요)
+     * - Auto: EnvironmentDetector 기반 자동 결정
+     *
+     * 본 메서드 완료 후 vendor/ 는 _pending 내부에 위치하며,
+     * 이후 copyVendorFromPending() 또는 bundle 내장 vendor 직접 사용으로 운영 반영됨.
+     *
+     * @param  string  $pendingPath  _pending 내 소스 경로
+     * @param  VendorMode  $mode  요청된 vendor 설치 모드
+     * @param  \Closure|null  $onProgress  진행 콜백
+     *
+     * @throws \RuntimeException 실행 실패 시
+     */
+    public function runVendorInstallInPending(
+        string $pendingPath,
+        VendorMode $mode = VendorMode::Auto,
+        ?\Closure $onProgress = null,
+    ): VendorInstallResult {
+        $resolver = App::make(VendorResolver::class);
+
+        $context = new VendorInstallContext(
+            target: 'core',
+            identifier: null,
+            sourceDir: $pendingPath,
+            targetDir: $pendingPath,
+            requestedMode: $mode,
+            composerBinaryHint: config('process.composer_binary'),
+            operation: 'update',
+        );
+
+        // Composer 전략 시 기존 코어 로직을 콜백으로 전달 (코드 중복 방지)
+        $composerExecutor = function (VendorInstallContext $ctx) use ($onProgress): VendorInstallResult {
+            $this->runComposerInstallInPending($ctx->sourceDir, $onProgress);
+
+            return new VendorInstallResult(
+                mode: VendorMode::Composer,
+                strategy: 'composer',
+                packageCount: 0,
+                details: ['pending_path' => $ctx->sourceDir],
+            );
+        };
+
+        return $resolver->install($context, $composerExecutor);
     }
 
     /**
@@ -795,9 +856,14 @@ class CoreUpdateService
 
         $onProgress?->__invoke('vendor', 'vendor 디렉토리 복사 중...');
 
-        // 기존 vendor 삭제
+        // 기존 vendor/ 내용만 비움 — 디렉토리 자체는 유지하여 공유 호스팅에서
+        // 프로젝트 루트 쓰기 권한이 없어도 작동하도록 한다.
+        // (File::deleteDirectory($destVendor) 는 vendor/ 자체를 삭제하므로
+        //  base_path() 에 쓰기 권한이 있어야 하는 문제를 회피)
         if (File::isDirectory($destVendor)) {
-            File::deleteDirectory($destVendor);
+            File::cleanDirectory($destVendor);
+        } else {
+            File::ensureDirectoryExists($destVendor);
         }
 
         FilePermissionHelper::copyDirectory($sourceVendor, $destVendor, $onProgress);
@@ -898,7 +964,9 @@ class CoreUpdateService
             extensionType: ExtensionOwnerType::Core,
             extensionIdentifier: 'core',
             otherAttributes: [
-                'type' => PermissionType::Admin,
+                'type' => isset($moduleConfig['type'])
+                    ? PermissionType::from($moduleConfig['type'])
+                    : PermissionType::Admin,
                 'order' => $moduleConfig['order'],
                 'parent_id' => null,
             ],
@@ -911,6 +979,22 @@ class CoreUpdateService
         $categories = $permConfig['categories'];
 
         foreach ($categories as $categoryData) {
+            // 카테고리 type 결정 우선순위:
+            // 1. 카테고리에 명시적 type 필드
+            // 2. 모든 하위 권한이 동일한 type → 그 type
+            // 3. 그 외 → admin (기본값)
+            $childTypes = collect($categoryData['permissions'] ?? [])
+                ->map(fn ($p) => $p['type'] ?? 'admin')
+                ->unique();
+
+            $categoryType = ($childTypes->count() === 1 && $childTypes->first() === 'user')
+                ? PermissionType::User
+                : PermissionType::Admin;
+
+            if (isset($categoryData['type'])) {
+                $categoryType = PermissionType::from($categoryData['type']);
+            }
+
             $category = $roleSyncHelper->syncPermission(
                 identifier: $categoryData['identifier'],
                 newName: $categoryData['name'],
@@ -918,13 +1002,18 @@ class CoreUpdateService
                 extensionType: ExtensionOwnerType::Core,
                 extensionIdentifier: 'core',
                 otherAttributes: [
-                    'type' => PermissionType::Admin,
+                    'type' => $categoryType,
                     'order' => $categoryData['order'],
                     'parent_id' => $coreModule->id,
                 ],
             );
 
             foreach ($categoryData['permissions'] as $permData) {
+                // 개별 권한 type: 명시 우선, 없으면 카테고리 type 상속
+                $permissionType = isset($permData['type'])
+                    ? PermissionType::from($permData['type'])
+                    : $categoryType;
+
                 $roleSyncHelper->syncPermission(
                     identifier: $permData['identifier'],
                     newName: $permData['name'],
@@ -932,9 +1021,11 @@ class CoreUpdateService
                     extensionType: ExtensionOwnerType::Core,
                     extensionIdentifier: 'core',
                     otherAttributes: [
-                        'type' => PermissionType::Admin,
+                        'type' => $permissionType,
                         'order' => $permData['order'],
                         'parent_id' => $category->id,
+                        'resource_route_key' => $permData['resource_route_key'] ?? null,
+                        'owner_key' => $permData['owner_key'] ?? null,
                     ],
                 );
 
@@ -972,9 +1063,38 @@ class CoreUpdateService
         }
 
         // 3. 역할-권한 할당 동기화 (user_overrides 보호)
-        $roleSyncHelper->syncAllRoleAssignments($permissionRoleMap, $allLeafIdentifiers);
+        // 코어: core/core 소유 전체 권한을 diff 범위로 사용해 이관된 구 식별자도 detach 가능
+        $allCorePermIdentifiers = app(\App\Contracts\Repositories\PermissionRepositoryInterface::class)
+            ->getByExtension(ExtensionOwnerType::Core, 'core')
+            ->pluck('identifier')
+            ->all();
+        $roleSyncHelper->syncAllRoleAssignments($permissionRoleMap, $allCorePermIdentifiers);
 
-        Log::info('코어 역할/권한 동기화 완료');
+        // 완전 동기화: config 에서 제거된 stale 권한 삭제 (user_overrides 보존)
+        // leaf + 카테고리 + 모듈 레벨 식별자를 모두 수집해서 diff
+        $allDefinedIdentifiers = array_merge(
+            [$moduleConfig['identifier']],
+            array_column($categories, 'identifier'),
+            $allLeafIdentifiers,
+        );
+        $deletedPerms = $roleSyncHelper->cleanupStalePermissions(
+            ExtensionOwnerType::Core,
+            'core',
+            $allDefinedIdentifiers,
+        );
+
+        // 완전 동기화: config 에서 제거된 stale 역할 삭제 (user_overrides + user_roles 참조 보존)
+        $definedRoleIdentifiers = array_column($coreRoles, 'identifier');
+        $deletedRoles = $roleSyncHelper->cleanupStaleRoles(
+            ExtensionOwnerType::Core,
+            'core',
+            $definedRoleIdentifiers,
+        );
+
+        Log::info('코어 역할/권한 동기화 완료', [
+            'stale_permissions_deleted' => $deletedPerms,
+            'stale_roles_deleted' => $deletedRoles,
+        ]);
     }
 
     /**
@@ -1000,59 +1120,62 @@ class CoreUpdateService
             );
         }
 
-        Log::info('코어 메뉴 동기화 완료');
+        // 완전 동기화: config 에서 제거된 stale 메뉴 삭제 (user_overrides 보존)
+        $currentSlugs = $menuSyncHelper->collectSlugsRecursive($coreMenus);
+        $deleted = $menuSyncHelper->cleanupStaleMenus(
+            ExtensionOwnerType::Core,
+            'core',
+            $currentSlugs,
+        );
+
+        Log::info('코어 메뉴 동기화 완료', ['stale_deleted' => $deleted]);
     }
 
     /**
-     * 코어 메일 템플릿을 동기화합니다.
+     * 디스크의 config/core.php 를 재로드하고 코어 권한/메뉴를 재동기화합니다.
      *
-     * MailTemplateSeeder와 달리 기존 데이터를 삭제하지 않고,
-     * user_overrides를 확인하여 사용자 커스터마이징을 보존합니다.
+     * Laravel 은 프로세스 시작 시점에 로드한 config 를 재로드하지 않으므로,
+     * 업데이트로 config/core.php 가 교체되어도 현재 프로세스의 `config('core.*')`
+     * 는 이전 값을 반환한다. 본 메서드는 디스크 값을 다시 require 하여 Config
+     * Repository 에 주입한 뒤 syncCoreRolesAndPermissions/syncCoreMenus 를
+     * 재호출하여 신규 권한·메뉴를 DB 에 반영한다.
      *
-     * - 신규 템플릿 (type 기준): 생성
-     * - 기존 템플릿: user_overrides에 없는 필드(subject, body, is_active)만 갱신
-     * - variables: 항상 최신 정의로 덮어쓰기 (사용자 수정 대상 아님)
+     * 주 사용처: CoreUpdateCommand Step 10 에서 별도 프로세스 spawn 이
+     * 실패했을 때의 in-process fallback. 수동 복구 도구로도 사용 가능.
+     *
+     * ⚠ 경로 A(beta.1 → beta.2) 에서는 직접 호출 금지. beta.1 메모리에는
+     * 본 메서드가 존재하지 않으므로 Fatal 발생. 해당 경로의 upgrade step 은
+     * 파일 내부 로컬 로직으로 config 재로드 + sync 재호출을 직접 구현해야 한다.
      */
-    public function syncCoreMailTemplates(): void
+    public function reloadCoreConfigAndResync(): void
     {
-        $coreTemplates = $this->getCoreMailTemplateDefinitions();
+        $path = config_path('core.php');
+        if (! File::exists($path)) {
+            Log::warning('reloadCoreConfigAndResync: config/core.php 미존재 — 스킵');
 
-        foreach ($coreTemplates as $templateDef) {
-            $existing = MailTemplate::where('type', $templateDef['type'])->first();
-
-            if (! $existing) {
-                // 신규 생성
-                MailTemplate::create(array_merge($templateDef, [
-                    'is_default' => true,
-                    'is_active' => true,
-                ]));
-
-                continue;
-            }
-
-            // 기존 템플릿 업데이트: user_overrides에 없는 필드만 갱신
-            $userOverrides = $existing->user_overrides ?? [];
-
-            $updateData = [
-                'variables' => $templateDef['variables'] ?? $existing->variables,
-            ];
-
-            if (! in_array('subject', $userOverrides, true)) {
-                $updateData['subject'] = $templateDef['subject'];
-            }
-
-            if (! in_array('body', $userOverrides, true)) {
-                $updateData['body'] = $templateDef['body'];
-            }
-
-            if (! in_array('is_active', $userOverrides, true) && isset($templateDef['is_active'])) {
-                $updateData['is_active'] = $templateDef['is_active'];
-            }
-
-            $existing->update($updateData);
+            return;
         }
 
-        Log::info('코어 메일 템플릿 동기화 완료');
+        $fresh = require $path;
+        if (! is_array($fresh)) {
+            Log::warning('reloadCoreConfigAndResync: config/core.php 반환값이 배열이 아님 — 스킵');
+
+            return;
+        }
+
+        config(['core' => $fresh]);
+
+        try {
+            $this->syncCoreRolesAndPermissions();
+        } catch (\Throwable $e) {
+            Log::warning('reloadCoreConfigAndResync: 권한 재동기화 실패', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            $this->syncCoreMenus();
+        } catch (\Throwable $e) {
+            Log::warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -1062,14 +1185,18 @@ class CoreUpdateService
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  종료 버전
      * @param  \Closure|null  $onStep  각 스텝 실행 시 콜백 (버전 문자열 전달)
+     * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      */
-    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null): void
+    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false): void
     {
         $upgradesPath = base_path('upgrades');
 
         if (! File::isDirectory($upgradesPath)) {
             return;
         }
+
+        // force + 동일 버전: 해당 버전의 스텝도 포함 (>= 비교)
+        $sameVersion = version_compare($fromVersion, $toVersion, '==');
 
         $steps = [];
         $files = File::files($upgradesPath);
@@ -1090,7 +1217,11 @@ class CoreUpdateService
                 $version .= '-'.str_replace('_', '.', $matches[4]);
             }
 
-            if (version_compare($version, $fromVersion, '>') && version_compare($version, $toVersion, '<=')) {
+            $included = $force && $sameVersion
+                ? version_compare($version, $toVersion, '==')
+                : version_compare($version, $fromVersion, '>') && version_compare($version, $toVersion, '<=');
+
+            if ($included) {
                 require_once $file->getPathname();
                 $className = "App\\Upgrades\\{$filename}";
 
@@ -1287,6 +1418,215 @@ class CoreUpdateService
     }
 
     /**
+     * 코어 업그레이드 컨텍스트의 번들 확장 업데이트 감지.
+     *
+     * `_bundled/{id}/{manifest}.json` 의 version 과 DB 에 설치된 현재 version 을
+     * 직접 비교하여 "번들에 최신 버전이 포함된" 확장 목록을 반환한다.
+     *
+     * `Manager::checkXxxUpdate()` 와의 차이:
+     *   - 일반 update 커맨드용 `checkXxxUpdate()` 는 GitHub 엄격 우선 정책
+     *     (GitHub URL 조회 성공 시 _bundled 폴백 없음)
+     *   - 본 메서드는 **코어 업그레이드 후 _bundled 자동 반영** 용도이므로
+     *     GitHub 상태와 무관하게 _bundled 버전만 기준으로 판정
+     *   - beta.2 가 GitHub 미릴리스 상태에서도 _bundled 신버전을 정확히 감지
+     *
+     * 호출처:
+     *   - `BundledExtensionUpdatePrompt::collectBundledUpdates()` (beta.2+ 프롬프트)
+     *   - `Upgrade_7_0_0_beta_2::spawnResyncInlineLocal()` inline PHP (beta.1 → beta.2 경로 C)
+     *
+     * @return array{
+     *     modules: array<int, array{identifier:string, current_version:string, latest_version:string, update_source:string}>,
+     *     plugins: array<int, array{identifier:string, current_version:string, latest_version:string, update_source:string}>,
+     *     templates: array<int, array{identifier:string, current_version:string, latest_version:string, update_source:string}>
+     * }
+     */
+    public function collectBundledExtensionUpdates(): array
+    {
+        return [
+            'modules' => $this->detectBundledUpdatesFor('modules', 'module.json'),
+            'plugins' => $this->detectBundledUpdatesFor('plugins', 'plugin.json'),
+            'templates' => $this->detectBundledUpdatesFor('templates', 'template.json'),
+        ];
+    }
+
+    /**
+     * 단일 확장 타입의 _bundled 업데이트 목록을 조회합니다.
+     *
+     * @param  string  $tableAndDir  'modules' | 'plugins' | 'templates'  (DB 테이블명 + 디렉토리명 일치 전제)
+     * @param  string  $manifestName  'module.json' | 'plugin.json' | 'template.json'
+     * @return array<int, array{identifier:string, current_version:string, latest_version:string, update_source:string}>
+     */
+    private function detectBundledUpdatesFor(string $tableAndDir, string $manifestName): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable($tableAndDir)) {
+            return [];
+        }
+
+        $results = [];
+        foreach (DB::table($tableAndDir)->get(['identifier', 'version']) as $record) {
+            $identifier = (string) $record->identifier;
+            $current = (string) $record->version;
+            $bundledPath = base_path($tableAndDir.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.$manifestName);
+
+            if (! is_file($bundledPath)) {
+                continue;
+            }
+
+            $manifest = json_decode((string) file_get_contents($bundledPath), true);
+            $bundled = is_array($manifest) ? ($manifest['version'] ?? null) : null;
+
+            if ($bundled === null || version_compare((string) $bundled, $current, '<=')) {
+                continue;
+            }
+
+            $results[] = [
+                'identifier' => $identifier,
+                'current_version' => $current,
+                'latest_version' => (string) $bundled,
+                'update_source' => 'bundled',
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * 업데이트 시작 시점의 원본 소유자·그룹을 스냅샷합니다.
+     *
+     * 이 스냅샷은 업데이트 종료 시점 `restoreOwnership()` 에 전달되어 각 경로를
+     * **원래 자신의 소유자** 로 정확히 복원한다. base_path 기준 통일 방식과 달리
+     * 비대칭 환경(예: 루트=someuser, vendor=www-data) 에서도 원본을 유지한다.
+     *
+     * 대상 경로는 config('app.update.restore_ownership') 에 정의된 목록.
+     * chown 미지원 환경(Windows 등) 은 빈 배열을 반환한다.
+     *
+     * @return array<string, array{owner:int|false, group:int|false}>  target => {owner, group}
+     */
+    public function snapshotOwnership(): array
+    {
+        $targets = config('app.update.restore_ownership', ['vendor']);
+
+        return $this->snapshotOwnershipFor($targets);
+    }
+
+    /**
+     * 지정한 경로 목록의 소유자·그룹을 스냅샷합니다.
+     *
+     * 확장 업데이트(모듈/플러그인/템플릿) 에서 업데이트 전 해당 확장 스코프의
+     * 경로만 스냅샷하고 싶을 때 사용. 예: `['bootstrap/cache', "modules/{$id}"]`.
+     * 본 메서드 결과는 `restoreOwnership()` 에 그대로 전달 가능.
+     *
+     * @param  array  $paths  base_path() 기준 상대 경로 배열
+     * @return array<string, array{owner:int|false, group:int|false}>
+     */
+    public function snapshotOwnershipFor(array $paths): array
+    {
+        if (! function_exists('chown')) {
+            return [];
+        }
+
+        $snapshot = [];
+        foreach ($paths as $target) {
+            $path = base_path($target);
+            if (! File::exists($path) && ! File::isDirectory($path)) {
+                continue;
+            }
+
+            $snapshot[$target] = [
+                'owner' => @fileowner($path),
+                'group' => @filegroup($path),
+            ];
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * 업데이트 경로의 소유권을 스냅샷 기준으로 복원합니다.
+     *
+     * sudo 로 실행된 외부 프로세스(composer install, package:discover,
+     * extension:update-autoload 등)가 root 소유로 생성한 파일을 **업데이트 전의
+     * 각 경로 원본 소유자** 로 되돌린다. 스냅샷은 `snapshotOwnership()` 로 업데이트
+     * 초반에 수집하여 전달한다.
+     *
+     * 동작 원칙:
+     * - target 별로 스냅샷에 기록된 원본 owner/group 을 기준으로 재귀 chown
+     * - 스냅샷에 없거나 수집 실패(false)한 target 은 `FilePermissionHelper::inferWebServerOwnership()`
+     *   의 웹서버 계정 추정값으로 fallback (storage 등 웹서버 쓰기 디렉토리 기준)
+     * - 이미 일치하는 항목은 no-op
+     * - 소유권만 복원, 퍼미션은 건드리지 않음
+     * - @chown/@chgrp suppress 로 권한 부족 시 silent fail
+     * - 대상 경로 목록은 config('app.update.restore_ownership') 기준
+     *
+     * @param  array<string, array{owner:int|false, group:int|false}>  $snapshot  snapshotOwnership() 결과
+     * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void
+     */
+    public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null): void
+    {
+        if (! function_exists('chown')) {
+            return;
+        }
+
+        // 스냅샷이 제공되면 그 키를 복원 대상 범위로 사용 (스코프 복원).
+        // 스냅샷이 비어있으면 전체 config 범위로 fallback (기존 동작 유지).
+        $targets = ! empty($snapshot)
+            ? array_keys($snapshot)
+            : config('app.update.restore_ownership', ['vendor']);
+        $restoredCount = 0;
+        $fallbackOwner = null;
+        $fallbackGroup = null;
+        $fallbackSource = null;
+
+        foreach ($targets as $target) {
+            $path = base_path($target);
+            if (! File::exists($path) && ! File::isDirectory($path)) {
+                continue;
+            }
+
+            // 1순위: 스냅샷의 원본 소유자
+            $owner = $snapshot[$target]['owner'] ?? false;
+            $group = $snapshot[$target]['group'] ?? false;
+            $source = 'snapshot';
+
+            // 2순위: inferWebServerOwnership fallback
+            if ($owner === false) {
+                if ($fallbackOwner === null) {
+                    [$fallbackOwner, $fallbackGroup, $fallbackSource] = FilePermissionHelper::inferWebServerOwnership();
+                }
+                $owner = $fallbackOwner;
+                $group = $fallbackGroup;
+                $source = 'infer:'.$fallbackSource;
+            }
+
+            if ($owner === false) {
+                continue;
+            }
+
+            $onProgress?->__invoke('ownership', $target);
+            $changed = FilePermissionHelper::chownRecursive($path, $owner, $group);
+
+            if ($changed > 0) {
+                Log::info('코어 업데이트: 소유권 복원', [
+                    'target' => $target,
+                    'owner' => $owner,
+                    'group' => $group,
+                    'source' => $source,
+                    'changed_entries' => $changed,
+                ]);
+                $restoredCount += $changed;
+            }
+        }
+
+        if ($restoredCount > 0) {
+            Log::info('코어 업데이트: 소유권 복원 완료', [
+                'restored_entries_total' => $restoredCount,
+                'targets' => $targets,
+            ]);
+        }
+    }
+
+    /**
      * 업데이트 실패 리포트를 생성합니다.
      *
      * @param  \Throwable  $exception  발생한 예외
@@ -1360,13 +1700,4 @@ class CoreUpdateService
         return config('core.menus', []);
     }
 
-    /**
-     * 코어 메일 템플릿 정의를 반환합니다.
-     *
-     * @return array 메일 템플릿 정의 배열
-     */
-    protected function getCoreMailTemplateDefinitions(): array
-    {
-        return config('core.mail_templates', []);
-    }
 }

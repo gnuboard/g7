@@ -219,6 +219,106 @@ class UpgradeStepsTest extends TestCase
     }
 
     /**
+     * force + 동일 버전: 해당 버전의 스텝이 실행되는지 테스트
+     */
+    public function test_run_upgrade_steps_force_with_same_version_executes_step(): void
+    {
+        $executedSteps = [];
+
+        $step = Mockery::mock(UpgradeStepInterface::class);
+        $step->shouldReceive('run')->once()->andReturnUsing(function (UpgradeContext $ctx) use (&$executedSteps) {
+            $executedSteps[] = $ctx->currentStep;
+        });
+
+        $otherStep = Mockery::mock(UpgradeStepInterface::class);
+        $otherStep->shouldNotReceive('run'); // 다른 버전은 실행되지 않아야 함
+
+        $module = Mockery::mock(ModuleInterface::class);
+        $module->shouldReceive('upgrades')->once()->andReturn([
+            '1.0.0' => $step,
+            '1.1.0' => $otherStep,
+        ]);
+        $module->shouldReceive('getIdentifier')->andReturn('test-module');
+
+        $manager = $this->createModuleManagerWithMocks();
+        $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
+        $method->setAccessible(true);
+
+        $method->invoke($manager, $module, '1.0.0', '1.0.0', true);
+
+        $this->assertEquals(['1.0.0'], $executedSteps);
+    }
+
+    /**
+     * force + 프리릴리스 동일 버전: 해당 버전의 스텝이 실행되는지 테스트
+     */
+    public function test_run_upgrade_steps_force_with_same_prerelease_version(): void
+    {
+        $executedSteps = [];
+
+        $step_beta2 = Mockery::mock(UpgradeStepInterface::class);
+        $step_beta2->shouldReceive('run')->once()->andReturnUsing(function (UpgradeContext $ctx) use (&$executedSteps) {
+            $executedSteps[] = $ctx->currentStep;
+        });
+
+        $step_beta1 = Mockery::mock(UpgradeStepInterface::class);
+        $step_beta1->shouldNotReceive('run');
+
+        $module = Mockery::mock(ModuleInterface::class);
+        $module->shouldReceive('upgrades')->once()->andReturn([
+            '1.0.0-beta.1' => $step_beta1,
+            '1.0.0-beta.2' => $step_beta2,
+        ]);
+        $module->shouldReceive('getIdentifier')->andReturn('test-module');
+
+        $manager = $this->createModuleManagerWithMocks();
+        $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
+        $method->setAccessible(true);
+
+        $method->invoke($manager, $module, '1.0.0-beta.2', '1.0.0-beta.2', true);
+
+        $this->assertEquals(['1.0.0-beta.2'], $executedSteps);
+    }
+
+    /**
+     * force + 다른 버전 범위: 기존 범위 필터링이 정상 동작하는지 테스트
+     */
+    public function test_run_upgrade_steps_force_with_different_versions_uses_normal_range(): void
+    {
+        $executedSteps = [];
+
+        $step_1_1 = Mockery::mock(UpgradeStepInterface::class);
+        $step_1_1->shouldReceive('run')->once()->andReturnUsing(function (UpgradeContext $ctx) use (&$executedSteps) {
+            $executedSteps[] = $ctx->currentStep;
+        });
+
+        $step_1_0 = Mockery::mock(UpgradeStepInterface::class);
+        $step_1_0->shouldNotReceive('run'); // fromVersion 이하
+
+        $step_1_2 = Mockery::mock(UpgradeStepInterface::class);
+        $step_1_2->shouldReceive('run')->once()->andReturnUsing(function (UpgradeContext $ctx) use (&$executedSteps) {
+            $executedSteps[] = $ctx->currentStep;
+        });
+
+        $module = Mockery::mock(ModuleInterface::class);
+        $module->shouldReceive('upgrades')->once()->andReturn([
+            '1.0.0' => $step_1_0,
+            '1.1.0' => $step_1_1,
+            '1.2.0' => $step_1_2,
+        ]);
+        $module->shouldReceive('getIdentifier')->andReturn('test-module');
+
+        $manager = $this->createModuleManagerWithMocks();
+        $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
+        $method->setAccessible(true);
+
+        // force=true이지만 fromVersion != toVersion이므로 일반 범위 필터링 적용
+        $method->invoke($manager, $module, '1.0.0', '1.2.0', true);
+
+        $this->assertEquals(['1.1.0', '1.2.0'], $executedSteps);
+    }
+
+    /**
      * 업그레이드 스텝 파일명에서 일반 버전을 올바르게 파싱합니다.
      */
     public function test_upgrade_step_filename_parses_standard_version(): void

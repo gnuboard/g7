@@ -20,6 +20,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // NOTE: Faker 부재 시 FakerShim 대체는 app/Support/SampleData/bootstrap.php 에서 처리
+        // (composer autoload.files 진입점 — vendor/autoload.php 로드 직후 실행되어
+        //  Laravel 의 fake() 헬퍼 정의 시점에 \Faker\Factory 가 이미 alias 되어 있음)
+
+        // 알림 발송 공통 디스패처 — 채널 독립 발송 + 발송 전후 G7 훅 실행
+        $this->app->singleton(
+            \Illuminate\Notifications\ChannelManager::class,
+            fn ($app) => new \App\Notifications\NotificationChannelManager($app)
+        );
+
+        // 채널 Readiness 검증 — 미설정 채널 발송 사전 차단
+        $this->app->singleton(
+            \App\Contracts\Notifications\ChannelReadinessCheckerInterface::class,
+            \App\Services\ChannelReadinessService::class
+        );
+
         // TODO: TemplateManagerInterface 바인딩을 추가해야 함
 
         // PluginManagerInterface 바인딩

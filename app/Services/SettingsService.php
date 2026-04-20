@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Http\Resources\AttachmentResource;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -23,8 +24,22 @@ class SettingsService
 {
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
-        private AttachmentRepositoryInterface $attachmentRepository
+        private AttachmentRepositoryInterface $attachmentRepository,
+        private CacheInterface $cache
     ) {}
+
+    /**
+     * 시스템 설정 캐시를 무효화합니다.
+     *
+     * 설정 저장 시 4곳에서 중복되던 로직을 단일 메서드로 통합했습니다.
+     *
+     * @return void
+     */
+    private function invalidateSettingsCache(): void
+    {
+        $this->cache->forget('settings.system');
+        Artisan::call('config:clear');
+    }
 
     /**
      * 모든 시스템 설정을 조회합니다.
@@ -157,10 +172,63 @@ class SettingsService
             }
 
             $value = config($configKey);
+
+            if ($frontendKey === 'supportedTimezones' && is_array($value)) {
+                $result[$frontendKey] = $this->buildTimezoneOptions($value);
+                continue;
+            }
+
             $result[$frontendKey] = $this->castValue($value, $fieldSchema);
         }
 
         return $result;
+    }
+
+    /**
+     * IANA 타임존 배열을 프론트엔드 Select 옵션 형식으로 변환합니다.
+     *
+     * 각 타임존의 현재 시점 UTC 오프셋을 계산하여
+     * "(UTC±HH:MM) Asia/Seoul" 형식의 라벨을 생성합니다.
+     * DST 전환 시점에 자동으로 정확한 오프셋이 반영됩니다.
+     *
+     * 정렬 순서: 오프셋 오름차순 → 식별자 알파벳순
+     *
+     * @param  array<int, string>  $timezones  IANA 타임존 식별자 배열
+     * @return array<int, array{value: string, label: string}> Select 옵션 배열
+     */
+    private function buildTimezoneOptions(array $timezones): array
+    {
+        $now = new \DateTime('now', new \DateTimeZone('UTC'));
+
+        $items = [];
+        foreach ($timezones as $tz) {
+            if (! is_string($tz) || $tz === '') {
+                continue;
+            }
+
+            try {
+                $offsetSec = (new \DateTimeZone($tz))->getOffset($now);
+            } catch (\Exception) {
+                continue;
+            }
+
+            $sign = $offsetSec >= 0 ? '+' : '-';
+            $h = intdiv(abs($offsetSec), 3600);
+            $m = intdiv(abs($offsetSec) % 3600, 60);
+
+            $items[] = [
+                'value' => $tz,
+                'label' => sprintf('(UTC%s%02d:%02d) %s', $sign, $h, $m, $tz),
+                'offset' => $offsetSec,
+            ];
+        }
+
+        usort($items, fn ($a, $b) => [$a['offset'], $a['value']] <=> [$b['offset'], $b['value']]);
+
+        return array_map(
+            fn ($i) => ['value' => $i['value'], 'label' => $i['label']],
+            $items
+        );
     }
 
     /**
@@ -385,8 +453,20 @@ class SettingsService
             $result = $this->configRepository->saveCategory($tab, $mergedSettings);
 
             if ($result) {
-                // 캐시 클리어
-                Cache::forget('system_settings');
+                $this->invalidateSettingsCache();
+
+                // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
+                // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
+                // 워커가 정상 종료 후 재시작되도록 신호 전송 (cache 기반, 즉시 종료 X)
+                if ($tab === 'drivers') {
+                    try {
+                        Artisan::call('queue:restart');
+                    } catch (\Throwable $e) {
+                        Log::warning('queue:restart 실행 실패', [
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // After 훅
@@ -454,52 +534,42 @@ class SettingsService
      */
     private function saveAdvancedSettings(array $settings): bool
     {
-        // cache 카테고리 필드
-        $cacheFields = ['enabled', 'layout_enabled', 'layout_ttl', 'stats_enabled', 'stats_ttl', 'seo_enabled', 'seo_ttl'];
-        // debug 카테고리 필드
-        $debugFields = ['mode', 'sql_query_log', 'log_level'];
-        // core_update 카테고리 필드
-        $coreUpdateFields = ['github_url', 'github_token'];
+        // 각 카테고리에 속하는 원본 필드명 목록
+        // (frontend_key → 원본 키 역변환 후의 키 기준)
+        $categoryFieldMap = [
+            'cache' => ['enabled', 'layout_enabled', 'layout_ttl', 'stats_enabled', 'stats_ttl', 'seo_enabled', 'seo_ttl'],
+            'debug' => ['mode', 'sql_query_log', 'log_level'],
+            'core_update' => ['github_url', 'github_token'],
+            'geoip' => ['feature_enabled', 'license_key', 'auto_update_enabled', 'last_updated_at'],
+        ];
 
-        $cacheSettings = [];
-        $debugSettings = [];
-        $coreUpdateSettings = [];
+        // 설정을 카테고리별로 분류
+        $categorized = array_fill_keys(array_keys($categoryFieldMap), []);
 
         foreach ($settings as $key => $value) {
-            if (in_array($key, $cacheFields)) {
-                $cacheSettings[$key] = $value;
-            } elseif (in_array($key, $debugFields)) {
-                $debugSettings[$key] = $value;
-            } elseif (in_array($key, $coreUpdateFields)) {
-                $coreUpdateSettings[$key] = $value;
+            foreach ($categoryFieldMap as $category => $fields) {
+                if (in_array($key, $fields)) {
+                    $categorized[$category][$key] = $value;
+                    break;
+                }
             }
         }
 
         $result = true;
 
-        // cache 설정 저장
-        if (! empty($cacheSettings)) {
-            $existingCache = $this->configRepository->getCategory('cache');
-            $mergedCache = array_merge($existingCache, $cacheSettings);
-            $result = $result && $this->configRepository->saveCategory('cache', $mergedCache);
-        }
+        // 각 카테고리별 병합 저장
+        foreach ($categorized as $category => $categorySettings) {
+            if (empty($categorySettings)) {
+                continue;
+            }
 
-        // debug 설정 저장
-        if (! empty($debugSettings)) {
-            $existingDebug = $this->configRepository->getCategory('debug');
-            $mergedDebug = array_merge($existingDebug, $debugSettings);
-            $result = $result && $this->configRepository->saveCategory('debug', $mergedDebug);
-        }
-
-        // core_update 설정 저장
-        if (! empty($coreUpdateSettings)) {
-            $existingCoreUpdate = $this->configRepository->getCategory('core_update');
-            $mergedCoreUpdate = array_merge($existingCoreUpdate, $coreUpdateSettings);
-            $result = $result && $this->configRepository->saveCategory('core_update', $mergedCoreUpdate);
+            $existing = $this->configRepository->getCategory($category);
+            $merged = array_merge($existing, $categorySettings);
+            $result = $result && $this->configRepository->saveCategory($category, $merged);
         }
 
         if ($result) {
-            Cache::forget('system_settings');
+            $this->invalidateSettingsCache();
         }
 
         return $result;
@@ -538,7 +608,7 @@ class SettingsService
             $result = $this->configRepository->set($key, $value);
 
             if ($result) {
-                Cache::forget('system_settings');
+                $this->cache->forget('settings.system');
             }
 
             // After 훅
@@ -573,7 +643,7 @@ class SettingsService
         $result = $this->configRepository->restore($backupPath);
 
         if ($result) {
-            Cache::forget('system_settings');
+            $this->cache->forget('settings.system');
         }
 
         return $result;

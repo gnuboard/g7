@@ -4,13 +4,13 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * 쿠폰 컬렉션 리소스
  */
-class CouponCollection extends ResourceCollection
+class CouponCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
 

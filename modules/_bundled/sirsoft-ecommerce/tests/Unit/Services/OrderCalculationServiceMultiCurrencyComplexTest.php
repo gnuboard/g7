@@ -10,7 +10,6 @@ use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\MultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
@@ -493,17 +492,27 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
         int $baseFee = 0,
         ?int $freeThreshold = null,
     ): ShippingPolicy {
-        return ShippingPolicy::create([
+        $policy = ShippingPolicy::create([
             'name' => ['ko' => '테스트 배송정책', 'en' => 'Test Shipping Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+
+        $policy->countrySettings()->create([
+            'country_code' => 'KR',
+            'shipping_method' => 'parcel',
+            'currency_code' => 'KRW',
             'charge_policy' => $chargePolicy,
             'base_fee' => $baseFee,
             'free_threshold' => $freeThreshold,
             'ranges' => null,
-            'countries' => ['KR'],
-            'currency_code' => 'KRW',
+            'extra_fee_enabled' => false,
+            'extra_fee_settings' => null,
+            'extra_fee_multiply' => false,
             'is_active' => true,
         ]);
+
+        return $policy->load('countrySettings');
     }
 
     // ========================================
@@ -673,16 +682,23 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
 
         $policy = ShippingPolicy::create([
             'name' => ['ko' => '추가배송비 정책', 'en' => 'Extra Shipping Policy'],
-            'shipping_method' => ShippingMethodEnum::PARCEL,
+            'is_default' => false,
+            'is_active' => true,
+        ]);
+        $policy->countrySettings()->create([
+            'country_code' => 'KR',
+            'shipping_method' => 'parcel',
+            'currency_code' => 'KRW',
             'charge_policy' => ChargePolicyEnum::FIXED,
             'base_fee' => 3000,
-            'countries' => ['KR'],
-            'currency_code' => 'KRW',
-            'is_active' => true,
+            'free_threshold' => null,
+            'ranges' => null,
             'extra_fee_enabled' => true,
             'extra_fee_settings' => [
-                ['zipcode' => '63*', 'fee' => 3000], // 제주도 추가배송비
+                ['zipcode' => '63*', 'fee' => 3000],
             ],
+            'extra_fee_multiply' => false,
+            'is_active' => true,
         ]);
         $product->update(['shipping_policy_id' => $policy->id]);
 

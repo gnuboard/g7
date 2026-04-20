@@ -2,21 +2,23 @@
 
 namespace App\Seo;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SeoCacheManager implements SeoCacheManagerInterface
 {
     /**
-     * 캐시 키 프리픽스
+     * 캐시 키 프리픽스 (드라이버 접두사 `g7:core:` 다음에 붙음)
      */
-    private const CACHE_PREFIX = 'seo:page:';
+    private const CACHE_PREFIX = 'seo.page.';
 
     /**
      * 캐시된 URL 인덱스 키
      */
-    private const INDEX_KEY = 'seo:cached_urls';
+    private const INDEX_KEY = 'seo.cached_urls';
+
+    public function __construct(private readonly CacheInterface $cache) {}
 
     /**
      * {@inheritdoc}
@@ -29,7 +31,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
 
         $key = $this->buildKey($url, $locale);
 
-        return Cache::get($key);
+        return $this->cache->get($key);
     }
 
     /**
@@ -42,9 +44,9 @@ class SeoCacheManager implements SeoCacheManagerInterface
         }
 
         $key = $this->buildKey($url, $locale);
-        $ttl = (int) g7_core_settings('seo.cache_ttl', 7200);
+        $ttl = $this->getCacheTtl();
 
-        Cache::put($key, $html, $ttl);
+        $this->cache->put($key, $html, $ttl);
 
         // URL 인덱스 업데이트
         $this->addToIndex($url, $locale, $key);
@@ -60,7 +62,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
 
         foreach ($index as $entry) {
             if ($this->matchesPattern($entry['url'], $urlPattern)) {
-                Cache::forget($entry['key']);
+                $this->cache->forget($entry['key']);
                 $count++;
             }
         }
@@ -82,7 +84,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
 
         foreach ($index as $entry) {
             if (($entry['layout'] ?? '') === $layoutName) {
-                Cache::forget($entry['key']);
+                $this->cache->forget($entry['key']);
                 $count++;
             }
         }
@@ -102,10 +104,10 @@ class SeoCacheManager implements SeoCacheManagerInterface
         $index = $this->getIndex();
 
         foreach ($index as $entry) {
-            Cache::forget($entry['key']);
+            $this->cache->forget($entry['key']);
         }
 
-        Cache::forget(self::INDEX_KEY);
+        $this->cache->forget(self::INDEX_KEY);
 
         Log::info('[SEO] All cache cleared', ['count' => count($index)]);
     }
@@ -135,7 +137,15 @@ class SeoCacheManager implements SeoCacheManagerInterface
      */
     private function isEnabled(): bool
     {
-        return (bool) g7_core_settings('seo.cache_enabled', true);
+        return (bool) g7_core_settings('cache.seo_enabled', g7_core_settings('seo.cache_enabled', true));
+    }
+
+    /**
+     * 캐시 TTL (초) — g7_core_settings('cache.seo_ttl') 우선.
+     */
+    private function getCacheTtl(): int
+    {
+        return (int) g7_core_settings('cache.seo_ttl', g7_core_settings('seo.cache_ttl', 7200));
     }
 
     /**
@@ -155,7 +165,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
             'cached_at' => now()->toIso8601String(),
         ];
 
-        Cache::put(self::INDEX_KEY, $index, 86400 * 30); // 30일
+        $this->cache->put(self::INDEX_KEY, $index, 86400 * 30); // 30일
     }
 
     /**
@@ -163,7 +173,7 @@ class SeoCacheManager implements SeoCacheManagerInterface
      */
     private function getIndex(): array
     {
-        return Cache::get(self::INDEX_KEY, []);
+        return $this->cache->get(self::INDEX_KEY, []);
     }
 
     /**
@@ -175,12 +185,12 @@ class SeoCacheManager implements SeoCacheManagerInterface
         $validIndex = [];
 
         foreach ($index as $key => $entry) {
-            if (Cache::has($entry['key'])) {
+            if ($this->cache->has($entry['key'])) {
                 $validIndex[$key] = $entry;
             }
         }
 
-        Cache::put(self::INDEX_KEY, $validIndex, 86400 * 30);
+        $this->cache->put(self::INDEX_KEY, $validIndex, 86400 * 30);
     }
 
     /**
@@ -212,9 +222,9 @@ class SeoCacheManager implements SeoCacheManagerInterface
         }
 
         $key = $this->buildKey($url, $locale);
-        $ttl = (int) g7_core_settings('seo.cache_ttl', 7200);
+        $ttl = $this->getCacheTtl();
 
-        Cache::put($key, $html, $ttl);
+        $this->cache->put($key, $html, $ttl);
 
         // 레이아웃 정보 포함하여 인덱스 업데이트
         $index = $this->getIndex();
@@ -226,6 +236,6 @@ class SeoCacheManager implements SeoCacheManagerInterface
             'cached_at' => now()->toIso8601String(),
         ];
 
-        Cache::put(self::INDEX_KEY, $index, 86400 * 30);
+        $this->cache->put(self::INDEX_KEY, $index, 86400 * 30);
     }
 }

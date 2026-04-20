@@ -652,6 +652,13 @@
                       }
                     },
                     {
+                      "handler": "reloadExtensions",
+                      "params": {
+                        "moduleInfo": "{{result}}",
+                        "action": "remove"
+                      }
+                    },
+                    {
                       "handler": "closeModal"
                     }
                   ],

@@ -9,6 +9,9 @@
         "title": "{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}",
         "description": "{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board"
     },
+    "computed": {
+        "isReadOnly": "{{!!route?.id && !!form_meta?.data && form_meta?.data?.board?.user_abilities?.can_write !== true}}"
+    },
     "state": {
         "isSaving": false,
         "hasChanges": false,
@@ -17,6 +20,11 @@
         "isDataLoaded": false,
         "errors": null,
         "uploadingFiles": []
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "form_meta"
+        ]
     },
     "data_sources": [
         {
@@ -77,9 +85,6 @@
             }
         }
     ],
-    "computed": {
-        "isReadOnly": "{{!!route?.id && !!form_data?.data && form_data?.data?.abilities?.can_write !== true}}"
-    },
     "init_actions": [
         {
             "comment": "tempKey 생성 (신규/수정 모두 - 취소 시 안전을 위해)",

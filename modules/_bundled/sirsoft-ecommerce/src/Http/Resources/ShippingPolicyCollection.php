@@ -2,10 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
-use App\Http\Resources\Traits\HasRowNumber;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -13,10 +12,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * 배송정책 목록을 페이지네이션 및 통계와 함께 반환합니다.
  */
-class ShippingPolicyCollection extends ResourceCollection
+class ShippingPolicyCollection extends BaseApiCollection
 {
     use HasAbilityCheck;
-    use HasRowNumber;
 
     /**
      * 컬렉션 레벨 능력(can_*) 매핑을 반환합니다.
@@ -101,11 +99,25 @@ class ShippingPolicyCollection extends ResourceCollection
     public function toSimpleArray(): array
     {
         return $this->collection->map(function ($shippingPolicy) {
+            $countrySetting = $shippingPolicy->countrySettings->first();
+            $method = $countrySetting?->shipping_method;
+
+            if ($method === 'custom') {
+                $name = $countrySetting->custom_shipping_name;
+                $locale = app()->getLocale();
+                $methodLabel = is_array($name) ? ($name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null) : null;
+            } else {
+                $methodLabel = $method
+                    ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName()
+                    : null;
+            }
+
             return [
                 'id' => $shippingPolicy->id,
                 'name' => $shippingPolicy->getLocalizedName(),
-                'shipping_method' => $shippingPolicy->shipping_method->value,
-                'charge_policy' => $shippingPolicy->charge_policy->value,
+                'shipping_method' => $method,
+                'shipping_method_label' => $methodLabel,
+                'charge_policy' => $countrySetting?->charge_policy?->value,
             ];
         })->toArray();
     }

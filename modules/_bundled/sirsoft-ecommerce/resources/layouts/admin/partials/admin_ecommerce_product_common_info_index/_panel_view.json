@@ -197,16 +197,7 @@
                             "type": "composite",
                             "name": "TabNavigation",
                             "props": {
-                                "tabs": [
-                                    {
-                                        "id": "ko",
-                                        "label": "한국어"
-                                    },
-                                    {
-                                        "id": "en",
-                                        "label": "English"
-                                    }
-                                ],
+                                "tabs": "{{($locales ?? []).map(l => ({ id: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                                 "activeTabId": "{{_local.viewLocale ?? $locale}}",
                                 "variant": "underline",
                                 "className": "mb-4"
@@ -224,29 +215,22 @@
                         },
                         {
                             "id": "content_display",
-                            "type": "basic",
-                            "name": "Div",
+                            "type": "extension_point",
+                            "name": "html_content",
                             "props": {
-                                "className": "p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[200px]"
+                                "content": "{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? ''}}",
+                                "isHtml": "{{(_global.selectedItem?.content_mode ?? 'text') === 'html'}}",
+                                "className": "p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[200px] prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
                             },
-                            "children": [
+                            "default": [
                                 {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{_global.selectedItem?.content_mode === 'html'}}",
+                                    "type": "composite",
+                                    "name": "HtmlContent",
                                     "props": {
-                                        "className": "prose prose-sm dark:prose-invert max-w-none",
-                                        "dangerouslySetInnerHTML": "{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? ''}}"
+                                        "content": "{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? ''}}",
+                                        "isHtml": "{{(_global.selectedItem?.content_mode ?? 'text') === 'html'}}",
+                                        "className": "p-4 bg-gray-50 dark:bg-gray-900 rounded-lg min-h-[200px] prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
                                     }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{_global.selectedItem?.content_mode !== 'html'}}",
-                                    "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
-                                    },
-                                    "text": "{{_global.selectedItem?.content?.[_local.viewLocale ?? $locale] ?? '-'}}"
                                 }
                             ]
                         }
@@ -289,7 +273,7 @@
                             "type": "basic",
                             "name": "Button",
                             "props": {
-                                "disabled": "{{commonInfos?.data?.abilities?.can_update !== true}}",
+                                "disabled": "{{_global.selectedItem?.abilities?.can_update !== true}}",
                                 "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "actions": [
@@ -316,18 +300,18 @@
                                         {
                                             "handler": "setState",
                                             "params": {
-                                                "target": "global",
-                                                "panelMode": "edit"
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
                                                 "target": "local",
                                                 "form": "{{_global.selectedItem}}",
                                                 "isSaving": false,
                                                 "errors": null,
                                                 "showPreview": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "edit"
                                             }
                                         }
                                     ]

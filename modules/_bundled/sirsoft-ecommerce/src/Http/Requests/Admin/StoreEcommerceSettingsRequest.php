@@ -32,7 +32,13 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = app()->getLocale();
 
         return [
-            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,mail_templates,inquiry'],
+            '_tab' => ['sometimes', 'string', 'in:basic_info,language_currency,seo,order_settings,claim,shipping,review_settings,notification_definitions,notifications,inquiry'],
+
+            'notifications' => ['sometimes', 'array'],
+            'notifications.channels' => ['sometimes', 'array'],
+            'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
+            'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
+            'notifications.channels.*.sort_order' => ['nullable', 'integer', 'min:0'],
 
             'basic_info' => ['sometimes', 'array'],
             'basic_info.shop_name' => ['required_with:basic_info', 'string', 'max:255'],
@@ -81,9 +87,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'seo.meta_search_description' => ['nullable', 'string', 'max:1000'],
             'seo.meta_product_title' => ['nullable', 'string', 'max:500'],
             'seo.meta_product_description' => ['nullable', 'string', 'max:1000'],
+            'seo.meta_shop_index_title' => ['nullable', 'string', 'max:500'],
+            'seo.meta_shop_index_description' => ['nullable', 'string', 'max:1000'],
             'seo.seo_category' => ['nullable', 'boolean'],
             'seo.seo_search_result' => ['nullable', 'boolean'],
             'seo.seo_product_detail' => ['nullable', 'boolean'],
+            'seo.seo_shop_index' => ['nullable', 'boolean'],
 
             // inquiry 섹션
             'inquiry' => ['sometimes', 'array'],
@@ -145,9 +154,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.available_countries.*.name.*' => ['string', 'max:100'],
             'shipping.available_countries.*.is_active' => ['nullable', 'boolean'],
             'shipping.international_shipping_enabled' => ['nullable', 'boolean'],
-            'shipping.remote_area_enabled' => ['nullable', 'boolean'],
-            'shipping.remote_area_extra_fee' => ['nullable', 'integer', 'min:0'],
-            'shipping.island_extra_fee' => ['nullable', 'integer', 'min:0'],
             'shipping.free_shipping_threshold' => ['nullable', 'integer', 'min:0'],
             'shipping.free_shipping_enabled' => ['nullable', 'boolean'],
             'shipping.address_validation_enabled' => ['nullable', 'boolean'],
@@ -162,6 +168,15 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.carriers.*.tracking_url' => ['nullable', 'string', 'max:500'],
             'shipping.carriers.*.is_active' => ['nullable', 'boolean'],
             'shipping.carriers.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // shipping.types 섹션 (DB 동기화 대상)
+            'shipping.types' => ['nullable', 'array'],
+            'shipping.types.*.id' => ['nullable', 'integer'],
+            'shipping.types.*.code' => ['required_with:shipping.types', 'string', 'max:50', 'regex:/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/'],
+            'shipping.types.*.name' => ['required_with:shipping.types', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
+            'shipping.types.*.category' => ['required_with:shipping.types', 'string', 'in:domestic,international,other'],
+            'shipping.types.*.is_active' => ['nullable', 'boolean'],
+            'shipping.types.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -193,6 +208,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $this->validateDefaultCountryExists($validator);
             $this->validateUniqueCarrierCodes($validator);
             $this->validateCarrierNames($validator);
+            $this->validateUniqueShippingTypeCodes($validator);
+            $this->validateShippingTypeNames($validator);
             $this->validateUniqueRefundReasonCodes($validator);
             $this->validateRefundReasonNames($validator);
         });
@@ -530,6 +547,72 @@ class StoreEcommerceSettingsRequest extends FormRequest
     }
 
     /**
+     * 배송유형 코드 중복 검증
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateUniqueShippingTypeCodes(Validator $validator): void
+    {
+        $types = $this->input('shipping.types', []);
+
+        if (empty($types) || ! is_array($types)) {
+            return;
+        }
+
+        $codes = [];
+        foreach ($types as $index => $type) {
+            if (! isset($type['code'])) {
+                continue;
+            }
+
+            $code = strtolower(trim($type['code']));
+            if (in_array($code, $codes)) {
+                $validator->errors()->add(
+                    "shipping.types.{$index}.code",
+                    __('sirsoft-ecommerce::validation.custom.shipping.types.duplicate_code')
+                );
+            }
+            $codes[] = $code;
+        }
+    }
+
+    /**
+     * 배송유형명 필수 검증 - ko 로케일에 이름이 있어야 함
+     *
+     * @param  Validator  $validator  Validator 인스턴스
+     */
+    protected function validateShippingTypeNames(Validator $validator): void
+    {
+        $types = $this->input('shipping.types', []);
+
+        if (empty($types) || ! is_array($types)) {
+            return;
+        }
+
+        foreach ($types as $index => $type) {
+            $name = $type['name'] ?? [];
+
+            if (! is_array($name) || empty($name)) {
+                $validator->errors()->add(
+                    "shipping.types.{$index}.name",
+                    __('sirsoft-ecommerce::validation.custom.shipping.types.name_required')
+                );
+
+                continue;
+            }
+
+            $locale = app()->getLocale();
+            $localeName = $name[$locale] ?? '';
+            if (! is_string($localeName) || trim($localeName) === '') {
+                $validator->errors()->add(
+                    "shipping.types.{$index}.name.{$locale}",
+                    __('sirsoft-ecommerce::validation.custom.shipping.types.name_required')
+                );
+            }
+        }
+    }
+
+    /**
      * 환불 사유 코드 중복 검증
      *
      * @param  Validator  $validator  Validator 인스턴스
@@ -697,6 +780,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'seo.seo_category.boolean' => __('sirsoft-ecommerce::validation.custom.seo.seo_category.boolean'),
             'seo.seo_search_result.boolean' => __('sirsoft-ecommerce::validation.custom.seo.seo_search_result.boolean'),
             'seo.seo_product_detail.boolean' => __('sirsoft-ecommerce::validation.custom.seo.seo_product_detail.boolean'),
+            'seo.meta_shop_index_title.string' => __('sirsoft-ecommerce::validation.custom.seo.meta_shop_index_title.string'),
+            'seo.meta_shop_index_title.max' => __('sirsoft-ecommerce::validation.custom.seo.meta_shop_index_title.max'),
+            'seo.meta_shop_index_description.string' => __('sirsoft-ecommerce::validation.custom.seo.meta_shop_index_description.string'),
+            'seo.meta_shop_index_description.max' => __('sirsoft-ecommerce::validation.custom.seo.meta_shop_index_description.max'),
+            'seo.seo_shop_index.boolean' => __('sirsoft-ecommerce::validation.custom.seo.seo_shop_index.boolean'),
 
             // order_settings 섹션 - banks
             'order_settings.banks.*.code.required_with' => __('sirsoft-ecommerce::validation.custom.banks.code.required_with'),
@@ -758,11 +846,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.available_countries.*.name.*.max' => __('sirsoft-ecommerce::validation.custom.shipping.available_countries.name.max'),
             'shipping.available_countries.*.is_active.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.available_countries.is_active.boolean'),
             'shipping.international_shipping_enabled.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.international_shipping_enabled.boolean'),
-            'shipping.remote_area_enabled.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.remote_area_enabled.boolean'),
-            'shipping.remote_area_extra_fee.integer' => __('sirsoft-ecommerce::validation.custom.shipping.remote_area_extra_fee.integer'),
-            'shipping.remote_area_extra_fee.min' => __('sirsoft-ecommerce::validation.custom.shipping.remote_area_extra_fee.min'),
-            'shipping.island_extra_fee.integer' => __('sirsoft-ecommerce::validation.custom.shipping.island_extra_fee.integer'),
-            'shipping.island_extra_fee.min' => __('sirsoft-ecommerce::validation.custom.shipping.island_extra_fee.min'),
             'shipping.free_shipping_threshold.integer' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_threshold.integer'),
             'shipping.free_shipping_threshold.min' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_threshold.min'),
             'shipping.free_shipping_enabled.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.free_shipping_enabled.boolean'),
@@ -782,6 +865,17 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'shipping.carriers.*.tracking_url.string' => __('sirsoft-ecommerce::validation.custom.shipping.carriers.tracking_url.string'),
             'shipping.carriers.*.tracking_url.max' => __('sirsoft-ecommerce::validation.custom.shipping.carriers.tracking_url.max'),
             'shipping.carriers.*.is_active.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.carriers.is_active.boolean'),
+
+            // shipping.types 섹션
+            'shipping.types.*.code.required_with' => __('sirsoft-ecommerce::validation.custom.shipping.types.code.required_with'),
+            'shipping.types.*.code.string' => __('sirsoft-ecommerce::validation.custom.shipping.types.code.string'),
+            'shipping.types.*.code.max' => __('sirsoft-ecommerce::validation.custom.shipping.types.code.max'),
+            'shipping.types.*.code.regex' => __('sirsoft-ecommerce::validation.custom.shipping.types.code.regex'),
+            'shipping.types.*.name.required_with' => __('sirsoft-ecommerce::validation.custom.shipping.types.name.required_with'),
+            'shipping.types.*.name.array' => __('sirsoft-ecommerce::validation.custom.shipping.types.name.array'),
+            'shipping.types.*.category.required_with' => __('sirsoft-ecommerce::validation.custom.shipping.types.category.required_with'),
+            'shipping.types.*.category.in' => __('sirsoft-ecommerce::validation.custom.shipping.types.category.in'),
+            'shipping.types.*.is_active.boolean' => __('sirsoft-ecommerce::validation.custom.shipping.types.is_active.boolean'),
         ];
     }
 
@@ -796,7 +890,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications'];
 
         return array_filter(
             $validated,

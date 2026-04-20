@@ -1,0 +1,41 @@
+{
+    "settings": {
+        "title": "CKEditor5 Settings",
+        "description": "CKEditor5 WYSIWYG editor plugin configuration",
+        "notice": "CKEditor5 is loaded via CDN. An internet connection is required. It is free to use without a separate license.",
+        "section_toolbar": "Editor Settings",
+        "section_image": "Image Settings",
+        "section_preview": "Editor Test",
+        "section_preview_hint": "Preview CKEditor5 with the current settings applied.",
+        "preview_placeholder": "Type here to test the editor.",
+        "fields": {
+            "toolbar": {
+                "label": "Toolbar Type",
+                "hint": "Select the toolbar button configuration for the editor.",
+                "minimal": "Minimal (Bold, Italic, Underline, Link)",
+                "standard": "Standard (Heading, Format, Alignment, Link, List, Table)",
+                "full": "Full (Standard + Media, Colors, Code Block, Source Editing)"
+            },
+            "image_upload": {
+                "label": "Enable Image Upload",
+                "hint": "Enable direct image upload in the editor. When disabled, only URL input is available."
+            },
+            "image_max_size": {
+                "label": "Max Image Size (MB)",
+                "hint": "Maximum allowed size for uploaded images. (1 ~ 10 MB)"
+            },
+            "editor_height": {
+                "label": "Editor Height (px)",
+                "hint": "Set the minimum height of the editor in pixels. (200 ~ 2000 px)"
+            }
+        },
+        "guide": {
+            "title": "Usage Guide",
+            "step1": "Once activated, CKEditor5 is automatically applied to areas using extension_point html_editor and html_content in layouts. Areas using HtmlEditor/HtmlContent components directly (e.g., mail templates) are not affected.",
+            "step2": "Select the toolbar type to adjust the features displayed in the editor. Choose a toolbar that fits your use case.",
+            "step3": "Enabling image upload allows users to paste or upload images directly in the editor. Uploaded images are stored on the server.",
+            "step4": "Changes take effect immediately after saving. No page refresh is required.",
+            "step5": "When deactivated, editors revert to the default HtmlEditor and content display reverts to the default HtmlContent."
+        }
+    }
+}

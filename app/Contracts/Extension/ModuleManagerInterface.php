@@ -97,11 +97,12 @@ interface ModuleManagerInterface
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $moduleName  모듈명
+     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
      * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 모듈을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName): array;
+    public function refreshModuleLayouts(string $moduleName, bool $preserveModified = false): array;
 
     /**
      * 모듈 삭제 시 삭제될 데이터 정보를 반환합니다.

@@ -9,22 +9,51 @@
         "title": "$t:sirsoft-board.admin.settings.title",
         "description": "$t:sirsoft-board.admin.settings.description"
     },
+    "computed": {
+        "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
+        "isNotificationReadOnly": "{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
+        "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
+        "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",
+        "roleOptions": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
+        "adminPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}",
+        "userPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}",
+        "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
+        "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
+    },
     "state": {
-        "mailTemplateCurrentPage": 1,
-        "mailTemplateTotalPages": 1,
-        "mailTemplateTotalItems": 0
+        "notificationDefinitionCurrentPage": 1,
+        "notificationDefinitionTotalPages": 1,
+        "notificationDefinitionTotalItems": 0
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "settings",
+            "boards_list",
+            "roles",
+            "board_types",
+            "boardNotificationDefinitions",
+            "notification_channels"
+        ]
     },
     "initLocal": {
+        "activeNotificationChannel": null,
+        "editingDefinition": null,
         "editingTemplate": null,
+        "editingRecipients": [],
         "editLang": "ko",
         "previewData": null,
-        "mailTemplateFilter": {
+        "notificationDefinitionFilter": {
             "search": "",
             "searchType": "all"
         },
-        "expandedMailTemplateIds": []
+        "expandedNotificationDefinitionIds": [],
+        "expandedNotifications": {},
+        "templateErrors": null,
+        "isSaving": false,
+        "recipientRoleSearchResults": [],
+        "recipientUserSearchResults": []
     },
-
     "data_sources": [
         {
             "id": "settings",
@@ -80,9 +109,9 @@
             }
         },
         {
-            "id": "boardMailTemplates",
+            "id": "boardNotificationDefinitions",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/admin/mail-templates",
+            "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-board",
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
@@ -94,24 +123,27 @@
             },
             "initLocal": {
                 "_merge": "deep",
-                "mailTemplateCurrentPage": "pagination.current_page",
-                "mailTemplateTotalPages": "pagination.last_page",
-                "mailTemplateTotalItems": "pagination.total"
+                "notificationDefinitionCurrentPage": "pagination.current_page",
+                "notificationDefinitionTotalPages": "pagination.last_page",
+                "notificationDefinitionTotalItems": "pagination.total"
             },
             "fallback": {
                 "data": {
                     "data": [],
-                    "pagination": {}
+                    "pagination": []
                 }
             }
         },
         {
-            "id": "notification_channels",
+            "id": "availableChannels",
             "type": "api",
-            "endpoint": "/api/modules/sirsoft-board/admin/notification-channels",
+            "endpoint": "/api/admin/notification-channels",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "fallback": {
+                "data": { "channels": [] }
+            }
         }
     ],
     "init_actions": [
@@ -119,21 +151,10 @@
             "handler": "setState",
             "params": {
                 "target": "_local",
-                "mailTemplateCurrentPage": "{{+(query.page || 1)}}"
+                "notificationDefinitionCurrentPage": "{{+(query.page || 1)}}"
             }
         }
     ],
-    "computed": {
-        "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
-        "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
-        "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
-        "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",
-        "roleOptions": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
-        "adminPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}",
-        "userPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}",
-        "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
-        "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
-    },
     "slots": {
         "content": [
             {
@@ -184,7 +205,6 @@
                                                 "id": "header_save_buttons",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') !== 'mail_templates'}}",
                                                 "props": {
                                                     "className": "flex items-center gap-3 flex-shrink-0 pt-1"
                                                 },
@@ -250,83 +270,85 @@
                                                             {
                                                                 "type": "click",
                                                                 "handler": "sequence",
-                                                                "actions": [
-                                                                    {
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "isSaving": true,
-                                                                            "errors": null
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "apiCall",
-                                                                        "auth_required": true,
-                                                                        "target": "/api/modules/sirsoft-board/admin/settings",
-                                                                        "params": {
-                                                                            "method": "PUT",
-                                                                            "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notification_channels: form.notification_channels || {} }; })()}}"
+                                                                "params": {
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "isSaving": true,
+                                                                                "errors": null
+                                                                            }
                                                                         },
-                                                                        "onSuccess": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "isSaving": false,
-                                                                                    "hasChanges": false
-                                                                                }
+                                                                        {
+                                                                            "handler": "apiCall",
+                                                                            "auth_required": true,
+                                                                            "target": "/api/modules/sirsoft-board/admin/settings",
+                                                                            "params": {
+                                                                                "method": "PUT",
+                                                                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
                                                                             },
-                                                                            {
-                                                                                "handler": "refetchDataSource",
-                                                                                "params": {
-                                                                                    "dataSourceId": "settings"
+                                                                            "onSuccess": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "isSaving": false,
+                                                                                        "hasChanges": false
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "settings"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "boards_list"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "roles"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "board_types"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "success",
+                                                                                        "message": "$t:sirsoft-board.admin.settings.save_success"
+                                                                                    }
                                                                                 }
-                                                                            },
-                                                                            {
-                                                                                "handler": "refetchDataSource",
-                                                                                "params": {
-                                                                                    "dataSourceId": "boards_list"
+                                                                            ],
+                                                                            "onError": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "isSaving": false,
+                                                                                        "errors": "{{error.errors}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "$t:sirsoft-board.admin.settings.save_error"
+                                                                                    }
                                                                                 }
-                                                                            },
-                                                                            {
-                                                                                "handler": "refetchDataSource",
-                                                                                "params": {
-                                                                                    "dataSourceId": "roles"
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "refetchDataSource",
-                                                                                "params": {
-                                                                                    "dataSourceId": "board_types"
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "success",
-                                                                                    "message": "$t:sirsoft-board.admin.settings.save_success"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "onError": [
-                                                                            {
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "local",
-                                                                                    "isSaving": false,
-                                                                                    "errors": "{{error.errors}}"
-                                                                                }
-                                                                            },
-                                                                            {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "$t:sirsoft-board.admin.settings.save_error"
-                                                                                }
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                ]
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
                                                             }
                                                         ],
                                                         "children": [
@@ -409,8 +431,12 @@
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.spam_security"
                                                 },
                                                 {
-                                                    "id": "mail_templates",
-                                                    "label": "$t:sirsoft-board.admin.settings.tabs.mail_templates"
+                                                    "id": "seo",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.seo"
+                                                },
+                                                {
+                                                    "id": "notification_definitions",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.notification_definitions"
                                                 }
                                             ],
                                             "activeTabId": "{{_global.activeBoardSettingsTab || query.tab || 'general'}}",
@@ -421,30 +447,32 @@
                                                 "event": "onTabChange",
                                                 "type": "change",
                                                 "handler": "sequence",
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "errors": null
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "activeBoardSettingsTab": "{{$args[0]}}"
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "replaceUrl",
-                                                        "params": {
-                                                            "query": {
-                                                                "tab": "{{$args[0]}}"
+                                                "params": {
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "errors": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "activeBoardSettingsTab": "{{$args[0]}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "replaceUrl",
+                                                            "params": {
+                                                                "query": {
+                                                                    "tab": "{{$args[0]}}"
+                                                                }
                                                             }
                                                         }
-                                                    }
-                                                ]
+                                                    ]
+                                                }
                                             }
                                         ]
                                     }
@@ -623,7 +651,10 @@
                                 "partial": "partials/admin_board_settings/_tab_spam_security.json"
                             },
                             {
-                                "partial": "partials/admin_board_settings/_tab_mail_templates.json"
+                                "partial": "partials/admin_board_settings/_tab_seo.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_notification_definitions.json"
                             }
                         ]
                     }
@@ -639,10 +670,13 @@
             "partial": "partials/admin_board_form/_board_type_manage_modal.json"
         },
         {
-            "partial": "partials/admin_board_settings/_modal_mail_template_edit.json"
+            "partial": "partials/admin_board_settings/_modal_notification_template_edit.json"
         },
         {
-            "partial": "partials/admin_board_settings/_modal_mail_template_preview.json"
+            "partial": "partials/admin_board_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "partial": "partials/admin_board_settings/_modal_notification_definition_reset.json"
         }
     ]
 }

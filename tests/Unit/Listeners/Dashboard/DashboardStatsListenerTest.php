@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Listeners\Dashboard;
 
-use App\Events\Dashboard\DashboardUpdated;
+use App\Events\GenericBroadcastEvent;
 use App\Listeners\Dashboard\DashboardStatsListener;
 use App\Services\DashboardService;
 use Illuminate\Support\Facades\Event;
@@ -19,7 +19,7 @@ class DashboardStatsListenerTest extends TestCase
      */
     public function test_listener_broadcasts_stats_update(): void
     {
-        Event::fake([DashboardUpdated::class]);
+        Event::fake([GenericBroadcastEvent::class]);
 
         $mockService = Mockery::mock(DashboardService::class);
         $mockService->shouldReceive('getStats')->once()->andReturn([
@@ -27,10 +27,12 @@ class DashboardStatsListenerTest extends TestCase
         ]);
 
         $listener = new DashboardStatsListener($mockService);
-        $listener->handle();
+        $listener->handleStatsUpdate();
 
-        Event::assertDispatched(DashboardUpdated::class, function ($event) {
-            return $event->type === 'stats';
+        Event::assertDispatched(GenericBroadcastEvent::class, function ($event) {
+            return $event->channel === 'core.admin.dashboard'
+                && $event->eventName === 'dashboard.stats.updated'
+                && $event->payload['type'] === 'stats';
         });
     }
 
@@ -39,7 +41,7 @@ class DashboardStatsListenerTest extends TestCase
      */
     public function test_listener_fetches_data_from_dashboard_service(): void
     {
-        Event::fake([DashboardUpdated::class]);
+        Event::fake([GenericBroadcastEvent::class]);
 
         $expectedData = [
             'total_users' => ['count' => 50, 'trend' => 'up'],
@@ -50,10 +52,11 @@ class DashboardStatsListenerTest extends TestCase
         $mockService->shouldReceive('getStats')->once()->andReturn($expectedData);
 
         $listener = new DashboardStatsListener($mockService);
-        $listener->handle();
+        $listener->handleStatsUpdate();
 
-        Event::assertDispatched(DashboardUpdated::class, function ($event) use ($expectedData) {
-            return $event->type === 'stats' && $event->data === $expectedData;
+        Event::assertDispatched(GenericBroadcastEvent::class, function ($event) use ($expectedData) {
+            return $event->payload['type'] === 'stats'
+                && $event->payload['data'] === $expectedData;
         });
     }
 

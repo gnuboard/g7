@@ -3,9 +3,10 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
-use App\Helpers\TimezoneHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
@@ -29,23 +30,17 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  string  $orderDirection  정렬 방향 (ASC 또는 DESC, 기본값: DESC)
      * @return Collection 부모-자식 관계로 정렬된 댓글 컬렉션
      */
-    public function getByPostId(string $slug, int $postId, bool $withTrashed = false, string $orderDirection = 'DESC', ?string $scopePermission = null): Collection
+    public function getByPostId(string $slug, int $postId, bool $withTrashed = false, string $orderDirection = 'DESC', ?string $scopePermission = null, ?int $boardId = null): Collection
     {
-        $board = Board::where('slug', $slug)->first();
+        // boardId가 전달되면 Board 모델 재조회 없이 직접 사용
+        $resolvedBoardId = $boardId ?? Board::where('slug', $slug)->first()?->id;
 
         // 정렬 방향 정규화 (대소문자 무관하게 처리)
         $orderDirection = strtoupper($orderDirection) === 'ASC' ? 'asc' : 'desc';
 
         $query = Comment::query()
-            ->where('board_id', $board?->id)
-            ->with(['user', 'parent'])
-            ->withCount([
-                'replies' => function ($q) use ($board) {
-                    $q->where('board_id', $board?->id);
-                    // 삭제되지 않은 답글만 카운트
-                    $q->whereNull('deleted_at');
-                },
-            ])
+            ->where('board_id', $resolvedBoardId)
+            ->with(['user', 'user.avatarAttachment', 'parent'])
             ->where('post_id', $postId);
 
         // 권한 스코프 필터링 (Service에서 컨텍스트 기반으로 전달)
@@ -123,7 +118,6 @@ class CommentRepository implements CommentRepositoryInterface
      * 모든 하위 자손(depth 2+)을 포함한 전체 답글 수로 재계산합니다.
      *
      * @param  Collection  $comments  정렬된 댓글 컬렉션
-     * @return void
      */
     private function recalculateDescendantCounts(Collection $comments): void
     {
@@ -190,7 +184,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  int  $id  댓글 ID
      * @return Comment 댓글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(string $slug, int $id): Comment
     {
@@ -211,7 +205,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  array  $data  수정할 데이터
      * @return Comment 수정된 댓글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function update(string $slug, int $id, array $data): Comment
     {
@@ -229,7 +223,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  int  $id  댓글 ID
      * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function delete(string $slug, int $id): bool
     {
@@ -245,7 +239,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  int  $id  댓글 ID
      * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function forceDelete(string $slug, int $id): bool
     {
@@ -263,7 +257,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  array  $actionLog  작업 이력 데이터
      * @return Comment 수정된 댓글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatus(string $slug, int $id, string $status, array $actionLog, ?string $triggerType = null): Comment
     {
@@ -303,7 +297,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  array  $updates  업데이트할 데이터 (status, trigger_type, deleted_at, action_log)
      * @return Comment 수정된 댓글
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatusBulk(string $slug, int $id, array $updates): Comment
     {
@@ -401,24 +395,30 @@ class CommentRepository implements CommentRepositoryInterface
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
         $sort = $filters['sort'] ?? 'latest';
+        $cachedTotal = $filters['cached_total'] ?? null;
 
         $orderDirection = $sort === 'oldest' ? 'asc' : 'desc';
+
+        // 비활성 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용
+        $inactiveBoardIds = Board::where('is_active', false)->pluck('id')->all();
 
         $query = Comment::query()
             ->select('board_comments.*')
             ->where('board_comments.user_id', $userId)
-            // 삭제된 게시글 제외 (INNER JOIN → deleted_at IS NULL)
-            ->join('board_posts', function ($join) {
-                $join->on('board_posts.id', '=', 'board_comments.post_id')
+            // 삭제된 게시글 제외 — whereExists로 JOIN 대체
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('board_posts')
+                    ->whereColumn('board_posts.id', 'board_comments.post_id')
                     ->whereNull('board_posts.deleted_at');
-            })
-            // 비활성 게시판 제외
-            ->join('boards', function ($join) {
-                $join->on('boards.id', '=', 'board_comments.board_id')
-                    ->where('boards.is_active', true);
             })
             ->with(['post.board'])
             ->orderBy('board_comments.created_at', $orderDirection);
+
+        // 비활성 게시판 제외
+        if (! empty($inactiveBoardIds)) {
+            $query->whereNotIn('board_comments.board_id', $inactiveBoardIds);
+        }
 
         // 게시판 필터: board_slug → board_id 조회
         if ($boardSlugFilter) {
@@ -434,7 +434,7 @@ class CommentRepository implements CommentRepositoryInterface
             $query->where('board_comments.content', 'like', $keyword);
         }
 
-        $paginator = $query->paginate($perPage);
+        $paginator = $query->paginate($perPage, ['*'], 'page', null, $cachedTotal);
 
         // paginate 후 현재 페이지 항목에만 PHP 가공 적용
         $paginator->through(function (Comment $comment) {
@@ -442,18 +442,17 @@ class CommentRepository implements CommentRepositoryInterface
             $board = $post?->board;
 
             return [
-                'id'                   => $comment->id,
-                'board_slug'           => $board?->slug ?? '',
-                'board_name'           => $board?->getLocalizedName() ?? '',
-                'post_title'           => $post?->title ?? '',
-                'post_id_val'          => $post?->id,
-                'content'              => $comment->content,
-                'created_at'           => $this->formatCreatedAt($comment->created_at),
+                'id' => $comment->id,
+                'board_slug' => $board?->slug ?? '',
+                'board_name' => $board?->getLocalizedName() ?? '',
+                'post_title' => $post?->title ?? '',
+                'post_id_val' => $post?->id,
+                'content' => $comment->content,
+                'created_at' => $this->formatCreatedAt($comment->created_at),
                 'created_at_formatted' => $this->formatCreatedAtFormat($comment->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             ];
         });
 
         return $paginator;
     }
-
 }

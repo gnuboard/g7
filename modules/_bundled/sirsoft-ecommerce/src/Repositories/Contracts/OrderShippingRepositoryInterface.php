@@ -53,4 +53,12 @@ interface OrderShippingRepositoryInterface
      * @return int 업데이트된 레코드 수
      */
     public function transferByOrderOptionId(int $fromOrderOptionId, int $toOrderOptionId): int;
+
+    /**
+     * 배송유형 코드로 사용 중인 배송 레코드 수를 조회합니다.
+     *
+     * @param  string  $shippingType  배송유형 코드
+     * @return int 사용 중인 레코드 수
+     */
+    public function countByShippingType(string $shippingType): int;
 }

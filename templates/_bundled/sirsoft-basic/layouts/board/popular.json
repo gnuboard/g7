@@ -14,7 +14,7 @@
                 "limit": 20
             },
             "auto_fetch": true,
-            "auth_required": true,
+            "auth_required": false,
             "refetchOnMount": true,
             "errorHandling": {
                 "403": {
@@ -182,14 +182,14 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "props": {
-                                    "className": "{{(query.period ?? 'week') === 'all' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
+                                    "className": "{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "list",
+                                            "name": "calendar-alt",
                                             "size": "sm",
                                             "className": "mr-1.5 inline"
                                         }
@@ -197,7 +197,7 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
-                                        "text": "$t:board.popular.all"
+                                        "text": "$t:board.popular.year"
                                     }
                                 ],
                                 "actions": [
@@ -205,7 +205,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/boards/popular?period=all"
+                                            "path": "/boards/popular?period=year"
                                         }
                                     }
                                 ]

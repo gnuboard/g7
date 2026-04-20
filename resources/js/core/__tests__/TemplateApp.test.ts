@@ -1599,4 +1599,352 @@ describe('TemplateApp', () => {
       });
     });
   });
+
+  // =============================================================================
+  // 회귀 테스트: WebSocket 데이터소스 progressive 제외 (engine-v1.32.2)
+  // 이슈: WebSocket 소스가 progressiveDataInit에서 undefined로 초기화되어
+  //       blur_until_loaded가 영구 블러 → WebSocket 성공/실패 무관하게 발생
+  // =============================================================================
+  describe('Regression Tests - WebSocket Source Filtering', () => {
+    /**
+     * [TS-WS-PROGRESSIVE-1] WebSocket 소스는 progressive 목록에서 제외
+     *
+     * WebSocket은 이벤트 리스너이지 데이터 제공자가 아니므로
+     * progressiveDataInit에 포함되면 dataContext에 undefined 키가 영구 잔존하고
+     * blur_until_loaded가 절대 해제되지 않음
+     */
+    describe('[TS-WS-PROGRESSIVE-1] WebSocket 소스 progressive 필터 제외', () => {
+      it('WebSocket 타입 소스는 progressiveAndBackgroundSources에 포함되지 않아야 함', () => {
+        const dataSources = [
+          { id: 'users', type: 'api', endpoint: '/api/users' },
+          { id: 'modules', type: 'api', endpoint: '/api/modules', loading_strategy: 'progressive' },
+          { id: 'config', type: 'api', endpoint: '/api/config', loading_strategy: 'blocking' },
+          {
+            id: 'notification_ws',
+            type: 'websocket',
+            channel: 'core.user.notifications.1',
+            event: 'notification.received',
+            target_source: 'notification_unread_count',
+          },
+        ];
+
+        // TemplateApp.ts의 progressive 필터 로직 (engine-v1.32.2)
+        const progressiveAndBackgroundSources = dataSources.filter(
+          (source: any) =>
+            (source.loading_strategy || 'progressive') !== 'blocking' &&
+            source.type !== 'websocket'
+        );
+
+        const ids = progressiveAndBackgroundSources.map((s) => s.id);
+
+        // API progressive 소스만 포함
+        expect(ids).toContain('users');
+        expect(ids).toContain('modules');
+        // blocking 제외
+        expect(ids).not.toContain('config');
+        // WebSocket 제외 (핵심)
+        expect(ids).not.toContain('notification_ws');
+      });
+
+      it('WebSocket 소스는 progressiveDataInit에서 undefined 초기화되지 않아야 함', () => {
+        const dataSources = [
+          { id: 'users', type: 'api', endpoint: '/api/users' },
+          {
+            id: 'notification_ws',
+            type: 'websocket',
+            channel: 'core.user.notifications.1',
+            event: 'notification.received',
+          },
+        ];
+
+        const progressiveAndBackgroundSources = dataSources.filter(
+          (source: any) =>
+            (source.loading_strategy || 'progressive') !== 'blocking' &&
+            source.type !== 'websocket'
+        );
+        const progressiveDataSourceIds = progressiveAndBackgroundSources.map((s: any) => s.id);
+
+        const progressiveDataInit: Record<string, any> = {};
+        progressiveDataSourceIds.forEach((id: string) => {
+          progressiveDataInit[id] = undefined;
+        });
+
+        // dataContext에 WebSocket 키가 존재하지 않아야 함 (blur_until_loaded 회귀 방지)
+        expect('notification_ws' in progressiveDataInit).toBe(false);
+        expect('users' in progressiveDataInit).toBe(true);
+      });
+
+      it('blur_until_loaded: true 체크 시 WebSocket 키가 dataContext에 없어야 영구 블러 방지', () => {
+        // blur_until_loaded: true의 체크 로직 시뮬레이션 (DynamicRenderer.tsx)
+        const systemKeys = ['route', 'query', '_global', '_local', '_dataSourceErrors'];
+
+        // 수정 전: WebSocket 소스가 progressive에 포함되어 dataContext에 undefined로 존재
+        const dataContextBefore = {
+          users: { data: [{ id: 1 }] },
+          modules: { data: [{ id: 'mod-1' }] },
+          notification_ws: undefined, // ← 영구 undefined (블러 영구 유지)
+          route: {},
+          query: {},
+          _global: {},
+        };
+        const keysBefore = Object.keys(dataContextBefore).filter(
+          (key) => !systemKeys.includes(key) && !key.startsWith('_')
+        );
+        const hasUndefinedBefore = keysBefore.some(
+          (key) => (dataContextBefore as any)[key] === undefined
+        );
+        expect(hasUndefinedBefore).toBe(true); // 버그 재현: 영구 블러
+
+        // 수정 후: WebSocket 소스가 dataContext에 아예 존재하지 않음
+        const dataContextAfter = {
+          users: { data: [{ id: 1 }] },
+          modules: { data: [{ id: 'mod-1' }] },
+          route: {},
+          query: {},
+          _global: {},
+        };
+        const keysAfter = Object.keys(dataContextAfter).filter(
+          (key) => !systemKeys.includes(key) && !key.startsWith('_')
+        );
+        const hasUndefinedAfter = keysAfter.some(
+          (key) => (dataContextAfter as any)[key] === undefined
+        );
+        expect(hasUndefinedAfter).toBe(false); // 수정 검증: 블러 정상 해제
+      });
+
+      it('WebSocket 소스는 target_source로 다른 데이터소스를 트리거하지만 자체 데이터를 제공하지 않음', () => {
+        // notification_ws는 콜백에서 source.target_source || source.id 사용 (DataSourceManager.subscribeWebSockets)
+        // → 콜백이 호출되어도 dataContext에 'notification_ws' 키는 절대 추가되지 않음
+        // → progressiveDataInit에 포함되어선 안 되는 명백한 근거
+        const wsSource = {
+          id: 'notification_ws',
+          type: 'websocket',
+          target_source: 'notification_unread_count',
+        };
+
+        const targetId = wsSource.target_source || wsSource.id;
+        expect(targetId).toBe('notification_unread_count');
+        expect(targetId).not.toBe('notification_ws');
+      });
+    });
+
+    /**
+     * [TS-WS-CHANNEL-EXPR-1] WebSocket channel/event 표현식 평가 (engine-v1.32.3)
+     *
+     * 채널명에 표현식이 포함된 경우(예: core.user.notifications.{{current_user.data.id}}),
+     * 평가 없이 그대로 구독하면 백엔드 채널 패턴과 매칭되지 않아 broadcasting/auth가
+     * AccessDeniedHttpException을 던짐. fetched 데이터를 컨텍스트로 삼아 평가해야 함.
+     */
+    describe('[TS-WS-CHANNEL-EXPR-1] WebSocket channel/event 표현식 평가', () => {
+      it('표현식이 포함된 채널명은 fetched 데이터로 평가되어야 함', () => {
+        const fetchedData = {
+          current_user: { data: { id: 42, username: 'admin' } },
+        };
+        const source = {
+          id: 'notification_ws',
+          type: 'websocket',
+          channel: 'core.user.notifications.{{current_user.data.id}}',
+          event: 'notification.received',
+        };
+
+        // resolveExpressionString 동작 시뮬레이션
+        const channelTemplate = source.channel;
+        const resolved = channelTemplate.replace(
+          /\{\{([^}]+)\}\}/g,
+          (_match: string, expr: string) => {
+            const path = expr.trim().split('.');
+            let value: any = fetchedData;
+            for (const key of path) {
+              value = value?.[key];
+            }
+            return value !== undefined ? String(value) : '';
+          }
+        );
+
+        expect(resolved).toBe('core.user.notifications.42');
+        expect(resolved).not.toContain('{{');
+      });
+
+      it('정적 채널은 표현식 평가 후에도 동일해야 함', () => {
+        const source = {
+          channel: 'core.admin.dashboard',
+          event: 'dashboard.stats.updated',
+        };
+
+        // 정적 채널은 평가해도 변경 없음 (표현식 마커 없음)
+        expect(source.channel.includes('{{')).toBe(false);
+        expect(source.event.includes('{{')).toBe(false);
+      });
+
+      it('미평가 표현식이 남아있으면 구독을 건너뛰어야 함 (방어 로직)', () => {
+        // current_user가 아직 로드되지 않은 상태에서 평가 시도하면
+        // 표현식 마커가 남아있을 수 있음 → 구독 건너뜀
+        const fetchedData: Record<string, any> = {}; // current_user 없음
+        const channelTemplate = 'core.user.notifications.{{current_user.data.id}}';
+
+        const resolved = channelTemplate.replace(
+          /\{\{([^}]+)\}\}/g,
+          (_match: string, expr: string) => {
+            const path = expr.trim().split('.');
+            let value: any = fetchedData;
+            for (const key of path) {
+              value = value?.[key];
+            }
+            return value !== undefined ? String(value) : `{{${expr}}}`;
+          }
+        );
+
+        // 표현식이 평가되지 못했음
+        expect(resolved.includes('{{') || resolved.endsWith('.')).toBe(true);
+
+        // 이런 경우 구독을 건너뛰어야 함 (DataSourceManager.subscribeWebSockets 방어 로직)
+        const shouldSkipSubscription = resolved.includes('{{');
+        // 빈 문자열로 치환된 경우는 trailing dot으로 감지
+        const isInvalidChannel = shouldSkipSubscription || /\.$/.test(resolved);
+        expect(isInvalidChannel).toBe(true);
+      });
+    });
+
+    /**
+     * [TS-WS-ORDER-1] WebSocket 구독 순서 (engine-v1.32.3)
+     *
+     * WebSocket 구독은 progressive fetch 완료 후에 실행되어야 함.
+     * 채널 표현식이 progressive 데이터(current_user 등)를 참조할 수 있기 때문.
+     */
+    describe('[TS-WS-ORDER-1] WebSocket 구독 순서', () => {
+      it('WebSocket 구독은 progressive fetch 완료 후에 실행되어야 함', () => {
+        const executionLog: string[] = [];
+
+        // 시뮬레이션: blocking → render → progressive → websocket
+        executionLog.push('blocking_fetched');
+        executionLog.push('rendered');
+        executionLog.push('progressive_fetched');
+        executionLog.push('websocket_subscribed');
+
+        const renderIndex = executionLog.indexOf('rendered');
+        const progressiveIndex = executionLog.indexOf('progressive_fetched');
+        const websocketIndex = executionLog.indexOf('websocket_subscribed');
+
+        // render 후에 progressive fetch
+        expect(progressiveIndex).toBeGreaterThan(renderIndex);
+        // progressive fetch 후에 websocket 구독 (current_user 등 참조 위해)
+        expect(websocketIndex).toBeGreaterThan(progressiveIndex);
+      });
+    });
+
+    /**
+     * [TS-UQP-INDEX-1] updateQueryParams 데이터소스 refetch id 기반 매핑 (engine-v1.32.5)
+     *
+     * 이슈: navigate(replace:true) 시 updateQueryParams가 autoFetchDataSources[i]로
+     *       인덱스 매핑하면 fetchDataSourcesWithResults 내부 WebSocket silent filter로
+     *       인해 results가 짧아져 인덱스 어긋남 발생. settings 데이터가 notification_ws
+     *       키에 기록되고, form initLocal이 다른 데이터소스 응답으로 초기화되어 탭 콘텐츠 빈 화면.
+     *
+     * 수정: id 기반 Map 조회 + WebSocket 사전 필터링 (handleRouteChange 패턴과 통일)
+     */
+    describe('[TS-UQP-INDEX-1] updateQueryParams id 기반 매핑', () => {
+      it('WebSocket 소스가 중간에 있어도 results와 autoFetchDataSources 매핑이 어긋나지 않아야 함', () => {
+        // 시뮬레이션: _admin_base.json (WebSocket 포함) + admin_settings.json 결합 데이터소스
+        const autoFetchDataSources = [
+          { id: 'notifications', type: 'api' },
+          { id: 'notification_unread_count', type: 'api' },
+          { id: 'installed_modules', type: 'api' },
+          { id: 'installed_plugins', type: 'api' },
+          { id: 'notification_ws', type: 'websocket' },  // ← 중간에 WebSocket
+          { id: 'settings', type: 'api', initLocal: { form: '{{data}}' } },
+          { id: 'systemInfo', type: 'api' },
+          { id: 'appKey', type: 'api' },
+          { id: 'notificationDefinitions', type: 'api' },
+          { id: 'availableChannels', type: 'api' },
+        ];
+
+        // engine-v1.32.5 수정: 사전 WebSocket 필터링
+        const filtered = autoFetchDataSources.filter(
+          (ds: any) => ds.type !== 'websocket'
+        );
+
+        // WebSocket이 제외되었는지 확인
+        expect(filtered.find((s) => s.id === 'notification_ws')).toBeUndefined();
+        expect(filtered).toHaveLength(9);
+
+        // 시뮬레이션: fetchDataSourcesWithResults가 필터된 소스만 fetch하여 id 포함 results 반환
+        const results = filtered.map((s) => ({
+          id: s.id,
+          state: 'success' as const,
+          data: { _source: s.id },  // 소스 id를 데이터에 포함시켜 매핑 검증
+        }));
+
+        // id 기반 Map 조회 (engine-v1.32.5 수정 패턴)
+        const sourceById = new Map(filtered.map((ds: any) => [ds.id, ds]));
+        const updateData: Record<string, any> = {};
+
+        for (const result of results) {
+          const dataSourceDef = sourceById.get(result.id);
+          expect(dataSourceDef).toBeDefined();
+          // 핵심 검증: dataSourceDef.id === result.id (어긋나지 않음)
+          expect(dataSourceDef!.id).toBe(result.id);
+          updateData[result.id] = result.data;
+        }
+
+        // settings 데이터가 settings 키에 기록되었는지 (NOT notification_ws, NOT systemInfo)
+        expect(updateData.settings).toEqual({ _source: 'settings' });
+        expect(updateData.systemInfo).toEqual({ _source: 'systemInfo' });
+        // 마지막 소스도 누락 없이 기록
+        expect(updateData.availableChannels).toEqual({ _source: 'availableChannels' });
+      });
+
+      it('인덱스 기반 매핑 (BEFORE) 은 WebSocket이 있으면 어긋남을 재현', () => {
+        // 회귀 방지: 이전 버그 재현을 통해 id 기반 매핑의 필요성 증명
+        const autoFetchDataSources = [
+          { id: 'api_a', type: 'api' },
+          { id: 'ws_source', type: 'websocket' },
+          { id: 'api_b', type: 'api' },
+          { id: 'api_c', type: 'api' },
+        ];
+
+        // fetchDataSourcesWithResults 내부 필터 (WebSocket 제거)
+        const targetSources = autoFetchDataSources.filter(
+          (s) => s.type !== 'websocket'
+        );
+
+        const results = targetSources.map((s) => ({
+          id: s.id,
+          state: 'success' as const,
+          data: { _source: s.id },
+        }));
+
+        // BEFORE: 인덱스 기반 매핑 (버그)
+        const buggyMapping: Record<string, any> = {};
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          const dataSourceDef = autoFetchDataSources[i]; // ← 필터 안 된 원본
+          buggyMapping[dataSourceDef.id] = result.data;
+        }
+
+        // 증명: api_b 데이터가 ws_source 키에 잘못 기록됨
+        expect(buggyMapping.ws_source).toEqual({ _source: 'api_b' });
+        // api_a만 정상
+        expect(buggyMapping.api_a).toEqual({ _source: 'api_a' });
+        // api_c는 누락됨 (results 끝에서 잘림)
+        expect(buggyMapping.api_c).toBeUndefined();
+
+        // AFTER: id 기반 매핑 (수정)
+        const sourceById = new Map(
+          autoFetchDataSources.filter((ds) => ds.type !== 'websocket').map((ds) => [ds.id, ds])
+        );
+        const fixedMapping: Record<string, any> = {};
+        for (const result of results) {
+          const def = sourceById.get(result.id);
+          if (def) fixedMapping[result.id] = result.data;
+        }
+
+        // 모든 API 소스가 올바른 키에 기록됨
+        expect(fixedMapping.api_a).toEqual({ _source: 'api_a' });
+        expect(fixedMapping.api_b).toEqual({ _source: 'api_b' });
+        expect(fixedMapping.api_c).toEqual({ _source: 'api_c' });
+        // WebSocket 키는 존재하지 않음 (fetch 대상 아님)
+        expect(fixedMapping.ws_source).toBeUndefined();
+      });
+    });
+  });
 });

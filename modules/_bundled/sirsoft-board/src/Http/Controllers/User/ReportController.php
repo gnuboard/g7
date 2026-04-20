@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\Base\AuthBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Enums\ReportType;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
@@ -112,7 +111,7 @@ class ReportController extends AuthBaseController
             $cooldown = (int) ($security['report_cooldown_seconds'] ?? 60);
             if ($cooldown > 0) {
                 $identifier = Auth::id() ?? $request->ip();
-                Cache::put("report_cooldown_{$slug}_{$identifier}", true, $cooldown);
+                $this->reportService->recordReportCooldown($slug, $identifier, $cooldown);
             }
 
             $this->logUserActivity('board_report.create', [

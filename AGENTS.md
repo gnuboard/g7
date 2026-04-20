@@ -6,28 +6,31 @@
 
 <!-- AUTO-GENERATED-START: docs-quick-reference -->
 
-### 백엔드 [backend/](docs/backend/) (19개)
+### 백엔드 [backend/](docs/backend/) (22개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
 | [activity-log-hooks.md](docs/backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅 |
 | [activity-log.md](docs/backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel('activity... |
-| [api-resources.md](docs/backend/api-resources.md) | API 리소스 | BaseApiResource 상속 필수 |
+| [api-resources.md](docs/backend/api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: BaseApiColl... |
 | [authentication.md](docs/backend/authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
 | [broadcasting.md](docs/backend/broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [controllers.md](docs/backend/controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / PublicBaseCont... |
 | [core-config.md](docs/backend/core-config.md) | 코어 설정 (config/core.php) | config/core.php = 코어 권한/역할/메뉴/메일템플릿의 SSoT (Single Source ... |
 | [core-update-system.md](docs/backend/core-update-system.md) | 코어 업데이트 시스템 (Core Update System) | 코어 업그레이드 스텝: upgrades/ 디렉토리 (프로젝트 루트), 네임스페이스 App\Upgrades |
+| [data-sync-helpers.md](docs/backend/data-sync-helpers.md) | 데이터 동기화 Helper (Data Sync Helpers) | 모든 데이터 동기화는 Service/Seeder 가 Helper 를 호출해 수행 (직접 Model 조작... |
 | [enum.md](docs/backend/enum.md) | Enum 사용 규칙 | 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum) |
 | [exceptions.md](docs/backend/exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
+| [geoip.md](docs/backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTimezone 미들웨어... |
 | [middleware.md](docs/backend/middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
-| [notification-system.md](docs/backend/notification-system.md) | 알림 시스템 (Notification System) | 모든 알림은 BaseNotification 상속 필수 (via() 보일러플레이트 제거) |
+| [notification-system.md](docs/backend/notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스 불필요) |
 | [response-helper.md](docs/backend/response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [routing.md](docs/backend/routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](docs/backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL FULLTEXT + ... |
 | [seo-system.md](docs/backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → SeoRenderer가 ... |
 | [service-provider.md](docs/backend/service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](docs/backend/service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
+| [user-overrides.md](docs/backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array $trackable... |
 | [validation.md](docs/backend/validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |
 
 ### 프론트엔드 [frontend/](docs/frontend/) (48개)
@@ -83,10 +86,11 @@
 | [handlers.md](docs/frontend/templates/sirsoft-basic/handlers.md) | sirsoft-basic 핸들러 | setTheme/initTheme: 다크/라이트 모드 전환 (admin과 동일 키 공유) |
 | [layouts.md](docs/frontend/templates/sirsoft-basic/layouts.md) | sirsoft-basic 레이아웃 | 베이스: _user_base.json (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯) |
 
-### 확장 시스템 [extension/](docs/extension/) (22개)
+### 확장 시스템 [extension/](docs/extension/) (25개)
 
 | 문서 | 설명 | TL;DR 핵심 |
 |------|------|-----------|
+| [cache-driver.md](docs/extension/cache-driver.md) | 캐시 드라이버 시스템 (CacheInterface) | 모든 캐시 저장은 CacheInterface 사용 (Cache:: 직접 호출 금지) |
 | [changelog-rules.md](docs/extension/changelog-rules.md) | Changelog 규칙 (Changelog Rules) | 확장/코어 버전 업 시 CHANGELOG.md에 변경사항 기록 필수 (미기록 시 버전 업 불가) |
 | [extension-manager.md](docs/extension/extension-manager.md) | ExtensionManager (확장 관리자) | composer.json 수정 없음 - 런타임 오토로드 방식 사용 |
 | [extension-update-system.md](docs/extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) | 업데이트 감지 우선순위: GitHub > _bundled (2단계, _pending 미참여) |
@@ -109,6 +113,8 @@
 | [template-routing.md](docs/extension/template-routing.md) | 템플릿 라우트/언어 파일 규칙 | - |
 | [template-security.md](docs/extension/template-security.md) | 템플릿 보안 정책 | - |
 | [template-workflow.md](docs/extension/template-workflow.md) | 템플릿 개발 워크플로우 | 필수 파일: template.json, routes.json, _base.json, errors/{40... |
+| [upgrade-step-guide.md](docs/extension/upgrade-step-guide.md) | 업그레이드 스텝 작성 가이드 (Upgrade Step Guide) | upgrade step 이 실행되는 환경은 경로에 따라 다르다 — 섹션 9 "업그레이드 경로" 먼저 읽기 |
+| [vendor-bundle.md](docs/extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) | - |
 
 ### 공통 (5개)
 
@@ -130,6 +136,31 @@
 **프로젝트명**: 그누보드7
 **목적**: 오픈소스 CMS 플랫폼
 **설계 원칙**: 코어 수정 최소화, 모듈화, 플러그인 시스템, 템플릿 시스템, 동적 로딩
+
+---
+
+## 버전 동기화 의무
+
+코어 또는 번들 확장의 공개 표면을 수정할 때, 그 변경의 영향 범위에 있는 다른 확장의 버전 제약(`g7_version`, `dependencies.{modules|plugins}`)을 함께 갱신한다.
+
+### ① 코어 → 확장 동기화 (`requires.g7_version`)
+
+- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 루트 `CHANGELOG.md` Added/Changed/Removed) 수정
+- 조치: 영향 받는 번들 확장의 `g7_version` 상향 + 각 확장 CHANGELOG 에 변경 기재
+
+### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
+
+- 트리거: 번들 모듈/플러그인의 공개 Service/Contract/Repository/Model/Route, 발행 훅·이벤트, CHANGELOG 수정
+- 조치: 그 확장에 의존하는 다른 번들 확장 전수 스캔 → 최소 버전 제약 상향 여부 판정
+
+### 판정 순서
+
+1. 기존 소비자 API 시그니처/동작을 건드렸는가 → 소비 확장 최소 버전 상향
+2. 새 공개 API 가 도입되었는가 → 후보 확장 전수 스캔 후 검토
+3. 의존 관계 B 의 공개 API 가 변경되었는가 → A 의 `dependencies.B` 상향
+4. 동기화 대상이 없다면 그 근거("순수 내부 리팩토링" 등)를 변경 이력에 기록
+
+> 상세: [changelog-rules.md](docs/extension/changelog-rules.md) "코어 버전 제약 정책"
 
 ---
 
@@ -284,6 +315,47 @@ Keep a Changelog 표준:
 #### 캐시
 - 항목 3
 ```
+
+---
+
+## 공개 CHANGELOG 작성 규칙
+
+코어(`CHANGELOG.md`) 및 확장(`modules/*/CHANGELOG.md`, `plugins/*/CHANGELOG.md`, `templates/*/CHANGELOG.md`)의 릴리즈 CHANGELOG 작성 규칙입니다.
+
+### 톤과 표현
+
+- 사용자/개발자가 읽는 문서이므로 **사용자 관점**으로 작성
+- "~할 수 있도록 개선", "~하도록 변경", "~문제 수정" 톤 사용
+- 각 불릿은 **1~2줄**로 간결하게
+- 내부 구현 상세(클래스명, 파일 경로, 테스트 건수, 훅 체인, DI 패턴)는 포함하지 않음
+- 이슈 번호(`#123`)는 포함하지 않음
+
+### 포함/제외 대상
+
+| 포함 | 제외 |
+|------|------|
+| 사용자에게 보이는 기능 추가/변경 | 내부 파일 경로, 클래스/메서드명 |
+| API 변경 (엔드포인트, 파라미터) | 테스트 건수/파일명 |
+| 기존 기능의 버그 수정 | 리팩토링 세부사항 |
+| 성능 개선 (체감 가능한 것) | 내부 규정/문서 변경 |
+| Breaking Change | 이슈 번호 |
+| 엔진 버전 참조 (engine-v1.X.Y) | 코드 패턴 설명 |
+
+### 신규 기능의 버그 수정 제외 규칙
+
+해당 릴리즈에서 **새로 도입한 기능**의 개발 중 버그 수정은 Fixed에 기록하지 않습니다. 사용자 관점에서 그 기능은 해당 릴리즈에서 처음 제공되므로, "추가했다가 고쳤다"는 내부 개발 이력일 뿐입니다.
+
+**판단 기준**: 해당 버그가 **이전 릴리즈에도 존재했던 기능**에서 발생한 것인지 확인
+
+### 기능 그룹핑
+
+Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으로 기능 단위 분류합니다.
+
+### Keep a Changelog 형식
+
+- `## [버전] - YYYY-MM-DD` 헤더 필수
+- `### Added` / `### Changed` / `### Fixed` / `### Removed` 카테고리 사용
+- 최신 버전이 파일 상단
 
 ---
 
@@ -677,7 +749,7 @@ php artisan module:composer-install [identifier?] [--all]
 php artisan module:cache-clear [identifier?]
 php artisan module:seed [identifier] [--sample] [--count=key=value]
 php artisan module:check-updates [identifier?]
-php artisan module:update [identifier] [--force]
+php artisan module:update [identifier] [--force] [--source=auto|bundled|github]
 
 # 플러그인
 php artisan plugin:list
@@ -689,7 +761,7 @@ php artisan plugin:composer-install [identifier?] [--all]
 php artisan plugin:cache-clear [identifier?]
 php artisan plugin:seed [identifier] [--sample] [--count=key=value]
 php artisan plugin:check-updates [identifier?]
-php artisan plugin:update [identifier] [--force]
+php artisan plugin:update [identifier] [--force] [--source=auto|bundled|github]
 
 # 템플릿
 php artisan template:list
@@ -699,7 +771,7 @@ php artisan template:deactivate [identifier]
 php artisan template:uninstall [identifier]
 php artisan template:cache-clear
 php artisan template:check-updates [identifier?]
-php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
+php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
 
 # Composer 의존성 (모듈/플러그인별 독립 vendor/)
 php artisan extension:composer-install

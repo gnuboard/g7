@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Models;
 
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -102,7 +101,8 @@ class ShippingPolicyTest extends ModuleTestCase
         $countrySetting = $policy->countrySettings->first();
         $freshSetting = $countrySetting->fresh();
 
-        $this->assertInstanceOf(ShippingMethodEnum::class, $freshSetting->shipping_method);
+        $this->assertIsString($freshSetting->shipping_method);
+        $this->assertEquals('parcel', $freshSetting->shipping_method);
         $this->assertInstanceOf(ChargePolicyEnum::class, $freshSetting->charge_policy);
     }
 

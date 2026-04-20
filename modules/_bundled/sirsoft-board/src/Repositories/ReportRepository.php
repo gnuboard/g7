@@ -4,6 +4,9 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
 use App\Search\Engines\DatabaseFulltextEngine;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -82,6 +85,7 @@ class ReportRepository implements ReportRepositoryInterface
      * ID로 신고를 조회합니다.
      *
      * @param  int  $id  신고 ID
+     * @return Report|null 신고 모델 또는 null
      */
     public function find(int $id): ?Report
     {
@@ -92,8 +96,9 @@ class ReportRepository implements ReportRepositoryInterface
      * ID로 신고를 조회하며, 없으면 예외를 발생시킵니다.
      *
      * @param  int  $id  신고 ID
+     * @return Report 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(int $id): Report
     {
@@ -106,8 +111,9 @@ class ReportRepository implements ReportRepositoryInterface
      *
      * @param  int  $id  신고 ID
      * @param  array  $data  수정할 데이터
+     * @return Report 수정된 신고 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function update(int $id, array $data): Report
     {
@@ -121,8 +127,9 @@ class ReportRepository implements ReportRepositoryInterface
      * 신고를 삭제합니다 (소프트 삭제).
      *
      * @param  int  $id  신고 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function delete(int $id): bool
     {
@@ -135,8 +142,9 @@ class ReportRepository implements ReportRepositoryInterface
      * 신고를 영구 삭제합니다.
      *
      * @param  int  $id  신고 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function forceDelete(int $id): bool
     {
@@ -318,7 +326,7 @@ class ReportRepository implements ReportRepositoryInterface
      * 공통 검색 필드: board_name, author_name, reporter_name
      * 추가 검색 필드: $extraFields로 전달 (예: post_title)
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query  쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건 (search, search_field 키 사용)
      * @param  array  $extraFields  추가 검색 필드 목록
      */
@@ -332,7 +340,7 @@ class ReportRepository implements ReportRepositoryInterface
         $searchField = $filters['search_field'] ?? 'all';
         $lowerKeyword = mb_strtolower($keyword);
 
-        $query->where(function ($q) use ($keyword, $lowerKeyword, $searchField, $extraFields) {
+        $query->where(function ($q) use ($keyword, $searchField, $extraFields) {
             // 추가 필드: post_title (paginateGrouped 전용 — logs 첫 번째 snapshot 기준)
             if (in_array('post_title', $extraFields) && ($searchField === 'all' || $searchField === 'post_title')) {
                 $q->orWhereHas('logs', function ($lq) use ($keyword) {
@@ -367,21 +375,6 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
-     * 특정 대상(게시글/댓글)에 대한 케이스를 조회합니다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  string  $targetType  대상 타입 (post/comment)
-     * @param  int  $targetId  대상 ID
-     */
-    public function findByTarget(int $boardId, string $targetType, int $targetId): \Illuminate\Database\Eloquent\Collection
-    {
-        return Report::where('board_id', $boardId)
-            ->where('target_type', $targetType)
-            ->where('target_id', $targetId)
-            ->get();
-    }
-
-    /**
      * 특정 대상에 대한 신고의 상태를 일괄 변경합니다.
      *
      * @param  int  $boardId  게시판 ID
@@ -406,22 +399,6 @@ class ReportRepository implements ReportRepositoryInterface
             ->where('target_type', $targetType)
             ->where('target_id', $targetId)
             ->update($data);
-    }
-
-    /**
-     * 취소된 신고를 포함하여 동일 대상의 케이스를 조회합니다.
-     *
-     * @param  int  $boardId  게시판 ID
-     * @param  string  $targetType  대상 타입 (post/comment)
-     * @param  int  $targetId  대상 ID
-     */
-    public function findByTargetWithTrashed(int $boardId, string $targetType, int $targetId): \Illuminate\Database\Eloquent\Collection
-    {
-        return Report::withTrashed()
-            ->where('board_id', $boardId)
-            ->where('target_type', $targetType)
-            ->where('target_id', $targetId)
-            ->get();
     }
 
     /**
@@ -526,7 +503,7 @@ class ReportRepository implements ReportRepositoryInterface
      * @param  array  $data  로그 생성 데이터
      * @return ReportLog 생성된 로그 모델
      *
-     * @throws \Modules\Sirsoft\Board\Exceptions\DuplicateReportException
+     * @throws DuplicateReportException
      */
     public function createLog(array $data): ReportLog
     {
@@ -546,9 +523,8 @@ class ReportRepository implements ReportRepositoryInterface
      * 신고 케이스의 신고자 로그를 페이지네이션으로 반환합니다.
      *
      * @param  int  $reportId  신고 케이스 ID
-     * @param  int  $perPage   페이지당 항목 수
-     * @param  int  $page      페이지 번호
-     * @return LengthAwarePaginator
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  int  $page  페이지 번호
      */
     public function paginateLogsByReport(int $reportId, int $perPage = 10, int $page = 1): LengthAwarePaginator
     {
@@ -576,5 +552,30 @@ class ReportRepository implements ReportRepositoryInterface
         })
             ->where('reporter_id', $userId)
             ->exists();
+    }
+
+    /**
+     * 특정 사용자가 여러 대상을 신고했는지 일괄 확인합니다.
+     *
+     * N+1 방지를 위해 복수 대상의 신고 여부를 한 번의 쿼리로 조회합니다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @param  int  $boardId  게시판 ID
+     * @param  string  $targetType  대상 타입 (post/comment)
+     * @param  array<int>  $targetIds  대상 ID 목록
+     * @return array<int> 신고한 대상 ID 목록
+     */
+    public function getReportedTargetIds(int $userId, int $boardId, string $targetType, array $targetIds): array
+    {
+        if (empty($targetIds)) {
+            return [];
+        }
+
+        return Report::where('board_id', $boardId)
+            ->where('target_type', $targetType)
+            ->whereIn('target_id', $targetIds)
+            ->whereHas('logs', fn ($q) => $q->where('reporter_id', $userId))
+            ->pluck('target_id')
+            ->all();
     }
 }

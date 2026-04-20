@@ -130,8 +130,7 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            // TODO: 사용자 활동 로그 서비스 구현
-            $activities = []; // $this->userService->getUserActivities($user->id);
+            $activities = $this->userService->getUserActivityLogs($user->id);
 
             $this->logUserActivity('profile.activity_log');
 

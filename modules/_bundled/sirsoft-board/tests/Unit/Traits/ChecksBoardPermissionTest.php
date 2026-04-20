@@ -40,6 +40,9 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         // PermissionMiddleware 정적 캐시 초기화
         $this->resetPermissionMiddlewareCache();
 
+        // ChecksBoardPermission 요청 내 캐시 초기화
+        ChecksBoardPermission::clearPermissionCache();
+
         // Trait을 사용하는 익명 클래스 생성
         $this->traitObject = new class
         {

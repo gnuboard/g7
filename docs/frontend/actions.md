@@ -88,6 +88,7 @@
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
+| `render` | boolean | ❌ | `false`이면 상태 값만 저장하고 React 리렌더를 건너뜀 (engine-v1.42.0+). 기본: `true` |
 | `resultTo` | object | ❌ | 핸들러 실행 결과를 상태에 저장 (engine-v1.11.0+). `{ target, key, merge }` |
 | `actionRef` | string | ❌ | `named_actions`에 정의된 액션을 참조 (engine-v1.19.0+). handler/params 대신 사용 |
 
@@ -373,9 +374,10 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `parallel` | 병렬 액션 실행 | - | actions (액션 배열) |
 | `refetchDataSource` | 데이터 소스 다시 fetch | - | dataSourceId |
 | `remount` | 컴포넌트 강제 리마운트 | - | componentId |
-| `reloadRoutes` | 라우트 다시 로드 | - | - |
-| `reloadTranslations` | 다국어 파일 다시 로드 | - | - |
-| `refresh` | 현재 페이지 새로고침 | - | - |
+| `reloadExtensions` ⭐ NEW | 확장 상태 원자 재동기화 (routes+translations+layouts) | - | moduleInfo, pluginInfo, action |
+| `reloadRoutes` (deprecated) | 라우트 다시 로드 — `reloadExtensions` 위임 | - | - |
+| `reloadTranslations` (deprecated) | 다국어 파일 다시 로드 — `reloadExtensions` 위임 | - | - |
+| `refresh` | 현재 페이지 전체 새로고침 | - | - |
 | `stopPropagation` | 이벤트 전파 중지 | - | - |
 | `preventDefault` | 기본 동작 방지 | - | - |
 | `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |

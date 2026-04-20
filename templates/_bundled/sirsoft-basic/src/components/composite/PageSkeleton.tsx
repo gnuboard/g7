@@ -422,28 +422,29 @@ function renderChildren(
     children: LayoutComponent[] | undefined,
     animClass: string,
     iterCount: number,
+    width: number,
 ): (React.ReactElement | null)[] {
     if (!children || children.length === 0) return [];
     const filtered = filterChildren(children);
     return filtered.map((child, i) =>
-        renderSkeletonNode(child, animClass, iterCount, i)
+        renderSkeletonNode(child, animClass, iterCount, i, width)
     );
 }
 
 /**
  * 현재 뷰포트에 맞는 className 결정
  *
- * responsive 속성이 있으면 현재 window 크기에 따라 적절한 className 선택.
+ * responsive 속성이 있으면 호출자가 전달한 viewport width 기준으로 적절한 className 선택.
  * - desktop (lg, 1024px+): responsive.desktop.props.className
  * - tablet (md, 768px+): responsive.tablet.props.className
  * - 기본: props.className
+ *
+ * @param width G7Core.useResponsive()로 구독한 viewport width (overrideWidth 반영)
  */
-function resolveClassName(component: LayoutComponent): string {
+function resolveClassName(component: LayoutComponent, width: number): string {
     const baseClassName = component.props?.className || component.className || '';
 
     if (!component.responsive) return baseClassName;
-
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
 
     if (width >= 1024 && component.responsive.desktop?.props?.className) {
         return component.responsive.desktop.props.className;
@@ -456,18 +457,19 @@ function resolveClassName(component: LayoutComponent): string {
 }
 
 /**
- * Tailwind 반응형 display 클래스를 현재 뷰포트 기준으로 해석
+ * Tailwind 반응형 display 클래스를 viewport 기준으로 해석
  *
  * 레이아웃 JSON의 className에 `hidden lg:grid`, `lg:hidden` 같은 Tailwind 반응형 패턴이 포함됨.
  * Tailwind은 빌드 시 CSS로 처리하지만, 스켈레톤은 런타임에서 JS로 해석해야 함.
  *
  * 동작:
  * 1. className에서 display 관련 클래스(hidden, flex, grid 등) + 반응형 접두사(lg:grid 등) 추출
- * 2. Tailwind cascade 규칙 적용: base → sm → md → lg → xl → 2xl 순서로 현재 width에 맞는 display 결정
+ * 2. Tailwind cascade 규칙 적용: base → sm → md → lg → xl → 2xl 순서로 width에 맞는 display 결정
  * 3. hidden이면 컴포넌트 숨김, 아니면 해석된 display 클래스 + 나머지 클래스 반환
+ *
+ * @param width G7Core.useResponsive()로 구독한 viewport width (overrideWidth 반영)
  */
-function resolveResponsiveDisplay(className: string): { visible: boolean; className: string } {
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1024;
+function resolveResponsiveDisplay(className: string, width: number): { visible: boolean; className: string } {
     const tokens = className.split(/\s+/).filter(Boolean);
 
     const displayEntries: Array<{ breakpoint: number; display: string }> = [];
@@ -560,10 +562,11 @@ function renderSkeletonNode(
     animClass: string,
     iterCount: number,
     index: number,
+    width: number,
 ): React.ReactElement | null {
     const { name, children, iteration } = component;
     // 1. responsive 속성에서 뷰포트에 맞는 className 선택
-    const rawClassName = resolveClassName(component);
+    const rawClassName = resolveClassName(component, width);
     // 1.5. Flex/Grid 레이아웃 props → Tailwind 클래스 병합
     const layoutClasses = resolveLayoutProps(component);
     const mergedClassName = layoutClasses
@@ -572,7 +575,7 @@ function renderSkeletonNode(
     // 2. {{...}} 표현식 해석 (삼항 → true 분기)
     const exprResolved = resolveExpressions(mergedClassName);
     // 3. Tailwind 반응형 display 클래스 해석 (hidden lg:grid → grid at desktop)
-    const responsive = resolveResponsiveDisplay(exprResolved);
+    const responsive = resolveResponsiveDisplay(exprResolved, width);
 
     if (!name) return null;
 
@@ -591,6 +594,7 @@ function renderSkeletonNode(
                         animClass,
                         iterCount,
                         i,
+                        width,
                     )
                 ))}
             </React.Fragment>
@@ -620,7 +624,7 @@ function renderSkeletonNode(
         }
 
         // 자식 렌더링 (조건부 분기 필터링 적용)
-        const renderedChildren = renderChildren(children, animClass, iterCount);
+        const renderedChildren = renderChildren(children, animClass, iterCount, width);
         const hasContent = renderedChildren.length > 0 && renderedChildren.some(c => c !== null);
 
         // 모든 자식이 필터링됨 (로딩/에러 wrapper 등) → 컨테이너 자체 스킵
@@ -686,7 +690,7 @@ function renderSkeletonNode(
     if (name === 'Button') {
         if (children && children.length > 0) {
             const sanitized = sanitizeClassName(className, name);
-            const renderedChildren = renderChildren(children, animClass, iterCount);
+            const renderedChildren = renderChildren(children, animClass, iterCount, width);
             const hasContent = renderedChildren.length > 0 && renderedChildren.some(c => c !== null);
             if (!hasContent) return null;
             // 원본 className에 border/rounded가 있으면 실제 버튼 형태 → 스켈레톤 경계 추가
@@ -712,7 +716,7 @@ function renderSkeletonNode(
     if (children && children.length > 0) {
         return (
             <div key={index} className={sanitizedLeafClass}>
-                {renderChildren(children, animClass, iterCount)}
+                {renderChildren(children, animClass, iterCount, width)}
             </div>
         );
     }
@@ -740,6 +744,14 @@ function renderSkeletonNode(
 export const PageSkeleton: React.FC<PageSkeletonProps> = ({ components, options }) => {
     const animClass = getAnimationClass(options.animation);
 
+    // G7Core.useResponsive를 통해 viewport width 구독 (G7 표준 — 위지윅 overrideWidth 호환)
+    const G7Core = (window as any).G7Core;
+    const useResponsive = G7Core?.useResponsive;
+    const responsiveValue = useResponsive?.();
+    const width = responsiveValue
+        ? responsiveValue.width
+        : (typeof window !== 'undefined' ? window.innerWidth : 1024);
+
     return (
         <div
             className="w-full"
@@ -747,7 +759,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ components, options 
             aria-busy="true"
             aria-label="Loading..."
         >
-            {renderChildren(components, animClass, options.iteration_count)}
+            {renderChildren(components, animClass, options.iteration_count, width)}
         </div>
     );
 };

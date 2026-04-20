@@ -1,0 +1,26 @@
+{
+  "copy": {
+    "title": "게시판 복사",
+    "message": "'{{name}}' 게시판을 복사하시겠습니까?",
+    "info": "※ 게시판 설정만 복사되며, 게시글은 복사되지 않습니다.",
+    "new_slug_label": "새 슬러그",
+    "new_slug_placeholder": "예: notice-copy",
+    "confirm": "복사"
+  },
+  "delete": {
+    "title": "게시판 삭제",
+    "confirm": "'{{name}}' 게시판을 삭제하시겠습니까?",
+    "with_posts_info": "이 게시판에는 {{posts_count}}개의 게시글과 댓글이 있습니다.",
+    "no_posts_info": "이 게시판에는 게시글이 없습니다.",
+    "force_delete_label_with_posts": "영구 삭제 (게시글, 댓글, 첨부파일 모두 삭제)",
+    "force_delete_label_no_posts": "영구 삭제 (데이터베이스 테이블도 삭제)",
+    "force_delete_warning_with_posts": "영구 삭제 시 모든 데이터가 복구 불가능하게 제거됩니다. 삭제 전에 데이터를 백업하세요.",
+    "force_delete_warning_no_posts": "이 작업은 되돌릴 수 없습니다. 게시판과 관련된 모든 데이터가 완전히 제거됩니다.",
+    "backup_notice": "데이터 손실을 방지하기 위해 삭제 전에 데이터베이스를 백업하시기를 권장합니다."
+  },
+  "cancel_confirm": {
+    "title": "변경사항 확인",
+    "message": "저장하지 않은 변경사항이 있습니다. 페이지를 떠나시겠습니까?",
+    "confirm": "페이지 나가기"
+  }
+}

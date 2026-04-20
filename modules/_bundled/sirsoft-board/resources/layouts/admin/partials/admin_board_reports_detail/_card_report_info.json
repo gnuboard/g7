@@ -543,13 +543,25 @@
                             },
                             "children": [
                                 {
-                                    "type": "composite",
-                                    "name": "HtmlContent",
+                                    "id": "report_target_html",
+                                    "type": "extension_point",
+                                    "name": "html_content",
                                     "props": {
                                         "content": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}",
                                         "isHtml": "{{report_detail?.data?.target_type === 'post' && (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}",
                                         "className": "text-sm text-gray-900 dark:text-gray-100"
-                                    }
+                                    },
+                                    "default": [
+                                        {
+                                            "type": "composite",
+                                            "name": "HtmlContent",
+                                            "props": {
+                                                "content": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}",
+                                                "isHtml": "{{report_detail?.data?.target_type === 'post' && (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}",
+                                                "className": "text-sm text-gray-900 dark:text-gray-100"
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         }

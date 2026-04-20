@@ -97,19 +97,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | 시스템에서 지원하는 timezone 목록입니다.
-    | 사용자가 선택 가능한 timezone을 제한합니다.
+    | PHP 내장 IANA 타임존 전체 목록을 사용합니다.
+    | SettingsService::getAppConfigForFrontend()에서 오프셋 라벨로 변환되어
+    | 프론트엔드에 _global.appConfig.supportedTimezones로 노출됩니다.
     |
     */
 
-    'supported_timezones' => [
-        'Asia/Seoul',
-        'Asia/Tokyo',
-        'America/New_York',
-        'America/Los_Angeles',
-        'Europe/London',
-        'Europe/Paris',
-        'UTC',
-    ],
+    'supported_timezones' => \DateTimeZone::listIdentifiers(),
 
     /*
     |--------------------------------------------------------------------------
@@ -152,6 +146,22 @@ return [
     */
 
     'translatable_locales' => ['ko', 'en'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Locale Names (언어 표시명)
+    |--------------------------------------------------------------------------
+    |
+    | 각 로케일의 표시 이름입니다.
+    | 프론트엔드에서 언어 탭, 언어 선택 UI 등에 사용됩니다.
+    | 새로운 언어를 추가할 때는 이 배열에 표시명을 추가하세요.
+    |
+    */
+
+    'locale_names' => [
+        'ko' => '한국어',
+        'en' => 'English',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -201,7 +211,20 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.0-beta.1'),
+    'version' => env('APP_VERSION', '7.0.0-beta.2'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Installer Completed Flag
+    |--------------------------------------------------------------------------
+    |
+    | .env 의 INSTALLER_COMPLETED 플래그를 config 로 노출하여 런타임에서
+    | Schema::hasTable() 호출 없이 확장 테이블 존재 여부를 빠르게 판정합니다.
+    | 설치가 완료되지 않은 환경에서는 false 로 두어 기존 hasTable 폴백 유지.
+    |
+    */
+
+    'installer_completed' => env('INSTALLER_COMPLETED', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -231,6 +254,18 @@ return [
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
+        // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
+        // sudo 실행 시 composer·artisan 등 외부 프로세스가 root 로 생성한 파일을 원상 회복한다.
+        //
+        // 기본값은 인스톨러 `public/install/includes/config.php:REQUIRED_DIRECTORIES` 의
+        // SSoT 경로와 1:1 정렬. 상위 → 하위 순서로 나열하여 복원 루프가 디렉토리 단위
+        // chown 후 하위 경로별 개별 복원을 수행하게 한다.
+        //
+        // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
+        'restore_ownership' => array_filter(array_map('trim', explode(',', env(
+            'G7_UPDATE_RESTORE_OWNERSHIP',
+            'storage,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,storage/app/core_pending'
+        )))),
     ],
 
 ];

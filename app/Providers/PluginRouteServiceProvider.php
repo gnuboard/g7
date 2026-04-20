@@ -45,14 +45,17 @@ class PluginRouteServiceProvider extends ServiceProvider
             return;
         }
 
-        // DB 연결 가능 여부 및 테이블 존재 여부 확인
-        try {
-            if (! Schema::hasTable('plugins')) {
+        // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
+        // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
+        if (! config('app.installer_completed')) {
+            try {
+                if (! Schema::hasTable('plugins')) {
+                    return;
+                }
+            } catch (\Exception) {
+                // DB 연결 실패 시 조용히 스킵 (설정 오류, 마이그레이션 전 등)
                 return;
             }
-        } catch (\Exception) {
-            // DB 연결 실패 시 조용히 스킵 (설정 오류, 마이그레이션 전 등)
-            return;
         }
 
         $plugins = File::directories($pluginsPath);

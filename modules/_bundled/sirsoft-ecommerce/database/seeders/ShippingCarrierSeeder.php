@@ -2,21 +2,66 @@
 
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders;
 
+use App\Extension\Helpers\GenericEntitySyncHelper;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 
+/**
+ * 배송사 초기 데이터 시더.
+ *
+ * GenericEntitySyncHelper 기반 upsert + stale cleanup 패턴.
+ * 사용자가 관리자 UI 에서 수정한 필드(user_overrides)는 보존하고,
+ * 시더 정의에서 제거된 배송사만 정리한다.
+ */
 class ShippingCarrierSeeder extends Seeder
 {
-    /**
-     * 배송사 초기 데이터를 생성합니다.
-     */
     public function run(): void
     {
-        $this->command->info('배송사 초기 데이터 생성을 시작합니다.');
+        $this->command->info('배송사 초기 데이터 동기화를 시작합니다.');
 
-        $this->deleteExistingCarriers();
+        $helper = app(GenericEntitySyncHelper::class);
+        $created = 0;
+        $synced = 0;
+        $codes = [];
 
-        $carriers = [
+        foreach ($this->getDefaultCarriers() as $carrier) {
+            $existing = ShippingCarrier::where('code', $carrier['code'])->exists();
+
+            $helper->sync(
+                ShippingCarrier::class,
+                ['code' => $carrier['code']],
+                $carrier,
+            );
+            $codes[] = $carrier['code'];
+
+            if ($existing) {
+                $synced++;
+            } else {
+                $created++;
+                $this->command->line("  - 배송사 생성: {$carrier['name']['ko']} ({$carrier['code']})");
+            }
+        }
+
+        // 완전 동기화: 시더 정의에서 제거된 배송사 정리 (user_overrides 무관)
+        $deleted = $helper->cleanupStale(
+            ShippingCarrier::class,
+            [],
+            'code',
+            $codes,
+        );
+
+        $total = ShippingCarrier::count();
+        $this->command->info("배송사 동기화 완료: {$created}건 생성, {$synced}건 동기화, stale {$deleted}건 삭제 (전체 {$total}건)");
+    }
+
+    /**
+     * 기본 배송사 목록을 반환합니다.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function getDefaultCarriers(): array
+    {
+        return [
             // 국내 배송사
             [
                 'code' => 'cj',
@@ -119,26 +164,5 @@ class ShippingCarrierSeeder extends Seeder
                 'sort_order' => 99,
             ],
         ];
-
-        foreach ($carriers as $carrier) {
-            ShippingCarrier::create($carrier);
-            $this->command->line("  - 배송사 생성: {$carrier['name']['ko']} ({$carrier['code']})");
-        }
-
-        $count = ShippingCarrier::count();
-        $this->command->info("배송사 초기 데이터 {$count}건이 성공적으로 생성되었습니다.");
-    }
-
-    /**
-     * 기존 배송사 데이터를 삭제합니다.
-     */
-    private function deleteExistingCarriers(): void
-    {
-        $deletedCount = ShippingCarrier::count();
-
-        if ($deletedCount > 0) {
-            ShippingCarrier::query()->delete();
-            $this->command->warn("기존 배송사 {$deletedCount}건을 삭제했습니다.");
-        }
     }
 }

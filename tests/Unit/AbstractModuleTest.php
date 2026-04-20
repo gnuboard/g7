@@ -64,6 +64,74 @@ class AbstractModuleTest extends TestCase
     }
 
     /**
+     * getVendor()가 module.json 의 vendor 필드를 우선 사용하는지 테스트
+     *
+     * 이슈: https://github.com/gnuboard/g7/issues/9
+     */
+    public function test_get_vendor_prefers_manifest_vendor_field(): void
+    {
+        $module = $this->makeModuleWithManifest(
+            manifest: ['vendor' => 'Glitter.kr'],
+            moduleDir: '/tmp/glitter-reservation'
+        );
+
+        $this->assertSame('Glitter.kr', $module->getVendor());
+    }
+
+    /**
+     * getVendor()가 manifest 에 vendor 필드가 없으면 디렉토리 prefix 로 폴백하는지 테스트
+     */
+    public function test_get_vendor_falls_back_to_identifier_prefix_when_manifest_missing(): void
+    {
+        $module = $this->makeModuleWithManifest(
+            manifest: [],
+            moduleDir: '/tmp/sirsoft-sample'
+        );
+
+        $this->assertSame('sirsoft', $module->getVendor());
+    }
+
+    /**
+     * getVendor()가 manifest vendor 값이 빈 문자열이면 디렉토리 prefix 로 폴백하는지 테스트
+     */
+    public function test_get_vendor_falls_back_when_manifest_vendor_is_empty_string(): void
+    {
+        $module = $this->makeModuleWithManifest(
+            manifest: ['vendor' => ''],
+            moduleDir: '/tmp/acme-widget'
+        );
+
+        $this->assertSame('acme', $module->getVendor());
+    }
+
+    /**
+     * manifest 와 디렉토리 경로를 주입 가능한 테스트용 AbstractModule 인스턴스를 생성합니다.
+     *
+     * AbstractModule 의 loadManifest() 와 getModulePath() 를 오버라이드하여
+     * 파일 시스템에 접근하지 않고도 vendor 로직을 검증할 수 있습니다.
+     *
+     * @param  array<string, mixed>  $manifest  module.json 내용을 시뮬레이션할 배열
+     * @param  string  $moduleDir  모듈 디렉토리 경로 (basename 이 식별자로 사용됨)
+     */
+    private function makeModuleWithManifest(array $manifest, string $moduleDir): AbstractModule
+    {
+        return new class($manifest, $moduleDir) extends AbstractModule
+        {
+            public function __construct(private array $fakeManifest, private string $fakeModulePath) {}
+
+            protected function loadManifest(): array
+            {
+                return $this->fakeManifest;
+            }
+
+            protected function getModulePath(): string
+            {
+                return $this->fakeModulePath;
+            }
+        };
+    }
+
+    /**
      * install()이 기본적으로 true를 반환하는지 테스트
      */
     public function test_install_returns_true_by_default(): void

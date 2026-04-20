@@ -7,6 +7,8 @@
 export { default as Header } from './Header';
 export { default as Footer } from './Footer';
 export { default as MobileNav } from './MobileNav';
+export { NotificationCenter } from './NotificationCenter';
+export type { NotificationCenterProps, NotificationItem } from './NotificationCenter';
 export { default as ProductCard } from './ProductCard';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
@@ -50,6 +52,7 @@ export declare const compositeComponents: {
     Header: () => Promise<typeof import("./Header")>;
     Footer: () => Promise<typeof import("./Footer")>;
     MobileNav: () => Promise<typeof import("./MobileNav")>;
+    NotificationCenter: () => Promise<typeof import("./NotificationCenter")>;
     ProductCard: () => Promise<typeof import("./ProductCard")>;
     ImageGallery: () => Promise<typeof import("./ImageGallery")>;
     ProductImageViewer: () => Promise<typeof import("./ProductImageViewer")>;

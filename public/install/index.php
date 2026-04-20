@@ -163,6 +163,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
         window.INSTALLER_LANG = <?= json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         window.INSTALLER_STATE_LOCALE = <?= json_encode($state['g7_locale'] ?? null) ?>;
     </script>
+    <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer.js?v=<?= time() ?>"></script>
 </body>
 </html>

@@ -144,8 +144,7 @@ class Post extends Model implements FulltextSearchable
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class, 'post_id')
-            ->with(['user', 'parent'])
-            ->withCount('replies');
+            ->with(['user', 'parent']);
     }
 
     /**
@@ -157,6 +156,20 @@ class Post extends Model implements FulltextSearchable
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class, 'post_id')
+            ->orderBy('order');
+    }
+
+    /**
+     * 목록 썸네일용 첫 번째 이미지 첨부파일과의 관계를 정의합니다.
+     *
+     * 전체 attachments를 eager loading하는 대신 이미지 1건만 가져와 성능을 확보합니다.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function thumbnailAttachment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Attachment::class, 'post_id')
+            ->where('mime_type', 'like', 'image/%')
             ->orderBy('order');
     }
 

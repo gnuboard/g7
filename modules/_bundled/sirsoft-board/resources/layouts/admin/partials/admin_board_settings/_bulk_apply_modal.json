@@ -363,7 +363,7 @@
                       "target": "/api/modules/sirsoft-board/admin/settings",
                       "params": {
                         "method": "PUT",
-                        "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notification_channels: form.notification_channels || {} }; })()}}"
+                        "body": "{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
                       },
                       "onSuccess": [
                         {

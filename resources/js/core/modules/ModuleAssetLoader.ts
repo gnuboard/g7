@@ -63,8 +63,9 @@ export class ModuleAssetLoader {
     /**
      * 활성화된 모듈들의 에셋을 로드합니다.
      *
-     * 우선순위 순으로 정렬하여 순차적으로 로드합니다.
-     * CSS는 병렬로 로드하고, JS는 순차적으로 로드합니다.
+     * CSS/JS 모두 병렬 fetch로 로드합니다. JS는 `script.async = false` +
+     * 정렬된 DOM append 순서로 **실행 순서는 priority 정렬대로** 보장됩니다.
+     * (HTML 사양: async=false 스크립트는 삽입 순서대로 실행)
      *
      * @param extensions 모듈 에셋 배열
      */
@@ -79,20 +80,18 @@ export class ModuleAssetLoader {
 
         logger.log('Loading module assets:', sortedExtensions.map(e => e.identifier));
 
-        // CSS를 먼저 병렬로 로드 (렌더링 블로킹 방지)
+        // CSS 병렬 로드 (렌더링 블로킹 방지)
         const cssPromises = sortedExtensions
             .filter(ext => ext.css)
             .map(ext => this.loadCSS(ext.identifier, ext.css!));
 
-        await Promise.all(cssPromises);
-        logger.log('All CSS assets loaded');
+        // JS 병렬 fetch (script.async=false로 실행 순서는 append 순서대로 유지)
+        // 정렬된 순서로 순차 append하여 우선순위 기반 실행 순서를 보장
+        const jsPromises = sortedExtensions
+            .filter(ext => ext.js)
+            .map(ext => this.loadJS(ext.identifier, ext.js!));
 
-        // JS를 순차적으로 로드 (의존성 순서 보장)
-        for (const ext of sortedExtensions) {
-            if (ext.js) {
-                await this.loadJS(ext.identifier, ext.js);
-            }
-        }
+        await Promise.all([...cssPromises, ...jsPromises]);
 
         logger.log('All module assets loaded successfully');
     }

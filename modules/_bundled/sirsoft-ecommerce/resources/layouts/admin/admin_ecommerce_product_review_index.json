@@ -5,6 +5,41 @@
         "sirsoft-ecommerce.reviews.read"
     ],
     "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.product_review.title",
+        "description": "$t:sirsoft-ecommerce.admin.product_review.description"
+    },
+    "state": {
+        "filter": {
+            "searchField": "product_name",
+            "searchKeyword": "",
+            "startDate": "",
+            "endDate": "",
+            "dateQuick": ""
+        },
+        "selectedReviews": [],
+        "selectAll": false,
+        "expandedRows": [],
+        "replyText": "",
+        "batchAction": "",
+        "visibleColumns": [
+            "product_name",
+            "content",
+            "rating",
+            "reviewer",
+            "order_number",
+            "created_at",
+            "reply",
+            "status"
+        ],
+        "editingReviewId": null,
+        "editReplyContent": ""
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "reviews"
+        ]
+    },
     "data_sources": [
         {
             "id": "reviews",
@@ -52,36 +87,6 @@
             }
         }
     ],
-    "meta": {
-        "title": "$t:sirsoft-ecommerce.admin.product_review.title",
-        "description": "$t:sirsoft-ecommerce.admin.product_review.description"
-    },
-    "state": {
-        "filter": {
-            "searchField": "product_name",
-            "searchKeyword": "",
-            "startDate": "",
-            "endDate": "",
-            "dateQuick": ""
-        },
-        "selectedReviews": [],
-        "selectAll": false,
-        "expandedRows": [],
-        "replyText": "",
-        "batchAction": "",
-        "visibleColumns": [
-            "product_name",
-            "content",
-            "rating",
-            "reviewer",
-            "order_number",
-            "created_at",
-            "reply",
-            "status"
-        ],
-        "editingReviewId": null,
-        "editReplyContent": ""
-    },
     "initGlobal": {
         "reviewImagePreview": null,
         "editReviewId": null
@@ -405,7 +410,8 @@
                                                             "query": {
                                                                 "rating": "",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -436,7 +442,8 @@
                                                             "query": {
                                                                 "rating": "5",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -467,7 +474,8 @@
                                                             "query": {
                                                                 "rating": "4",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -498,7 +506,8 @@
                                                             "query": {
                                                                 "rating": "3",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -529,7 +538,8 @@
                                                             "query": {
                                                                 "rating": "2",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -560,7 +570,8 @@
                                                             "query": {
                                                                 "rating": "1",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -618,7 +629,8 @@
                                                             "query": {
                                                                 "reply_status": "",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -649,7 +661,8 @@
                                                             "query": {
                                                                 "reply_status": "replied",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -680,7 +693,8 @@
                                                             "query": {
                                                                 "reply_status": "not_replied",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -738,7 +752,8 @@
                                                             "query": {
                                                                 "photo": "",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -769,7 +784,8 @@
                                                             "query": {
                                                                 "photo": "photo",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -800,7 +816,8 @@
                                                             "query": {
                                                                 "photo": "normal",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -858,7 +875,8 @@
                                                             "query": {
                                                                 "status": "",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -889,7 +907,8 @@
                                                             "query": {
                                                                 "status": "visible",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -920,7 +939,8 @@
                                                             "query": {
                                                                 "status": "hidden",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ],
@@ -1274,7 +1294,8 @@
                                                                 "sort": "{{query.sort || 'created_at_desc'}}",
                                                                 "per_page": "{{query.per_page || 20}}",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "review_datagrid__body"
                                                         }
                                                     }
                                                 ]
@@ -1494,7 +1515,8 @@
                                                     "query": {
                                                         "sort": "{{$event.target.value}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "review_datagrid__body"
                                                 }
                                             }
                                         ]
@@ -1536,7 +1558,8 @@
                                                     "query": {
                                                         "per_page": "{{$event.target.value}}",
                                                         "page": 1
-                                                    }
+                                                    },
+                                                    "transition_overlay_target": "review_datagrid__body"
                                                 }
                                             }
                                         ]
@@ -1862,110 +1885,47 @@
                                                                         "className": "px-4 py-4"
                                                                     },
                                                                     "children": [
-                                                                {
-                                                                    "comment": "상품 이미지 + 상품명/옵션 2단 배치",
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex items-start gap-3 mb-4"
-                                                                    },
-                                                                    "children": [
                                                                         {
-                                                                            "type": "basic",
-                                                                            "name": "Img",
-                                                                            "props": {
-                                                                                "src": "{{row.product?.thumbnail_url ?? ''}}",
-                                                                                "alt": "{{row.product?.name ?? ''}}",
-                                                                                "className": "w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"
-                                                                            }
-                                                                        },
-                                                                        {
+                                                                            "comment": "상품 이미지 + 상품명/옵션 2단 배치",
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex flex-col gap-1 min-w-0"
+                                                                                "className": "flex items-start gap-3 mb-4"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
-                                                                                    "name": "A",
+                                                                                    "name": "Img",
                                                                                     "props": {
-                                                                                        "href": "{{`/admin/ecommerce/products/${row.product?.id}`}}",
-                                                                                        "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium text-sm leading-snug"
-                                                                                    },
-                                                                                    "text": "{{row.product?.name ?? ''}}"
+                                                                                        "src": "{{row.product?.thumbnail_url ?? ''}}",
+                                                                                        "alt": "{{row.product?.name ?? ''}}",
+                                                                                        "className": "w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"
+                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.option_snapshot_label}}",
+                                                                                    "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "text-secondary text-xs"
-                                                                                    },
-                                                                                    "text": "{{row.option_snapshot_label}}"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "border-t border-gray-200 dark:border-gray-700 my-4"
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "space-y-3 text-sm"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "flex justify-between"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "text-label-subtle"
-                                                                                    },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.reviewer"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{!!row.user_id}}",
-                                                                                    "props": {
-                                                                                        "className": "text-primary font-medium"
-                                                                                    },
-                                                                                    "text": "{{`${row.user?.name ?? ''} (${row.user?.email ?? ''})`}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{!row.user_id}}",
-                                                                                    "props": {
-                                                                                        "className": "text-primary font-medium"
+                                                                                        "className": "flex flex-col gap-1 min-w-0"
                                                                                     },
                                                                                     "children": [
                                                                                         {
                                                                                             "type": "basic",
-                                                                                            "name": "Span",
-                                                                                            "text": "{{row.user?.name ?? ''}}"
+                                                                                            "name": "A",
+                                                                                            "props": {
+                                                                                                "href": "{{`/admin/ecommerce/products/${row.product?.id}`}}",
+                                                                                                "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium text-sm leading-snug"
+                                                                                            },
+                                                                                            "text": "{{row.product?.name ?? ''}}"
                                                                                         },
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Span",
+                                                                                            "if": "{{row.option_snapshot_label}}",
                                                                                             "props": {
-                                                                                                "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                                                                "className": "text-secondary text-xs"
                                                                                             },
-                                                                                            "text": "($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)"
+                                                                                            "text": "{{row.option_snapshot_label}}"
                                                                                         }
                                                                                     ]
                                                                                 }
@@ -1975,80 +1935,143 @@
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex justify-between"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "text-label-subtle"
-                                                                                    },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.order_number"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "A",
-                                                                                    "props": {
-                                                                                        "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
-                                                                                        "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium"
-                                                                                    },
-                                                                                    "text": "{{row.orderOption?.order_number ?? ''}}"
-                                                                                }
-                                                                            ]
+                                                                                "className": "border-t border-gray-200 dark:border-gray-700 my-4"
+                                                                            }
                                                                         },
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex justify-between"
+                                                                                "className": "space-y-3 text-sm"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
-                                                                                    "name": "Span",
+                                                                                    "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "text-label-subtle"
+                                                                                        "className": "flex justify-between"
                                                                                     },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity"
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-label-subtle"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.reviewer"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{!!row.user_id}}",
+                                                                                            "props": {
+                                                                                                "className": "text-primary font-medium"
+                                                                                            },
+                                                                                            "text": "{{`${row.user?.name ?? ''} (${row.user?.email ?? ''})`}}"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{!row.user_id}}",
+                                                                                            "props": {
+                                                                                                "className": "text-primary font-medium"
+                                                                                            },
+                                                                                            "children": [
+                                                                                                {
+                                                                                                    "type": "basic",
+                                                                                                    "name": "Span",
+                                                                                                    "text": "{{row.user?.name ?? ''}}"
+                                                                                                },
+                                                                                                {
+                                                                                                    "type": "basic",
+                                                                                                    "name": "Span",
+                                                                                                    "props": {
+                                                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                                                                    },
+                                                                                                    "text": "($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)"
+                                                                                                }
+                                                                                            ]
+                                                                                        }
+                                                                                    ]
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
-                                                                                    "name": "Span",
+                                                                                    "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "text-primary"
+                                                                                        "className": "flex justify-between"
                                                                                     },
-                                                                                    "text": "{{row.orderOption?.quantity ?? ''}} 개"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "flex justify-between"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "text-label-subtle"
-                                                                                    },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date"
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-label-subtle"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.order_number"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "A",
+                                                                                            "props": {
+                                                                                                "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
+                                                                                                "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium"
+                                                                                            },
+                                                                                            "text": "{{row.orderOption?.order_number ?? ''}}"
+                                                                                        }
+                                                                                    ]
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
-                                                                                    "name": "Span",
+                                                                                    "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "text-primary"
+                                                                                        "className": "flex justify-between"
                                                                                     },
-                                                                                    "text": "{{row.orderOption?.created_at ?? ''}}"
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-label-subtle"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-primary"
+                                                                                            },
+                                                                                            "text": "{{row.orderOption?.quantity ?? ''}} 개"
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "props": {
+                                                                                        "className": "flex justify-between"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-label-subtle"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "props": {
+                                                                                                "className": "text-primary"
+                                                                                            },
+                                                                                            "text": "{{row.orderOption?.created_at ?? ''}}"
+                                                                                        }
+                                                                                    ]
                                                                                 }
                                                                             ]
                                                                         }
-                                                                    ]
-                                                                }
                                                                     ]
                                                                 }
                                                             ]
@@ -2133,12 +2156,17 @@
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "if": "{{rowImageCount > 0}}",
-                                                                                    "props": { "className": "flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400" },
+                                                                                    "props": {
+                                                                                        "className": "flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                                                                    },
                                                                                     "children": [
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Icon",
-                                                                                            "props": { "name": "image", "size": "sm" }
+                                                                                            "props": {
+                                                                                                "name": "image",
+                                                                                                "size": "sm"
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "type": "basic",
@@ -2152,62 +2180,220 @@
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "if": "{{rowImageCount > 0}}",
-                                                                                    "props": { "className": "flex gap-2 mt-1" },
+                                                                                    "props": {
+                                                                                        "className": "flex gap-2 mt-1"
+                                                                                    },
                                                                                     "children": [
                                                                                         {
                                                                                             "comment": "이미지 1",
                                                                                             "type": "basic",
                                                                                             "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 0}}",
-                                                                                            "props": { "src": "{{rowImages[0].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80" },
-                                                                                            "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{row.user?.name ?? ''}}", "rating": "{{row.rating}}", "createdAt": "{{row.created_at}}", "optionValues": "{{row.option_snapshot?.option_values ?? []}}", "content": "{{row.content ?? ''}}", "images": "{{rowImages ?? []}}" }, "reviewImageIndex": 0 } }, { "handler": "openModal", "target": "modal_image_preview" }] }]
+                                                                                            "props": {
+                                                                                                "src": "{{rowImages[0].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            },
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "click",
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "reviewForModal": {
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "rating": "{{row.rating}}",
+                                                                                                                    "createdAt": "{{row.created_at}}",
+                                                                                                                    "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "images": "{{rowImages ?? []}}"
+                                                                                                                },
+                                                                                                                "reviewImageIndex": 0
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "modal_image_preview"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 2",
                                                                                             "type": "basic",
                                                                                             "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 1}}",
-                                                                                            "props": { "src": "{{rowImages[1].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80" },
-                                                                                            "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{row.user?.name ?? ''}}", "rating": "{{row.rating}}", "createdAt": "{{row.created_at}}", "optionValues": "{{row.option_snapshot?.option_values ?? []}}", "content": "{{row.content ?? ''}}", "images": "{{rowImages ?? []}}" }, "reviewImageIndex": 1 } }, { "handler": "openModal", "target": "modal_image_preview" }] }]
+                                                                                            "props": {
+                                                                                                "src": "{{rowImages[1].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            },
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "click",
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "reviewForModal": {
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "rating": "{{row.rating}}",
+                                                                                                                    "createdAt": "{{row.created_at}}",
+                                                                                                                    "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "images": "{{rowImages ?? []}}"
+                                                                                                                },
+                                                                                                                "reviewImageIndex": 1
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "modal_image_preview"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 3",
                                                                                             "type": "basic",
                                                                                             "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 2}}",
-                                                                                            "props": { "src": "{{rowImages[2].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80" },
-                                                                                            "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{row.user?.name ?? ''}}", "rating": "{{row.rating}}", "createdAt": "{{row.created_at}}", "optionValues": "{{row.option_snapshot?.option_values ?? []}}", "content": "{{row.content ?? ''}}", "images": "{{rowImages ?? []}}" }, "reviewImageIndex": 2 } }, { "handler": "openModal", "target": "modal_image_preview" }] }]
+                                                                                            "props": {
+                                                                                                "src": "{{rowImages[2].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            },
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "click",
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "reviewForModal": {
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "rating": "{{row.rating}}",
+                                                                                                                    "createdAt": "{{row.created_at}}",
+                                                                                                                    "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "images": "{{rowImages ?? []}}"
+                                                                                                                },
+                                                                                                                "reviewImageIndex": 2
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "modal_image_preview"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 4 (4장 정확히일 때 일반 이미지)",
                                                                                             "type": "basic",
                                                                                             "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length == 4}}",
-                                                                                            "props": { "src": "{{rowImages[3].download_url}}", "alt": "", "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80" },
-                                                                                            "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{row.user?.name ?? ''}}", "rating": "{{row.rating}}", "createdAt": "{{row.created_at}}", "optionValues": "{{row.option_snapshot?.option_values ?? []}}", "content": "{{row.content ?? ''}}", "images": "{{rowImages ?? []}}" }, "reviewImageIndex": 3 } }, { "handler": "openModal", "target": "modal_image_preview" }] }]
+                                                                                            "props": {
+                                                                                                "src": "{{rowImages[3].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            },
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "click",
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "reviewForModal": {
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "rating": "{{row.rating}}",
+                                                                                                                    "createdAt": "{{row.created_at}}",
+                                                                                                                    "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "images": "{{rowImages ?? []}}"
+                                                                                                                },
+                                                                                                                "reviewImageIndex": 3
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "modal_image_preview"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ]
                                                                                         },
                                                                                         {
                                                                                             "comment": "+N 오버레이 (5장 이상일 때 4번째 자리)",
                                                                                             "type": "basic",
                                                                                             "name": "Div",
                                                                                             "if": "{{(rowImages ?? []).length >= 5}}",
-                                                                                            "props": { "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden" },
-                                                                                            "actions": [{ "type": "click", "handler": "sequence", "actions": [{ "handler": "setState", "params": { "target": "global", "reviewForModal": { "userName": "{{row.user?.name ?? ''}}", "rating": "{{row.rating}}", "createdAt": "{{row.created_at}}", "optionValues": "{{row.option_snapshot?.option_values ?? []}}", "content": "{{row.content ?? ''}}", "images": "{{rowImages ?? []}}" }, "reviewImageIndex": 3 } }, { "handler": "openModal", "target": "modal_image_preview" }] }],
+                                                                                            "props": {
+                                                                                                "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden"
+                                                                                            },
+                                                                                            "actions": [
+                                                                                                {
+                                                                                                    "type": "click",
+                                                                                                    "handler": "sequence",
+                                                                                                    "actions": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "global",
+                                                                                                                "reviewForModal": {
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
+                                                                                                                    "rating": "{{row.rating}}",
+                                                                                                                    "createdAt": "{{row.created_at}}",
+                                                                                                                    "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
+                                                                                                                    "images": "{{rowImages ?? []}}"
+                                                                                                                },
+                                                                                                                "reviewImageIndex": 3
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "openModal",
+                                                                                                            "target": "modal_image_preview"
+                                                                                                        }
+                                                                                                    ]
+                                                                                                }
+                                                                                            ],
                                                                                             "children": [
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Img",
-                                                                                                    "props": { "src": "{{rowImages[3].download_url}}", "alt": "", "className": "w-full h-full object-cover" }
+                                                                                                    "props": {
+                                                                                                        "src": "{{rowImages[3].download_url}}",
+                                                                                                        "alt": "",
+                                                                                                        "className": "w-full h-full object-cover"
+                                                                                                    }
                                                                                                 },
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Div",
-                                                                                                    "props": { "className": "absolute inset-0 bg-black/50 flex items-center justify-center" },
+                                                                                                    "props": {
+                                                                                                        "className": "absolute inset-0 bg-black/50 flex items-center justify-center"
+                                                                                                    },
                                                                                                     "children": [
                                                                                                         {
                                                                                                             "type": "basic",
                                                                                                             "name": "Span",
-                                                                                                            "props": { "className": "text-white font-semibold text-sm" },
+                                                                                                            "props": {
+                                                                                                                "className": "text-white font-semibold text-sm"
+                                                                                                            },
                                                                                                             "text": "+{{(rowImages ?? []).length - 3}}"
                                                                                                         }
                                                                                                     ]
@@ -2432,106 +2618,106 @@
                                                                                 "className": "flex justify-end gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50"
                                                                             },
                                                                             "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Button",
+                                                                                    "props": {
+                                                                                        "type": "button",
+                                                                                        "className": "btn btn-sm btn-outline"
+                                                                                    },
+                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.cancel",
+                                                                                    "actions": [
                                                                                         {
-                                                                                            "type": "basic",
-                                                                                            "name": "Button",
-                                                                                            "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "btn btn-sm btn-outline"
-                                                                                            },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.cancel",
+                                                                                            "type": "click",
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "local",
+                                                                                                "editingReviewId": null
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Button",
+                                                                                    "props": {
+                                                                                        "type": "button",
+                                                                                        "className": "btn btn-sm btn-primary",
+                                                                                        "disabled": "{{_local.isSubmitting}}"
+                                                                                    },
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "type": "click",
+                                                                                            "handler": "sequence",
                                                                                             "actions": [
                                                                                                 {
-                                                                                                    "type": "click",
                                                                                                     "handler": "setState",
                                                                                                     "params": {
                                                                                                         "target": "local",
-                                                                                                        "editingReviewId": null
+                                                                                                        "isSubmitting": true
                                                                                                     }
-                                                                                                }
-                                                                                            ]
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Button",
-                                                                                            "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "btn btn-sm btn-primary",
-                                                                                                "disabled": "{{_local.isSubmitting}}"
-                                                                                            },
-                                                                                            "actions": [
+                                                                                                },
                                                                                                 {
-                                                                                                    "type": "click",
-                                                                                                    "handler": "sequence",
-                                                                                                    "actions": [
+                                                                                                    "handler": "apiCall",
+                                                                                                    "params": {
+                                                                                                        "method": "POST",
+                                                                                                        "body": {
+                                                                                                            "reply_content": "{{_local.editReplyContent ?? ''}}"
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "target": "/api/modules/sirsoft-ecommerce/admin/reviews/{{row.id}}/reply",
+                                                                                                    "auth_required": true,
+                                                                                                    "onSuccess": [
                                                                                                         {
                                                                                                             "handler": "setState",
                                                                                                             "params": {
                                                                                                                 "target": "local",
-                                                                                                                "isSubmitting": true
+                                                                                                                "isSubmitting": false
                                                                                                             }
                                                                                                         },
                                                                                                         {
-                                                                                                            "handler": "apiCall",
+                                                                                                            "handler": "setState",
                                                                                                             "params": {
-                                                                                                                "method": "POST",
-                                                                                                                "body": {
-                                                                                                                    "reply_content": "{{_local.editReplyContent ?? ''}}"
-                                                                                                                }
-                                                                                                            },
-                                                                                                            "target": "/api/modules/sirsoft-ecommerce/admin/reviews/{{row.id}}/reply",
-                                                                                                            "auth_required": true,
-                                                                                                            "onSuccess": [
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "local",
-                                                                                                                        "isSubmitting": false
-                                                                                                                    }
-                                                                                                                },
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "local",
-                                                                                                                        "editingReviewId": null
-                                                                                                                    }
-                                                                                                                },
-                                                                                                                {
-                                                                                                                    "handler": "refetchDataSource",
-                                                                                                                    "params": {
-                                                                                                                        "dataSourceId": "reviews"
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            ],
-                                                                                                            "onError": [
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "local",
-                                                                                                                        "isSubmitting": false
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            ]
+                                                                                                                "target": "local",
+                                                                                                                "editingReviewId": null
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "refetchDataSource",
+                                                                                                            "params": {
+                                                                                                                "dataSourceId": "reviews"
+                                                                                                            }
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    "onError": [
+                                                                                                        {
+                                                                                                            "handler": "setState",
+                                                                                                            "params": {
+                                                                                                                "target": "local",
+                                                                                                                "isSubmitting": false
+                                                                                                            }
                                                                                                         }
                                                                                                     ]
                                                                                                 }
-                                                                                            ],
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Span",
-                                                                                                    "if": "{{!_local.isSubmitting}}",
-                                                                                                    "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit_save"
-                                                                                                },
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Span",
-                                                                                                    "if": "{{_local.isSubmitting}}",
-                                                                                                    "text": "$t:common.loading"
-                                                                                                }
                                                                                             ]
                                                                                         }
+                                                                                    ],
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{!_local.isSubmitting}}",
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit_save"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Span",
+                                                                                            "if": "{{_local.isSubmitting}}",
+                                                                                            "text": "$t:common.loading"
+                                                                                        }
                                                                                     ]
+                                                                                }
+                                                                            ]
                                                                         }
                                                                     ]
                                                                 },
@@ -2725,7 +2911,8 @@
                                     "mergeQuery": true,
                                     "query": {
                                         "page": "{{$args[0]}}"
-                                    }
+                                    },
+                                    "transition_overlay_target": "review_datagrid__body"
                                 }
                             }
                         ]

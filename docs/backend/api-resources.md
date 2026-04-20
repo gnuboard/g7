@@ -7,11 +7,12 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. BaseApiResource 상속 필수
+1. Resource: BaseApiResource 상속 필수 / Collection: BaseApiCollection 상속 필수
 2. 민감 정보 제외: created_by, updated_by, deleted_at
 3. 관계 데이터: whenLoaded() 사용
 4. when() 주의: 커스텀 메서드에서는 삼항 연산자 사용 (MissingValue 누출 방지)
-5. 권한 메타: ...$this->resourceMeta($request) 스프레드로 is_owner + abilities(can_*) 표준화
+5. 권한 메타 (Resource): ...$this->resourceMeta($request) 스프레드로 is_owner + abilities(can_*) 표준화
+6. 권한 메타 (Collection): abilityMap() 오버라이드 + resolveCollectionAbilities($request) — 페이지 버튼 제어
 ```
 
 ---
@@ -27,18 +28,29 @@
 
 ## 기본 규칙
 
-### BaseApiResource 상속 필수
+### BaseApiResource / BaseApiCollection 상속 필수
 
-모든 API 리소스는 `BaseApiResource`를 상속해야 합니다.
+모든 API 리소스는 `BaseApiResource`를, 모든 API 컬렉션은 `BaseApiCollection`을 상속해야 합니다.
 
 ```php
+// 단건 리소스
 use App\Http\Resources\BaseApiResource;
 
 class ProductResource extends BaseApiResource
 {
     // ...
 }
+
+// 목록 컬렉션
+use App\Http\Resources\BaseApiCollection;
+
+class ProductCollection extends BaseApiCollection
+{
+    // ...
+}
 ```
+
+`BaseApiCollection`은 `HasRowNumber` trait과 `abilityMap()` + `resolveCollectionAbilities()` 메서드를 제공합니다. 컬렉션 레벨 abilities가 필요하면 `abilityMap()`을 오버라이드합니다.
 
 ### 민감한 정보 제외
 
@@ -161,36 +173,39 @@ protected function resolveAbilities(Request $request): array
 }
 ```
 
-### HasAbilityCheck 트레이트
+### 컬렉션 레벨 abilities (BaseApiCollection)
 
-`BaseApiResource`와 `ResourceCollection` 모두에서 권한 체크 로직을 공유하기 위한 트레이트입니다:
+페이지 레벨 버튼 제어용 abilities는 `BaseApiCollection`의 `abilityMap()`을 오버라이드합니다. Controller가 아닌 Collection에서 담당합니다:
 
 ```php
-use App\Http\Resources\Traits\HasAbilityCheck;
+use App\Http\Resources\BaseApiCollection;
 
-// ResourceCollection에서 컬렉션 레벨 abilities 제공
-class BrandCollection extends ResourceCollection
+class BrandCollection extends BaseApiCollection
 {
-    use HasAbilityCheck;
-
     protected function abilityMap(): array
     {
         return [
             'can_create' => 'sirsoft-ecommerce.brands.create',
-            'can_update' => 'sirsoft-ecommerce.brands.update',
             'can_delete' => 'sirsoft-ecommerce.brands.delete',
         ];
     }
 
     public function toArray(Request $request): array
     {
+        $abilities = $this->resolveCollectionAbilities($request);
+
         return [
-            'data' => BrandResource::collection($this->collection),
-            'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),
+            'data' => $this->mapWithRowNumber(function ($brand) {
+                return (new BrandResource($brand))->toArray(request());
+            }),
+            'pagination' => [ /* ... */ ],
+            ...($abilities ? ['abilities' => $abilities] : []),
         ];
     }
 }
 ```
+
+abilities가 불필요한 컬렉션은 `abilityMap()`을 오버라이드하지 않습니다 (기본값 빈 배열).
 
 ### 커스텀 메서드에서의 사용
 

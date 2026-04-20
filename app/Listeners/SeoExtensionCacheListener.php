@@ -2,10 +2,10 @@
 
 namespace App\Listeners;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoConfigMerger;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -88,7 +88,7 @@ class SeoExtensionCacheListener implements HookListenerInterface
             app(SeoConfigMerger::class)->clearCache();
 
             // Sitemap 캐시 삭제
-            Cache::forget('seo:sitemap');
+            app(CacheInterface::class)->forget('seo.sitemap');
 
             Log::info('[SEO] Extension changed — all cache cleared', [
                 'identifier' => $identifier,

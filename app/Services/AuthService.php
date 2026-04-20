@@ -10,9 +10,6 @@ use App\Enums\ConsentType;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
-use App\Notifications\Auth\PasswordChangedNotification;
-use App\Notifications\Auth\ResetPasswordNotification;
-use App\Notifications\Auth\WelcomeNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -175,23 +172,12 @@ class AuthService
 
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
-        // Hook 발생 (회원가입 완료)
-        HookManager::doAction('core.auth.register', $user, [
+        // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener가 처리
+        HookManager::doAction('core.auth.after_register', $user, [
             'registration_time' => now(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
-
-        // 회원가입 완료 알림 발송
-        try {
-            $user->notify(new WelcomeNotification);
-        } catch (\Exception $e) {
-            Log::error('회원가입 완료 알림 발송 실패', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
         return [
             'user' => $user,
@@ -318,22 +304,19 @@ class AuthService
             'created_at' => now(),
         ]);
 
-        // 비밀번호 재설정 알림 발송
-        try {
-            $user->notify(new ResetPasswordNotification($token, $redirectPrefix));
-        } catch (\Exception $e) {
-            Log::error('비밀번호 재설정 이메일 발송 실패', [
-                'email' => $email,
-                'error' => $e->getMessage(),
-            ]);
+        // 리셋 URL 생성 (extract_data 필터에서 사용)
+        $resetPath = $redirectPrefix
+            ? '/' . $redirectPrefix . '/reset-password'
+            : '/reset-password';
+        $resetUrl = config('app.url') . $resetPath . '?' . http_build_query([
+            'token' => $token,
+            'email' => $user->email,
+        ]);
 
-            throw ValidationException::withMessages([
-                'email' => [__('auth.email_send_failed')],
-            ]);
-        }
-
-        // Hook 발생 (비밀번호 찾기 완료)
-        HookManager::doAction('core.auth.forgot_password', $user);
+        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리
+        HookManager::doAction('core.auth.after_reset_password_request', $user, [
+            'reset_url' => $resetUrl,
+        ]);
     }
 
     /**
@@ -443,20 +426,8 @@ class AuthService
         // 사용된 토큰 삭제
         $record->delete();
 
-        // 비밀번호 변경 완료 알림 발송
-        try {
-            $user->notify(new PasswordChangedNotification);
-        } catch (\Exception $e) {
-            // 알림 발송 실패는 로그만 남기고 계속 진행 (비밀번호는 이미 변경됨)
-            Log::error('비밀번호 변경 완료 알림 발송 실패', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        // Hook 발생 (비밀번호 재설정 완료)
-        HookManager::doAction('core.auth.reset_password', $user);
+        // Hook 발생 (비밀번호 변경 완료) — 알림 발송은 NotificationHookListener가 처리
+        HookManager::doAction('core.auth.after_password_changed', $user);
     }
 
     /**

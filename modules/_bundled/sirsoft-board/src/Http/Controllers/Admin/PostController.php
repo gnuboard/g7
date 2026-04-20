@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReportService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -35,10 +36,12 @@ class PostController extends AdminBaseController
      *
      * @param  PostService  $postService  게시글 서비스
      * @param  BoardService  $boardService  게시판 서비스
+     * @param  ReportService  $reportService  신고 서비스
      */
     public function __construct(
         private PostService $postService,
-        private BoardService $boardService
+        private BoardService $boardService,
+        private ReportService $reportService
     ) {
         parent::__construct();
     }
@@ -69,9 +72,11 @@ class PostController extends AdminBaseController
             // 삭제된 게시글 포함 여부 (admin.manage 또는 admin.control 권한)
             $canViewDeleted = $this->checkBoardPermission($slug, 'admin.manage');
 
-            // 게시글 목록 조회
-            $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $canViewDeleted);
-            $totalNormalPosts = $this->postService->getTotalNormalPosts($slug, $listParams['filters'], $canViewDeleted);
+            // 게시글 목록 조회 (simplePaginate — COUNT 쿼리 제거)
+            $posts = $this->postService->getPosts($slug, $listParams['filters'], $listParams['perPage'], withTrashed: $canViewDeleted, board: $board);
+
+            // 일반 게시글 총 건수는 캐시에서 조회 (simplePaginate는 total 미제공)
+            $totalNormalPosts = $this->postService->getCachedNormalPostCount($slug, $board->id, $listParams['filters'], $canViewDeleted, 'admin');
 
             // PostCollection 구성
             $collection = new PostCollection($posts);
@@ -122,6 +127,21 @@ class PostController extends AdminBaseController
 
             // 상세 정보 로드 (조회수 증가, 댓글 로드, 이전/다음 게시글 조회)
             $post = $this->postService->loadPostDetail($slug, $id, $canViewDeleted);
+
+            // 댓글 신고 여부 일괄 사전 로드 (N+1 방지: 댓글별 개별 쿼리 → 1회 일괄 쿼리)
+            $user = Auth::user();
+            if ($user && $post->relationLoaded('comments')) {
+                $comments = $post->comments;
+                $board = $post->board;
+                $commentIds = $comments->pluck('id')->all();
+                $reportedCommentIds = ! empty($commentIds)
+                    ? $this->reportService->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds)
+                    : [];
+
+                foreach ($comments as $comment) {
+                    $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                }
+            }
 
             return $this->successWithResource(
                 'sirsoft-board::messages.posts.fetch_success',

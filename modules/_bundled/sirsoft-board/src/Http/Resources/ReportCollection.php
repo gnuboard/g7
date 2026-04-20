@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\ResourceCollection;
+use App\Http\Resources\BaseApiCollection;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  *
  * 신고 목록을 페이지네이션과 함께 반환합니다.
  */
-class ReportCollection extends ResourceCollection
+class ReportCollection extends BaseApiCollection
 {
     use ChecksBoardPermission;
 

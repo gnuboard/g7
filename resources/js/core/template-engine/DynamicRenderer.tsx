@@ -31,6 +31,7 @@ import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import { useTransitionState } from './TransitionContext';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
+import { shallowObjectEqual } from '../hooks/useControllableState';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 
 const logger = createLogger('DynamicRenderer');
@@ -790,6 +791,20 @@ export interface ComponentDefinition {
    * ```
    */
   extensionPointProps?: Record<string, any>;
+
+  /**
+   * Extension Point에서 전달받은 콜백 액션 객체
+   *
+   * 백엔드 LayoutExtensionService에서 extension_point 컴포넌트의 callbacks를
+   * 주입된 컴포넌트에 전달할 때 사용됩니다.
+   * extensionPointProps와 달리 표현식 평가 없이 그대로 전달됩니다.
+   * (ActionDispatcher가 실행 시점에 평가)
+   *
+   * 데이터 바인딩에서 {{extensionPointCallbacks.xxx}}로 접근할 수 있습니다.
+   *
+   * @since engine-v1.28.0
+   */
+  extensionPointCallbacks?: Record<string, any>;
 }
 
 /**
@@ -1181,6 +1196,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // _forceLocalInit 강제 초기화 적용 여부 추적 (중복 실행 방지용)
     const forceInitAppliedRef = useRef<boolean>(false);
 
+    // @since engine-v1.41.0: _localInit useEffect가 처리 완료한 dataContext._localInit 참조를 추적
+    // useMemo(렌더 단계)에서 참조 비교(O(1))로 _localInit 미적용 상태를 감지하여
+    // stale dynamicState(init_actions 기본값의 빈 배열 등)가 dataContext._local의
+    // API 데이터를 덮어쓰는 것을 방지 (플러그인 onMount setLocal 경합 해소)
+    const lastProcessedInitRef = useRef<any>(null);
+
     // 최신 _local 상태를 참조하는 ref (expandChildren 상태 동기화용)
     // useCallback으로 캐싱된 componentContext에서도 최신 상태에 접근 가능하도록 함
     const latestLocalStateRef = useRef<Record<string, any>>({});
@@ -1326,6 +1347,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
           logger.log('_localInit applied (data changed):', Object.keys(localInitData));
         }
+
+        // engine-v1.41.0: _localInit 처리 완료 후 ref 갱신
+        // hash tracking에 의해 shouldApply가 false(skip)된 경우에도 갱신하여
+        // extendedDataContext useMemo가 정상 병합(deepMergeState)을 재개하도록 함
+        lastProcessedInitRef.current = dataContext._localInit;
       }
     }, [dataContext._localInit, parentDataContext, bindingEngine]);
 
@@ -1514,9 +1540,25 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // engine-v1.17.4: 비동기 콜백에서 setLocal 호출 시 dynamicState가 stale 값을 가질 수 있음
       // __g7ForcedLocalFields는 업데이트된 필드만 저장하여, 해당 필드만 우선 적용
       // 다른 필드의 사용자 입력은 dynamicState에서 보존됨
-      let localState = dataContext._local
-        ? deepMergeState(dataContext._local, dynamicState)
-        : dynamicState;
+      // engine-v1.41.0: _localInit이 존재하지만 아직 localDynamicState에 반영되지 않은 경우
+      // stale dynamicState(init_actions 기본값의 빈 배열 등)가 dataContext._local의
+      // API 데이터를 덮어쓰는 것을 방지 (CKEditor 등 플러그인 onMount setLocal 경합 해소)
+      //
+      // 첫 렌더 시 dynamicState는:
+      // - 신규 컴포넌트: { loadingActions: {} } (useState 초기값) → 건너뛰어도 결과 동일
+      // - _fromBase 컴포넌트: 이전 페이지 stale 데이터 → 건너뛰는 것이 정확
+      // dataContext._local은 handleRouteChange에서 init_actions + API 데이터가
+      // 완전히 머지된 상태이므로 단독 사용 시 불완전하지 않음
+      const hasUnappliedInit = dataContext._localInit
+        && dataContext._localInit !== lastProcessedInitRef.current;
+      let localState: Record<string, any>;
+      if (hasUnappliedInit && dataContext._local) {
+        localState = dataContext._local;
+      } else {
+        localState = dataContext._local
+          ? deepMergeState(dataContext._local, dynamicState)
+          : dynamicState;
+      }
 
       // __g7ForcedLocalFields가 있으면 해당 필드만 최우선으로 병합 (비동기 setLocal fallback 지원)
       const forcedLocalFields = (window as any).__g7ForcedLocalFields;
@@ -1618,11 +1660,23 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         result.$parent = effectiveParentDataContext;
       }
 
-      // extensionPointProps가 있으면 데이터 컨텍스트에 추가
+      // extensionPointProps가 있으면 데이터 컨텍스트에 추가 (표현식 평가)
       // extension_point 컴포넌트의 props가 주입된 컴포넌트에서 {{extensionPointProps.xxx}}로 접근 가능
       // LayoutExtensionService에서 extension_point의 props를 injectedComponent.extensionPointProps에 추가
+      // @since engine-v1.28.0: resolveObject()로 표현식 재귀 평가 (일반 props와 동일 수준)
       if (componentDef.extensionPointProps) {
-        result.extensionPointProps = componentDef.extensionPointProps;
+        result.extensionPointProps = bindingEngine.resolveObject(
+          componentDef.extensionPointProps,
+          result,
+          isInsideIteration ? { skipCache: true } : undefined
+        );
+      }
+
+      // extensionPointCallbacks가 있으면 데이터 컨텍스트에 추가 (평가 없이 그대로 전달)
+      // 액션 객체는 ActionDispatcher가 실행 시점에 표현식을 평가하므로 사전 평가하면 안 됨
+      // @since engine-v1.28.0
+      if (componentDef.extensionPointCallbacks) {
+        result.extensionPointCallbacks = componentDef.extensionPointCallbacks;
       }
 
       return result;
@@ -1630,7 +1684,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // effectiveParentDataContext는 동일한 객체 참조를 반환할 수 있으므로
       // version 변경으로 강제 재계산
       // componentDef.extensionPointProps: extension_point props 변경 시 재계산
-    }, [dataContext, dynamicState, isolatedContext?.state, effectiveParentDataContext, parentContextHook?.version, componentDef.extensionPointProps]);
+      // componentDef.extensionPointCallbacks: extension_point callbacks 변경 시 재계산
+    }, [dataContext, dynamicState, isolatedContext?.state, effectiveParentDataContext, parentContextHook?.version, componentDef.extensionPointProps, componentDef.extensionPointCallbacks]);
 
     // 매 렌더링마다 최신 _local 상태를 ref에 업데이트
     // useCallback으로 캐싱된 componentContext에서도 stateRef.current로 최신 상태 접근 가능
@@ -2292,6 +2347,27 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     ]);
 
     /**
+     * resolvedProps 참조 안정화 (engine-v1.25.0)
+     *
+     * 상태 변경 시 resolvedProps가 재계산되지만, 해석된 값이 이전과 동일하면
+     * 이전 참조를 반환하여 하위 컴포넌트의 React.memo가 실제로 작동하게 합니다.
+     * shallowObjectEqual은 각 prop 값을 ===로 비교합니다.
+     *
+     * @since engine-v1.25.0
+     */
+    const previousResolvedPropsRef = useRef<Record<string, any> | null>(null);
+    const stableResolvedProps = useMemo(() => {
+      if (
+        previousResolvedPropsRef.current &&
+        shallowObjectEqual(previousResolvedPropsRef.current, resolvedProps)
+      ) {
+        return previousResolvedPropsRef.current;
+      }
+      previousResolvedPropsRef.current = resolvedProps;
+      return resolvedProps;
+    }, [resolvedProps]);
+
+    /**
      * 자식에게 전달할 FormContext
      *
      * 현재 컴포넌트에 dataKey가 있으면 새 FormContext를 생성하여 자식에게 전달합니다.
@@ -2710,6 +2786,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         const itemVar = sortable.itemVar || '$item';
         const indexVar = sortable.indexVar || '$index';
         const handle = sortable.handle;
+        const wrapperElement = sortable.wrapperElement;
 
         /**
          * 정렬 완료 핸들러
@@ -2813,26 +2890,33 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               key={itemTemplateKey}
               id={itemId}
               handle={handle}
+              {...(wrapperElement ? { as: wrapperElement } : {})}
             >
-              <DynamicRenderer
-                componentDef={itemTemplate}
-                dataContext={itemContext}
-                translationContext={translationContext}
-                registry={registry}
-                bindingEngine={bindingEngine}
-                translationEngine={translationEngine}
-                actionDispatcher={actionDispatcher}
-                parentComponentContext={componentContext}
-                parentFormContextProp={undefined}
-                isInsideIteration={true}
-                isEditMode={isEditMode}
-                onComponentSelect={onComponentSelect}
-                onComponentHover={onComponentHover}
-                componentPath={sortablePath}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                layoutKey={layoutKey}
-              />
+              {/* wrapperElement 지정 시 itemTemplate의 children을 직접 렌더링 (루트 요소 중복 방지) */}
+              {(wrapperElement && itemTemplate.children ? itemTemplate.children : [itemTemplate]).map(
+                (childDef: any, childIdx: number) => (
+                  <DynamicRenderer
+                    key={`${itemTemplateKey}-child-${childIdx}`}
+                    componentDef={childDef}
+                    dataContext={itemContext}
+                    translationContext={translationContext}
+                    registry={registry}
+                    bindingEngine={bindingEngine}
+                    translationEngine={translationEngine}
+                    actionDispatcher={actionDispatcher}
+                    parentComponentContext={componentContext}
+                    parentFormContextProp={undefined}
+                    isInsideIteration={true}
+                    isEditMode={isEditMode}
+                    onComponentSelect={onComponentSelect}
+                    onComponentHover={onComponentHover}
+                    componentPath={sortablePath}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    layoutKey={layoutKey}
+                  />
+                )
+              )}
             </SortableItemWrapper>
           );
         });
@@ -2910,7 +2994,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         devTools.trackMount(componentDef.id, {
           name: componentDef.name,
           type: componentDef.type || 'component',
-          props: resolvedProps,
+          props: stableResolvedProps,
         });
       }
 
@@ -3044,9 +3128,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 없으면 부모의 FormContext를 그대로 사용합니다.
      */
     const currentFormContext = useMemo<FormContextValue | null>(() => {
-      const dataKey = resolvedProps.dataKey;
-      const trackChanges = resolvedProps.trackChanges;
-      const debounce = resolvedProps.debounce;
+      const dataKey = stableResolvedProps.dataKey;
+      const trackChanges = stableResolvedProps.trackChanges;
+      const debounce = stableResolvedProps.debounce;
 
       // dataKey가 없으면 null 반환 (FormProvider를 사용하지 않음)
       if (!dataKey) {
@@ -3060,7 +3144,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         setState: handleSetState,
         state: dynamicState,
       };
-    }, [resolvedProps.dataKey, resolvedProps.trackChanges, resolvedProps.debounce, handleSetState, dynamicState]);
+    }, [stableResolvedProps.dataKey, stableResolvedProps.trackChanges, stableResolvedProps.debounce, handleSetState, dynamicState]);
 
     /**
      * DevTools Form 추적
@@ -3072,8 +3156,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * (props 내부가 아님)
      */
     useEffect(() => {
-      // dataKey는 effectiveComponentDef 또는 resolvedProps에서 가져옴
-      const dataKey = (effectiveComponentDef as any).dataKey || resolvedProps.dataKey;
+      // dataKey는 effectiveComponentDef 또는 stableResolvedProps에서 가져옴
+      const dataKey = (effectiveComponentDef as any).dataKey || stableResolvedProps.dataKey;
       if (!dataKey) return;
 
       const devToolsForm = getDevTools();
@@ -3126,7 +3210,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       return () => {
         devToolsForm.untrackForm(formId);
       };
-    }, [effectiveComponentDef, resolvedProps.dataKey, componentDef.id, componentDef.children]);
+    }, [effectiveComponentDef, stableResolvedProps.dataKey, componentDef.id, componentDef.children]);
 
     /**
      * 자동 바인딩 debounce 타이머 관리
@@ -3154,7 +3238,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     const propsWithAutoBinding = useMemo(() => {
       // dataKey, trackChanges, debounce는 컴포넌트에 전달하지 않음 (내부 처리용)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { dataKey, trackChanges, debounce, ...propsWithoutFormConfig } = resolvedProps;
+      const { dataKey, trackChanges, debounce, ...propsWithoutFormConfig } = stableResolvedProps;
 
       // 자동 바인딩 조건 체크
       const name = propsWithoutFormConfig.name;
@@ -3338,7 +3422,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           onChange: autoOnChange,
         };
       }
-    }, [resolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce]);
+    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce]);
 
     /**
      * 메인 렌더링 로직
@@ -3506,7 +3590,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
       // dataKey가 있으면 FormProvider로 감싸기
       // formContextForChildren은 effectiveComponentDef.dataKey를 사용 (componentDef 레벨)
-      // currentFormContext는 resolvedProps.dataKey를 사용하므로 맞지 않음 (props 내부에 dataKey가 없음)
+      // currentFormContext는 stableResolvedProps.dataKey를 사용하므로 맞지 않음 (props 내부에 dataKey가 없음)
       if (formContextForChildren) {
         componentElement = (
           <FormProvider value={formContextForChildren}>

@@ -92,7 +92,36 @@ class OrderOptionResource extends BaseApiResource
                 return $this->shippings->first()?->delivery_policy_snapshot['policy_name'] ?? null;
             }),
             'shipping_type_label' => $this->whenLoaded('shippings', function () {
-                return $this->shippings->first()?->shipping_type?->label();
+                $shippingType = $this->shippings->first()?->shipping_type;
+
+                return $shippingType
+                    ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($shippingType)?->getLocalizedName()
+                    : null;
+            }),
+            'shipping_method_label' => $this->whenLoaded('shippings', function () {
+                $shipping = $this->shippings->first();
+                if (! $shipping) {
+                    return null;
+                }
+
+                $snapshot = $shipping->delivery_policy_snapshot;
+                $method = $snapshot['shipping_method'] ?? null;
+                if (! $method) {
+                    return null;
+                }
+
+                if ($method === 'custom') {
+                    $name = $snapshot['custom_shipping_name'] ?? null;
+                    if (is_array($name)) {
+                        $locale = app()->getLocale();
+
+                        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+                    }
+
+                    return null;
+                }
+
+                return \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName();
             }),
             'shipping_amount' => $this->whenLoaded('shippings', function () {
                 return $this->shippings->first()?->total_shipping_amount ?? 0;

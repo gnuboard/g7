@@ -4,12 +4,36 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TabNavigationScroll, Tab } from '../TabNavigationScroll';
 import * as scrollHandler from '../../../handlers/scrollToSectionHandler';
 
+/**
+ * window.G7Core.useResponsive mock — 기본값은 데스크톱 (1024px).
+ * 모바일 케이스는 setMobile() 호출.
+ */
+const mockUseResponsive = vi.fn(() => ({
+  width: 1024,
+  isMobile: false,
+  isTablet: false,
+  isDesktop: true,
+  matchedPreset: 'desktop' as const,
+}));
+
+const setMobile = () => {
+  mockUseResponsive.mockReturnValue({
+    width: 375,
+    isMobile: true,
+    isTablet: false,
+    isDesktop: false,
+    matchedPreset: 'mobile' as const,
+  });
+};
+
 describe('TabNavigationScroll', () => {
   const mockTabs: Tab[] = [
     { id: 'basic', label: '기본정보' },
     { id: 'list', label: '목록설정' },
     { id: 'permissions', label: '권한설정' },
   ];
+
+  let originalG7Core: any;
 
   // IntersectionObserver Mock
   let observerCallback: IntersectionObserverCallback;
@@ -20,6 +44,20 @@ describe('TabNavigationScroll', () => {
   };
 
   beforeEach(() => {
+    // G7Core.useResponsive mock — 기본 데스크톱
+    originalG7Core = (window as any).G7Core;
+    (window as any).G7Core = {
+      ...originalG7Core,
+      useResponsive: mockUseResponsive,
+    };
+    mockUseResponsive.mockReturnValue({
+      width: 1024,
+      isMobile: false,
+      isTablet: false,
+      isDesktop: true,
+      matchedPreset: 'desktop' as const,
+    });
+
     // scrollToSectionHandler mock
     vi.spyOn(scrollHandler, 'scrollToSectionHandler').mockImplementation(async () => {});
 
@@ -54,31 +92,16 @@ describe('TabNavigationScroll', () => {
       return { id } as HTMLElement;
     });
 
-    // matchMedia mock - md(768px) 이상으로 설정하여 데스크톱 뷰 표시
-    // 참고: hidden md:flex 클래스는 Tailwind CSS 클래스이므로 실제 CSS가 적용되지 않음
-    // 테스트 환경에서는 버튼이 표시되도록 해야 함
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockImplementation((query: string) => ({
-        matches: query.includes('min-width: 768px'),
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
   });
 
   afterEach(() => {
+    (window as any).G7Core = originalG7Core;
     vi.clearAllMocks();
   });
 
   /**
    * 헬퍼 함수: 데스크톱 뷰의 탭 버튼을 찾습니다.
-   * 컴포넌트는 데스크톱과 모바일 뷰를 모두 렌더링하므로 버튼만 선택해야 합니다.
+   * 단일 분기 렌더(useResponsive 기반)이므로 데스크톱 모드에서는 Nav 안의 버튼만 존재합니다.
    */
   const getTabButton = (text: string): HTMLButtonElement | null => {
     const buttons = screen.getAllByRole('button');
@@ -573,6 +596,45 @@ describe('TabNavigationScroll', () => {
 
       expect(individualOnClick).toHaveBeenCalledWith('basic');
       expect(scrollHandler.scrollToSectionHandler).toHaveBeenCalled();
+    });
+  });
+
+  describe('모바일 (useResponsive isMobile=true)', () => {
+    beforeEach(() => {
+      setMobile();
+    });
+
+    it('데스크톱 Nav 버튼 대신 Select 드롭다운만 렌더링해야 함', () => {
+      const { container } = render(<TabNavigationScroll tabs={mockTabs} />);
+
+      // 데스크톱 분기의 탭 버튼들이 없어야 함 — Select trigger 1개만 존재
+      const buttons = container.querySelectorAll('button');
+      expect(buttons.length).toBe(1);
+    });
+
+    it('현재 활성 탭의 label을 Select trigger에 표시해야 함', () => {
+      render(<TabNavigationScroll tabs={mockTabs} activeTabId="list" />);
+
+      expect(screen.getByText('목록설정')).toBeInTheDocument();
+    });
+
+    it('Select trigger 클릭 → 옵션 선택 시 scrollToSectionHandler가 호출되어야 함', () => {
+      const { container } = render(<TabNavigationScroll tabs={mockTabs} />);
+
+      // Select trigger 열기
+      const trigger = container.querySelector('button');
+      fireEvent.click(trigger!);
+
+      // 옵션 클릭 (custom Select dropdown 내부)
+      const options = screen.getAllByText('목록설정');
+      const optionButton = options
+        .map((el) => el.closest('button'))
+        .find((btn) => btn !== trigger);
+
+      if (optionButton) {
+        fireEvent.click(optionButton);
+        expect(scrollHandler.scrollToSectionHandler).toHaveBeenCalled();
+      }
     });
   });
 

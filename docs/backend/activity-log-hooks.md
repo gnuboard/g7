@@ -120,14 +120,6 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `core.attachment.after_bulk_delete` | `handleAttachmentAfterBulkDelete` | `attachment.bulk_delete` | Admin | - |
 
-### Mail Template (3훅, 스냅샷 포함)
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `core.mail_template.before_update` | `captureMailTemplateSnapshot` | _(스냅샷 캡처)_ | - | - |
-| `core.mail_template.after_update` | `handleMailTemplateAfterUpdate` | `mail_template.update` | Admin | MailTemplate |
-| `core.mail_template.after_toggle_active` | `handleMailTemplateAfterToggleActive` | `mail_template.toggle_active` | Admin | MailTemplate |
-
 ### Module (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |

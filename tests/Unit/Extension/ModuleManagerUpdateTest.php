@@ -373,6 +373,48 @@ class ModuleManagerUpdateTest extends TestCase
     }
 
     /**
+     * copyFromPendingOrBundled($force=true) 가 활성 디렉토리가 존재해도 원본으로 덮어쓰는지 테스트.
+     *
+     * 불완전 설치 복구 시나리오: 활성 디렉토리에 일부 파일만 남아있을 때
+     * --force 로 원본(_bundled/_pending)에서 재복사하여 manifest 포함 전체를 복원한다.
+     */
+    public function test_copy_from_pending_or_bundled_overwrites_when_force_is_true(): void
+    {
+        $method = new \ReflectionMethod($this->manager, 'copyFromPendingOrBundled');
+        $method->setAccessible(true);
+
+        // 불완전 활성 디렉토리: 일부 파일만 있고 manifest 없음
+        $activePath = $this->modulesPath.'/test-bundled-mod';
+        File::ensureDirectoryExists($activePath);
+        File::put($activePath.'/stale.txt', 'leftover from broken update');
+        $this->assertFalse(File::exists($activePath.'/module.json'), '시작 상태: manifest 없음');
+
+        // force=true 로 호출
+        $method->invoke($this->manager, 'test-bundled-mod', null, true);
+
+        // 원본으로 덮어써서 manifest 복원됨
+        $this->assertTrue(File::exists($activePath.'/module.json'), 'force=true 시 manifest 복원되어야 함');
+    }
+
+    /**
+     * force=false (기본) 시 활성 디렉토리 존재하면 복사 스킵 (기존 동작 유지 회귀 테스트).
+     */
+    public function test_copy_from_pending_or_bundled_preserves_active_when_force_is_false(): void
+    {
+        $activePath = $this->modulesPath.'/test-bundled-mod';
+        File::ensureDirectoryExists($activePath);
+        File::put($activePath.'/custom.txt', 'user content');
+
+        $method = new \ReflectionMethod($this->manager, 'copyFromPendingOrBundled');
+        $method->setAccessible(true);
+        $method->invoke($this->manager, 'test-bundled-mod', null, false);
+
+        // 기본 동작: 활성 디렉토리 유지 (커스텀 파일 보존, manifest 복사 안 됨)
+        $this->assertTrue(File::exists($activePath.'/custom.txt'));
+        $this->assertEquals('user content', File::get($activePath.'/custom.txt'));
+    }
+
+    /**
      * 상태 가드가 updating 상태에서 updateModule을 차단하는지 테스트
      */
     public function test_update_module_blocked_when_status_is_updating(): void

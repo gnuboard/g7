@@ -9,6 +9,8 @@
 export { default as Header } from './Header';
 export { default as Footer } from './Footer';
 export { default as MobileNav } from './MobileNav';
+export { NotificationCenter } from './NotificationCenter';
+export type { NotificationCenterProps, NotificationItem } from './NotificationCenter';
 
 // 상품 관련 컴포넌트
 export { default as ProductCard } from './ProductCard';
@@ -63,6 +65,7 @@ export const compositeComponents = {
   Header: () => import('./Header'),
   Footer: () => import('./Footer'),
   MobileNav: () => import('./MobileNav'),
+  NotificationCenter: () => import('./NotificationCenter'),
 
   // 상품
   ProductCard: () => import('./ProductCard'),

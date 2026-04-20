@@ -314,27 +314,32 @@ class BoardSettingsServiceTest extends ModuleTestCase
 
     /**
      * 프론트엔드 설정이 올바른 구조로 반환되는지 확인
+     *
+     * defaults.json의 frontend_schema 모든 카테고리가 expose: false이므로
+     * getFrontendSettings()는 빈 배열을 반환해야 합니다.
      */
     public function test_get_frontend_settings_returns_exposed_categories(): void
     {
         $frontendSettings = $this->service->getFrontendSettings();
 
         $this->assertIsArray($frontendSettings);
-        // defaults.json에서 모든 카테고리가 expose: true, fields: {} 이므로 전체 노출
-        $this->assertArrayHasKey('basic_defaults', $frontendSettings);
-        $this->assertArrayHasKey('report_policy', $frontendSettings);
-        $this->assertArrayHasKey('spam_security', $frontendSettings);
+        // 모든 카테고리가 expose: false → 프론트엔드에 노출되는 카테고리 없음
+        $this->assertEmpty($frontendSettings);
     }
 
     /**
      * 프론트엔드 설정에 실제 값이 포함되는지 확인
+     *
+     * defaults.json의 frontend_schema 모든 카테고리가 expose: false이므로
+     * getFrontendSettings()는 빈 배열을 반환해야 합니다.
      */
     public function test_get_frontend_settings_contains_actual_values(): void
     {
         $frontendSettings = $this->service->getFrontendSettings();
 
-        $this->assertEquals(20, $frontendSettings['basic_defaults']['per_page']);
-        $this->assertNotEmpty($frontendSettings['basic_defaults']['blocked_keywords']);
+        // 모든 카테고리가 expose: false → 빈 배열 반환
+        $this->assertIsArray($frontendSettings);
+        $this->assertEmpty($frontendSettings);
     }
 
     // ========================================

@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Board\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Board\Models\Comment;
 
 /**
@@ -19,7 +21,7 @@ interface CommentRepositoryInterface
      * @param  string  $orderDirection  정렬 방향 (ASC 또는 DESC, 기본값: DESC)
      * @return Collection 정렬된 댓글 컬렉션
      */
-    public function getByPostId(string $slug, int $postId, bool $withTrashed = false, string $orderDirection = 'DESC', ?string $scopePermission = null): Collection;
+    public function getByPostId(string $slug, int $postId, bool $withTrashed = false, string $orderDirection = 'DESC', ?string $scopePermission = null, ?int $boardId = null): Collection;
 
     /**
      * 댓글을 생성합니다.
@@ -35,6 +37,7 @@ interface CommentRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @return Comment|null 댓글 모델 또는 null
      */
     public function find(string $slug, int $id): ?Comment;
 
@@ -43,8 +46,9 @@ interface CommentRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @return Comment 댓글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findOrFail(string $slug, int $id): Comment;
 
@@ -54,8 +58,9 @@ interface CommentRepositoryInterface
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
      * @param  array  $data  수정할 데이터
+     * @return Comment 수정된 댓글 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function update(string $slug, int $id, array $data): Comment;
 
@@ -64,8 +69,9 @@ interface CommentRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function delete(string $slug, int $id): bool;
 
@@ -74,8 +80,9 @@ interface CommentRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  댓글 ID
+     * @return bool 삭제 성공 여부
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function forceDelete(string $slug, int $id): bool;
 
@@ -88,7 +95,7 @@ interface CommentRepositoryInterface
      * @param  array  $actionLog  작업 이력 데이터
      * @param  string|null  $triggerType  트리거 유형 (report, admin, auto_hide 등)
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatus(string $slug, int $id, string $status, array $actionLog, ?string $triggerType = null): Comment;
 
@@ -100,7 +107,7 @@ interface CommentRepositoryInterface
      * @param  array  $updates  업데이트할 데이터 (status, trigger_type, deleted_at, action_log)
      * @return Comment 수정된 댓글
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function updateStatusBulk(string $slug, int $id, array $updates): Comment;
 
@@ -136,7 +143,7 @@ interface CommentRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 조건 (board_slug, search, sort)
      * @param  int  $perPage  페이지당 항목 수
-     * @return \Illuminate\Pagination\LengthAwarePaginator 댓글 목록
+     * @return LengthAwarePaginator 댓글 목록
      */
-    public function getUserComments(int $userId, array $filters = [], int $perPage = 20): \Illuminate\Pagination\LengthAwarePaginator;
+    public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 }

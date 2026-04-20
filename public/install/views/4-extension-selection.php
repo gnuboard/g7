@@ -137,6 +137,19 @@
             </div>
         </div>
 
+        <!-- 의존성 경고 (누락 의존성 존재 시 표시) -->
+        <div id="dependency-warning" class="alert alert-warning hidden">
+            <h4 class="alert-title">
+                <i class="fas fa-exclamation-triangle"></i>
+                <?= htmlspecialchars(lang('dependency_warning_title')) ?>
+            </h4>
+            <p><?= htmlspecialchars(lang('dependency_warning_description')) ?></p>
+            <ul id="dependency-warning-list" class="dependency-warning-list"></ul>
+            <button type="button" onclick="autoSelectMissingDependencies()" class="btn btn-sm btn-primary">
+                <?= htmlspecialchars(lang('dependency_auto_select')) ?>
+            </button>
+        </div>
+
         <!-- 네비게이션 -->
         <div class="btn-group btn-group-spread">
             <button type="button" onclick="goToStep(3)" class="btn btn-secondary">
@@ -161,6 +174,10 @@ window.EXTENSION_LABELS = {
     saving: <?= json_encode(lang('saving')) ?>,
     save_failed: <?= json_encode(lang('save_failed')) ?>,
     next: <?= json_encode(lang('next')) ?>,
-    extension_load_failed: <?= json_encode(lang('extension_load_failed')) ?>
+    extension_load_failed: <?= json_encode(lang('extension_load_failed')) ?>,
+    dep_auto_badge_label: <?= json_encode(lang('dep_auto_badge_label')) ?>,
+    dep_lock_message: <?= json_encode(lang('dep_lock_message')) ?>,
+    dep_version_required: <?= json_encode(lang('dep_version_required')) ?>,
+    dep_version_available: <?= json_encode(lang('dep_version_available')) ?>
 };
 </script>

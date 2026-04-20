@@ -25,9 +25,11 @@ return [
     'storage_not_exists_message' => 'Storage 폴더가 존재하지 않습니다. 프로젝트 루트에 storage 폴더를 생성해주세요.',
     'storage_not_writable' => 'Storage 폴더 쓰기 권한 없음',
     'storage_not_writable_message' => 'Storage 폴더에 쓰기 권한이 없습니다. 폴더 소유자 또는 그룹 권한을 확인해주세요.',
-    'storage_permission_guide' => 'Storage 폴더에 <strong>:permissions</strong> 권한을 부여해주세요.',
+    'storage_ownership_mismatch' => 'Storage 폴더 소유자 불일치',
+    'storage_ownership_mismatch_message' => 'Storage 폴더의 소유자(:owner)가 웹서버 실행 사용자(:web_user)와 다릅니다. 현재 권한(:permissions)은 소유자만 쓰기 가능하므로 웹서버가 쓸 수 없습니다. 아래 방법 중 하나를 적용해주세요.',
+    'storage_permission_guide' => 'Storage 폴더에 <strong>755</strong> 권한을 부여해주세요.',
     'storage_permission_guide_detail' => '아래 명령어를 실행하거나 FTP를 통해 권한을 변경하세요:',
-    'storage_permission_command_linux' => 'chmod -R :permissions :path',
+    'storage_permission_command_linux' => 'chmod -R 755 :path',
     'current_owner' => '현재 소유자',
     'current_group' => '현재 소유그룹',
     'current_permissions' => '현재 권한',
@@ -71,6 +73,10 @@ return [
     'error_disk_space' => '디스크 공간',
     'error_directory_permissions' => '디렉토리 쓰기 권한 부족',
     'error_required_files' => '필수 파일 누락',
+    'error_required_files_missing_label' => '필수 파일 누락',
+    'error_required_files_not_writable_label' => '필수 파일 쓰기 권한 없음',
+    'error_required_files_ownership_mismatch_label' => '필수 파일 소유자 불일치',
+    'ownership_mismatch_option_666' => '[대안 2] 최후 수단 — 파일에 모든 사용자 쓰기 허용 (보안 약화, 비권장):',
     'required_files' => '필수 파일',
     'file_exists' => '존재',
     'file_missing' => '누락',
@@ -129,7 +135,7 @@ return [
     'show_progress' => '설치 목록 보기',
     'installation_completed' => '설치가 완료되었습니다!',
     'recommendations' => '설치 후 권장사항',
-    'recommendation_env_permission' => '.env 파일 권한을 600 또는 644로 설정하세요',
+    'recommendation_env_permission' => '.env 파일 권한을 644로 설정하세요 (chmod 644 .env)',
     'recommendation_https' => '프로덕션 환경에서는 반드시 HTTPS를 사용하세요',
 
     // Step 5: 완료
@@ -191,7 +197,7 @@ return [
     // 에러 메시지 - 시스템 (요구사항) (상세)
     'error_php_version_insufficient_detail' => 'PHP 버전이 요구사항을 충족하지 않습니다. (현재: :current, 요구: :min+)',
     'error_disk_space_insufficient_detail' => '디스크 공간이 부족합니다. (현재: :current MB, 요구: :min MB)',
-    'error_directory_not_writable_detail' => '일부 디렉토리에 쓰기 권한이 없습니다. 권한을 :permissions로 설정해주세요.',
+    'error_directory_not_writable_detail' => '일부 디렉토리에 쓰기 권한이 없습니다. 아래 명령어를 실행하여 권한을 부여해주세요.',
     'error_required_files_missing' => '필수 파일이 누락되었습니다.',
 
     'error_step_file_not_found' => '단계 파일을 찾을 수 없습니다. 설치 파일이 손상되었을 수 있습니다.',
@@ -240,6 +246,8 @@ return [
     'task_env_create' => '환경 설정 파일 생성',
     'task_env_update' => '환경 설정 파일 업데이트',
     'task_key_generate' => '보안 키 생성',
+    'task_dependency_precheck' => '확장 의존성 사전 검증',
+    'task_db_cleanup' => '기존 DB 테이블 정리',
     'task_db_migrate' => '데이터베이스 테이블 생성',
     'task_db_seed' => '기본 데이터 생성',
     'task_template_install' => '관리자 템플릿 설치',
@@ -277,6 +285,8 @@ return [
 
     // 로그 메시지 - Worker (Composer)
     'log_composer_check_success' => 'Composer 확인 완료',
+    'log_composer_check_skipped_bundled' => 'Composer 확인 스킵 — 번들 vendor 모드',
+    'log_composer_check_auto_fallback' => 'Composer 미설치 — 번들 vendor 모드로 자동 폴백 예정',
     'log_composer_already_installed' => 'Composer 의존성이 이미 설치되어 있습니다',
     'log_composer_install_success' => 'Composer 의존성 설치 완료',
     'log_composer_vendor_without_lock' => 'vendor 디렉토리는 있지만 composer.lock 파일이 없습니다 (불완전 상태)',
@@ -544,7 +554,7 @@ location /install/api/ {
 </Location>
 
 [PHP 설정]
-// install-worker-sse.php 최상단에 추가
+// install-worker.php 최상단에 추가
 ini_set(\'output_buffering\', \'off\');
 ini_set(\'zlib.output_compression\', \'off\');
 @apache_setenv(\'no-gzip\', 1);
@@ -552,6 +562,47 @@ ini_set(\'zlib.output_compression\', \'off\');
 [공유 호스팅]
 호스팅 제공업체에 SSE(Server-Sent Events) 지원 여부를 문의해주세요.
 방화벽이나 프록시에서 long-lived HTTP 연결을 차단하고 있을 수 있습니다.',
+
+    // 설치 진행 방식 (SSE / 폴링)
+    'installation_mode_label' => '설치 진행 방식',
+    'installation_mode_sse_title' => '실시간 스트리밍 (SSE) — 권장',
+    'installation_mode_sse_desc' => '서버가 진행 상황을 즉시 전송합니다. 일반 환경에서 가장 빠르고 안정적입니다.',
+    'installation_mode_polling_title' => '호환성 모드 (폴링)',
+    'installation_mode_polling_desc' => 'Nginx 프록시, 공유 호스팅 등 SSE 연결 오류가 발생하는 환경에서 사용하세요. 1초마다 상태를 확인합니다.',
+    'sse_fallback_confirm' => 'SSE 연결에 실패했습니다.\n\n호환성 모드(폴링)로 다시 시도하시겠습니까?',
+    'start_installation_button' => '설치 시작',
+
+    // Step 4 의존성 경고
+    'dependency_warning_title' => '의존성 누락 감지',
+    'dependency_warning_description' => '다음 확장이 필요합니다. "필요한 항목 자동 선택" 버튼을 눌러 한 번에 해결할 수 있습니다.',
+    'dependency_auto_select' => '필요한 항목 자동 선택',
+    'dependency_missing_tooltip' => '의존성을 먼저 해결해주세요',
+    'dependency_precheck_failed' => '의존성 사전 검증 실패 — Step 4로 돌아가 누락된 모듈/플러그인을 선택해주세요',
+
+    // Step 3 기존 DB 감지 (이슈 #244)
+    'db_existing_g7_badge' => '기존 그누보드7 설치 감지',
+    'db_existing_foreign_badge' => '다른 데이터 감지',
+    'db_existing_mixed_badge' => 'G7 일부 + 다른 테이블 혼재',
+    'db_existing_g7_title' => '그누보드7 기존 설치 감지',
+    'db_existing_foreign_title' => '다른 데이터 감지',
+    'db_existing_mixed_title' => '데이터 혼재 감지',
+    'db_existing_generic_title' => '기존 테이블 감지',
+    'db_existing_g7_desc' => '선택한 DB에 이미 그누보드7이 설치되어 있습니다. 강제 진행 시 기존 데이터가 모두 삭제됩니다. 반드시 백업 후 진행하세요.',
+    'db_existing_foreign_desc' => '선택한 DB에 알 수 없는 테이블이 존재합니다. 강제 진행 시 모든 테이블이 삭제됩니다. 다른 DB를 사용하거나 반드시 백업 후 진행하세요.',
+    'db_existing_mixed_desc' => '선택한 DB에 G7 일부 테이블과 다른 테이블이 혼재합니다. 강제 진행 시 모든 테이블이 삭제됩니다.',
+    'db_existing_generic_desc' => '선택한 DB에 기존 테이블이 존재합니다. 강제 진행 시 모든 테이블이 삭제됩니다.',
+    'db_existing_tables_list' => '감지된 테이블 (최대 20개):',
+    'db_backup_guide' => '백업 명령어 예시 (호스트/사용자/데이터베이스명 확인 후 실행하세요):',
+    'db_backup_confirmed' => '백업을 완료했으며, 기존 테이블이 모두 삭제되는 것에 동의합니다',
+    'error_db_cleanup_consent_required' => '기존 테이블 삭제에 동의하셔야 다음 단계로 진행할 수 있습니다.',
+    'db_force_proceed_drop' => '기존 테이블 모두 삭제 후 설치',
+    'db_force_proceed_confirmed' => '강제 진행 모드 (설치 시 기존 테이블 삭제)',
+    'cancel' => '취소',
+    'log_db_cleanup_skipped' => '기존 테이블 정리 건너뛰기 (액션 없음)',
+    'log_db_cleanup_empty' => '기존 테이블이 없습니다. 정리 건너뛰기',
+    'log_db_cleanup_dropping' => '기존 테이블 {count}개 삭제 시작...',
+    'log_db_cleanup_done' => '기존 테이블 {count}개 삭제 완료',
+    'error_db_cleanup_failed' => '기존 DB 테이블 정리 실패',
 
     // 다크모드
     'toggle_theme' => '테마 전환',
@@ -589,6 +640,10 @@ ini_set(\'zlib.output_compression\', \'off\');
     'dependency_type_admin_template' => '관리자 템플릿',
     'dependency_type_user_template' => '사용자 템플릿',
     'dependency_type_other' => '기타',
+    'dep_auto_badge_label' => '필수 의존성',
+    'dep_lock_message' => ':names 이(가) 이 항목을 필요로 합니다. 먼저 해당 확장을 해제해주세요.',
+    'dep_version_required' => '필요 버전',
+    'dep_version_available' => '설치 가능 버전',
     'author' => '제작자',
     'retry' => '재시도',
     'select_all' => '전체 선택',
@@ -682,10 +737,13 @@ ini_set(\'zlib.output_compression\', \'off\');
     'copied' => '복사됨!',
 
     // Step 2 권한 안내
-    'permission_fix_guide' => '아래 명령어를 터미널에서 실행하여 권한을 수정하세요:',
-    'ownership_fix_guide' => '소유자와 그룹을 웹 서버 사용자로 변경하세요:',
-    'ownership_fix_hint' => '※ www-data는 웹 서버 사용자/그룹입니다. 사용 환경에 따라 nginx, apache 등으로 변경하세요.',
-    'ownership_detected_hint' => '※ 현재 웹 서버 사용자: :user (자동 감지)',
+    'permission_fix_guide' => '아래 명령어를 터미널 또는 SSH에서 실행하여 권한을 부여하세요:',
+    'ownership_mismatch_option_group' => '[권장] 그룹 공유 방식 — 웹서버 그룹으로 변경하여 쓰기 권한 부여:',
+    'ownership_mismatch_option_chown' => '[대안 1] 소유자 변경 — 소유자를 웹서버 사용자로 변경:',
+    'ownership_mismatch_option_777' => '[대안 2] 최후 수단 — 모든 사용자에게 쓰기 허용 (보안 약화, 비권장):',
+    'ownership_mismatch_hint' => '※ 현재 소유자: :owner / 웹서버 실행 사용자: :web_user. 위 3가지 중 환경에 맞는 방법을 선택하세요.',
+    'permission_fallback_title' => '위 명령어로 해결되지 않는 경우',
+    'permission_fallback_detail' => '전용 서버 등 일부 환경에서는 다음 명령어가 필요할 수 있습니다: chmod -R 775 :path',
     'permission_windows_hint' => '※ Windows 환경에서는 관리자 권한으로 명령 프롬프트(cmd)를 열고 실행하세요. 또는 폴더 속성 → 보안 탭에서 권한을 설정할 수 있습니다.',
     'directory_create_guide' => '아래 명령어를 실행하여 누락된 디렉토리를 생성하세요:',
 
@@ -761,6 +819,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'cli_status_checking' => '확인 중...',
     'cli_status_verified' => '✓ 확인됨',
     'cli_status_not_verified' => '✗ 미확인',
+    'cli_status_optional_bundled' => '— 선택사항 (번들 모드)',
 
     // 환경 체크 강화
     'required_functions' => '필수 함수',

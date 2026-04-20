@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Helpers\ResponseHelper;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Sirsoft\Ecommerce\Exceptions\DuplicateAddressException;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
 
@@ -73,14 +73,7 @@ class UserAddressService
                 return $this->updateAddress($userId, $existingAddress->id, $data);
             }
 
-            // 409 Conflict 응답
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                ResponseHelper::error(
-                    __('sirsoft-ecommerce::messages.address.name_duplicate'),
-                    409,
-                    ['duplicate_address_id' => $existingAddress->id]
-                )
-            );
+            throw new DuplicateAddressException($existingAddress->id);
         }
 
         unset($data['force_overwrite']);

@@ -183,7 +183,6 @@
     },
     {
       "id": "menu_form",
-      "blur_until_loaded": "{{_global.isSaving}}",
       "type": "basic",
       "name": "Form",
       "dataKey": "_global.formData",

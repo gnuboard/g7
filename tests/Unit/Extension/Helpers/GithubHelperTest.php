@@ -3,6 +3,10 @@
 namespace Tests\Unit\Extension\Helpers;
 
 use App\Extension\Helpers\GithubHelper;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -98,58 +102,6 @@ class GithubHelperTest extends TestCase
     }
 
     // ──────────────────────────────────────────
-    // extractStatusCode
-    // ──────────────────────────────────────────
-
-    #[Test]
-    public function extractStatusCode_200_응답을_추출합니다(): void
-    {
-        $statusCode = GithubHelper::extractStatusCode(['HTTP/1.1 200 OK']);
-
-        $this->assertSame(200, $statusCode);
-    }
-
-    #[Test]
-    public function extractStatusCode_404_응답을_추출합니다(): void
-    {
-        $statusCode = GithubHelper::extractStatusCode(['HTTP/1.1 404 Not Found']);
-
-        $this->assertSame(404, $statusCode);
-    }
-
-    #[Test]
-    public function extractStatusCode_빈_헤더에서_0을_반환합니다(): void
-    {
-        $statusCode = GithubHelper::extractStatusCode([]);
-
-        $this->assertSame(0, $statusCode);
-    }
-
-    #[Test]
-    public function extractStatusCode_리다이렉트_시_마지막_상태코드를_반환합니다(): void
-    {
-        $statusCode = GithubHelper::extractStatusCode([
-            'HTTP/1.1 301 Moved Permanently',
-            'Location: https://example.com',
-            'HTTP/1.1 200 OK',
-        ]);
-
-        $this->assertSame(200, $statusCode);
-    }
-
-    #[Test]
-    public function extractStatusCode_302_후_200_리다이렉트_체인을_처리합니다(): void
-    {
-        $statusCode = GithubHelper::extractStatusCode([
-            'HTTP/1.1 302 Found',
-            'HTTP/1.1 302 Found',
-            'HTTP/1.1 200 OK',
-        ]);
-
-        $this->assertSame(200, $statusCode);
-    }
-
-    // ──────────────────────────────────────────
     // parseUrl 경계 케이스
     // ──────────────────────────────────────────
 
@@ -170,5 +122,322 @@ class GithubHelperTest extends TestCase
 
         $this->assertSame('owner', $owner);
         $this->assertSame('repo', $repo);
+    }
+
+    // ──────────────────────────────────────────
+    // checkRepoExists (Http::fake 기반)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function checkRepoExists_200_응답이면_true를_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/owner/repo' => Http::response(['full_name' => 'owner/repo'], 200),
+        ]);
+
+        $this->assertTrue(GithubHelper::checkRepoExists('owner', 'repo'));
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://api.github.com/repos/owner/repo'
+                && $request->hasHeader('User-Agent', 'G7')
+                && $request->hasHeader('Accept', 'application/vnd.github.v3+json');
+        });
+    }
+
+    #[Test]
+    public function checkRepoExists_404_응답이면_false를_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/*' => Http::response([], 404),
+        ]);
+
+        $this->assertFalse(GithubHelper::checkRepoExists('owner', 'repo'));
+    }
+
+    #[Test]
+    public function checkRepoExists_연결_실패_시_false를_반환합니다(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('Connection refused');
+        });
+
+        $this->assertFalse(GithubHelper::checkRepoExists('owner', 'repo'));
+    }
+
+    #[Test]
+    public function checkRepoExists_토큰이_있으면_Authorization_헤더를_포함합니다(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response([], 200),
+        ]);
+
+        GithubHelper::checkRepoExists('owner', 'repo', 'ghp_test_token');
+
+        Http::assertSent(function (Request $request) {
+            return $request->hasHeader('Authorization', 'Bearer ghp_test_token');
+        });
+    }
+
+    // ──────────────────────────────────────────
+    // fetchLatestRelease (Http::fake 기반)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function fetchLatestRelease_200_응답이면_버전과_zipball_url을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/owner/repo/releases/latest' => Http::response([
+                'tag_name' => 'v7.0.1',
+                'zipball_url' => 'https://api.github.com/repos/owner/repo/zipball/v7.0.1',
+            ], 200),
+        ]);
+
+        $result = GithubHelper::fetchLatestRelease('owner', 'repo');
+
+        $this->assertSame('7.0.1', $result['version']);
+        $this->assertSame('https://api.github.com/repos/owner/repo/zipball/v7.0.1', $result['zipball_url']);
+        $this->assertNull($result['error']);
+    }
+
+    #[Test]
+    public function fetchLatestRelease_v접두사_없는_tag_name을_정상_처리합니다(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response(['tag_name' => '1.2.3', 'zipball_url' => 'https://example.com/z'], 200),
+        ]);
+
+        $result = GithubHelper::fetchLatestRelease('owner', 'repo');
+
+        $this->assertSame('1.2.3', $result['version']);
+    }
+
+    #[Test]
+    public function fetchLatestRelease_404_응답이면_version_null과_error_null을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response([], 404),
+        ]);
+
+        $result = GithubHelper::fetchLatestRelease('owner', 'repo');
+
+        $this->assertNull($result['version']);
+        $this->assertNull($result['zipball_url']);
+        $this->assertNull($result['error']);
+    }
+
+    #[Test]
+    public function fetchLatestRelease_연결_실패_시_error_메시지를_반환합니다(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('Network unreachable');
+        });
+
+        $result = GithubHelper::fetchLatestRelease('owner', 'repo');
+
+        $this->assertNull($result['version']);
+        $this->assertNull($result['zipball_url']);
+        $this->assertNotNull($result['error']);
+        $this->assertStringContainsString('GitHub', $result['error']);
+    }
+
+    #[Test]
+    public function fetchLatestRelease_tag_name_누락이면_version_null을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response(['name' => 'release name only'], 200),
+        ]);
+
+        $result = GithubHelper::fetchLatestRelease('owner', 'repo');
+
+        $this->assertNull($result['version']);
+    }
+
+    // ──────────────────────────────────────────
+    // downloadArchive (sink 기반)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function downloadArchive_성공_시_파일을_생성합니다(): void
+    {
+        $savePath = sys_get_temp_dir().'/github_test_'.uniqid().'.zip';
+
+        Http::fake([
+            'example.com/*' => Http::response('fake-zip-binary', 200),
+        ]);
+
+        try {
+            GithubHelper::downloadArchive('https://example.com/archive.zip', $savePath);
+
+            $this->assertTrue(File::exists($savePath));
+            $this->assertSame('fake-zip-binary', File::get($savePath));
+        } finally {
+            if (File::exists($savePath)) {
+                File::delete($savePath);
+            }
+        }
+    }
+
+    #[Test]
+    public function downloadArchive_실패_응답이면_RuntimeException을_던집니다(): void
+    {
+        $savePath = sys_get_temp_dir().'/github_test_'.uniqid().'.zip';
+
+        Http::fake([
+            'example.com/*' => Http::response('', 404),
+        ]);
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            GithubHelper::downloadArchive('https://example.com/missing.zip', $savePath);
+        } finally {
+            if (File::exists($savePath)) {
+                File::delete($savePath);
+            }
+        }
+    }
+
+    #[Test]
+    public function downloadArchive_연결_실패_시_RuntimeException을_던집니다(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('Timeout');
+        });
+
+        $this->expectException(\RuntimeException::class);
+
+        GithubHelper::downloadArchive(
+            'https://example.com/archive.zip',
+            sys_get_temp_dir().'/github_test_'.uniqid().'.zip'
+        );
+    }
+
+    // ──────────────────────────────────────────
+    // downloadArchiveContent (메모리 반환)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function downloadArchiveContent_성공_시_바이너리_내용을_반환합니다(): void
+    {
+        Http::fake([
+            'example.com/*' => Http::response('binary-content', 200),
+        ]);
+
+        $content = GithubHelper::downloadArchiveContent('https://example.com/archive.zip');
+
+        $this->assertSame('binary-content', $content);
+    }
+
+    #[Test]
+    public function downloadArchiveContent_실패_응답이면_RuntimeException을_던집니다(): void
+    {
+        Http::fake([
+            'example.com/*' => Http::response('', 500),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        GithubHelper::downloadArchiveContent('https://example.com/archive.zip');
+    }
+
+    // ──────────────────────────────────────────
+    // resolveArchiveUrl (HEAD 요청 폴백)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function resolveArchiveUrl_v접두사_태그_200이면_해당_URL을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 200),
+        ]);
+
+        $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
+
+        $this->assertSame('https://api.github.com/repos/owner/repo/zipball/v1.0.0', $url);
+    }
+
+    #[Test]
+    public function resolveArchiveUrl_v접두사_404이면_순수버전으로_폴백합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 404),
+            'api.github.com/repos/owner/repo/zipball/1.0.0' => Http::response('', 200),
+        ]);
+
+        $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
+
+        $this->assertSame('https://api.github.com/repos/owner/repo/zipball/1.0.0', $url);
+    }
+
+    #[Test]
+    public function resolveArchiveUrl_둘다_404이면_null을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/*' => Http::response('', 404),
+        ]);
+
+        $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
+
+        $this->assertNull($url);
+    }
+
+    #[Test]
+    public function resolveArchiveUrl_302이면_해당_URL을_반환합니다(): void
+    {
+        Http::fake([
+            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 302),
+        ]);
+
+        $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
+
+        $this->assertSame('https://api.github.com/repos/owner/repo/zipball/v1.0.0', $url);
+    }
+
+    // ──────────────────────────────────────────
+    // fetchRawFile (raw.githubusercontent.com)
+    // ──────────────────────────────────────────
+
+    #[Test]
+    public function fetchRawFile_원본_ref로_200이면_내용을_반환합니다(): void
+    {
+        Http::fake([
+            'raw.githubusercontent.com/owner/repo/main/CHANGELOG.md' => Http::response('# Changelog', 200),
+        ]);
+
+        $content = GithubHelper::fetchRawFile('owner', 'repo', 'main', 'CHANGELOG.md');
+
+        $this->assertSame('# Changelog', $content);
+    }
+
+    #[Test]
+    public function fetchRawFile_v접두사_없는_태그는_v접두사로_폴백합니다(): void
+    {
+        Http::fake([
+            'raw.githubusercontent.com/owner/repo/1.0.0/README.md' => Http::response('', 404),
+            'raw.githubusercontent.com/owner/repo/v1.0.0/README.md' => Http::response('readme body', 200),
+        ]);
+
+        $content = GithubHelper::fetchRawFile('owner', 'repo', '1.0.0', 'README.md');
+
+        $this->assertSame('readme body', $content);
+    }
+
+    #[Test]
+    public function fetchRawFile_모두_404이면_null을_반환합니다(): void
+    {
+        Http::fake([
+            'raw.githubusercontent.com/*' => Http::response('', 404),
+        ]);
+
+        $this->assertNull(GithubHelper::fetchRawFile('owner', 'repo', 'main', 'missing.md'));
+    }
+
+    #[Test]
+    public function fetchRawFile_연결_실패_시_null을_반환합니다(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('DNS failure');
+        });
+
+        $this->assertNull(GithubHelper::fetchRawFile('owner', 'repo', 'main', 'CHANGELOG.md'));
     }
 }

@@ -6,6 +6,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\PluginManager;
+use App\Extension\Vendor\VendorMode;
 use App\Models\Permission;
 use App\Rules\ValidExtensionIdentifier;
 use Illuminate\Console\Command;
@@ -19,7 +20,10 @@ class InstallPluginCommand extends Command
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'plugin:install {identifier : 설치할 플러그인 식별자}';
+    protected $signature = 'plugin:install
+        {identifier : 설치할 플러그인 식별자}
+        {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
 
     /**
      * The console command description.
@@ -55,22 +59,29 @@ class InstallPluginCommand extends Command
             return Command::FAILURE;
         }
 
+        $force = (bool) $this->option('force');
+
         try {
             // 플러그인 디렉토리 스캔 및 로드
             $this->pluginManager->loadPlugins();
 
-            // 이미 설치된 플러그인인지 확인
+            // 이미 설치된 플러그인인지 확인 (force 시 스킵하여 재설치/복구 허용)
             $existingPlugin = $this->pluginRepository->findByIdentifier($identifier);
-            if ($existingPlugin) {
+            if ($existingPlugin && ! $force) {
                 $this->warn('⚠️  '.__('plugins.commands.install.already_installed', ['plugin' => $identifier]));
 
                 return Command::FAILURE;
             }
 
+            if ($existingPlugin && $force) {
+                $this->warn('⚠️  '.__('plugins.commands.install.force_reinstall', ['plugin' => $identifier]));
+            }
+
             // 플러그인 설치
+            $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
             $onProgress = $this->createProgressCallback(PluginManager::INSTALL_STEPS);
             try {
-                $result = $this->pluginManager->installPlugin($identifier, $onProgress);
+                $result = $this->pluginManager->installPlugin($identifier, $onProgress, $vendorMode, $force);
                 $this->finishProgress();
             } catch (\Exception $e) {
                 $this->finishProgress();

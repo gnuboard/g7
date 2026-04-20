@@ -219,6 +219,37 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
 > 상세 문법: [middleware.md](middleware.md) "permission 미들웨어 except 옵션" 참조
 
+### 사용자 컨텍스트 라우트 (permission:user)
+
+사용자(프론트엔드) 라우트는 `permission:user,...` 미들웨어와 **user 타입 권한 식별자**를 함께 사용합니다.
+
+```php
+// routes/api.php — 사용자 알림 라우트 예시
+
+Route::middleware('auth:sanctum')->prefix('user')->group(function () {
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [UserNotificationController::class, 'index'])
+            ->middleware('permission:user,core.user-notifications.read')
+            ->name('api.user.notifications.index');
+
+        Route::patch('{notification}/read', [UserNotificationController::class, 'markAsRead'])
+            ->middleware('permission:user,core.user-notifications.update')
+            ->name('api.user.notifications.read');
+
+        Route::delete('{notification}', [UserNotificationController::class, 'destroy'])
+            ->middleware('permission:user,core.user-notifications.delete')
+            ->name('api.user.notifications.destroy');
+    });
+});
+```
+
+```text
+⚠️ CRITICAL: 사용자 라우트에 admin 타입 권한 식별자를 사용하면 항상 403 응답
+✅ 사용자 컨텍스트 권한은 별도 식별자(예: core.user-notifications.*)로 정의 + permission:user 미들웨어 사용
+```
+
+`permissions.identifier` 단일 unique 제약 때문에 같은 식별자로 admin/user 권한 두 행을 생성할 수 없습니다. 같은 도메인이라도 컨텍스트가 다르면 식별자를 분리하세요. 상세 규칙: [extension/permissions.md](../extension/permissions.md#권한-타입-permission-type)
+
 ### 공개 API 라우트
 
 ```php
