@@ -34,6 +34,7 @@
 ```text
 확장 버전 업 시 CHANGELOG.md에 변경사항 기록 필수
 미기록 시 버전 업 작업 불완전으로 간주
+릴리스 태깅 전 composer test-smoke 통과 필수 (Installation 스위트)
 ```
 
 - **형식**: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 표준 준수
@@ -41,6 +42,22 @@
 - **작성 언어**: 한국어 (확장 대상이 한국어 사용자)
 - **날짜 형식**: YYYY-MM-DD (ISO 8601)
 - **최신 버전**: 파일 상단에 위치 (역순)
+
+### 릴리스 전 Smoke Suite 통과
+
+코어 또는 번들 확장의 버전 bump 시 다음을 충족해야 합니다:
+
+```bash
+# 릴리스 전 필수 검증
+composer test-smoke
+
+# 첫 실패에서 중단 (CI 모드)
+composer test-smoke-ci
+```
+
+- `composer test-smoke`는 `tests/Feature/Installation/` 및 각 번들 확장의 `tests/Feature/Installation/` 디렉토리를 실행합니다.
+- 스모크 통과 없이 릴리스 태깅을 진행하면 beta.2 #12 유형(마이그레이션–Repository 결합 누락) 회귀를 놓칠 수 있습니다.
+- 상세: [testing-guide.md#pre-release-smoke-suite](../testing-guide.md#pre-release-smoke-suite)
 
 ### 버전 섹션 형식
 

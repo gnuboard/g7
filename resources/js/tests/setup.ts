@@ -9,6 +9,23 @@ import { vi } from 'vitest';
 global.fetch = vi.fn();
 
 /**
+ * IntersectionObserver 폴리필 — jsdom은 IntersectionObserver를 기본 제공하지 않으므로
+ * 컴포넌트가 무한스크롤/가시성 추적을 위해 사용하는 경우를 대비해 no-op 폴리필을 전역 제공.
+ * 개별 테스트에서 세부 동작 제어가 필요하면 `vi.stubGlobal('IntersectionObserver', ...)` 으로 덮어쓴다.
+ */
+class NoopIntersectionObserver {
+  root: Element | null = null;
+  rootMargin = '';
+  thresholds: number[] = [];
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] { return []; }
+}
+(global as any).IntersectionObserver = NoopIntersectionObserver;
+(window as any).IntersectionObserver = NoopIntersectionObserver;
+
+/**
  * window.matchMedia 모킹
  * 테스트 환경에서 CSS 미디어 쿼리를 지원하기 위함
  */

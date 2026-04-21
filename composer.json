@@ -72,6 +72,14 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "test-smoke": [
+            "@php artisan config:clear --ansi",
+            "@php vendor/bin/phpunit --testsuite=Installation"
+        ],
+        "test-smoke-ci": [
+            "@php artisan config:clear --ansi",
+            "@php vendor/bin/phpunit --testsuite=Installation --stop-on-failure"
         ]
     },
     "extra": {

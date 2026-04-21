@@ -237,4 +237,279 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(read?.className).toMatch(/opacity-70/);
     });
   });
+
+  describe('[회귀] 무한스크롤 중복 호출 방지 (gnuboard/g7#14 관련)', () => {
+    // 첫 번째로 생성되는 observer 만 무한스크롤용으로 취급. 미읽음 추적 observer 의
+    // disconnect 가 무한스크롤 callback 을 교란하지 않도록 인스턴스 메서드로 격리한다.
+    let infiniteScrollInstance: any = null;
+
+    beforeEach(() => {
+      infiniteScrollInstance = null;
+      (window as any).IntersectionObserver = class MockIO {
+        root: Element | null = null;
+        rootMargin = '';
+        thresholds: number[] = [];
+        callback: IntersectionObserverCallback | null;
+        target: Element | null = null;
+        constructor(cb: IntersectionObserverCallback) {
+          this.callback = cb;
+          if (!infiniteScrollInstance) infiniteScrollInstance = this;
+        }
+        observe(target: Element) {
+          if (!this.target) this.target = target;
+        }
+        disconnect() {
+          this.callback = null;
+          this.target = null;
+          if (infiniteScrollInstance === this) infiniteScrollInstance = null;
+        }
+        unobserve() {}
+        takeRecords() { return []; }
+      };
+    });
+
+    const fireIntersection = () => {
+      infiniteScrollInstance?.callback?.(
+        [{ isIntersecting: true, target: infiniteScrollInstance.target } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    };
+
+    const makeNotifications = (count: number): NotificationItem[] =>
+      Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        title: `t${i}`,
+        message: `m${i}`,
+        time: '1m',
+        read: false,
+      }));
+
+    it('같은 notifications.length 에서 sentinel 이 재교차해도 onLoadMore 는 한 번만 호출된다', () => {
+      const onLoadMore = vi.fn();
+      render(
+        <NotificationCenter
+          notifications={makeNotifications(15)}
+          hasMore={true}
+          loading={false}
+          onLoadMore={onLoadMore}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      fireIntersection();
+      fireIntersection();
+      fireIntersection();
+
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
+    });
+
+    it('loading=true 일 때는 onLoadMore 를 발행하지 않는다', () => {
+      const onLoadMore = vi.fn();
+      render(
+        <NotificationCenter
+          notifications={makeNotifications(15)}
+          hasMore={true}
+          loading={true}
+          onLoadMore={onLoadMore}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+      fireIntersection();
+
+      expect(onLoadMore).not.toHaveBeenCalled();
+    });
+
+    it('hasMore=false 일 때는 onLoadMore 를 발행하지 않는다', () => {
+      const onLoadMore = vi.fn();
+      render(
+        <NotificationCenter
+          notifications={makeNotifications(15)}
+          hasMore={false}
+          loading={false}
+          onLoadMore={onLoadMore}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+      fireIntersection();
+
+      expect(onLoadMore).not.toHaveBeenCalled();
+    });
+
+    it('notifications.length 가 증가한 뒤 재교차하면 onLoadMore 를 다시 발행한다', () => {
+      const onLoadMore = vi.fn();
+      const { rerender } = render(
+        <NotificationCenter
+          notifications={makeNotifications(15)}
+          hasMore={true}
+          loading={false}
+          onLoadMore={onLoadMore}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+      fireIntersection();
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <NotificationCenter
+          notifications={makeNotifications(30)}
+          hasMore={true}
+          loading={false}
+          onLoadMore={onLoadMore}
+        />,
+      );
+
+      fireIntersection();
+      expect(onLoadMore).toHaveBeenCalledTimes(2);
+
+      fireIntersection();
+      expect(onLoadMore).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('[회귀] 닫기 시 read-batch 불필요 호출 방지', () => {
+    it('unreadCount=0 + 모든 알림 read=true 상태에서 닫으면 onClose 를 호출하지 않는다', () => {
+      const onClose = vi.fn();
+      const allRead: NotificationItem[] = mockNotifications.map((n) => ({ ...n, read: true }));
+
+      render(
+        <NotificationCenter
+          notifications={allRead}
+          unreadCount={0}
+          onClose={onClose}
+        />,
+      );
+
+      // 레이어 열고 닫기
+      const button = screen.getByLabelText('알림');
+      fireEvent.click(button);
+      fireEvent.click(button);
+
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('뷰포트에 노출됐던 ID 라도 현재 notifications 에서 read=true 로 바뀐 것은 onClose 인자에서 제외된다', () => {
+      const onClose = vi.fn();
+
+      const { rerender, container } = render(
+        <NotificationCenter notifications={mockNotifications} unreadCount={1} onClose={onClose} />,
+      );
+
+      const button = screen.getByLabelText('알림');
+      fireEvent.click(button);
+
+      // data-unread 속성 시뮬레이션
+      container.querySelectorAll('[data-notification-id]').forEach((el) => {
+        const id = el.getAttribute('data-notification-id');
+        const n = mockNotifications.find((item) => String(item.id) === String(id));
+        el.setAttribute('data-unread', n?.read ? 'false' : 'true');
+      });
+
+      // 모두 읽음 처리된 상태로 rerender
+      rerender(
+        <NotificationCenter
+          notifications={mockNotifications.map((n) => ({ ...n, read: true }))}
+          unreadCount={0}
+          onClose={onClose}
+        />,
+      );
+
+      // 레이어 닫기
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('[회귀] 드롭다운 뷰포트 이탈 방지', () => {
+    let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+    beforeEach(() => {
+      originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+    });
+
+    it('드롭다운에 max-w-[calc(100vw-1rem)] 클래스가 적용된다', () => {
+      const { container } = render(<NotificationCenter notifications={mockNotifications} />);
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      const dropdown = container.querySelector('.absolute.w-80');
+      expect(dropdown?.className).toContain('max-w-[calc(100vw-1rem)]');
+
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('드롭다운이 뷰포트 오른쪽을 이탈하면 translateX 로 왼쪽으로 보정된다', () => {
+      Element.prototype.getBoundingClientRect = vi.fn(() => ({
+        left: 100,
+        right: 1100,
+        top: 0,
+        bottom: 100,
+        width: 320,
+        height: 100,
+        x: 100,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect);
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true, configurable: true });
+
+      const { container } = render(
+        <NotificationCenter notifications={mockNotifications} dropdownAlign="left" />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
+      expect(dropdown?.style.transform).toBe('translateX(-84px)');
+
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('드롭다운이 뷰포트 왼쪽을 이탈하면 translateX 로 오른쪽으로 보정된다', () => {
+      Element.prototype.getBoundingClientRect = vi.fn(() => ({
+        left: -50,
+        right: 270,
+        top: 0,
+        bottom: 100,
+        width: 320,
+        height: 100,
+        x: -50,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect);
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true, configurable: true });
+
+      const { container } = render(
+        <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
+      expect(dropdown?.style.transform).toBe('translateX(58px)');
+
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('드롭다운이 뷰포트 안에 있으면 transform 이 적용되지 않는다', () => {
+      Element.prototype.getBoundingClientRect = vi.fn(() => ({
+        left: 100,
+        right: 420,
+        top: 0,
+        bottom: 100,
+        width: 320,
+        height: 100,
+        x: 100,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect);
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true, configurable: true });
+
+      const { container } = render(
+        <NotificationCenter notifications={mockNotifications} dropdownAlign="right" />,
+      );
+      fireEvent.click(screen.getByLabelText('알림'));
+
+      const dropdown = container.querySelector<HTMLElement>('.absolute.w-80');
+      expect(dropdown?.style.transform).toBe('');
+
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+  });
 });

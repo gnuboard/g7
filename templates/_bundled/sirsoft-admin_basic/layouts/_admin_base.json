@@ -286,6 +286,19 @@
                                 },
                                 "onSuccess": [
                                   {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": 1,
+                                      "notificationsHasMore": null,
+                                      "notificationsLoadingMore": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notifications" }
+                                  },
+                                  {
                                     "handler": "refetchDataSource",
                                     "params": { "dataSourceId": "notification_unread_count" }
                                   }
@@ -425,7 +438,8 @@
                                   "method": "GET",
                                   "query": {
                                     "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                    "per_page": 15
+                                    "per_page": 15,
+                                    "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
                                   }
                                 },
                                 "onSuccess": [
@@ -682,6 +696,19 @@
                                 },
                                 "onSuccess": [
                                   {
+                                    "handler": "setState",
+                                    "params": {
+                                      "target": "global",
+                                      "notificationsCurrentPage": 1,
+                                      "notificationsHasMore": null,
+                                      "notificationsLoadingMore": false
+                                    }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "notifications" }
+                                  },
+                                  {
                                     "handler": "refetchDataSource",
                                     "params": { "dataSourceId": "notification_unread_count" }
                                   }
@@ -821,7 +848,8 @@
                                   "method": "GET",
                                   "query": {
                                     "page": "{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}",
-                                    "per_page": 15
+                                    "per_page": 15,
+                                    "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
                                   }
                                 },
                                 "onSuccess": [

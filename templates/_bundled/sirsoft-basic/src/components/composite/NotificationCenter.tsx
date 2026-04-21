@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
@@ -105,28 +105,55 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const visibleUnreadIdsRef = useRef<Set<string | number>>(new Set());
 
+  // 무한스크롤 관련 최신 값 참조 (observer 재등록 없이 최신 prop 접근)
+  const onLoadMoreRef = useRef(onLoadMore);
+  const hasMoreRef = useRef(hasMore);
+  const loadingRef = useRef(loading);
+  const notificationsCountRef = useRef(notifications.length);
+  // 마지막 onLoadMore 발행 시점의 notifications.length — 동일 길이에서 중복 발행 가드
+  const lastRequestedCountRef = useRef<number>(-1);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+    hasMoreRef.current = hasMore;
+    loadingRef.current = loading;
+    notificationsCountRef.current = notifications.length;
+  });
+
   /**
    * 무한스크롤 — IntersectionObserver
+   *
+   * observer는 드롭다운 열림/닫힘 전환 시에만 재등록한다.
+   * 목록이 append되거나 loading/hasMore가 바뀌어도 observer를 새로 만들지 않으므로,
+   * sentinel이 이미 뷰포트에 있는 상태에서 재등록 시 즉시 intersecting callback이
+   * 중복 발행되던 문제를 방지한다.
    */
   useEffect(() => {
-    if (!sentinelRef.current || !scrollRef.current || !hasMore || loading || !showNotifications) return;
+    if (!sentinelRef.current || !scrollRef.current || !showNotifications) return;
+
+    // 드롭다운이 새로 열릴 때마다 중복 가드 초기화
+    lastRequestedCountRef.current = -1;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          onLoadMore?.();
-        }
+        if (!entry.isIntersecting) return;
+        if (loadingRef.current || !hasMoreRef.current) return;
+        // B안 가드: 같은 length에서 이미 한 번 발행했다면 skip
+        if (lastRequestedCountRef.current === notificationsCountRef.current) return;
+        lastRequestedCountRef.current = notificationsCountRef.current;
+        onLoadMoreRef.current?.();
       },
       { root: scrollRef.current, threshold: 0.1 }
     );
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loading, showNotifications, onLoadMore, notifications.length]);
+  }, [showNotifications]);
 
   /**
    * 뷰포트 내 미읽음 알림 추적 — IntersectionObserver
@@ -157,18 +184,33 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, notifications]);
 
   /**
+   * 뱃지에 표시할 카운트 (handleClose 보다 먼저 선언 — deps 참조 순서)
+   */
+  const displayCount = unreadCount > 0 ? unreadCount : notifications.filter((n) => !n.read).length;
+
+  /**
    * 드롭다운 닫기 — 뷰포트에 들어온 미읽음 알림 ID 전달
+   *
+   * 불필요한 read-batch 호출 방지:
+   *  1) displayCount 가 0 이면 이미 모두 읽음/삭제 처리된 상태 → 전체 skip
+   *  2) 뷰포트에 나타났던 ID 중 현재 notifications 기준 여전히 unread 인 것만 전달
+   *     ("모두 읽음" onSuccess 로 notifications 가 갱신되면 필터 결과가 빈 배열이 됨)
    */
   const handleClose = useCallback(() => {
     if (showNotifications) {
-      const ids = Array.from(visibleUnreadIdsRef.current);
-      if (ids.length > 0) {
-        onClose?.(ids);
+      if (displayCount > 0) {
+        const unreadIds = Array.from(visibleUnreadIdsRef.current).filter((id) => {
+          const n = notifications.find((item) => String(item.id) === String(id));
+          return n && !n.read;
+        });
+        if (unreadIds.length > 0) {
+          onClose?.(unreadIds);
+        }
       }
       visibleUnreadIdsRef.current.clear();
       setShowNotifications(false);
     }
-  }, [showNotifications, onClose]);
+  }, [showNotifications, onClose, displayCount, notifications]);
 
   /**
    * 외부 클릭 감지 — 드롭다운이 열려 있을 때만 리스너 등록
@@ -203,9 +245,36 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, handleClose]);
 
   /**
-   * 뱃지에 표시할 카운트
+   * 드롭다운 열릴 때 뷰포트 경계 검사 후 이탈량만큼 translateX 로 보정
+   *
+   * class 기반 left-0/right-0 전환은 부모 컨테이너 기준이라 부모가 뷰포트 가장자리에 있을 때
+   * 여전히 이탈할 수 있다. 따라서 초기 렌더 후 드롭다운의 실제 뷰포트 좌표를 측정하여
+   * 이탈한 픽셀만큼 반대 방향으로 이동시키는 방식을 사용한다.
    */
-  const displayCount = unreadCount > 0 ? unreadCount : notifications.filter((n) => !n.read).length;
+  useLayoutEffect(() => {
+    const dropdown = dropdownRef.current;
+    if (!showNotifications || !dropdown) return;
+
+    // 측정 전 기존 transform 초기화 (재측정 시 누적 방지)
+    dropdown.style.transform = '';
+    const rect = dropdown.getBoundingClientRect();
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 0;
+
+    // layout 미측정(jsdom 등)에서 rect 가 0 으로 반환되는 경우 보정 스킵
+    if (rect.width === 0 && rect.height === 0) return;
+
+    const margin = 8;
+    let shift = 0;
+    if (rect.right > vw - margin) {
+      shift = -(rect.right - (vw - margin));
+    } else if (rect.left < margin) {
+      shift = margin - rect.left;
+    }
+
+    if (shift !== 0) {
+      dropdown.style.transform = `translateX(${shift}px)`;
+    }
+  }, [showNotifications, dropdownAlign, notifications.length]);
 
   return (
     <Div ref={notificationRef} className={`relative ${className}`}>
@@ -224,7 +293,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
       {/* 알림 드롭다운 */}
       {showNotifications && (
-        <Div className={`absolute ${dropdownAlign === 'left' ? 'left-0' : 'right-0'} mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50`}>
+        <Div ref={dropdownRef} className={`absolute ${dropdownAlign === 'left' ? 'left-0' : 'right-0'} mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50`}>
           <Div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
             <Div className="flex items-center gap-3 min-w-0">
               <Span className="font-semibold text-gray-900 dark:text-white">{titleText}</Span>

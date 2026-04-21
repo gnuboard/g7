@@ -17,6 +17,10 @@
         <testsuite name="Plugin">
             <directory>plugins/_bundled/*/tests</directory>
         </testsuite>
+        <testsuite name="Installation">
+            <directory>tests/Feature/Installation</directory>
+            <directory>modules/_bundled/*/tests/Feature/Installation</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

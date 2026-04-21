@@ -9,6 +9,7 @@
 - 개별/일괄 검증: {core|module|plugin}:vendor-verify, vendor-bundle:verify-all
 - 모드: VendorMode = auto | composer | bundled
 - 결정 순서: 명시 → DB 이전 모드 → config → 환경감지(composer 가능 시 우선)
+- composer.json/lock 수정 후 재빌드 필수 — scripts 섹션 같은 런타임 무관 변경도 파일 전체 SHA256 변경 → VendorIntegrityChecker 실패
 ```
 
 ## 1. 개요
