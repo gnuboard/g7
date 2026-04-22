@@ -88,13 +88,6 @@ class ReportServiceTest extends ModuleTestCase
                 'notify_author_on_comment' => false,
             ]
         );
-
-        // Phase 8: 파티션 테이블에 board_id 파티션 추가 (createTestPost/createTestComment에서 board_posts/board_comments INSERT 필요)
-        try {
-            $this->boardRepository->addBoardPartitions($this->board->id);
-        } catch (\Exception $e) {
-            // 파티션이 이미 존재하면 무시 (DDL implicit commit으로 이전 테스트 파티션이 남아있을 수 있음)
-        }
     }
 
     protected function tearDown(): void
@@ -509,6 +502,141 @@ class ReportServiceTest extends ModuleTestCase
 
         // Then: blinded + suspended 케이스는 반려 시 복구 대상으로 카운트
         $this->assertGreaterThan(0, $summary['restorable_blind_count']);
+    }
+
+    /**
+     * createReport() - 동일 대상 중복 신고 시 기존 케이스 재사용 (1케이스 구조)
+     */
+    public function test_create_report_reuses_existing_case_for_same_target(): void
+    {
+        // Given: 첫 번째 신고로 케이스 생성
+        $postId = $this->createTestPost();
+
+        $existingReport = new Report;
+        $existingReport->id = 99;
+        $existingReport->board_id = $this->board->id;
+        $existingReport->target_type = \Modules\Sirsoft\Board\Enums\ReportType::Post;
+        $existingReport->target_id = $postId;
+        $existingReport->status = \Modules\Sirsoft\Board\Enums\ReportStatus::Pending;
+        $existingReport->process_histories = [];
+
+        // 두 번째 신고 시: created=false (기존 케이스 반환)
+        $this->reportRepository->shouldReceive('findOrCreateCase')
+            ->once()
+            ->andReturn(['report' => $existingReport, 'created' => false]);
+
+        $this->reportRepository->shouldReceive('createLog')
+            ->once()
+            ->andReturn(new ReportLog);
+
+        $this->reportRepository->shouldReceive('countActiveReportsByTarget')
+            ->once()
+            ->andReturn(2);
+
+        $data = [
+            'board_id' => $this->board->id,
+            'target_type' => 'post',
+            'target_id' => $postId,
+            'reporter_id' => $this->user->id,
+            'reason_type' => ReportReasonType::Spam,
+            'reason_detail' => '두 번째 신고',
+        ];
+
+        // When
+        $result = $this->service->createReport($data);
+
+        // Then: 동일 Report 인스턴스 반환 (새 케이스 미생성)
+        $this->assertInstanceOf(Report::class, $result);
+        $this->assertEquals(99, $result->id);
+    }
+
+    /**
+     * createReport() - rejected 케이스에 재신고 시 pending 재활성화
+     */
+    public function test_create_report_reactivates_rejected_case(): void
+    {
+        // Given: rejected 상태의 기존 케이스
+        $postId = $this->createTestPost();
+
+        $rejectedReport = new Report;
+        $rejectedReport->id = 100;
+        $rejectedReport->board_id = $this->board->id;
+        $rejectedReport->target_type = \Modules\Sirsoft\Board\Enums\ReportType::Post;
+        $rejectedReport->target_id = $postId;
+        $rejectedReport->status = \Modules\Sirsoft\Board\Enums\ReportStatus::Rejected;
+        $rejectedReport->process_histories = [['action' => 'rejected']];
+
+        // 재신고: created=false, status=Rejected → isReactivation=true
+        $this->reportRepository->shouldReceive('findOrCreateCase')
+            ->once()
+            ->andReturn(['report' => $rejectedReport, 'created' => false]);
+
+        $this->reportRepository->shouldReceive('createLog')
+            ->once()
+            ->andReturn(new ReportLog);
+
+        $this->reportRepository->shouldReceive('countActiveReportsByTarget')
+            ->once()
+            ->andReturn(1);
+
+        $data = [
+            'board_id' => $this->board->id,
+            'target_type' => 'post',
+            'target_id' => $postId,
+            'reporter_id' => $this->user->id,
+            'reason_type' => ReportReasonType::Spam,
+            'reason_detail' => '재신고',
+        ];
+
+        // When: 예외 없이 처리되어야 함
+        $result = $this->service->createReport($data);
+
+        $this->assertInstanceOf(Report::class, $result);
+    }
+
+    /**
+     * updateReportStatus() - comment 신고 블라인드 처리 (suspended)
+     */
+    public function test_update_report_status_blinds_comment_content(): void
+    {
+        // Given
+        $postId = $this->createTestPost();
+        $commentId = $this->createTestComment($postId);
+
+        $report = Report::factory()->create([
+            'board_id' => $this->board->id,
+            'author_id' => $this->user->id,
+            'target_type' => 'comment',
+            'target_id' => $commentId,
+            'status' => ReportStatus::Pending,
+        ]);
+
+        $freshReport = $report->fresh();
+        $freshReport->load('board');
+
+        $this->reportRepository->shouldReceive('findOrFail')
+            ->with($report->id)
+            ->twice()
+            ->andReturn($freshReport);
+
+        $this->reportRepository->shouldReceive('update')
+            ->once()
+            ->andReturnUsing(function ($id, $data) use ($report) {
+                $report->status = $data['status'];
+
+                return $report;
+            });
+
+        // When
+        $this->service->updateReportStatus($report->id, [
+            'status' => ReportStatus::Suspended->value,
+            'process_note' => '댓글 블라인드',
+        ]);
+
+        // Then: 댓글이 blinded 상태로 변경
+        $comment = DB::table('board_comments')->find($commentId);
+        $this->assertEquals('blinded', $comment->status);
+        $this->assertEquals('report', $comment->trigger_type);
     }
 
     /**

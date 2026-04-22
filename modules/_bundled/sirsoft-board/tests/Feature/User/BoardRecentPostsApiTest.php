@@ -215,9 +215,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
             'name' => ['ko' => '비밀게시판', 'en' => 'Secret Board'],
         ]);
 
-        // 파티션 테이블에 insert하기 위해 파티션 보장
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             'board_id' => $board->id,
             'title' => '비밀 문의입니다',
@@ -282,9 +279,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $board = Board::factory()->create([
             'is_active' => true,
         ]);
-
-        // 파티션 테이블에 insert하기 위해 파티션 보장
-        $this->ensureBoardPartitions($board->id);
 
         for ($i = 0; $i < $postCount; $i++) {
             $isSecret = $includingSecret && ($i % 2 === 0);

@@ -54,11 +54,11 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
     private array $createdPermissionPatterns = [];
 
     /**
-     * DatabaseTransactions 비활성화 (DDL implicit commit 호환성)
+     * DatabaseTransactions 비활성화 유지 (수동 정리 경로 보존).
      */
     public function beginDatabaseTransaction(): void
     {
-        // Board 모듈은 ALTER TABLE (파티션) 등 DDL이 트랜잭션을 자동 커밋하므로 비활성화
+        // 수동 정리 모드
     }
 
     protected function setUp(): void
@@ -100,7 +100,6 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
             'created_by' => $this->scopeUser->id,
             'is_active' => true,
         ]);
-        $this->ensureBoardPartitions($this->board->id);
     }
 
     protected function tearDown(): void

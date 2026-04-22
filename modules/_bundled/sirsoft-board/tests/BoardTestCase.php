@@ -74,9 +74,6 @@ abstract class BoardTestCase extends ModuleTestCase
             $this->getDefaultBoardAttributes($slug)
         );
 
-        // 파티션 보장 (LIST 파티션 테이블 — board_id별 파티션 필요)
-        $this->ensureBoardPartitions($this->board->id);
-
         // 해당 게시판의 게시글/댓글/첨부파일/신고 데이터만 삭제
         DB::table('boards_reports')->where('board_id', $this->board->id)->delete();
         DB::table('board_attachments')->where('board_id', $this->board->id)->delete();

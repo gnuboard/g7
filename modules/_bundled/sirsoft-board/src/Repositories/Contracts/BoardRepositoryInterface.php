@@ -226,25 +226,4 @@ interface BoardRepositoryInterface
      * @return int 해당 유형의 게시판 개수
      */
     public function countByType(string $type): int;
-
-    /**
-     * 게시판 파티션을 추가합니다. (MySQL/MariaDB 전용 DDL)
-     *
-     * board_posts, board_comments, board_attachments 테이블에
-     * p{boardId} 파티션을 추가합니다.
-     *
-     * @param int $boardId 게시판 ID
-     */
-    public function addBoardPartitions(int $boardId): void;
-
-    /**
-     * 게시판 파티션을 삭제합니다. (MySQL/MariaDB 전용 DDL)
-     *
-     * board_posts, board_comments, board_attachments 테이블에서
-     * p{boardId} 파티션을 DROP합니다.
-     * DDL은 트랜잭션 롤백 불가 — 반드시 트랜잭션 외부에서 호출해야 합니다.
-     *
-     * @param int $boardId 게시판 ID
-     */
-    public function dropBoardPartitions(int $boardId): void;
 }

@@ -16,8 +16,7 @@ use PHPUnit\Framework\Attributes\Group;
 /**
  * 사용자 게시글 활동 API 테스트
  *
- * BoardTestCase를 통해 단일 테이블(board_posts/board_comments) 파티션과
- * 데이터 정리를 자동으로 처리합니다.
+ * BoardTestCase를 통해 테스트 보드와 데이터 정리를 자동으로 처리합니다.
  */
 #[Group('board')]
 #[Group('user-activities')]
@@ -132,7 +131,6 @@ class UserActivityApiTest extends BoardTestCase
             'name' => ['ko' => '다른 게시판', 'en' => 'Another Board'],
             'is_active' => true,
         ]);
-        $this->ensureBoardPartitions($board2->id);
 
         $post1 = $this->createPost($board1->slug, [
             'user_id' => $this->user->id,
@@ -588,7 +586,6 @@ class UserActivityApiTest extends BoardTestCase
             'name' => ['ko' => '두 번째 게시판', 'en' => 'Second Board'],
             'is_active' => true,
         ]);
-        $this->ensureBoardPartitions($board2->id);
 
         $post1 = $this->createPost($this->board->slug, ['user_id' => $this->user->id, 'title' => '게시판1 글']);
         $post2 = Post::create([
@@ -669,7 +666,6 @@ class UserActivityApiTest extends BoardTestCase
             'name' => ['ko' => '비활성 게시판', 'en' => 'Inactive Board'],
             'is_active' => false,
         ]);
-        $this->ensureBoardPartitions($inactiveBoard->id);
 
         Post::create([
             'board_id' => $inactiveBoard->id,
@@ -703,7 +699,6 @@ class UserActivityApiTest extends BoardTestCase
             'name' => ['ko' => '비활성 게시판', 'en' => 'Inactive Board'],
             'is_active' => false,
         ]);
-        $this->ensureBoardPartitions($inactiveBoard->id);
 
         $post = Post::create([
             'board_id' => $inactiveBoard->id,

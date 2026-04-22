@@ -16,7 +16,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 사용자 공개 게시글 API 테스트
  *
  * 타인의 공개 프로필에서 게시글 목록과 통계를 조회하는 API 테스트입니다.
- * BoardTestCase를 통해 단일 테이블 파티션과 데이터 정리를 자동으로 처리합니다.
+ * BoardTestCase를 통해 테스트 보드와 데이터 정리를 자동으로 처리합니다.
  *
  * @group board
  * @group user-public-posts

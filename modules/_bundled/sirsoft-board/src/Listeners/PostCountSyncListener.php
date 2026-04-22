@@ -19,9 +19,9 @@ class PostCountSyncListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'sirsoft-board.comment.after_create' => ['method' => 'syncCommentsCount', 'priority' => 10],
-            'sirsoft-board.comment.after_delete' => ['method' => 'syncCommentsCount', 'priority' => 10],
-            'sirsoft-board.comment.after_restore' => ['method' => 'syncCommentsCount', 'priority' => 10],
+            'sirsoft-board.comment.after_create' => ['method' => 'syncCommentsCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.comment.after_delete' => ['method' => 'syncCommentsCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.comment.after_restore' => ['method' => 'syncCommentsCount', 'priority' => 10, 'sync' => true],
         ];
     }
 

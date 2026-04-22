@@ -273,6 +273,15 @@ class BoardController extends AdminBaseController
                 $data['blocked_keywords'] = collect($spamSecurity['blocked_keywords'] ?? [])->join(',');
                 $data['allowed_extensions'] = collect($basicDefaults['allowed_extensions'] ?? [])->join(',');
 
+                // depth 필드는 reject(is_array)로 걸러지지 않지만 basic_defaults가 비어있을 수 있으므로 명시적 기본값 보장
+                $limits = config('sirsoft-board.limits', []);
+                if (! isset($data['max_reply_depth'])) {
+                    $data['max_reply_depth'] = $limits['max_reply_depth_min'] ?? 1;
+                }
+                if (! isset($data['max_comment_depth'])) {
+                    $data['max_comment_depth'] = $limits['max_comment_depth_min'] ?? 0;
+                }
+
                 $data['permissions'] = BoardResource::formatPermissionsForFrontend(
                     $basicDefaults['default_board_permissions'] ?? []
                 );

@@ -19,8 +19,9 @@ class PostAttachmentCountSyncListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'sirsoft-board.attachment.after_upload' => ['method' => 'syncAttachmentsCount', 'priority' => 10],
-            'sirsoft-board.attachment.after_delete' => ['method' => 'syncAttachmentsCount', 'priority' => 10],
+            'sirsoft-board.attachment.after_upload' => ['method' => 'syncAttachmentsCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.attachment.after_link' => ['method' => 'syncAttachmentsCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.attachment.after_delete' => ['method' => 'syncAttachmentsCount', 'priority' => 10, 'sync' => true],
         ];
     }
 

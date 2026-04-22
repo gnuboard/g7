@@ -17,25 +17,21 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  *
  * 게시판 CRUD 및 is_active 필드 테스트
  *
- * DDL 주의:
- * - BoardService::createBoard()가 내부적으로 ALTER TABLE ADD PARTITION (DDL)을 실행
- * - DDL은 MySQL 암묵적 커밋을 유발하여 DatabaseTransactions 롤백을 방해
- * - beginDatabaseTransaction()을 비활성화하고 tearDown에서 수동 정리
+ * Note: 과거 파티션 DDL 호환성을 위해 DatabaseTransactions를 비활성화하고
+ * tearDown에서 수동 정리 방식을 사용합니다. 파티션 폐지(beta.3) 후에도
+ * tearDown 정리 경로를 유지해 기존 테스트 호환성을 보존합니다.
+ * 테스트 인프라 정비는 후속 작업에서 진행합니다.
  */
 class BoardManagementTest extends ModuleTestCase
 {
     protected User $adminUser;
 
     /**
-     * DatabaseTransactions 비활성화.
-     *
-     * BoardService::createBoard() 내부의 ALTER TABLE ADD PARTITION (DDL)이
-     * MySQL 암묵적 커밋을 유발하여 DatabaseTransactions 롤백을 방해합니다.
-     * 대신 tearDown()에서 수동 DELETE로 잔여 데이터를 정리합니다.
+     * DatabaseTransactions 비활성화 유지 (tearDown 수동 정리 경로 보존).
      */
     public function beginDatabaseTransaction(): void
     {
-        // DatabaseTransactions 비활성화 (DDL 호환성)
+        // 수동 정리 모드
     }
 
     /**

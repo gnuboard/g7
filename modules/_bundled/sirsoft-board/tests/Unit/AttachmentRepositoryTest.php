@@ -53,9 +53,6 @@ class AttachmentRepositoryTest extends ModuleTestCase
                 'notify_author_on_comment' => false,
             ]
         );
-
-        // 게시판 파티션 보장
-        $this->ensureBoardPartitions($this->board->id);
     }
 
     /**

@@ -139,8 +139,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: view_count가 다른 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Post 1', 'content' => 'Content 1', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Post 2', 'content' => 'Content 2', 'view_count' => 300, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
@@ -166,8 +164,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 오늘과 어제 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Today Post', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Yesterday Post', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
@@ -191,8 +187,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 최근 1주일과 2주 전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'This Week', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subDays(3), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Two Weeks Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subWeeks(2), 'updated_at' => now()],
@@ -217,8 +211,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 1년 이내/이전 게시글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             ['board_id' => $board->id, 'title' => 'Recent', 'content' => 'Content', 'view_count' => 100, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now(), 'updated_at' => now()],
             ['board_id' => $board->id, 'title' => 'Six Months Ago', 'content' => 'Content', 'view_count' => 200, 'status' => PostStatus::Published->value, 'ip_address' => '127.0.0.1', 'created_at' => now()->subMonths(6), 'updated_at' => now()],
@@ -291,8 +283,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게시글과 댓글 생성
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         // comments_count 컬럼에 직접 값 설정 (캐시 컬럼 방식)
         $postId = DB::table('board_posts')->insertGetId([
             'board_id' => $board->id,
@@ -323,8 +313,6 @@ class BoardPopularApiTest extends ModuleTestCase
     {
         // Given: 게스트가 작성한 게시글
         $board = Board::factory()->create(['is_active' => true]);
-        $this->ensureBoardPartitions($board->id);
-
         DB::table('board_posts')->insert([
             'board_id' => $board->id,
             'title' => 'Guest Post',
@@ -436,9 +424,6 @@ class BoardPopularApiTest extends ModuleTestCase
                 'is_active' => true,
             ]);
         }
-
-        // LIST 파티션 테이블이므로 board_id 파티션이 없으면 INSERT 오류
-        $this->ensureBoardPartitions($board->id);
 
         for ($i = 0; $i < $postCount; $i++) {
             DB::table('board_posts')->insert([

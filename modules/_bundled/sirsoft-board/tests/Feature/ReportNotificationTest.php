@@ -76,8 +76,6 @@ class ReportNotificationTest extends ModuleTestCase
             ]
         );
 
-        $this->ensureBoardPartitions($this->board->id);
-
         DB::table('boards_reports')->delete();
         DB::table('board_comments')->where('board_id', $this->board->id)->delete();
         DB::table('board_posts')->where('board_id', $this->board->id)->delete();

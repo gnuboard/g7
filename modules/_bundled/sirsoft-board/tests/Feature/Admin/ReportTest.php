@@ -82,10 +82,7 @@ class ReportTest extends ModuleTestCase
             ]
         );
 
-        // LIST 파티션 보장 (board_posts INSERT 가능하도록)
-        $this->ensureBoardPartitions($this->board->id);
-
-        // 이전 테스트 잔여 데이터 정리 (DDL commit으로 롤백 안됨)
+        // 이전 테스트 잔여 데이터 정리 (DatabaseTransactions 비활성 환경 호환)
         // API가 전체 신고를 반환하므로 board_id 필터 없이 전체 삭제
         DB::table('boards_report_logs')->delete();
         DB::table('boards_reports')->delete();

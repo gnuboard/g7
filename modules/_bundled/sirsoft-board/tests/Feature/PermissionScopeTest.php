@@ -44,7 +44,7 @@ class PermissionScopeTest extends ModuleTestCase
      */
     public function beginDatabaseTransaction(): void
     {
-        // Board 모듈은 ALTER TABLE (파티션) 등 DDL이 트랜잭션을 자동 커밋하므로 비활성화
+        // 수동 정리 모드
     }
 
     protected function setUp(): void
@@ -512,9 +512,6 @@ class PermissionScopeTest extends ModuleTestCase
             'slug' => 'board-'.uniqid(),
             'created_by' => $createdBy,
         ]);
-
-        // Post/Comment INSERT를 위해 LIST 파티션 생성 필수
-        $this->ensureBoardPartitions($board->id);
 
         return $board;
     }

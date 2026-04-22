@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Enums\PermissionType;
 use Modules\Sirsoft\Board\Enums\SecretMode;
@@ -197,6 +198,9 @@ class PostController extends PublicBaseController
      * 상세 API에서 분리하여 비동기 로딩 지원.
      * 게시판 정렬 설정에 따라 이전/다음글을 반환합니다.
      *
+     * 공지글·존재하지 않는 글·내부 조회 실패 등 어떤 상황에서도 500 대신
+     * `{prev: null, next: null}` 을 반환합니다. Board 조회 실패만 404로 처리합니다.
+     *
      * @param  Request  $request  HTTP 요청
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $id  게시글 ID
@@ -206,33 +210,39 @@ class PostController extends PublicBaseController
     {
         $id = (int) $id;
 
+        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+        if (! $board || ! $board->is_active) {
+            throw new BoardNotFoundException($slug);
+        }
+
+        $empty = ['prev' => null, 'next' => null];
+
+        // 공지글·존재하지 않는 글은 옆 글 없음으로 응답
+        $isNotice = $this->postService->isPostNotice($slug, $id, $board->id);
+        if ($isNotice === null || $isNotice === true) {
+            return $this->success('sirsoft-board::messages.posts.fetch_success', $empty);
+        }
+
+        // manager 권한 + del=1 시 삭제된 게시글 포함
+        $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+        $withTrashed = $canViewDeleted && $request->boolean('del');
+
         try {
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-            if (! $board || ! $board->is_active) {
-                throw new BoardNotFoundException($slug);
-            }
-
-            // 공지글은 이전/다음 네비게이션 미제공
-            $post = $this->postService->getPost($slug, $id, context: 'user');
-            if ($post->is_notice) {
-                return $this->success('sirsoft-board::messages.posts.fetch_success', ['prev' => null, 'next' => null]);
-            }
-
-            // manager 권한 + del=1 시 삭제된 게시글 포함
-            $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
-            $withTrashed = $canViewDeleted && $request->boolean('del');
-
             $navigation = $this->postService->getAdjacentPosts($slug, $id, filters: [
                 'order_by' => $board->order_by instanceof \BackedEnum ? $board->order_by->value : $board->order_by,
                 'order_direction' => $board->order_direction instanceof \BackedEnum ? $board->order_direction->value : $board->order_direction,
             ], withTrashed: $withTrashed, board: $board);
-
-            return $this->success('sirsoft-board::messages.posts.fetch_success', $navigation);
-        } catch (BoardNotFoundException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return $this->error('sirsoft-board::messages.posts.fetch_failed', 500, $e->getMessage());
+        } catch (\Throwable $e) {
+            // 내부 예외는 로그만 남기고 옆 글 없음으로 degrade
+            Log::warning('Post navigation fetch failed, returning empty result', [
+                'slug' => $slug,
+                'post_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            $navigation = $empty;
         }
+
+        return $this->success('sirsoft-board::messages.posts.fetch_success', $navigation);
     }
 
     /**

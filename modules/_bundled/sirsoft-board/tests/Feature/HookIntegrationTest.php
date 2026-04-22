@@ -31,8 +31,7 @@ class HookIntegrationTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 이전 실행에서 DDL 커밋으로 남은 test-board-* 잔여 데이터 정리
-        // (ensureBoardPartitions DDL → 암묵적 커밋 → DatabaseTransactions 롤백 불가)
+        // 이전 실행에서 남은 test-board-* 잔여 데이터 정리 (DatabaseTransactions 비활성 환경 호환)
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         DB::table('permissions')->where('identifier', 'like', 'sirsoft-board.test-board-%')->delete();
         DB::table('boards')->where('slug', 'like', 'test-board-%')->delete();
@@ -81,14 +80,12 @@ class HookIntegrationTest extends ModuleTestCase
         Event::forget('hook.sirsoft-board.board.before_create');
         Event::forget('hook.sirsoft-board.board.filter_create_data');
         Event::forget('hook.sirsoft-board.board.after_create');
-        Event::forget('hook.sirsoft-board.partition.after_create');
         Event::forget('hook.sirsoft-board.permissions.after_create');
         Event::forget('hook.sirsoft-board.board.before_update');
         Event::forget('hook.sirsoft-board.board.filter_update_data');
         Event::forget('hook.sirsoft-board.board.after_update');
         Event::forget('hook.sirsoft-board.board.before_delete');
         Event::forget('hook.sirsoft-board.board.after_delete');
-        Event::forget('hook.sirsoft-board.partition.after_delete');
         Event::forget('hook.sirsoft-board.permissions.after_delete');
         Event::forget('hook.sirsoft-board.board.before_copy');
         Event::forget('hook.sirsoft-board.board.filter_copy_data');
@@ -191,28 +188,6 @@ class HookIntegrationTest extends ModuleTestCase
         $this->assertInstanceOf(Board::class, $board);
         $this->assertTrue($hookCalled, 'after_create 훅이 호출되지 않았습니다.');
         $this->assertNotNull($createdBoardId);
-    }
-
-    /**
-     * 파티션 추가 후 partition.after_create 훅이 실행되는지 테스트
-     */
-    public function test_table_after_create_hook_is_called(): void
-    {
-        $hookCalled = false;
-
-        HookManager::addAction('sirsoft-board.partition.after_create', function ($board) use (&$hookCalled) {
-            $hookCalled = true;
-            $this->assertInstanceOf(Board::class, $board);
-        });
-
-        $board = $this->boardService->createBoard([
-            'slug' => 'test-board-4',
-            'name' => ['ko' => '테스트 게시판 4', 'en' => 'Test Board 4'],
-            'type' => 'default',
-        ]);
-
-        $this->assertInstanceOf(Board::class, $board);
-        $this->assertTrue($hookCalled, 'partition.after_create 훅이 호출되지 않았습니다.');
     }
 
     /**
@@ -373,25 +348,6 @@ class HookIntegrationTest extends ModuleTestCase
 
         $this->assertTrue($hookCalled, 'permissions.after_delete 훅이 호출되지 않았습니다.');
         $this->assertEquals('test-board-11', $deletedSlug);
-    }
-
-    /**
-     * 파티션 제거 후 partition.after_delete 훅이 실행되는지 테스트
-     */
-    public function test_table_after_delete_hook_is_called(): void
-    {
-        $board = $this->createTestBoard('test-board-12');
-
-        $hookCalled = false;
-
-        HookManager::addAction('sirsoft-board.partition.after_delete', function ($slug) use (&$hookCalled) {
-            $hookCalled = true;
-            $this->assertIsString($slug);
-        });
-
-        $this->boardService->deleteBoard($board->id);
-
-        $this->assertTrue($hookCalled, 'partition.after_delete 훅이 호출되지 않았습니다.');
     }
 
     /**

@@ -89,8 +89,6 @@ class AutoHideTest extends ModuleTestCase
             ]
         );
 
-        $this->ensureBoardPartitions($this->board->id);
-
         // 이전 잔여 데이터 정리
         DB::table('boards_report_logs')->delete();
         DB::table('boards_reports')->delete();

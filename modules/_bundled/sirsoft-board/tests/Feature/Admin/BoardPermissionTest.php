@@ -26,10 +26,9 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * - admin_posts_write: 사용자가 admin.posts.write 권한 보유 여부
  * - admin_manage     : 사용자가 admin.manage 권한 보유 여부
  *
- * DDL 주의:
- * - ensureBoardPartitions() (ALTER TABLE)은 MySQL 암묵적 커밋 유발
- * - DatabaseTransactions와 충돌하므로 beginDatabaseTransaction()을 비활성화
- * - firstOrCreate + DB::table DELETE 패턴으로 수동 정리
+ * Note: 과거 파티션 DDL 호환성을 위해 DatabaseTransactions 비활성화 +
+ * 수동 DELETE 정리 방식을 사용합니다. 파티션 폐지(beta.3) 후에도
+ * 기존 수동 정리 경로를 유지합니다. 테스트 인프라 정비는 후속 작업에서.
  */
 class BoardPermissionTest extends ModuleTestCase
 {
@@ -54,15 +53,11 @@ class BoardPermissionTest extends ModuleTestCase
     private int $otherPostId;
 
     /**
-     * DatabaseTransactions 비활성화.
-     *
-     * ensureBoardPartitions() (ALTER TABLE ADD PARTITION) 이 MySQL 암묵적 커밋을 유발하여
-     * DatabaseTransactions 트랜잭션 롤백을 방해합니다.
-     * 대신 setUp()에서 수동 DELETE로 잔여 데이터를 정리합니다.
+     * DatabaseTransactions 비활성화 유지 (setUp 수동 DELETE 경로 보존).
      */
     public function beginDatabaseTransaction(): void
     {
-        // DatabaseTransactions 비활성화 (DDL 호환성)
+        // 수동 정리 모드
     }
 
     /**
@@ -133,8 +128,7 @@ class BoardPermissionTest extends ModuleTestCase
     /**
      * 테스트 게시판 생성 및 권한 설정
      *
-     * Board::firstOrCreate → ensureBoardPartitions (DDL) → 암묵적 커밋
-     * 이후 데이터는 DatabaseTransactions로 보호되지 않으므로 수동 정리 필요
+     * DatabaseTransactions 비활성화 상태이므로 setUp/tearDown에서 수동 정리 필요.
      */
     private function createTestBoard(): void
     {
@@ -156,9 +150,6 @@ class BoardPermissionTest extends ModuleTestCase
                 'notify_author_on_comment' => false,
             ]
         );
-
-        // 파티션 보장 (LIST 파티션 — board_id별 파티션 필요)
-        $this->ensureBoardPartitions($this->board->id);
 
         // 권한 생성 (DB::table 직접 삽입 — PermissionType enum cast 우회)
         $slug       = self::BOARD_SLUG;

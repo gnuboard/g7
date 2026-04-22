@@ -111,6 +111,18 @@ interface PostRepositoryInterface
     public function incrementViewCount(string $slug, int $id): int;
 
     /**
+     * 해당 게시판의 게시글이 공지글인지 여부만 경량 조회합니다.
+     *
+     * 존재하지 않으면 null을 반환합니다. 스코프 체크를 수행하지 않으므로
+     * 목록과 동일한 범위의 메타 판별(예: navigation)에서 사용합니다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return bool|null 공지 여부 또는 미존재 시 null
+     */
+    public function isNotice(int $id, int $boardId): ?bool;
+
+    /**
      * 신고 처리를 위한 게시글 상태를 일괄 업데이트합니다.
      *
      * @param  string  $slug  게시판 슬러그

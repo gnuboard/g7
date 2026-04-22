@@ -509,6 +509,22 @@ class PostService
     }
 
     /**
+     * 게시글의 공지 여부를 경량 조회합니다.
+     *
+     * 권한/스코프 체크를 수행하지 않으므로 이전/다음 네비게이션처럼
+     * 목록과 동일한 범위의 메타 판별용으로만 사용해야 합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return bool|null 공지 여부 또는 미존재 시 null
+     */
+    public function isPostNotice(string $slug, int $id, int $boardId): ?bool
+    {
+        return $this->postRepository->isNotice($id, $boardId);
+    }
+
+    /**
      * 이전/다음 게시글을 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그

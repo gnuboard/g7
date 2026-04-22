@@ -290,7 +290,7 @@ class BoardService
      * @param  array  $data  게시판 생성 데이터
      * @return Board 생성된 게시판
      *
-     * @throws \Exception 파티션/역할/권한 생성 실패 시 롤백
+     * @throws \Exception 역할/권한 생성 실패 시 롤백
      */
     public function createBoard(array $data): Board
     {
@@ -320,23 +320,6 @@ class BoardService
         // 게시판 생성
         $board = $this->boardRepository->create($data);
 
-        // 파티션 추가 (MySQL/MariaDB 전용 DDL - board_id 기준 LIST 파티션)
-        try {
-            $this->boardRepository->addBoardPartitions($board->id);
-            HookManager::doAction('sirsoft-board.partition.after_create', $board);
-        } catch (\Exception $e) {
-            Log::error('Board partition creation failed', [
-                'board_id' => $board->id,
-                'slug' => $board->slug,
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-            ]);
-
-            // 파티션 추가 실패 시 게시판 삭제 (롤백)
-            $this->boardRepository->delete($board->id);
-            throw $e;
-        }
-
         // 게시판별 관리자/스텝 역할 생성
         try {
             $this->createBoardRoles($board);
@@ -349,8 +332,7 @@ class BoardService
                 'user_id' => Auth::id(),
             ]);
 
-            // 역할 생성 실패 시 파티션 및 게시판 삭제 (롤백)
-            $this->boardRepository->dropBoardPartitions($board->id);
+            // 역할 생성 실패 시 게시판 삭제 (롤백)
             $this->boardRepository->delete($board->id);
             throw $e;
         }
@@ -370,9 +352,8 @@ class BoardService
                 'user_id' => Auth::id(),
             ]);
 
-            // 권한 생성 실패 시 역할, 파티션 및 게시판 삭제 (롤백)
+            // 권한 생성 실패 시 역할 및 게시판 삭제 (롤백)
             $this->deleteBoardRoles($board);
-            $this->boardRepository->dropBoardPartitions($board->id);
             $this->boardRepository->delete($board->id);
             throw $e;
         }
@@ -521,19 +502,6 @@ class BoardService
             // 6. 게시판 영구 삭제
             $board->forceDelete();
         });
-
-        // 파티션 DROP (DDL은 트랜잭션 롤백 불가 → 트랜잭션 외부 처리, MySQL/MariaDB 전용)
-        try {
-            $this->boardRepository->dropBoardPartitions($board->id);
-            HookManager::doAction('sirsoft-board.partition.after_delete', $board->slug);
-        } catch (\Exception $e) {
-            Log::error('게시판 파티션 삭제 실패 (계속 진행)', [
-                'board_id' => $board->id,
-                'slug' => $board->slug,
-                'error' => $e->getMessage(),
-            ]);
-            // 파티션이 존재하지 않을 수 있으므로 예외 발생 시에도 계속 진행
-        }
 
         Log::info('Board deleted', [
             'board_id' => $board->id,
@@ -1103,6 +1071,12 @@ class BoardService
         if (empty($permissions)) {
             $basicDefaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
             $configDefaults = $basicDefaults['default_board_permissions'] ?? [];
+
+            // 모듈 설정이 없으면 config 파일의 권한 정의 키를 기반으로 fallback
+            if (empty($configDefaults)) {
+                $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);
+                $configDefaults = array_fill_keys(array_keys($permissionDefinitions), []);
+            }
 
             foreach ($configDefaults as $key => $roles) {
                 $defaultRoles = is_array($roles) ? $roles : [];

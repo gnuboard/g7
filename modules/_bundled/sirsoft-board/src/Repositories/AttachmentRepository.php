@@ -199,7 +199,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     /**
      * 임시 업로드의 최대 order 조회
      *
-     * board_id=0인 임시 파티션에서 조회합니다.
+     * 임시 업로드 레코드는 board_id=0으로 저장됩니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string|null  $tempKey  임시 업로드 키
@@ -212,7 +212,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
             return 0;
         }
 
-        // 임시 업로드는 board_id=0(더미 파티션)에 저장
+        // 임시 업로드 레코드: board_id=0
         $maxOrder = Attachment::query()
             ->where('board_id', 0)
             ->whereNull('post_id')
@@ -226,7 +226,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     /**
      * 임시 업로드 키로 첨부파일 조회
      *
-     * board_id=0인 임시 파티션에서 조회합니다.
+     * 임시 업로드 레코드는 board_id=0으로 저장됩니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키
@@ -235,7 +235,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      */
     public function getByTempKey(string $slug, string $tempKey, ?string $collection = null): Collection
     {
-        // 임시 업로드는 board_id=0(더미 파티션)에 저장
+        // 임시 업로드 레코드: board_id=0
         $query = Attachment::query()
             ->where('board_id', 0)
             ->whereNull('post_id')
@@ -252,7 +252,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     /**
      * 임시 첨부파일을 게시글에 연결
      *
-     * board_id=0(더미 파티션)의 임시 파일을 실제 board_id로 이동합니다.
+     * 임시 레코드(board_id=0)를 실제 board_id로 이동합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키

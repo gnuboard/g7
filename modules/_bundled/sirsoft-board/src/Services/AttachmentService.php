@@ -93,7 +93,7 @@ class AttachmentService
             }
         }
 
-        // board_id 설정: postId가 있으면 실제 board_id, 없으면 0(임시 업로드 → p_default 파티션)
+        // board_id 설정: postId가 있으면 실제 board_id, 없으면 0(임시 업로드)
         $boardId = 0;
         if ($postId) {
             $board = $this->boardRepository->findBySlug($slug);
@@ -142,7 +142,20 @@ class AttachmentService
      */
     public function linkTempAttachments(string $slug, string $tempKey, int $postId): int
     {
-        return $this->repository->linkTempAttachments($slug, $tempKey, $postId);
+        // 연결 대상 후보를 먼저 조회하여 링크 후 재조회 → 훅 발화를 위한 식별자 확보
+        $tempAttachments = $this->repository->getByTempKey($slug, $tempKey);
+
+        $linkedCount = $this->repository->linkTempAttachments($slug, $tempKey, $postId);
+
+        // 각 첨부에 대해 after_link 훅 발화 → 카운트 리스너가 post_id 기준으로 동기화 가능
+        foreach ($tempAttachments as $tempAttachment) {
+            $linked = $this->repository->getById($slug, $tempAttachment->id);
+            if ($linked && $linked->post_id === $postId) {
+                HookManager::doAction('sirsoft-board.attachment.after_link', $linked);
+            }
+        }
+
+        return $linkedCount;
     }
 
     /**
@@ -182,7 +195,7 @@ class AttachmentService
                 $this->storage->delete('attachments', $attachment->path);
             }
 
-            // DB 업데이트: board_id 파티션 이동, post_id 설정, temp_key 제거, path 변경
+            // DB 업데이트: board_id 이동, post_id 설정, temp_key 제거, path 변경
             // 임시 첨부파일(board_id=0)을 직접 업데이트 (repository->update()는 board_id=$board->id로 조회하므로 사용 불가)
             $attachment->update([
                 'board_id' => $board->id,
@@ -202,6 +215,11 @@ class AttachmentService
             'post_id' => $postId,
             'linked_count' => $linkedCount,
         ]);
+
+        // 각 첨부에 대해 after_link 훅 발화 → 카운트 리스너가 post_id 기준으로 동기화 가능
+        foreach ($tempAttachments as $attachment) {
+            HookManager::doAction('sirsoft-board.attachment.after_link', $attachment);
+        }
 
         return $linkedCount;
     }

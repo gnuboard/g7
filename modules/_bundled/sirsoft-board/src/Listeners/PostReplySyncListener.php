@@ -19,9 +19,9 @@ class PostReplySyncListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
-            'sirsoft-board.post.after_create' => ['method' => 'syncRepliesCount', 'priority' => 10],
-            'sirsoft-board.post.after_delete' => ['method' => 'syncRepliesCount', 'priority' => 10],
-            'sirsoft-board.post.after_restore' => ['method' => 'syncRepliesCount', 'priority' => 10],
+            'sirsoft-board.post.after_create' => ['method' => 'syncRepliesCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.post.after_delete' => ['method' => 'syncRepliesCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.post.after_restore' => ['method' => 'syncRepliesCount', 'priority' => 10, 'sync' => true],
         ];
     }
 

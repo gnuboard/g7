@@ -245,6 +245,8 @@ class CommentController extends PublicBaseController
                     'expires_at' => now()->addHours(1)->toIso8601String(), // 1시간 유효
                 ]
             );
+        } catch (ModelNotFoundException) {
+            return $this->error('sirsoft-board::messages.comment.not_found', 404);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.verify_password_failed', 500);
         }

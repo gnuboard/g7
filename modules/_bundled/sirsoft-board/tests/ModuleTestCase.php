@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Tests;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Tests\TestCase;
@@ -228,33 +227,5 @@ abstract class ModuleTestCase extends TestCase
         $user->roles()->attach($userRole->id);
 
         return $user;
-    }
-
-    /**
-     * 게시판 ID에 대한 파티션이 존재하도록 보장합니다.
-     *
-     * board_posts/board_comments/board_attachments는 LIST 파티션 테이블이므로
-     * 게시판 ID에 해당하는 파티션이 없으면 INSERT 시 오류가 발생합니다.
-     * 파티션이 이미 존재하면 무시합니다.
-     *
-     * @param  int  $boardId  파티션을 추가할 게시판 ID
-     */
-    protected function ensureBoardPartitions(int $boardId): void
-    {
-        $prefix = DB::getTablePrefix();
-        $tables = ['board_posts', 'board_comments', 'board_attachments'];
-        foreach ($tables as $table) {
-            try {
-                DB::statement(
-                    "ALTER TABLE {$prefix}{$table} ADD PARTITION (PARTITION p{$boardId} VALUES IN ({$boardId}))"
-                );
-            } catch (\Exception $e) {
-                // 파티션 이미 존재하거나, 파티셔닝되지 않은 테이블(파티션 제거 후 환경)인 경우 무시
-                if (! str_contains($e->getMessage(), 'Duplicate partition name')
-                    && ! str_contains($e->getMessage(), 'not partitioned')) {
-                    throw $e;
-                }
-            }
-        }
     }
 }

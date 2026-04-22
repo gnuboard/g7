@@ -303,6 +303,26 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * 해당 게시판의 게시글이 공지글인지 경량 조회합니다.
+     *
+     * 존재하지 않으면 null을 반환합니다. trashed(`deleted_at`) 여부는 고려하지 않으며
+     * 스코프/권한 체크를 수행하지 않습니다.
+     *
+     * @param  int  $id  게시글 ID
+     * @param  int  $boardId  게시판 ID
+     * @return bool|null 공지 여부 또는 미존재 시 null
+     */
+    public function isNotice(int $id, int $boardId): ?bool
+    {
+        $value = Post::withTrashed()
+            ->where('id', $id)
+            ->where('board_id', $boardId)
+            ->value('is_notice');
+
+        return $value === null ? null : (bool) $value;
+    }
+
+    /**
      * 신고 처리를 위한 게시글 상태를 일괄 업데이트합니다.
      *
      * @param  string  $slug  게시판 슬러그

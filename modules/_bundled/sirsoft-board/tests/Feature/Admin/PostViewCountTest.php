@@ -34,17 +34,15 @@ class PostViewCountTest extends ModuleTestCase
     private int $postId;
 
     /**
-     * DatabaseTransactions를 비활성화합니다.
+     * DatabaseTransactions 비활성화 유지 (수동 정리 경로 보존).
      *
-     * DDL (ALTER TABLE ADD PARTITION)이 MySQL 암묵적 커밋을 유발하여
-     * DatabaseTransactions와 충돌합니다. 수동 정리 방식을 사용합니다.
      * - createTestPost(): 테스트 전 기존 게시글 DELETE
      * - createTestBoard(): Board/Permission/Role은 firstOrCreate로 중복 방지
      * - createTestUser(): faker로 매번 새 사용자 생성 (이메일 중복 없음)
      */
     public function beginDatabaseTransaction(): void
     {
-        // DatabaseTransactions 비활성화 (DDL 호환성)
+        // 수동 정리 모드
     }
 
     protected function setUp(): void
@@ -75,10 +73,8 @@ class PostViewCountTest extends ModuleTestCase
     /**
      * 테스트 게시판 생성 및 권한 설정
      *
-     * Board::create() → Board::created 이벤트 → ALTER TABLE ADD PARTITION (DDL)
-     * → MySQL 암묵적 커밋 → DatabaseTransactions 롤백 불가
-     * 따라서 firstOrCreate로 게시판이 이미 존재하면 재사용하고,
-     * 권한/역할도 firstOrCreate로 중복 방지합니다.
+     * DatabaseTransactions 비활성화 상태에서 firstOrCreate로 중복 방지하며
+     * 게시판/권한/역할을 재사용합니다.
      */
     private function createTestBoard(): void
     {
@@ -101,9 +97,6 @@ class PostViewCountTest extends ModuleTestCase
             ]
         );
 
-        // Board::created 이벤트가 발생하지 않은 경우(이미 존재하는 게시판)에도
-        // 파티션이 존재하도록 보장합니다.
-        $this->ensureBoardPartitions($this->board->id);
 
         // 권한 생성: DB::table 직접 삽입으로 Eloquent enum cast 문제 완전 우회
         // Permission Eloquent 모델은 type(PermissionType enum) cast 시

@@ -41,8 +41,7 @@ class Post extends Model implements FulltextSearchable
     /**
      * 기본키
      *
-     * DB 복합 PK (id, board_id) — MySQL 파티션 제약으로 파티션 키 포함 필수.
-     * id는 AUTO_INCREMENT로 전역 유일하므로 Eloquent는 단일 PK로 동작.
+     * 단일 PK(id). id는 AUTO_INCREMENT로 전역 유일.
      */
     protected $primaryKey = 'id';
 
@@ -197,8 +196,8 @@ class Post extends Model implements FulltextSearchable
     /**
      * 외부 검색엔진(Meilisearch 등) 사용 시에만 검색 인덱스에 포함합니다.
      *
-     * board_posts는 파티션 테이블로 MySQL FULLTEXT 불가.
-     * 외부 검색엔진 플러그인 설치 시 자동 활용됩니다.
+     * MySQL FULLTEXT는 board_posts에 이미 적용되어 있으며, 외부 검색엔진 플러그인
+     * 설치 시 자동 활용됩니다.
      *
      * @return bool
      */

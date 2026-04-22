@@ -50,8 +50,7 @@ class Attachment extends Model
     /**
      * 기본키
      *
-     * DB 복합 PK (id, board_id) — MySQL 파티션 제약으로 파티션 키 포함 필수.
-     * id는 AUTO_INCREMENT로 전역 유일하므로 Eloquent는 단일 PK로 동작.
+     * 단일 PK(id). id는 AUTO_INCREMENT로 전역 유일.
      */
     protected $primaryKey = 'id';
 
