@@ -735,6 +735,10 @@ export class TemplateApp {
         (window as any).__g7LastSetLocalSnapshot = undefined;
         (window as any).__g7SetLocalOverrideKeys = undefined;
         (window as any).__g7SequenceLocalSync = undefined;
+        // [engine-v1.43.0+] 자동바인딩 경로 레지스트리 — 이전 페이지 컴포넌트의 언마운트가 라우트 전환과
+        // 경쟁할 수 있으므로 강제 재초기화. undefined 대신 빈 Map을 써서 경쟁 상태의 이전 페이지 cleanup이
+        // 이후에 registry.delete() 시도할 때 참조 오류 방지.
+        (window as any).__g7AutoBindingPaths = new Map<string, number>();
 
         try {
             logger.log('Route changed:', route, 'requestId:', routeChangeId);

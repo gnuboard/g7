@@ -237,4 +237,134 @@ class FilePermissionHelperTest extends TestCase
         // 퍼미션 복원 시도 확인 (Windows에서는 값이 같을 수 있음)
         $this->assertEquals($originalPerms, fileperms($destFile));
     }
+
+    // ========================================================================
+    // syncGroupWritability — sudo 업데이트 시 발생한 그룹 쓰기 권한 비대칭 정상화
+    // (코어 7.0.0-beta.3 도입)
+    //
+    // 배경: sudo root 로 실행된 코어 업데이트가 storage/framework/cache 하위에
+    // umask 022 로 신규 디렉토리(0755 drwxr-xr-x) 를 생성한 뒤 chownRecursive 가
+    // 소유자만 jjh:www-data 로 복원하면, www-data 그룹에 쓰기 권한이 없어
+    // php-fpm 이 cache 파일 생성 실패 (Permission denied).
+    //
+    // 정책: 루트가 g+w 면 하위 항목 중 g-w 인 디렉토리·파일을 g+w 로 승격.
+    // 다른 비트 무변경. 루트가 g-w 면 no-op (운영자 정책 보존).
+    //
+    // 검증 대상은 chmod / fileperms 가 의미를 갖는 POSIX 환경 전용. Windows
+    // 로컬은 자동 스킵하며, 실제 Linux CI / 운영 서버에서 의미 있는 검증 수행.
+    // ========================================================================
+
+    /**
+     * Linux/macOS 환경 감지. Windows / chmod 미지원 환경은 스킵.
+     */
+    private function assertPosixOrSkip(): void
+    {
+        if (DIRECTORY_SEPARATOR !== '/' || ! function_exists('posix_getuid')) {
+            $this->markTestSkipped('chmod 검증은 POSIX 환경 전용 (Windows 로컬 자동 스킵)');
+        }
+    }
+
+    /**
+     * 루트 0775 + 자식·손자 0755 + 파일 0644 → 호출 후 자식·손자·파일 모두 g+w 승격.
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_recovers_child_dirs_and_files(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0775);
+
+        $child = $root.DIRECTORY_SEPARATOR.'cache_hash_2c';
+        mkdir($child, 0755);
+
+        $grandchild = $child.DIRECTORY_SEPARATOR.'ab';
+        mkdir($grandchild, 0755);
+
+        $file = $grandchild.DIRECTORY_SEPARATOR.'cachekey';
+        file_put_contents($file, 'data');
+        chmod($file, 0644);
+
+        $changed = FilePermissionHelper::syncGroupWritability($root);
+
+        // 루트 정책 (0775) 그대로 + 하위 모두 g+w 승격
+        $this->assertSame(0775, fileperms($root) & 0777, '루트는 변경되지 않음');
+        $this->assertSame(0775, fileperms($child) & 0777, '자식 디렉토리 g+w 승격');
+        $this->assertSame(0775, fileperms($grandchild) & 0777, '손자 디렉토리 g+w 승격');
+        $this->assertSame(0664, fileperms($file) & 0777, '파일 g+w 승격 (0644 → 0664)');
+        $this->assertSame(3, $changed, 'changed 카운트 = 자식 + 손자 + 파일');
+    }
+
+    /**
+     * 루트가 g-w (0755) 인 경우 — no-op. 운영자 정책 보존.
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_respects_root_policy_without_group_write(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0755);
+
+        $child = $root.DIRECTORY_SEPARATOR.'sub';
+        mkdir($child, 0755);
+
+        $changed = FilePermissionHelper::syncGroupWritability($root);
+
+        $this->assertSame(0755, fileperms($root) & 0777);
+        $this->assertSame(0755, fileperms($child) & 0777, '루트가 g-w 면 자식 변경 없음');
+        $this->assertSame(0, $changed);
+    }
+
+    /**
+     * 이미 정상 (자식·손자 모두 g+w) → no-op (멱등).
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_is_idempotent(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0775);
+
+        $child = $root.DIRECTORY_SEPARATOR.'ok';
+        mkdir($child, 0775);
+
+        $file = $root.DIRECTORY_SEPARATOR.'fine.txt';
+        file_put_contents($file, 'x');
+        chmod($file, 0664);
+
+        $changed = FilePermissionHelper::syncGroupWritability($root);
+
+        $this->assertSame(0775, fileperms($child) & 0777);
+        $this->assertSame(0664, fileperms($file) & 0777);
+        $this->assertSame(0, $changed, '이미 정상 → changed=0');
+    }
+
+    /**
+     * 다른 비트(other, owner, sticky 등) 무변경 — g+w 만 OR.
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_only_adds_group_write_bit(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0775);
+
+        // 0700 = owner rwx만, group/other 무권한. 그룹에 w만 추가되어 0720이 되어야 함
+        $file = $root.DIRECTORY_SEPARATOR.'restricted.bin';
+        file_put_contents($file, '');
+        chmod($file, 0700);
+
+        $changed = FilePermissionHelper::syncGroupWritability($root);
+
+        // 0700 → 0720 (g+w 만 OR, owner/other 비트 무변경)
+        $this->assertSame(0720, fileperms($file) & 0777, 'g+w 만 추가, 다른 비트 무변경');
+        $this->assertSame(1, $changed);
+    }
 }

@@ -238,7 +238,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.0.0-beta.2 g7
+# (필요 시) mv g7-7.0.0-beta.3 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip

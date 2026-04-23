@@ -1206,6 +1206,105 @@ public function seoVariables(): array
 
 ---
 
+## 폼 상태 정합성 — 이중 저장소 전제와 자동 동기화 (engine-v1.43.0+)
+
+플러그인이 폼(Form) 내부에서 `G7Core.state.setLocal({render: false})` 패턴을 사용하는 경우, 엔진의 **이중 저장소 구조**를 이해하고 있어야 한다. 이 구조는 "단일화 실패 이력"의 결과이며 엔진 설계 전제이다.
+
+### 이중 저장소 구조 개요
+
+엔진은 폼 데이터를 두 저장소에 분리 관리한다:
+
+| 저장소 | 실체 | 쓰는 곳 | 읽는 곳 |
+| ------ | ---- | ------- | ------- |
+| **A** | React `localDynamicState` (useState) | Form 자동바인딩 (Input/Textarea onChange) | DOM value, 부분 리렌더 |
+| **B** | `globalState._local` (TemplateApp 싱글톤) | `G7Core.state.setLocal/getLocal` | apiCall body 바인딩, 플러그인 동기화 |
+
+두 저장소는 engine-v1.43.0부터 엔진이 자동으로 동기화한다. 일반 플러그인은 이 구조를 의식할 필요가 없다.
+
+### 왜 저장소를 하나로 통합하지 않는가
+
+B로 단일화하면 매 keystroke마다 TemplateApp 전체 리렌더가 발생해 대형 폼에서 타이핑 지연이 생긴다. 이를 완화할 구독 기반 선택적 리렌더(`StateSubscriptionManager`)는 2026-01에 필터 체크박스 253~295ms 지연으로 롤백된 실패 경로다. 이중 저장소 전제는 엔진 설계 결과이지 개선 대상이 아니다.
+
+### 엔진 자동 동기화 메커니즘
+
+1. **A→B 방향**: 자동바인딩의 `performStateUpdate`가 A에 쓸 때 B에도 `setLocal({render: false})`로 동기 기록
+2. **B→A 방향**: 엔진이 자동바인딩 활성 경로를 `__g7AutoBindingPaths: Map<string, number>`에 추적. 플러그인이 `setLocal({render: false})`로 그 경로를 건드리면 엔진이 **자동으로 `render: true`로 승격**하여 A 동기화 유도
+3. **예외**: `selfManaged: true`를 명시한 호출은 자동 승격에서 제외 (CKEditor5 등 자체 DOM 관리 플러그인용)
+
+### `G7Core.state.setLocal` 옵션 레퍼런스
+
+```typescript
+G7Core.state.setLocal(updates, options?: {
+  scope?: 'current' | 'parent' | 'root';    // 스코프 지정
+  merge?: 'replace' | 'shallow' | 'deep';   // 병합 방식 (기본 'deep')
+  debounce?: number;                         // 디바운스 ms
+  debounceKey?: string;                      // 디바운스 키
+  render?: boolean;                          // React 리렌더 여부 (기본 true)
+  selfManaged?: boolean;                     // 자동 승격 opt-out (기본 undefined/false)
+});
+```
+
+### `selfManaged: true` 옵션 사용 규칙 (중요)
+
+**역할**: 엔진의 자동 리렌더 승격 보호를 끄는 opt-out 스위치. "이 플러그인은 React 없이 자기가 DOM을 직접 관리하니 엔진은 자동 승격 오지랖을 끄고 원래 `render: false`를 유지해 달라"는 의도적 선언.
+
+**기본값**: `undefined` (사실상 `false`). **옵션을 생략하면 엔진이 자동 승격 보호를 적용**한다.
+
+**언제 `true`로 설정하는가**:
+
+- 플러그인이 React 컴포넌트가 아니라 JavaScript로 직접 DOM 요소를 조작하는 독립 위젯을 쓸 때 (CKEditor5, Monaco Editor 등)
+- 매 keystroke마다 전체 트리 리렌더가 성능상 허용 안 되는 경우
+- 플러그인이 자체 `setData()`/`setValue()` 방식으로 UI를 직접 갱신하고 React 재렌더에 의존하지 않는 구조
+
+**언제 생략하는가 (기본)**:
+
+- 일반적인 모든 플러그인. 엔진이 자동으로 정합성 확보
+- **초보자는 `selfManaged`를 몰라도 되고 모르는 편이 안전** (safe-by-default)
+
+### 플러그인 개발 체크리스트
+
+새 플러그인이 폼 내부에서 `setLocal`을 쓰는 경우 다음을 확인:
+
+- [ ] `setLocal({render: false})`를 호출하는가?
+- [ ] 해당 경로의 React 컴포넌트(자동바인딩 대상 Input/Textarea 등)가 폼 안에 존재하는가?
+- [ ] 플러그인이 React 밖에서 자체 DOM을 직접 관리하는가?
+- [ ] 위 세 질문 모두 YES → `selfManaged: true` 명시 (엔진 승격 예외, 성능 보존)
+- [ ] 위 중 하나라도 NO/모르겠음 → **옵션 생략** (엔진이 자동 승격으로 정합성 확보 — 안전한 기본값)
+- [ ] `merge: 'replace'` 사용 시 자동바인딩 값 유실 가능성 있음 → 필요 시 `getLocal()` 후 병합하여 `merge: 'deep'` 사용
+- [ ] `requires.g7_version`을 engine-v1.43.0 이상 내포 코어 버전으로 상향
+
+### 예시
+
+**일반 플러그인 (대다수)**:
+
+```typescript
+G7Core.state.setLocal({ "form.category": "news" });
+// render 옵션 생략 → 엔진이 A↔B 동기화 자동 처리
+```
+
+**WYSIWYG 에디터 등 자체 DOM 관리 플러그인**:
+
+```typescript
+G7Core.state.setLocal(
+  { "form.content": editorInstance.getData() },
+  {
+    debounce: 300,
+    debounceKey: `editor-sync-${name}`,
+    render: false,
+    selfManaged: true,  // ← 자체 DOM 관리 명시. 자동 승격 제외
+  }
+);
+```
+
+### 절대 금지 사항
+
+- `parentFormContext.setState`를 커스텀 핸들러에서 직접 호출하는 경로 우회 금지 — 엔진이 자동바인딩으로 호출하는 내부 API
+- 자동 승격 무력화를 위해 `selfManaged: true`를 남용 금지 — 의도적으로 자체 DOM 관리하는 경우에만 사용
+
+> 상세 배경: [`docs/frontend/state-management.md`](../frontend/state-management.md) "이중 저장소 구조" 섹션 참조
+
+---
+
 ## 관련 문서
 
 - [index.md](index.md) - 확장 시스템 전체 개요

@@ -1315,6 +1315,41 @@ function convertDotNotationToObject(updates: Record<string, any>): Record<string
 }
 
 /**
+ * 중첩 객체에서 리프(leaf) 경로 전부를 dot notation 문자열 배열로 추출합니다.
+ *
+ * engine-v1.43.0+ 자동바인딩 경로 자동 승격 감지에 사용.
+ * `__g7AutoBindingPaths` 레지스트리에 fullPath 형식(`form.title`)으로 키가 등록되므로,
+ * setLocal의 `converted` 중첩 객체에서도 동일한 형식의 리프 경로를 추출해 교집합을 검사한다.
+ *
+ * 배열은 리프로 취급 (자동바인딩은 배열 자체 값에 매핑되므로).
+ *
+ * @example
+ * flattenLeafPaths({ form: { title: "X", content: "Y" } })
+ * // Returns: ["form.title", "form.content"]
+ *
+ * flattenLeafPaths({ hasChanges: true, form: { tags: ["a", "b"] } })
+ * // Returns: ["hasChanges", "form.tags"]
+ *
+ * @param obj 중첩 객체
+ * @param prefix 재귀용 prefix (내부)
+ * @returns 리프 경로 문자열 배열
+ */
+function flattenLeafPaths(obj: Record<string, any>, prefix = ''): string[] {
+  const paths: string[] = [];
+  if (!obj || typeof obj !== 'object') return paths;
+  for (const key of Object.keys(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    const value = obj[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      paths.push(...flattenLeafPaths(value, fullKey));
+    } else {
+      paths.push(fullKey);
+    }
+  }
+  return paths;
+}
+
+/**
  * 객체의 모든 키가 숫자(배열 인덱스)인지 확인합니다.
  *
  * @param obj 확인할 객체
@@ -1524,8 +1559,34 @@ function initStateAPI(G7Core: any): void {
      * }
      * ```
      */
-    setLocal: (updates: Record<string, any>, options?: { scope?: 'current' | 'parent' | 'root'; merge?: 'replace' | 'shallow' | 'deep'; debounce?: number; debounceKey?: string; render?: boolean }) => {
+    setLocal: (updates: Record<string, any>, options?: { scope?: 'current' | 'parent' | 'root'; merge?: 'replace' | 'shallow' | 'deep'; debounce?: number; debounceKey?: string; render?: boolean; selfManaged?: boolean }) => {
       const templateApp = (window as any).__templateApp;
+
+      // [engine-v1.43.0+] 이중 저장소 동기화 보호 — 자동바인딩 경로 자동 승격
+      //
+      // 배경: 엔진은 폼 데이터를 React localDynamicState(저장소 A)와 globalState._local(저장소 B)에
+      // 이중 저장한다. render:false 호출이 저장소 A에 자동바인딩된 경로를 건드리면 A가 갱신되지 않아
+      // Input이 stale 값을 표시한다. DynamicRenderer의 propsWithAutoBinding 주변 useEffect가 활성
+      // 자동바인딩 경로를 __g7AutoBindingPaths: Map<string, number>에 ref count로 등록한다.
+      //
+      // 규칙: setLocal({render:false})가 레지스트리에 등록된 경로를 업데이트하면 render:true로
+      // 강제 승격하여 A↔B 정합성 보장. 예외는 selfManaged:true를 명시한 호출 — CKEditor5 등
+      // 자체 DOM 관리 플러그인이 의도적으로 render:false를 유지하려 할 때 사용. 누락 시 엔진이
+      // 자동 승격하여 안전 확보 (safe-by-default).
+      //
+      // 자세한 설계 배경: DynamicRenderer.tsx의 performStateUpdate 상단 주석 참조.
+      if (options?.render === false && !options?.selfManaged) {
+        const registry = (window as any).__g7AutoBindingPaths as Map<string, number> | undefined;
+        if (registry && registry.size > 0) {
+          const leafPaths = flattenLeafPaths(convertDotNotationToObject(updates));
+          if (leafPaths.some((path) => registry.has(path))) {
+            logger.log(
+              '[setLocal] render:false + 자동바인딩 경로 겹침 감지 → render:true 자동 승격 (engine-v1.43.0)'
+            );
+            options = { ...options, render: true };
+          }
+        }
+      }
 
       // engine-v1.41.0: debounce 옵션 처리
       // ActionDispatcher의 debouncedCall을 사용하여 기존 타이머 인프라 활용

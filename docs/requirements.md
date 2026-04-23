@@ -87,6 +87,55 @@
 | `max_execution_time` | 60 | 120+ | 대량 데이터 처리 시 |
 | `max_input_vars` | 1000 | 5000+ | 복잡한 폼 데이터 처리 |
 
+### 1.6 파일 권한 및 umask 운영 방식
+
+G7 은 배포 환경에 따라 세 가지 대표 운영 방식을 지원한다. 본 섹션은 각 방식에서 `storage/` 등 런타임 쓰기 대상 디렉토리의 권한 설정과 umask 권장값을 정리한다.
+
+#### 운영 방식 분류
+
+| 운영 방식 | 소유자 : 그룹 | 권장 퍼미션 | 전형적 환경 |
+|-----------|--------------|-------------|-------------|
+| **A. 그룹 공유** | `사용자 : www-data` (서로 다른 UID) | `drwxrwxr-x` (0775) + g+w | SSH 로그인 사용자와 php-fpm 프로세스가 UID 가 다르고 `www-data` 같은 공용 그룹으로 파일 쓰기 권한을 공유하는 일반적인 Ubuntu/Debian 구성 |
+| **B. 단일 소유자** | `사용자 : 사용자` 또는 `www-data : www-data` (동일 UID) | `drwxr-xr-x` (0755) | suexec / mod_userdir / 단순 Apache 환경에서 파일 소유자·웹서버 프로세스가 같은 UID |
+| **C. suexec / cPanel** | 계정별 UID 격리 | `drwxr-xr-x` (0755) | 공유 호스팅, 계정마다 독립 UID/GID |
+
+`storage/` 디렉토리의 실제 퍼미션을 확인:
+
+```bash
+stat -c '%a %U:%G' storage
+```
+
+#### 권장 설정
+
+**방식 A (그룹 공유)**:
+
+```bash
+# 인스톨러 완료 후 운영자가 1회 실행
+sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates
+sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
+```
+
+추가로 php-fpm / systemd 의 umask 를 `002` 로 설정하면 cron·composer·수동 SSH artisan 등 외부 프로세스도 동일 권한으로 파일을 만든다.
+
+| 설정 지점 | 값 | 위치 예시 |
+|-----------|----|-----------|
+| php-fpm pool | `umask = 002` | `/etc/php/8.x/fpm/pool.d/www.conf` |
+| systemd unit | `UMask=0002` | `/lib/systemd/system/php8.x-fpm.service` `[Service]` 섹션 |
+
+시스템 레벨 설정이 없어도 코어 부팅 시 `storage/` 의 g+w 여부를 감지하여 프로세스 umask 를 자동으로 `0002` 로 동조하므로 Laravel 부팅 경로를 거치는 파일 생성은 정상 동작한다 (`public/index.php`, `artisan`, queue worker, scheduler 등). 시스템 레벨 설정은 **부팅 경로를 거치지 않는 외부 프로세스 대응용 권장 사항**.
+
+**방식 B/C (단일 소유자)**:
+
+```bash
+sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates
+```
+
+그룹 쓰기 비트가 없으므로 코어 자동 umask 동조는 발동하지 않는다 (운영자 의도 존중). 추가 설정 불필요.
+
+#### 인스톨러가 안내하는 기본 권한
+
+인스톨러의 기본 안내 명령은 보수적으로 `chmod -R 755` 를 제시한다. 방식 A 로 운영하려면 인스톨 완료 후 `775` 로 재조정 + 소유자/그룹을 본인 계정 + `www-data` 로 변경. 인스톨러는 `chmod` 를 직접 호출하지 않으므로 운영자가 쉘에서 1회 실행.
+
 ---
 
 ## 2. 데이터베이스

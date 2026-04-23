@@ -604,6 +604,88 @@ export class G7DevToolsCore {
     }
 
     /**
+     * 저장소 A(React localDynamicState) / B(globalState._local) 불일치 감지
+     *
+     * 이중 저장소 구조(engine-v1.43.0+)의 보조 안전망.
+     * 엔진의 자동 동기화(DynamicRenderer performStateUpdate + setLocal 자동 승격)가 기본 방어책이지만,
+     * 새로운 쓰기 경로가 추가되면서 한쪽 저장소만 갱신하는 실수를 조기 발견하기 위한 진단 도구.
+     *
+     * 저장소 A = `updateLocalState()` 로 전달된 localDynamicState
+     * 저장소 B = `G7Core.state.get()._local` = globalState._local
+     *
+     * 불일치 leaf 경로를 반환 (hasMismatch=true면 구조적 동기화가 깨진 상태).
+     *
+     * @returns 불일치 상태 + 두 저장소 스냅샷
+     */
+    getDualStorageMismatch(): {
+        hasMismatch: boolean;
+        mismatchedPaths: string[];
+        storageA: Record<string, any>;
+        storageB: Record<string, any>;
+    } {
+        const storageA = this.currentLocalState || {};
+        let storageB: Record<string, any> = {};
+        try {
+            const g7Core = (window as any).G7Core;
+            const globalState = g7Core?.state?.get?.() || {};
+            storageB = globalState._local || {};
+        } catch {
+            storageB = {};
+        }
+
+        const mismatchedPaths = this.findMismatchedLeafPaths(storageA, storageB);
+        return {
+            hasMismatch: mismatchedPaths.length > 0,
+            mismatchedPaths,
+            storageA,
+            storageB,
+        };
+    }
+
+    /**
+     * 두 객체의 리프 경로를 비교해 값이 다른 경로 목록 반환 (private helper)
+     *
+     * `getDualStorageMismatch` 전용. 배열은 리프로 취급하되 참조 비교가 아니라
+     * JSON 문자열화 비교로 값 동등성 판정 (deep equal 수준 빠른 근사).
+     *
+     * @param a 비교 대상 A
+     * @param b 비교 대상 B
+     * @param prefix 재귀 prefix
+     * @returns 불일치 경로 배열
+     */
+    private findMismatchedLeafPaths(
+        a: Record<string, any>,
+        b: Record<string, any>,
+        prefix = '',
+    ): string[] {
+        const paths: string[] = [];
+        const keys = new Set([
+            ...Object.keys(a || {}),
+            ...Object.keys(b || {}),
+        ]);
+
+        for (const key of keys) {
+            const fullKey = prefix ? `${prefix}.${key}` : key;
+            const va = a?.[key];
+            const vb = b?.[key];
+            const aIsObj = va && typeof va === 'object' && !Array.isArray(va);
+            const bIsObj = vb && typeof vb === 'object' && !Array.isArray(vb);
+
+            if (aIsObj && bIsObj) {
+                paths.push(...this.findMismatchedLeafPaths(va, vb, fullKey));
+            } else {
+                const sameA = va === undefined ? '__undefined__' : JSON.stringify(va);
+                const sameB = vb === undefined ? '__undefined__' : JSON.stringify(vb);
+                if (sameA !== sameB) {
+                    paths.push(fullKey);
+                }
+            }
+        }
+
+        return paths;
+    }
+
+    /**
      * 상태 감시 등록
      */
     watchState(path: string, callback: WatcherCallback): () => void {

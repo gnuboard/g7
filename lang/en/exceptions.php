@@ -42,6 +42,11 @@ return [
         'save_failed' => 'Failed to save settings: :category',
     ],
 
+    // Core update related exceptions
+    'core_update' => [
+        'handoff' => 'Upgrade handoff: completed up to :after_version — :reason (resume with: :resume_command)',
+    ],
+
     // Vendor bundle / installation related exceptions
     'vendor' => [
         'composer_not_available' => 'Composer cannot be executed in this environment. Use bundled mode instead.',

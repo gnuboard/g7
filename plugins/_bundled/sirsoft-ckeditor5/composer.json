@@ -2,7 +2,7 @@
     "name": "plugins/sirsoft-ckeditor5",
     "description": "CKEditor 5 WYSIWYG Editor Plugin for Gnuboard7 platform",
     "type": "library",
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0-beta.2",
     "authors": [
         {
             "name": "sirsoft",

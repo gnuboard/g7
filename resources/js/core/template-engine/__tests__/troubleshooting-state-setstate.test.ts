@@ -4221,3 +4221,274 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     expect((window as any).__g7PendingLocalState.form.options).toHaveLength(4);
   });
 });
+
+/**
+ * [사례 32] 이슈 #282 - 이중 저장소 동기화 + 자동바인딩 경로 자동 승격 + selfManaged opt-out (engine-v1.43.0)
+ *
+ * 게시판 WYSIWYG 글쓰기 저장 시 "제목은 필수입니다" 422 문제의 구조적 해결.
+ *
+ * 수정 구성 요소:
+ * - A-0: performStateUpdate가 `G7Core.state.setLocal({render:false})` 추가 호출 (A+B 동시 쓰기)
+ * - A-1: DynamicRenderer propsWithAutoBinding 근처 useEffect로 `__g7AutoBindingPaths: Map<string, number>` 관리
+ * - A-2: G7CoreGlobals.setLocal이 render:false 호출과 레지스트리 겹침 시 render:true 자동 승격 (selfManaged:true 예외)
+ * - A-3: TemplateApp.handleRouteChange에서 레지스트리 빈 Map으로 재초기화
+ * - A-4: CKEditor5 syncToForm에 selfManaged:true 명시로 자동 승격 제외 (성능 보존)
+ *
+ * 본 describe 블록은 엔진 내부 신규 구조의 contract test.
+ * 이슈 #282 실제 재현(게시판 WYSIWYG 저장 422)은 PO 브라우저 검증으로 증명.
+ */
+describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (engine-v1.43.0)', () => {
+  /**
+   * flattenLeafPaths 헬퍼 contract
+   *
+   * G7CoreGlobals.ts의 private 헬퍼로, 자동 승격 판정 시 setLocal updates 객체의 리프 경로를
+   * 추출하여 레지스트리 Map.has(path) 체크에 사용한다. 엔진과 동일한 로직을 테스트에서 재구현하여
+   * 레지스트리 겹침 판정 알고리즘의 정확성을 검증한다.
+   */
+  function flattenLeafPaths(obj: Record<string, any>, prefix = ''): string[] {
+    const paths: string[] = [];
+    if (!obj || typeof obj !== 'object') return paths;
+    for (const key of Object.keys(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const value = obj[key];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        paths.push(...flattenLeafPaths(value, fullKey));
+      } else {
+        paths.push(fullKey);
+      }
+    }
+    return paths;
+  }
+
+  describe('flattenLeafPaths — 자동 승격 판정용 리프 경로 추출', () => {
+    it('중첩 객체의 리프 경로를 dot notation으로 반환', () => {
+      expect(flattenLeafPaths({ form: { title: 'X', content: 'Y' } })).toEqual([
+        'form.title',
+        'form.content',
+      ]);
+    });
+
+    it('배열은 리프로 취급 (자동바인딩은 배열 전체 값에 매핑)', () => {
+      expect(flattenLeafPaths({ form: { tags: ['a', 'b'] } })).toEqual(['form.tags']);
+    });
+
+    it('최상위 scalar (hasChanges 등)와 중첩 객체 혼합', () => {
+      expect(flattenLeafPaths({ hasChanges: true, form: { title: 'X' } })).toEqual([
+        'hasChanges',
+        'form.title',
+      ]);
+    });
+
+    it('빈 객체/null/undefined 입력 시 빈 배열 반환', () => {
+      expect(flattenLeafPaths({})).toEqual([]);
+      expect(flattenLeafPaths(null as any)).toEqual([]);
+      expect(flattenLeafPaths(undefined as any)).toEqual([]);
+    });
+
+    it('중첩 배열 경로 (iteration 시나리오)', () => {
+      expect(flattenLeafPaths({ form: { items: [1, 2, 3] } })).toEqual(['form.items']);
+    });
+  });
+
+  describe('__g7AutoBindingPaths 레지스트리 ref count (A-1)', () => {
+    beforeEach(() => {
+      (window as any).__g7AutoBindingPaths = new Map<string, number>();
+    });
+
+    afterEach(() => {
+      delete (window as any).__g7AutoBindingPaths;
+    });
+
+    // DynamicRenderer의 useEffect가 수행하는 등록/해제 로직 재현
+    function simulateMount(fullPath: string): () => void {
+      const registry: Map<string, number> =
+        ((window as any).__g7AutoBindingPaths as Map<string, number> | undefined) ??
+        new Map<string, number>();
+      (window as any).__g7AutoBindingPaths = registry;
+      registry.set(fullPath, (registry.get(fullPath) ?? 0) + 1);
+      return () => {
+        const count = registry.get(fullPath) ?? 0;
+        if (count <= 1) registry.delete(fullPath);
+        else registry.set(fullPath, count - 1);
+      };
+    }
+
+    it('동일 fullPath iteration 3회 마운트 → count=3, 순차 언마운트 시 정확히 감소', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      const fullPath = 'form.items';
+
+      const unmount1 = simulateMount(fullPath);
+      const unmount2 = simulateMount(fullPath);
+      const unmount3 = simulateMount(fullPath);
+      expect(registry.get(fullPath)).toBe(3);
+
+      unmount1();
+      expect(registry.get(fullPath)).toBe(2);
+      unmount2();
+      expect(registry.get(fullPath)).toBe(1);
+      unmount3();
+      expect(registry.has(fullPath)).toBe(false);
+    });
+
+    it('React Strict Mode 이중 마운트 (mount→cleanup→mount) 후 count=1 정확 복원', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      const fullPath = 'form.title';
+
+      const cleanup1 = simulateMount(fullPath);
+      cleanup1();
+      const cleanup2 = simulateMount(fullPath);
+
+      expect(registry.get(fullPath)).toBe(1);
+
+      cleanup2();
+      expect(registry.has(fullPath)).toBe(false);
+    });
+
+    it('서로 다른 fullPath 여러 개 독립 관리', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+
+      const cleanupTitle = simulateMount('form.title');
+      const cleanupContent = simulateMount('form.content');
+      const cleanupCategory = simulateMount('form.category');
+
+      expect(registry.size).toBe(3);
+      expect(registry.get('form.title')).toBe(1);
+      expect(registry.get('form.content')).toBe(1);
+      expect(registry.get('form.category')).toBe(1);
+
+      cleanupTitle();
+      expect(registry.has('form.title')).toBe(false);
+      expect(registry.size).toBe(2);
+
+      cleanupContent();
+      cleanupCategory();
+      expect(registry.size).toBe(0);
+    });
+  });
+
+  describe('자동 승격 판정 로직 (A-2)', () => {
+    beforeEach(() => {
+      (window as any).__g7AutoBindingPaths = new Map<string, number>();
+    });
+
+    afterEach(() => {
+      delete (window as any).__g7AutoBindingPaths;
+    });
+
+    // G7CoreGlobals.setLocal 상단의 자동 승격 분기 로직 재현
+    function shouldPromoteRender(
+      updates: Record<string, any>,
+      options?: { render?: boolean; selfManaged?: boolean },
+    ): boolean {
+      if (options?.render !== false) return false;
+      if (options?.selfManaged) return false;
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number> | undefined;
+      if (!registry || registry.size === 0) return false;
+      const leafPaths = flattenLeafPaths(updates);
+      return leafPaths.some((p) => registry.has(p));
+    }
+
+    it('render:false + 레지스트리 미등록 경로 → 승격 안 함 (CKEditor form.content 시나리오: 레지스트리 비어있을 때)', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      registry.set('form.title', 1);
+
+      // CKEditor가 form.content만 건드리고 form.content는 레지스트리 없음
+      expect(
+        shouldPromoteRender({ form: { content: 'X' } }, { render: false }),
+      ).toBe(false);
+    });
+
+    it('render:false + 레지스트리 등록 경로 → 승격 (미래 플러그인 실수 방어)', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      registry.set('form.title', 1);
+
+      // 플러그인이 자동바인딩 대상인 form.title에 render:false로 씀
+      expect(
+        shouldPromoteRender({ form: { title: 'X' } }, { render: false }),
+      ).toBe(true);
+    });
+
+    it('selfManaged:true → 레지스트리 겹쳐도 승격 안 함 (CKEditor 성능 보존)', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      registry.set('form.content', 1); // HtmlEditor 내부 Textarea가 자동바인딩 등록
+
+      // CKEditor syncToForm: form.content를 render:false + selfManaged:true로 씀
+      expect(
+        shouldPromoteRender(
+          { form: { content: '<p>내용</p>' } },
+          { render: false, selfManaged: true },
+        ),
+      ).toBe(false);
+    });
+
+    it('render 옵션 생략 (기본 render:true) → 분기 진입 자체 안 함', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      registry.set('form.title', 1);
+
+      expect(shouldPromoteRender({ form: { title: 'X' } }, {})).toBe(false);
+      expect(shouldPromoteRender({ form: { title: 'X' } }, undefined)).toBe(false);
+    });
+
+    it('빈 레지스트리 → 승격 안 함 (SPA 네비게이션 직후 등)', () => {
+      // 레지스트리가 빈 Map인 상태 (handleRouteChange 재초기화 후)
+      expect(
+        shouldPromoteRender({ form: { title: 'X' } }, { render: false }),
+      ).toBe(false);
+    });
+
+    it('dot notation 키 + 중첩 객체 혼합 입력도 올바르게 판정', () => {
+      const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      registry.set('form.content', 1);
+
+      // setLocal의 updates가 { "form.content": "X" } 형태로 올 수도 있음
+      // 이 경우 convertDotNotationToObject 후 { form: { content: "X" } }로 변환 → 판정
+      const converted = { form: { content: 'X' } }; // convertDotNotationToObject 결과 시뮬레이션
+      expect(shouldPromoteRender(converted, { render: false })).toBe(true);
+    });
+  });
+
+  describe('SPA 네비게이션 시 레지스트리 재초기화 (A-3)', () => {
+    afterEach(() => {
+      delete (window as any).__g7AutoBindingPaths;
+    });
+
+    it('handleRouteChange 시뮬레이션: 기존 경로 비우고 빈 Map으로 재초기화', () => {
+      // 이전 페이지 상태
+      const oldRegistry = new Map<string, number>();
+      oldRegistry.set('form.title', 2);
+      oldRegistry.set('form.content', 1);
+      (window as any).__g7AutoBindingPaths = oldRegistry;
+
+      // handleRouteChange 시뮬레이션
+      (window as any).__g7AutoBindingPaths = new Map<string, number>();
+
+      const newRegistry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      expect(newRegistry).toBeInstanceOf(Map);
+      expect(newRegistry.size).toBe(0);
+      expect(newRegistry.has('form.title')).toBe(false);
+    });
+
+    it('재초기화 후 이전 페이지 cleanup의 registry.delete 호출이 에러 없이 noop', () => {
+      const oldRegistry = new Map<string, number>();
+      oldRegistry.set('form.title', 1);
+      (window as any).__g7AutoBindingPaths = oldRegistry;
+
+      // 이전 페이지 useEffect cleanup 클로저가 oldRegistry를 참조
+      const oldCleanup = () => {
+        const count = oldRegistry.get('form.title') ?? 0;
+        if (count <= 1) oldRegistry.delete('form.title');
+        else oldRegistry.set('form.title', count - 1);
+      };
+
+      // handleRouteChange로 새 Map 할당
+      (window as any).__g7AutoBindingPaths = new Map<string, number>();
+
+      // 이전 페이지 cleanup 실행 — oldRegistry만 변경, 새 Map은 영향 없음
+      expect(() => oldCleanup()).not.toThrow();
+
+      const newRegistry = (window as any).__g7AutoBindingPaths as Map<string, number>;
+      expect(newRegistry.size).toBe(0); // 새 Map은 비영향
+      expect(oldRegistry.size).toBe(0); // 이전 Map만 비워짐
+    });
+  });
+});

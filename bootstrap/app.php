@@ -1,10 +1,28 @@
 <?php
 
+use App\Support\UmaskHelper;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Group-Shared umask Alignment
+|--------------------------------------------------------------------------
+|
+| 운영자가 `storage/` 를 그룹 쓰기(g+w) 로 설정한 경우, Laravel 이 런타임에
+| 생성하는 새 디렉토리(예: `storage/framework/cache/data/<hash>`) 도 g+w 를
+| 유지하도록 프로세스 umask 를 0002 로 조정한다. 이 동조가 없으면 기본 umask 022
+| 로 인해 `0755` (drwxr-xr-x) 로 만들어져 php-fpm(www-data) 그룹 쓰기가 실패한다.
+|
+| `storage/` 에 g-w 가 설정된 경우(일부 공유 호스팅 특수 환경) 에는 운영자
+| 의도를 존중하여 umask 를 건드리지 않는다. `umask` 함수 자체가 비활성인
+| 환경에서도 조용히 스킵한다. 상세: App\Support\UmaskHelper.
+|
+*/
+UmaskHelper::configureForGroupSharing(dirname(__DIR__).'/storage');
 
 /*
 |--------------------------------------------------------------------------

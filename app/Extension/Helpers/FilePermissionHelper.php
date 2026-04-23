@@ -313,6 +313,88 @@ class FilePermissionHelper
     }
 
     /**
+     * 루트 디렉토리가 그룹 쓰기 권한을 가질 때, 하위 디렉토리·파일에 동일 권한을 승격합니다.
+     *
+     * 배경: sudo root 로 실행된 코어 업데이트가 umask 022 환경에서 신규 디렉토리/파일을
+     * `0755/0644` 로 생성한 뒤 `chownRecursive` 로 소유자만 원본(`jjh:www-data`) 으로
+     * 복원하면, 그룹(`www-data`) 에 쓰기 권한이 없는 비대칭이 영구 잔존한다. 결과적으로
+     * php-fpm(www-data) 이 `storage/framework/cache/...` 같은 경로에 쓰기 실패.
+     *
+     * 본 메서드는 다음 정책으로 비대칭을 해소한다:
+     * - 루트가 `g+w` 면 하위 항목 중 `g-w` 인 디렉토리·파일을 `g+w` 로 승격
+     * - 루트가 `g-w` 면 no-op (운영자가 의도적으로 그룹 쓰기 차단한 정책 보존)
+     * - 다른 비트(other, owner, sticky, setgid 등) 무변경 — `g+w` 만 OR
+     * - symbolic link 는 링크 자체만 처리 (대상 미추적)
+     * - 멱등 — 이미 정상인 항목은 changed 카운트에 포함 안 함
+     * - silent fail — 권한 부족·chmod 미지원 환경에서도 예외 미발생
+     *
+     * @param  string  $root  대상 루트 (재귀 순회)
+     * @return int  실제 chmod 한 항목 수
+     */
+    public static function syncGroupWritability(string $root): int
+    {
+        if (! function_exists('chmod') || ! is_dir($root)) {
+            return 0;
+        }
+
+        $rootPerms = @fileperms($root);
+        if ($rootPerms === false) {
+            return 0;
+        }
+
+        // 루트가 g+w 가 아니면 정책 보존 (no-op)
+        if (($rootPerms & 0020) === 0) {
+            return 0;
+        }
+
+        $report = ['changed' => 0];
+        self::syncGroupWritabilityInternal($root, $report, true);
+
+        if ($report['changed'] > 0) {
+            Log::info('syncGroupWritability: 그룹 쓰기 권한 정상화', [
+                'root' => $root,
+                'changed' => $report['changed'],
+            ]);
+        }
+
+        return $report['changed'];
+    }
+
+    /**
+     * syncGroupWritability 내부 재귀.
+     *
+     * @param  string  $path  대상 경로
+     * @param  array{changed:int}  $report  집계 (참조)
+     * @param  bool  $isRoot  루트 자체는 정책 판정용으로만 사용 (chmod 안 함)
+     */
+    private static function syncGroupWritabilityInternal(string $path, array &$report, bool $isRoot = false): void
+    {
+        // symbolic link 는 대상 추적 금지
+        if (is_link($path)) {
+            return;
+        }
+
+        if (! $isRoot) {
+            $perms = @fileperms($path);
+            if ($perms !== false && ($perms & 0020) === 0) {
+                // g+w 만 추가, 다른 비트 무변경
+                if (@chmod($path, $perms | 0020)) {
+                    $report['changed']++;
+                }
+            }
+        }
+
+        if (! is_dir($path)) {
+            return;
+        }
+
+        $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
+        foreach ($items as $item) {
+            self::syncGroupWritabilityInternal($item->getPathname(), $report, false);
+        }
+    }
+
+    /**
      * chownRecursive 의 내부 재귀 구현. 실패 카운터를 참조 전달로 집계한다.
      *
      * @param  string  $path  대상 경로

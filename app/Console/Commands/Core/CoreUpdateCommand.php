@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
+use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\ModuleManager;
@@ -438,7 +439,81 @@ class CoreUpdateCommand extends Command
                 $this->newLine();
                 $this->info('일괄 업데이트로 생성된 파일의 소유권을 복원하는 중...');
                 $service->restoreOwnership($ownershipSnapshot, $onProgress);
+                // restoreOwnership 의 진행 표시($onProgress → $bar->display())가
+                // 개행 없이 끝나므로 다음 셸 프롬프트가 같은 줄에 붙는 것을 방지.
+                $this->newLine(2);
                 $log('일괄 확장 업데이트 후 소유권 재복원 완료');
+            }
+
+            return Command::SUCCESS;
+
+        } catch (UpgradeHandoffException $e) {
+            // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청한 경우.
+            //
+            // 롤백하지 않음 — 파일 교체 / migration / composer 결과까지는 이미 `toVersion` 상태로 유효.
+            // Step 11 cleanup 을 축소 실행하여 중간 상태를 확정하고, 사용자에게 스텝 전용 재실행 안내.
+            //
+            //  - updateVersionInEnv(toVersion): 디스크가 이미 toVersion 이므로 .env 도 toVersion 으로
+            //    일치시킨다. afterVersion 이 아님 — afterVersion 으로 두면 사용자가 다시 core:update
+            //    를 돌릴 때 GitHub 재다운로드부터 전체가 반복된다. toVersion 으로 고정 + 사용자에게는
+            //    execute-upgrade-steps 만 실행하도록 안내하여 재다운로드를 회피한다.
+            //  - clearAllCaches: 신규 코드·config 반영
+            //  - restoreOwnership: sudo 생성 파일 소유권 복원
+            //  - cleanupPending: _pending 정리
+            //  - 백업은 유지 (재실행 중 실패해도 복구 가능)
+            //  - maintenance 해제: 서비스 재개
+            //
+            // resumeCommand 는 예외에 명시되지 않았으면 `execute-upgrade-steps --from=<afterVersion>
+            // --to=<toVersion> --force` 로 자동 생성. step 만 단독 실행되어 재다운로드 없음.
+            $bar->finish();
+            $this->newLine(2);
+
+            $log("업그레이드 핸드오프 수신: {$e->afterVersion} 까지 완료 — {$e->reason}");
+
+            $resumeCommand = $e->resumeCommand ?? sprintf(
+                'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
+                $e->afterVersion,
+                $toVersion,
+            );
+
+            try {
+                $service->updateVersionInEnv($toVersion);
+                $service->clearAllCaches();
+                $service->restoreOwnership($ownershipSnapshot, $onProgress);
+                $log('핸드오프 cleanup 완료 (버전 toVersion 고정 + 캐시 clear + 소유권 복원)');
+
+                if (! empty($pendingPath)) {
+                    $service->cleanupPending($pendingPath);
+                }
+
+                if ($maintenanceEnabled) {
+                    $service->disableMaintenanceMode();
+                    $maintenanceEnabled = false;
+                    $log('유지보수 모드 해제');
+                }
+            } catch (\Throwable $cleanupError) {
+                $log("핸드오프 cleanup 중 오류: {$cleanupError->getMessage()}");
+                $this->warn("핸드오프 cleanup 중 오류 발생 — 수동 점검 필요: {$cleanupError->getMessage()}");
+            }
+
+            $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
+
+            $this->newLine();
+            $this->warn('업그레이드 파일 반영은 완료되었으나, 일부 업그레이드 스텝이 현재 프로세스에서 실행될 수 없어 중단되었습니다.');
+            $this->newLine();
+            $this->line("  완료 스텝 지점: {$e->afterVersion}");
+            $this->line("  파일·설정 버전: {$toVersion} (이미 반영됨)");
+            $this->line("  사유: {$e->reason}");
+            $this->newLine();
+            $this->info('나머지 스텝을 적용하려면 아래 명령을 실행하세요 (재다운로드 없이 스텝만 실행):');
+            $this->line("  {$resumeCommand}");
+            $this->newLine();
+            $this->warn('⚠ 위 명령을 실행하지 않으면 버전 표시는 최신이지만 일부 스텝이 미실행 상태로 남습니다.');
+            $this->newLine();
+
+            if ($backupPath) {
+                $this->line("백업이 유지되었습니다: {$backupPath}");
+                $this->newLine();
             }
 
             return Command::SUCCESS;
@@ -538,11 +613,17 @@ class CoreUpdateCommand extends Command
      * 일 때만 성공으로 판정한다. proc_open 미지원 환경·커맨드 미존재·비정상 종료는
      * false 반환하여 호출자가 in-process fallback 으로 전환할 수 있게 한다.
      *
+     * 핸드오프 신호: 자식이 exit=UpgradeHandoffException::EXIT_CODE 로 종료하면서
+     * stdout 에 `[HANDOFF] <json>` 라인을 남기면, 본 메서드는 UpgradeHandoffException 을
+     * 재구성하여 상위로 던진다 (CoreUpdateCommand::handle 의 catch 블록이 처리).
+     *
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  대상 버전
      * @param  bool  $force  동일 버전 강제 실행 여부
      * @param  \Closure  $log  로그 엔트리 수집 콜백
      * @return bool  spawn 성공 여부 (false 면 fallback 실행 필요)
+     *
+     * @throws UpgradeHandoffException  자식이 핸드오프 신호를 보낸 경우
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
@@ -602,20 +683,56 @@ class CoreUpdateCommand extends Command
         fclose($pipes[0]);
 
         // stdout 실시간 전달 — 상위 콘솔에서 진행 상황 확인 가능
+        // 단, [HANDOFF] 접두사 라인은 상위 콘솔로 노출하지 않고 페이로드만 보관한다
+        // (exit=UpgradeHandoffException::EXIT_CODE 감지 시 UpgradeHandoffException 재구성용).
+        $handoffPayload = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
                 $trimmed = rtrim($line);
-                if ($trimmed !== '') {
-                    $this->line($trimmed);
-                    $log('[spawn] '.$trimmed);
+                if ($trimmed === '') {
+                    continue;
                 }
+
+                if (str_starts_with($trimmed, '[HANDOFF] ')) {
+                    $json = substr($trimmed, strlen('[HANDOFF] '));
+                    $decoded = json_decode($json, true);
+                    // resumeCommand 는 null 허용 (자식이 null 로 전달한 경우 부모가
+                    // CoreUpdateCommand catch 분기에서 from/to 기반으로 자동 생성)
+                    if (is_array($decoded)
+                        && array_key_exists('afterVersion', $decoded)
+                        && array_key_exists('reason', $decoded)
+                        && array_key_exists('resumeCommand', $decoded)
+                    ) {
+                        $handoffPayload = $decoded;
+                        $log('[spawn] 핸드오프 신호 수신: after='.$decoded['afterVersion']);
+
+                        continue;
+                    }
+                    // 구조가 깨진 핸드오프 라인 — 정상 출력으로 간주해 그대로 전달
+                }
+
+                $this->line($trimmed);
+                $log('[spawn] '.$trimmed);
             }
         }
 
         fclose($pipes[1]);
         fclose($pipes[2]);
         $exitCode = proc_close($process);
+
+        if ($exitCode === UpgradeHandoffException::EXIT_CODE && $handoffPayload !== null) {
+            $log("spawn 핸드오프 종료 (exit={$exitCode})");
+
+            // resumeCommand 가 null 이면 null 그대로 전달 — 상위 catch 에서 자동 생성.
+            $resume = $handoffPayload['resumeCommand'];
+
+            throw new UpgradeHandoffException(
+                afterVersion: (string) $handoffPayload['afterVersion'],
+                reason: (string) $handoffPayload['reason'],
+                resumeCommand: is_string($resume) ? $resume : null,
+            );
+        }
 
         if ($exitCode === 0) {
             $log('spawn 완료 (exit=0)');

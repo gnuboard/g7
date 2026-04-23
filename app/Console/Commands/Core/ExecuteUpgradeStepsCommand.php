@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Exceptions\UpgradeHandoffException;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -52,6 +53,31 @@ class ExecuteUpgradeStepsCommand extends Command
                 fn (string $version) => $this->info("upgrade step 실행: {$version}"),
                 $force,
             );
+        } catch (UpgradeHandoffException $e) {
+            // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청했다.
+            // 부모 프로세스(spawnUpgradeStepsProcess)가 [HANDOFF] 라인을 stdout 에서
+            // 읽어 페이로드를 복원하고 UpgradeHandoffException 재구성 후 상위로 던지도록,
+            // JSON 페이로드를 표식과 함께 출력한다. 표식 문자열은 구분자 역할이므로 일반
+            // step 출력과 충돌하지 않게 고정된 접두사를 사용한다.
+            //
+            // resumeCommand 는 step 작성자가 null 로 두는 것을 권장(CoreUpdateCommand 가
+            // from/to 버전을 사용해 자동 생성). null 도 JSON 으로 그대로 전달.
+            $payload = json_encode([
+                'afterVersion' => $e->afterVersion,
+                'reason' => $e->reason,
+                'resumeCommand' => $e->resumeCommand,
+            ], JSON_UNESCAPED_UNICODE);
+
+            $this->line('[HANDOFF] '.$payload);
+
+            Log::info('core:execute-upgrade-steps 핸드오프', [
+                'from' => $from,
+                'to' => $to,
+                'after' => $e->afterVersion,
+                'reason' => $e->reason,
+            ]);
+
+            return UpgradeHandoffException::EXIT_CODE;
         } catch (\Throwable $e) {
             Log::error('core:execute-upgrade-steps 실패', [
                 'from' => $from,

@@ -42,6 +42,11 @@ return [
         'save_failed' => '설정 저장에 실패했습니다: :category',
     ],
 
+    // 코어 업데이트 관련 예외
+    'core_update' => [
+        'handoff' => '업그레이드 핸드오프: :after_version 까지 완료 — :reason (재실행: :resume_command)',
+    ],
+
     // Vendor 번들/설치 관련 예외
     'vendor' => [
         'composer_not_available' => 'Composer를 실행할 수 없는 환경입니다. 번들 모드를 사용하세요.',

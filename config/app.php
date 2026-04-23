@@ -211,7 +211,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.0-beta.2'),
+    'version' => env('APP_VERSION', '7.0.0-beta.3'),
 
     /*
     |--------------------------------------------------------------------------
@@ -264,6 +264,32 @@ return [
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
+            'storage,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,storage/app/core_pending'
+        )))),
+        // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
+        // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이
+        // chownRecursive 후에도 g-w 로 남아 php-fpm(www-data 그룹) 이 쓰기 실패하는
+        // 문제를 차단하기 위해, restoreOwnership 종료 직후 본 경로들에 한해
+        // FilePermissionHelper::syncGroupWritability 를 호출한다.
+        //
+        // 정책: 루트가 g+w 면 하위 g-w 항목을 g+w 로 승격, 다른 비트 무변경.
+        // 운영자가 의도적으로 그룹 쓰기를 차단한 경로(0755 등) 는 자동 보존됨.
+        //
+        // Laravel 런타임 그룹 쓰기 필요 경로 — 인스톨러 SSoT(public/install/includes/config.php
+        // REQUIRED_DIRECTORIES) 와 1:1 정렬:
+        //  - storage, bootstrap/cache: 캐시·세션·로그
+        //  - vendor: composer/sudo 가 root 로 재생성한 후 일반 권한 사용자/php-fpm 이 후속 작업
+        //  - modules, plugins, templates: 확장 설치/업데이트/제거 시 php-fpm 이 디렉토리 조작
+        //  - modules/_pending, plugins/_pending, templates/_pending: 다운로드 대기소
+        //  - storage/app/core_pending: 코어 업데이트 _pending 영역 (storage 재귀로도 커버되지만
+        //    SSoT 정렬 위해 명시)
+        //
+        // _bundled/ 는 개발 시점 원본 배포본이므로 런타임 쓰기 불필요 — SSoT 에도 미포함.
+        //
+        // 자식 디렉토리(예: plugins/sirsoft-*)는 syncGroupWritability 가 재귀 순회하여
+        // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
+        'restore_ownership_group_writable' => array_filter(array_map('trim', explode(',', env(
+            'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
             'storage,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,storage/app/core_pending'
         )))),
     ],

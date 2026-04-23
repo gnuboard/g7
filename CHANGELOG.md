@@ -4,6 +4,21 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [7.0.0-beta.3] - 2026-04-23
+
+### Fixed
+
+- CKEditor5 플러그인 활성 상태에서 게시판 글쓰기 저장 시 "제목은 필수입니다" 422 오류가 발생하던 호환성 문제 수정 — 제목·내용 입력 순서와 무관하게 정상 저장되도록 개선
+- 코어 업데이트가 sudo 로 실행된 환경에서 캐시·세션·확장 디렉토리의 그룹 쓰기 권한이 일부 손실되어 업데이트 직후 "Permission denied" 또는 플러그인 제거 검증 실패가 발생하던 문제 수정 — 업데이트 종료 시점에 그룹 쓰기 권한을 자동 정상화하며 기존 손실 분은 1회성 복구 스텝으로 회수
+- 업데이트 완료 후 Laravel 런타임이 새로 만드는 캐시·세션 하위 디렉토리가 기본 umask(022) 때문에 다시 그룹 쓰기 권한을 잃어 재차 "Permission denied" 가 발생하던 문제 수정 — 업그레이드 스텝이 업데이트 진행 프로세스의 umask 를 그룹 쓰기 친화적으로 전환하고, 이후 부팅 시점에도 `storage/` 의 현재 그룹 쓰기 설정을 감지해 프로세스 umask 를 자동 동조 (운영자가 그룹 공유를 비활성화한 환경은 그대로 보존)
+- 코어 업데이트 마지막 단계의 진행 표시줄이 끝난 뒤 줄바꿈 없이 다음 셸 프롬프트가 같은 줄에 붙어 표시되던 출력 문제 수정
+
+### Notes
+
+- 7.0.0-beta.1 에서 7.0.0-beta.3 로 직접 업그레이드하는 경우, 환경(opcache CLI 활성 등)에 따라 권한 복구 스텝이 자동 실행되지 않고 건너뛰어질 수 있습니다. 업데이트 후 `storage/framework/cache` 등에서 Permission denied 가 발생하면 아래 명령을 수동 실행해 주세요 — 7.0.0-beta.2 에서 올라오는 경로에서는 해당 없음
+  - `php artisan core:execute-upgrade-steps --from=7.0.0-beta.2 --to=7.0.0-beta.3 --force`
+- 시스템 레벨에서도 일관된 그룹 공유 권한을 원하면 php-fpm pool 설정에 `umask = 002` (또는 systemd unit 의 `UMask=0002`) 추가를 권장합니다. 코드 레벨 동조와 병행하면 외부 프로세스(cron, composer 등) 도 동일 권한으로 파일을 생성합니다
+
 ## [7.0.0-beta.2] - 2026-04-20
 
 ### Added

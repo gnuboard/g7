@@ -34,9 +34,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="g7_testing"/>
-        <env name="DB_WRITE_DATABASE" value="g7_testing"/>
-        <env name="DB_READ_DATABASE" value="g7_testing"/>
+        <!--
+            DB_DATABASE / DB_WRITE_DATABASE / DB_READ_DATABASE 는 `.env.testing` 값을 그대로 사용.
+            프로덕션 DB 오염 방지 안전망은 `tests/bootstrap.php` 의 "동일 DB 이름 중단 가드" 가 담당.
+        -->
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

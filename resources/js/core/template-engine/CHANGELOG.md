@@ -5,6 +5,20 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.43.0] - 2026-04-22
+
+### Fixed
+
+- Form 자동바인딩 값이 `globalState._local`에 동기화되지 않아 CKEditor5 등 `setLocal({render:false})` 플러그인과 공존하는 폼에서 자동바인딩 값이 누락되던 문제 수정. `performStateUpdate`가 기존 React `localDynamicState` 쓰기와 함께 `G7Core.state.setLocal(..., {render:false})`로 globalState._local에 동기화 기록. 이중 저장소 구조는 성능상 의도적으로 유지하며, 자세한 배경은 DynamicRenderer.tsx `performStateUpdate` 상단 주석 참조 (DynamicRenderer)
+
+### Added
+
+- 자동바인딩 경로 레지스트리 `__g7AutoBindingPaths` — Input 마운트 시 `fullPath`를 reference count 기반으로 등록/해제. iteration 내 중복·React Strict Mode 이중 마운트 대응 (DynamicRenderer)
+- `G7Core.state.setLocal(..., {render:false})` 호출이 자동바인딩 경로와 겹치면 엔진이 자동으로 render:true로 승격 — 미래 플러그인이 자동바인딩 대상 필드를 render:false로 쓰더라도 저장소 A↔B 정합성 구조적 보장 (G7CoreGlobals)
+- `G7Core.state.setLocal` 옵션 `selfManaged: true` 신설 — 플러그인이 자체 DOM 관리를 의도적으로 선언하는 opt-out 마커. 명시 시 자동 승격 제외하여 render:false 유지(성능 보존). CKEditor5처럼 React 밖에서 DOM을 관리하는 플러그인 전용. 기본값 undefined(=false)는 safe-by-default (G7CoreGlobals)
+- SPA 네비게이션 시 `__g7AutoBindingPaths`를 빈 `Map`으로 재초기화 — 이전 페이지 컴포넌트 언마운트와 라우트 전환 경쟁으로 인한 stale 경로 잔존 방지 (TemplateApp)
+- `G7DevToolsCore.getDualStorageMismatch()` 진단 메서드 — 저장소 A(localDynamicState) / B(globalState._local) 불일치 leaf 경로 감지. Phase 1 이후 유지보수 중 쓰기 경로 누락 조기 발견을 위한 보조 안전망 (G7DevToolsCore)
+
 ## [engine-v1.42.0] - 2026-04-16
 
 ### Added

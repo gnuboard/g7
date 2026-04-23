@@ -29,6 +29,49 @@ if (! file_exists(__DIR__.'/../.env.testing')) {
 
 /*
 |--------------------------------------------------------------------------
+| 프로덕션 DB 오염 방지 가드 (테스트 vs 프로덕션 DB 이름 충돌 차단)
+|--------------------------------------------------------------------------
+|
+| phpunit.xml 의 `DB_*_DATABASE` 하드코딩을 제거하고 `.env.testing` 을 SSoT 로
+| 삼았으므로, 실수로 `.env.testing` 의 DB 이름을 `.env` (프로덕션) 과 동일하게
+| 설정할 경우 테스트가 프로덕션 DB 를 파괴할 수 있다.
+|
+| 여기서 양쪽의 DB_WRITE_DATABASE 를 비교하여 동일하면 즉시 중단한다.
+|
+*/
+$parseDbName = static function (string $envFile): ?string {
+    if (! file_exists($envFile)) {
+        return null;
+    }
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        if (preg_match('/^DB_WRITE_DATABASE\s*=\s*(.+)$/', $line, $m)) {
+            // 따옴표 제거
+            return trim($m[1], "\"' \t");
+        }
+    }
+
+    return null;
+};
+
+$prodDbName = $parseDbName(__DIR__.'/../.env');
+$testDbName = $parseDbName(__DIR__.'/../.env.testing');
+
+if ($prodDbName !== null && $testDbName !== null && $prodDbName === $testDbName) {
+    fwrite(STDERR, "\n".str_repeat('=', 60)."\n");
+    fwrite(STDERR, "  ERROR: 프로덕션 DB 오염 위험 — 테스트 중단.\n\n");
+    fwrite(STDERR, "  .env 와 .env.testing 의 DB_WRITE_DATABASE 가 동일합니다: {$prodDbName}\n\n");
+    fwrite(STDERR, "  테스트용 별도 DB 를 사용하도록 .env.testing 을 수정하세요.\n");
+    fwrite(STDERR, "  (예: DB_WRITE_DATABASE={$prodDbName}_testing)\n");
+    fwrite(STDERR, str_repeat('=', 60)."\n\n");
+    exit(1);
+}
+
+/*
+|--------------------------------------------------------------------------
 | Config 캐시 삭제 (테스트 환경 보장)
 |--------------------------------------------------------------------------
 |

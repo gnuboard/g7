@@ -1182,6 +1182,12 @@ class CoreUpdateService
      * 코어 업그레이드 스텝을 실행합니다.
      * 각 스텝에서 환경설정 파일 생성, 데이터 마이그레이션 등을 수행합니다.
      *
+     * 예외 전파 정책:
+     *  - 일반 예외 (\Throwable): 그대로 상위 전파. CoreUpdateCommand 가 catch 후 롤백.
+     *  - UpgradeHandoffException: 그대로 상위 전파. CoreUpdateCommand 가 catch 후 롤백 없이
+     *    .env APP_VERSION 을 afterVersion 으로 고정, maintenance 해제, 사용자에게 재실행 안내.
+     *    즉 "해당 스텝 직전까지의 상태를 확정 + 재진입 지점 지정" 시나리오에 사용.
+     *
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  종료 버전
      * @param  \Closure|null  $onStep  각 스텝 실행 시 콜백 (버전 문자열 전달)
@@ -1532,9 +1538,13 @@ class CoreUpdateService
                 continue;
             }
 
+            // 7.0.0-beta.3+: target 루트 퍼미션을 perms 필드로 추가 스냅샷.
+            // restoreOwnership 이 sudo 업데이트로 인한 그룹 쓰기 권한 비대칭을
+            // 정상화할 때 사용 (Laravel 런타임 쓰기 경로에 한해).
             $snapshot[$target] = [
                 'owner' => @fileowner($path),
                 'group' => @filegroup($path),
+                'perms' => (@fileperms($path) & 0777) ?: null,
             ];
         }
 
@@ -1616,6 +1626,35 @@ class CoreUpdateService
                 ]);
                 $restoredCount += $changed;
             }
+        }
+
+        // 7.0.0-beta.3+: Laravel 런타임 쓰기 경로(storage/, bootstrap/cache/) 에 한해
+        // 그룹 쓰기 권한 비대칭 정상화. sudo root 업데이트가 umask 022 로 신규 생성한
+        // 하위 디렉토리(g-w) 가 chownRecursive 후에도 g-w 로 남아 php-fpm(www-data 그룹)
+        // 이 cache 쓰기 실패하는 문제를 구조적으로 차단.
+        //
+        // 정책: 루트가 g+w 면 하위 g-w 항목을 g+w 로 승격, 그 외 비트 무변경.
+        // 운영자가 의도적으로 그룹 쓰기를 차단한 경로는 보존됨.
+        $groupWritableTargets = config('app.update.restore_ownership_group_writable', [
+            'storage',
+            'bootstrap/cache',
+        ]);
+        $groupWritableChanged = 0;
+        foreach ($groupWritableTargets as $target) {
+            $path = base_path($target);
+            if (! File::isDirectory($path)) {
+                continue;
+            }
+
+            $onProgress?->__invoke('group_writable', $target);
+            $groupWritableChanged += FilePermissionHelper::syncGroupWritability($path);
+        }
+
+        if ($groupWritableChanged > 0) {
+            Log::info('코어 업데이트: 그룹 쓰기 권한 정상화', [
+                'targets' => $groupWritableTargets,
+                'changed_entries' => $groupWritableChanged,
+            ]);
         }
 
         if ($restoredCount > 0) {

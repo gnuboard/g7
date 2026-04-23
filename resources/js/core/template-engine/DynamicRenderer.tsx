@@ -3223,6 +3223,45 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     const autoBindingPendingValueRef = useRef<any>(undefined);
 
     /**
+     * 자동바인딩 경로 레지스트리 등록/해제 (engine-v1.43.0+)
+     *
+     * 이 Input/Textarea 등이 마운트되는 동안 fullPath(=`${dataKey}.${name}`)를
+     * `window.__g7AutoBindingPaths` Map에 reference count로 기록한다.
+     *
+     * 용도: G7CoreGlobals.setLocal이 `render:false` 호출 시 업데이트 경로가
+     * 레지스트리와 겹치면 render:true로 자동 승격하여 저장소 A(localDynamicState)
+     * 동기화를 구조적으로 보장한다 (`options.selfManaged === true`만 예외).
+     *
+     * Reference count가 필요한 이유:
+     * - iteration 내 동일 fullPath 중복 마운트 (여러 Input이 같은 name)
+     * - React Strict Mode의 이중 마운트 (mount→cleanup→mount)
+     * Set만 쓰면 첫 cleanup이 경로 제거 → 두 번째 마운트 후 stale 위험.
+     *
+     * 조건: 실제 자동바인딩이 활성화된 경로만 등록 (propsWithAutoBinding의 조건과 동일).
+     * - name prop 존재
+     * - 부모 FormContext의 dataKey/setState 존재
+     * - props.autoBinding !== false
+     */
+    useEffect(() => {
+      const name = stableResolvedProps?.name;
+      if (!name || !parentFormContext.dataKey || !parentFormContext.setState) return;
+      if (stableResolvedProps?.autoBinding === false) return;
+
+      const fullPath = `${parentFormContext.dataKey}.${name}`;
+      const registry: Map<string, number> =
+        ((window as any).__g7AutoBindingPaths as Map<string, number> | undefined)
+        ?? new Map<string, number>();
+      (window as any).__g7AutoBindingPaths = registry;
+      registry.set(fullPath, (registry.get(fullPath) ?? 0) + 1);
+
+      return () => {
+        const count = registry.get(fullPath) ?? 0;
+        if (count <= 1) registry.delete(fullPath);
+        else registry.set(fullPath, count - 1);
+      };
+    }, [stableResolvedProps?.name, stableResolvedProps?.autoBinding, parentFormContext.dataKey, parentFormContext.setState]);
+
+    /**
      * 폼 자동 바인딩이 적용된 props
      *
      * 부모 FormContext가 있고 name prop이 있으면:
@@ -3277,9 +3316,51 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // debounce 설정 가져오기
       const debounceMs = parentFormContext.debounce;
 
-      // 상태 업데이트 함수 (debounce 적용 가능)
-      // parentFormContext.state (= extendedDataContext._local)를 기반으로 업데이트해야
-      // dataContext._local의 기존 데이터(API 초기값)와 localDynamicState를 모두 포함함
+      /**
+       * Form 자동바인딩 상태 업데이트 — "이중 저장소 동기화" 구조 (engine-v1.43.0+)
+       *
+       * ⚠️ 엔진 유지보수자 필독: 아래 구조는 단순 구현이 아니라 "단일화 시도 실패" 이력의 결과다.
+       *
+       * [배경]
+       * 엔진은 폼 데이터를 두 저장소에 나눠 관리한다:
+       *   - 저장소 A: React localDynamicState (useState)
+       *              — Form 자동바인딩 쓰기, Input 컴포넌트 부분 리렌더로 빠른 반영
+       *   - 저장소 B: globalState._local (TemplateApp)
+       *              — G7Core.state.setLocal/getLocal, apiCall body 바인딩, 플러그인 동기화
+       *
+       * engine-v1.43.0 이전에는 자동바인딩이 A에만 썼다. CKEditor5 같은 플러그인이
+       * setLocal({render:false})로 B에 쓸 때 mergedPending = deepMerge(globalLocal, ...)의
+       * globalLocal base에 자동바인딩 값이 없어, 자동바인딩 값이 빈 초기값으로 덮이는
+       * 구조적 결함이 있었다.
+       *
+       * [왜 저장소 A를 없애고 B로 단일화하지 않는가]
+       * 1) B 단일화 = 매 키입력마다 TemplateApp.setGlobalState → root.render() 전체 리렌더.
+       *    대형 폼(필드 수십 개 + 바인딩 수천 개)에서 타이핑 지연 발생 위험.
+       * 2) "필요한 부분만 리렌더" 최적화 경로(경로 기반 구독 시스템)는 과거에 도입 후
+       *    필터 체크박스 클릭 수백 ms 지연 이슈로 전체 롤백된 실패 경로.
+       * 3) 즉 "구조 단일화 + 부분 리렌더"는 복구 경로 없는 설계. 이중 저장소를 전제로 운영한다.
+       *
+       * [동기화 규칙]
+       * - 자동바인딩 쓰기는 A + B 양쪽에 동시에 쓴다. B 쓰기는 render:false로 리렌더 억제.
+       * - A의 React useState가 해당 Input 자식 트리 리렌더를 담당 (성능 보존).
+       * - B는 플러그인/핸들러가 읽는 정본(source of truth). A는 B의 캐시가 아니라 "쓰는 시점에 강제로 일치시키는" 미러.
+       * - G7Core.state.setLocal({...}, {render:false}) 호출로 __g7PendingLocalState,
+       *   __g7ForcedLocalFields, __g7SetLocalOverrideKeys, __g7LastSetLocalSnapshot,
+       *   __g7SequenceLocalSync 보조 캐시도 모두 B와 함께 자동 갱신된다.
+       *
+       * [엔진 수정 시 주의]
+       * - 이 동기화 규칙을 지키지 않는 새 쓰기 경로를 추가하면 자동바인딩 정합성이 깨진다.
+       * - 엔진 레벨 재발 방지 장치 (같은 engine-v1.43.0 도입):
+       *   · __g7AutoBindingPaths 레지스트리: 자동바인딩 마운트 중인 fullPath 추적 (아래 useEffect)
+       *   · G7CoreGlobals.setLocal: render:false 호출이 레지스트리와 겹치면 render:true 자동 승격
+       *   · 예외: options.selfManaged === true 인 경우 승격 제외. CKEditor5 등 자체 DOM 관리
+       *     플러그인이 의도적으로 render:false를 유지하려 할 때 명시. 누락 시 엔진이 자동 승격하여
+       *     정합성 보장 (safe-by-default).
+       *   · 즉 플러그인이 render:false setLocal을 쓰든 자동바인딩과 충돌 시 엔진이 구조적으로 차단,
+       *     selfManaged 명시한 플러그인만 예외적으로 render:false 유지.
+       * - 구독 기반 선택적 리렌더는 과거에 도입 후 롤백된 경로이므로 재시도 전에
+       *   반드시 관련 설계 검토 후 논의할 것.
+       */
       const performStateUpdate = (newValue: any) => {
         // 중요: prev (localDynamicState) 대신 parentFormContext.state (extendedDataContext._local)를 기반으로 사용
         // 그래야 init_actions로 설정된 API 데이터가 손실되지 않음
@@ -3291,12 +3372,22 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           update.hasChanges = true;
         }
 
-        // React setState가 비동기이므로, 액션 핸들러에서 즉시 최신 값을 읽을 수 있도록
-        // 전역 캐시(__g7PendingLocalState)에 업데이트된 상태를 저장합니다.
-        // G7Core.state.getLocal()이 이 캐시를 우선적으로 사용합니다.
+        // 저장소 A: React setState가 비동기이므로, 액션 핸들러에서 즉시 최신 값을 읽을 수 있도록
+        // 전역 캐시(__g7PendingLocalState)에 업데이트된 상태를 저장. G7Core.state.getLocal()이 이 캐시를 우선 사용.
         (window as any).__g7PendingLocalState = update;
 
+        // 저장소 A: React localDynamicState — 해당 Input 트리 리렌더 (기존 경로, 성능 보존)
         parentFormContext.setState!(update);
+
+        // _global.xxx dataKey는 _globalSetState가 이미 globalState에 직접 쓰므로 B 동기화 불필요
+        if ((parentFormContext as any)._isGlobal) return;
+
+        // 저장소 B: globalState._local — 플러그인/apiCall이 읽는 정본. render:false로 리렌더 억제
+        // 이중 저장소를 늘 일치시키는 핵심 1줄. 이 경로가 빠지면 자동바인딩 정합성이 깨진다.
+        const G7Core = (window as any).G7Core;
+        const patch: Record<string, any> = { [fullPath]: newValue };
+        if (parentFormContext.trackChanges) patch.hasChanges = true;
+        G7Core?.state?.setLocal?.(patch, { render: false });
       };
 
       // debounce가 설정되면 debounced 업데이트, 아니면 즉시 업데이트

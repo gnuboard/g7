@@ -922,15 +922,19 @@ function syncToForm(
         updates[`form.${name}`] = value;
     }
 
-    // G7 표준 debounce + render: false 사용 (engine-v1.42.0)
+    // G7 표준 debounce + render: false + selfManaged: true (engine-v1.43.0+)
     // - debounce: ActionDispatcher 타이머 인프라 활용, 컴포넌트 언마운트 시 자동 정리
     // - render: false: CKEditor가 자체 DOM을 관리하므로 React 리렌더 불필요
     //   타이핑 중 전체 폼 트리 리렌더 방지 (37,000+ 바인딩 평가 제거)
+    // - selfManaged: true: engine-v1.43.0 자동 승격 예외 명시. HtmlEditor 내부 Textarea가
+    //   form.content에 자동바인딩되어 레지스트리에 등록되지만, CKEditor는 자체 DOM 관리이므로
+    //   render:false를 유지해야 성능 이점(37,000+ 바인딩 재평가 방지) 보존.
     // - 저장 시: flushPendingDebounceTimers → globalStateUpdater({}) 강제 렌더 1회
     G7Core.state.setLocal(updates, {
         debounce: 300,
         debounceKey: `ckeditor-sync-${name}`,
         render: false,
+        selfManaged: true,
     });
 }
 

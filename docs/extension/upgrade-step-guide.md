@@ -10,6 +10,7 @@
 3. 인프라 재설계 릴리즈의 특수 경로 = 경로 C → docblock 에 `@upgrade-path C` 선언 + 로컬 로직 필수
 4. 경로 A (모듈/플러그인) · 경로 C 규율: 기존 클래스의 신규 메서드 호출 금지, 로컬 private 헬퍼 우선
 5. 모든 분기에 upgrade.log 출력 — 로그 없음 = 디버깅 단서 없음
+6. beta.3+ 타깃 step 이 중간에 새 프로세스 재진입이 필요하면 `UpgradeHandoffException` throw (섹션 10.5)
 ```
 
 ---
@@ -25,6 +26,9 @@
 7. [생명주기와 제거 시점](#7-생명주기와-제거-시점)
 8. [실전 사례](#8-실전-사례)
 9. [업그레이드 경로별 규율 (모듈/플러그인 · 코어 beta.3+ · 코어 beta.2 특수)](#9-업그레이드-경로별-규율)
+10. [경로 C 내부 inline spawn 패턴](#10-경로-c-내부-inline-spawn-패턴)
+10.5. [업그레이드 핸드오프 (beta.3+ 인프라)](#105-업그레이드-핸드오프-beta3-인프라)
+11. [업그레이드 후 데이터 정합성 (완전 동기화)](#11-업그레이드-후-데이터-정합성-완전-동기화)
 
 ---
 
@@ -385,6 +389,94 @@ PHP;
 ### 역사적 인스턴스
 
 - `upgrades/Upgrade_7_0_0_beta_2.php::spawnResyncInlineLocal` — 경로 C 에서 beta.2 최신 `reloadCoreConfigAndResync()` 호출
+
+---
+
+## 10.5 업그레이드 핸드오프 (beta.3+ 인프라)
+
+일부 릴리즈는 "여기서부터는 새 PHP 프로세스가 필요하다" 는 경계 지점을 가진다. 예컨대 upgrade step A 까지는 현재 프로세스에서 안전하지만, step B 는 이미 로드된 이전 클래스와 충돌한다면, A 까지 확정하고 B 는 사용자가 `core:update` 를 재실행할 때 새 프로세스에서 처리하도록 위임하는 편이 안전하다.
+
+이를 위해 coreunit beta.3 에서 `UpgradeHandoffException` 인프라를 도입했다.
+
+### 동작 흐름
+
+```text
+Upgrade_X_Y_Z::run()
+  └─ throw UpgradeHandoffException(afterVersion, reason)
+         ↓
+[spawn 경로]                          [in-process 경로]
+ExecuteUpgradeStepsCommand            CoreUpdateService::runUpgradeSteps
+  └─ catch → stdout "[HANDOFF] <json>"  └─ 그대로 전파
+  └─ exit 75                              ↓
+                                         CoreUpdateCommand::handle
+spawnUpgradeStepsProcess                 └─ catch (UpgradeHandoffException)
+  └─ [HANDOFF] 페이로드 파싱                └─ updateVersionInEnv(toVersion)
+  └─ exit 75 → UpgradeHandoffException      └─ clearAllCaches
+  └─ throw                                  └─ restoreOwnership
+         ↓                                  └─ cleanupPending
+CoreUpdateCommand::handle                   └─ disableMaintenanceMode
+  └─ (in-process 분기와 동일한 처리)            └─ resumeCommand 자동 생성
+                                              └─ 사용자에게 스텝 전용 재실행 안내
+                                              └─ return Command::SUCCESS
+```
+
+핸드오프 catch 는 `.env APP_VERSION` 을 `afterVersion` 이 아닌 **`toVersion`** 으로 올린다. 디스크의 파일·vendor·migration 은 이미 `toVersion` 상태이므로 .env 를 `toVersion` 으로 맞춰야 상태가 일치한다. 만약 `afterVersion` 으로 되돌리면 사용자가 다시 `core:update` 를 실행했을 때 GitHub 재다운로드부터 전체 프로세스가 반복된다.
+
+대신 사용자에게는 **스텝 전용** 명령 (`php artisan core:execute-upgrade-steps --from=<afterVersion> --to=<toVersion> --force`) 만 실행하도록 안내한다. 이 명령은 재다운로드·vendor 재설치 없이 남은 upgrade step 만 실행한다.
+
+### 사용 시점
+
+upgrade step 파일에서 아래 조건이 모두 성립할 때 사용한다:
+
+1. 현재 PHP 프로세스가 본 step 을 안전하게 실행할 수 없다고 판단 가능 (예: 필요한 클래스/메서드 미로드)
+2. **직전 step 까지의 상태는 유효** 하며 이 상태를 확정해도 무방
+3. 사용자가 `core:update` 를 한 번 더 실행하는 불편이 허용 범위
+
+조건 2 가 충족되지 않으면 핸드오프 대신 일반 예외를 던져 롤백시키는 편이 안전하다.
+
+### 사용 예
+
+```php
+use App\Exceptions\UpgradeHandoffException;
+use App\Extension\Helpers\FilePermissionHelper;
+
+public function run(UpgradeContext $context): void
+{
+    if (! method_exists(FilePermissionHelper::class, 'syncGroupWritability')) {
+        // resumeCommand 를 지정하지 않으면 CoreUpdateCommand 가 catch 시점에
+        //   `php artisan core:execute-upgrade-steps --from=<afterVersion> --to=<toVersion> --force`
+        // 로 자동 생성한다. 대부분의 step 은 이 기본 동작을 사용하면 된다.
+        throw new UpgradeHandoffException(
+            afterVersion: '7.0.0-beta.2',
+            reason: '신설 메서드 FilePermissionHelper::syncGroupWritability 가 현재 프로세스에 로드되지 않음',
+        );
+    }
+
+    // ... 정상 로직
+}
+```
+
+커스텀 재실행 명령을 안내하고 싶다면 `resumeCommand` 를 명시 전달한다. 그러나 기본 자동 생성 명령이 표준 시나리오에 최적이므로 특별한 이유가 없는 한 생략이 권장된다.
+
+### 주의: 이전 버전 상위 계층 호환성
+
+`UpgradeHandoffException` 은 beta.3 에서 신설된 클래스다. 이전 버전 (beta.1, beta.2) 의 `CoreUpdateService` / `CoreUpdateCommand` 는 이 클래스를 모른다. 따라서 **이전 버전 in-process 에서 throw 하면 uncaught exception 취급되어 `catch (\Throwable)` 롤백 경로로 빠진다**.
+
+즉, 본 인프라가 의도대로 작동하는 것은 **beta.3 이후 코어가 실행 주체인 경우** — 즉 beta.3 이후 업데이트에서 사용 가능. beta.1 / beta.2 로부터 beta.3 로 올라오는 시점의 step 은 이 인프라를 사용할 수 없다 (graceful skip 등 다른 전략 필요).
+
+다음 표로 정리:
+
+| 실행 주체 코어 | spawn 가능 | 핸드오프 인프라 사용 |
+| -------------- | ---------- | -------------------- |
+| beta.1 | ✗ | ✗ (uncaught → 롤백) |
+| beta.2 | ✓ (spawn) | ✗ (자식 catch 없음) |
+| beta.3+ | ✓ | ✓ |
+
+beta.3+ 타깃을 가정할 수 있는 경우에만 사용한다.
+
+### 인프라 도입 시점
+
+- 인프라 자체는 beta.3 에서 도입. 첫 실사용은 beta.3+ 후속 릴리즈부터 (beta.3 본 릴리즈의 `Upgrade_7_0_0_beta_3.php` 는 graceful skip 사용 — beta.1 하위 호환 사유)
 
 ---
 

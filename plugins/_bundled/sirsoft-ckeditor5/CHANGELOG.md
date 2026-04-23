@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.2] - 2026-04-22
+
+### Fixed
+
+- CKEditor5 사용 게시판 글쓰기 화면에서 제목과 내용을 함께 입력해 저장할 때 "제목이 비어있다" 오류가 나던 문제 수정
+
 ## [1.0.0-beta.1] - 2026-04-09
 
 ### Added
